@@ -35,6 +35,12 @@
 	</dict>
 	<key>NSLocationWhenInUseUsageDescription</key>
 	<string></string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>HosynQ needs access to your photo library to select and upload your certificates and profile avatar.</string>
+	<key>NSCameraUsageDescription</key>
+	<string>HosynQ needs access to your camera to take photos of your certificates and profile picture.</string>
+	<key>NSPhotoLibraryAddUsageDescription</key>
+	<string>HosynQ needs access to save photos to your photo library.</string>
 	<key>RCTNewArchEnabled</key>
 	<true/>
 	<key>UILaunchStoryboardName</key>
@@ -56,5 +62,11 @@
 	</array>
 	<key>UIViewControllerBasedStatusBarAppearance</key>
 	<false/>
+	<key>UIAppFonts</key>
+	<array>
+		<string>Feather.ttf</string>
+		<string>Ionicons.ttf</string>
+		<string>MaterialIcons.ttf</string>
+	</array>
 </dict>
 </plist>

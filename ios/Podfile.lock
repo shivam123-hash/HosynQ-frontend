@@ -1,4 +1,26 @@
 PODS:
+  - AsyncStorage (3.1.1):
+    - hermes-engine
+    - RCTRequired
+    - RCTTypeSafety
+    - React-bridging
+    - React-Core
+    - React-Core-prebuilt
+    - React-debug
+    - React-Fabric
+    - React-featureflags
+    - React-graphics
+    - React-ImageManager
+    - React-jsi
+    - React-NativeModulesApple
+    - React-RCTFabric
+    - React-renderercss
+    - React-rendererdebug
+    - React-utils
+    - ReactCodegen
+    - ReactCommon/turbomodule/core
+    - ReactNativeDependencies
+    - Yoga
   - boost (1.84.0):
     - ReactNativeDependencies
   - DoubleConversion (1.1.6):
@@ -1315,6 +1337,9 @@ PODS:
     - ReactCommon/turbomodule/core
     - ReactNativeDependencies
     - Yoga
+  - react-native-vector-icons-feather (14.0.0)
+  - react-native-vector-icons-ionicons (13.1.4)
+  - react-native-vector-icons-material-icons (14.0.0)
   - React-NativeModulesApple (0.87.1):
     - hermes-engine
     - React-bridging
@@ -1673,12 +1698,110 @@ PODS:
     - React-utils (= 0.87.1)
     - ReactNativeDependencies
   - ReactNativeDependencies (0.87.1)
+  - RNImageCropPicker (0.52.0):
+    - hermes-engine
+    - RCTRequired
+    - RCTTypeSafety
+    - React-bridging
+    - React-Core
+    - React-Core-prebuilt
+    - React-debug
+    - React-Fabric
+    - React-featureflags
+    - React-graphics
+    - React-ImageManager
+    - React-jsi
+    - React-NativeModulesApple
+    - React-RCTFabric
+    - React-RCTImage
+    - React-renderercss
+    - React-rendererdebug
+    - React-utils
+    - ReactCodegen
+    - ReactCommon/turbomodule/core
+    - ReactNativeDependencies
+    - RNImageCropPicker/QBImagePickerController (= 0.52.0)
+    - TOCropViewController (~> 2.8.0)
+    - Yoga
+  - RNImageCropPicker/QBImagePickerController (0.52.0):
+    - hermes-engine
+    - RCTRequired
+    - RCTTypeSafety
+    - React-bridging
+    - React-Core
+    - React-Core-prebuilt
+    - React-debug
+    - React-Fabric
+    - React-featureflags
+    - React-graphics
+    - React-ImageManager
+    - React-jsi
+    - React-NativeModulesApple
+    - React-RCTFabric
+    - React-RCTImage
+    - React-renderercss
+    - React-rendererdebug
+    - React-utils
+    - ReactCodegen
+    - ReactCommon/turbomodule/core
+    - ReactNativeDependencies
+    - TOCropViewController (~> 2.8.0)
+    - Yoga
+  - RNScreens (4.30.1):
+    - hermes-engine
+    - RCTRequired
+    - RCTTypeSafety
+    - React-bridging
+    - React-Core
+    - React-Core-prebuilt
+    - React-debug
+    - React-Fabric
+    - React-featureflags
+    - React-graphics
+    - React-ImageManager
+    - React-jsi
+    - React-NativeModulesApple
+    - React-RCTFabric
+    - React-RCTImage
+    - React-renderercss
+    - React-rendererdebug
+    - React-utils
+    - ReactCodegen
+    - ReactCommon/turbomodule/core
+    - ReactNativeDependencies
+    - RNScreens/common (= 4.30.1)
+    - Yoga
+  - RNScreens/common (4.30.1):
+    - hermes-engine
+    - RCTRequired
+    - RCTTypeSafety
+    - React-bridging
+    - React-Core
+    - React-Core-prebuilt
+    - React-debug
+    - React-Fabric
+    - React-featureflags
+    - React-graphics
+    - React-ImageManager
+    - React-jsi
+    - React-NativeModulesApple
+    - React-RCTFabric
+    - React-RCTImage
+    - React-renderercss
+    - React-rendererdebug
+    - React-utils
+    - ReactCodegen
+    - ReactCommon/turbomodule/core
+    - ReactNativeDependencies
+    - Yoga
   - SocketRocket (0.7.1):
     - ReactNativeDependencies
+  - TOCropViewController (2.8.0)
   - Yoga (0.0.0):
     - React-Core-prebuilt
 
 DEPENDENCIES:
+  - "AsyncStorage (from `../node_modules/@react-native-async-storage/async-storage`)"
   - boost (from `build/rndeps-facades/boost`)
   - DoubleConversion (from `build/rndeps-facades/DoubleConversion`)
   - fast_float (from `build/rndeps-facades/fast_float`)
@@ -1728,6 +1851,9 @@ DEPENDENCIES:
   - React-microtasksnativemodule (from `../node_modules/react-native/ReactCommon/react/nativemodule/microtasks`)
   - React-mutationobservernativemodule (from `../node_modules/react-native/ReactCommon/react/nativemodule/mutationobserver`)
   - react-native-safe-area-context (from `../node_modules/react-native-safe-area-context`)
+  - "react-native-vector-icons-feather (from `../node_modules/@react-native-vector-icons/feather`)"
+  - "react-native-vector-icons-ionicons (from `../node_modules/@react-native-vector-icons/ionicons`)"
+  - "react-native-vector-icons-material-icons (from `../node_modules/@react-native-vector-icons/material-icons`)"
   - React-NativeModulesApple (from `../node_modules/react-native/ReactCommon/react/nativemodule/core/platform/ios`)
   - React-networking (from `../node_modules/react-native/ReactCommon/react/networking`)
   - React-oscompat (from `../node_modules/react-native/ReactCommon/oscompat`)
@@ -1764,10 +1890,18 @@ DEPENDENCIES:
   - ReactCodegen (from `build/generated/ios/ReactCodegen`)
   - ReactCommon/turbomodule/core (from `../node_modules/react-native/ReactCommon`)
   - ReactNativeDependencies (from `../node_modules/react-native/third-party-podspecs/ReactNativeDependencies.podspec`)
+  - RNImageCropPicker (from `../node_modules/react-native-image-crop-picker`)
+  - RNScreens (from `../node_modules/react-native-screens`)
   - SocketRocket (from `build/rndeps-facades/SocketRocket`)
   - Yoga (from `build/rncore-facades/Yoga`)
 
+SPEC REPOS:
+  trunk:
+    - TOCropViewController
+
 EXTERNAL SOURCES:
+  AsyncStorage:
+    :path: "../node_modules/@react-native-async-storage/async-storage"
   boost:
     :path: build/rndeps-facades/boost
   DoubleConversion:
@@ -1865,6 +1999,12 @@ EXTERNAL SOURCES:
     :path: "../node_modules/react-native/ReactCommon/react/nativemodule/mutationobserver"
   react-native-safe-area-context:
     :path: "../node_modules/react-native-safe-area-context"
+  react-native-vector-icons-feather:
+    :path: "../node_modules/@react-native-vector-icons/feather"
+  react-native-vector-icons-ionicons:
+    :path: "../node_modules/@react-native-vector-icons/ionicons"
+  react-native-vector-icons-material-icons:
+    :path: "../node_modules/@react-native-vector-icons/material-icons"
   React-NativeModulesApple:
     :path: "../node_modules/react-native/ReactCommon/react/nativemodule/core/platform/ios"
   React-networking:
@@ -1937,12 +2077,17 @@ EXTERNAL SOURCES:
     :path: "../node_modules/react-native/ReactCommon"
   ReactNativeDependencies:
     :podspec: "../node_modules/react-native/third-party-podspecs/ReactNativeDependencies.podspec"
+  RNImageCropPicker:
+    :path: "../node_modules/react-native-image-crop-picker"
+  RNScreens:
+    :path: "../node_modules/react-native-screens"
   SocketRocket:
     :path: build/rndeps-facades/SocketRocket
   Yoga:
     :path: build/rncore-facades/Yoga
 
 SPEC CHECKSUMS:
+  AsyncStorage: f0453c14a52d22d3f6184284c55f2117fbfd9954
   boost: 8502bfdc46e2804408af2e163049ece181009af4
   DoubleConversion: 501a575c40c0b50c89685762dd3e415e6bb26fb0
   fast_float: 7c925d1cebf8328d4018d061f49377e9f887e3b4
@@ -1991,6 +2136,9 @@ SPEC CHECKSUMS:
   React-microtasksnativemodule: 269f81deee27a2a9bedb6b2d1088c1ae93de9bd3
   React-mutationobservernativemodule: 877e9f730e0d8175c2e952901b55c170fc3d372f
   react-native-safe-area-context: f17f4ec987ecdd130820a4a850498b874fb70388
+  react-native-vector-icons-feather: 32f485a696f1ac4c3e17216782e7b26475e9e6d4
+  react-native-vector-icons-ionicons: cc4bfc451b5d5c61d3c91e05f5a65c097dd0e5cb
+  react-native-vector-icons-material-icons: c62c72e4fa041a49e2cab6c760e4cb5c1343acb3
   React-NativeModulesApple: adb1dd8361dff80e9f6652fb3fdbf033cfbe2a89
   React-networking: c00b437c4408f0640ba0d4158357133488521eca
   React-oscompat: 3175a287dd7175d1a20fdce5048a4b9e11f4b915
@@ -2027,9 +2175,12 @@ SPEC CHECKSUMS:
   ReactCodegen: 13d2ebfe2d8f1200052509b4fc4abf7a6825a7fc
   ReactCommon: 749169e12aa3461a3df3656a00e48dbe0456b2d6
   ReactNativeDependencies: 94c922c39e0e6150ee9ad05e2ca1946e0ef55783
+  RNImageCropPicker: fabc46228f3c4b75767bdedc4cb0a8bdb0c4048b
+  RNScreens: fd649b2059b4c136530f10e8001464b69cb634f4
   SocketRocket: 37aec555668fb852ec12e3c0de59a86ca58f0871
+  TOCropViewController: 797deaf39c90e6e9ddd848d88817f6b9a8a09888
   Yoga: d1c536142c5ff8ec8cd856ab2a7c227a1d875c8e
 
 PODFILE CHECKSUM: 0643bbaf02441cafcaeb4333d7586f4c5b850393
 
-COCOAPODS: 1.15.2
+COCOAPODS: 1.16.2
