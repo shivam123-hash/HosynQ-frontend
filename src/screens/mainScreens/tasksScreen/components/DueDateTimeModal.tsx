@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo, useCallback } from 'react';
 import {
   View,
   Text,
@@ -19,58 +19,112 @@ export interface DueDateTimeModalProps {
   onSave: (dueDate: string, dueFormatted: string, dueTime?: string) => void;
 }
 
-const QUICK_DATES = [
-  { id: 'today', label: 'Today', dateStr: 'Today' },
-  { id: 'tomorrow', label: 'Tomorrow', dateStr: 'Tomorrow' },
-  { id: 'this_weekend', label: 'This weekend', dateStr: 'Sat, 7 Nov' },
-  { id: 'nov2', label: 'Mon, 2 Nov', dateStr: 'Mon, 2 Nov' },
+const MONTH_NAMES = [
+  'January',
+  'February',
+  'March',
+  'April',
+  'May',
+  'June',
+  'July',
+  'August',
+  'September',
+  'October',
+  'November',
+  'December',
 ];
 
-const QUICK_TIMES = [
-  { id: 'morning', label: 'Morning 9:00', timeStr: '9:00 AM' },
-  { id: 'afternoon', label: 'Afternoon 2:00', timeStr: '2:00 PM' },
-  { id: 'evening', label: 'Evening 6:00', timeStr: '6:00 PM' },
-  { id: 'custom', label: 'Pick a time', timeStr: '8:00 PM' },
+const MONTHS_SHORT = [
+  'Jan',
+  'Feb',
+  'Mar',
+  'Apr',
+  'May',
+  'Jun',
+  'Jul',
+  'Aug',
+  'Sep',
+  'Oct',
+  'Nov',
+  'Dec',
 ];
 
-// Days matrix for November 2026 (matching TSK-16 screenshot)
-const CALENDAR_DAYS: { day: number; isCurrentMonth: boolean; isToday?: boolean }[] = [
-  { day: 26, isCurrentMonth: false },
-  { day: 27, isCurrentMonth: false },
-  { day: 28, isCurrentMonth: false },
-  { day: 29, isCurrentMonth: false },
-  { day: 30, isCurrentMonth: false, isToday: true },
-  { day: 31, isCurrentMonth: false },
-  { day: 1, isCurrentMonth: true },
-  { day: 2, isCurrentMonth: true },
-  { day: 3, isCurrentMonth: true },
-  { day: 4, isCurrentMonth: true },
-  { day: 5, isCurrentMonth: true },
-  { day: 6, isCurrentMonth: true },
-  { day: 7, isCurrentMonth: true },
-  { day: 8, isCurrentMonth: true },
-  { day: 9, isCurrentMonth: true },
-  { day: 10, isCurrentMonth: true },
-  { day: 11, isCurrentMonth: true },
-  { day: 12, isCurrentMonth: true },
-  { day: 13, isCurrentMonth: true },
-  { day: 14, isCurrentMonth: true },
-  { day: 15, isCurrentMonth: true },
-  { day: 16, isCurrentMonth: true },
-  { day: 17, isCurrentMonth: true },
-  { day: 18, isCurrentMonth: true },
-  { day: 19, isCurrentMonth: true },
-  { day: 20, isCurrentMonth: true },
-  { day: 21, isCurrentMonth: true },
-  { day: 22, isCurrentMonth: true },
-  { day: 23, isCurrentMonth: true },
-  { day: 24, isCurrentMonth: true },
-  { day: 25, isCurrentMonth: true },
-  { day: 26, isCurrentMonth: true },
-  { day: 27, isCurrentMonth: true },
-  { day: 28, isCurrentMonth: true },
-  { day: 29, isCurrentMonth: true },
-];
+const DAYS_SHORT = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+const WEEKDAY_HEADERS = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
+
+// Baseline reference date aligned with app mock date (Friday, 30 October 2026)
+const APP_TODAY = new Date(2026, 9, 30);
+
+const parseInitialDate = (dateStr?: string): Date => {
+  if (!dateStr) return new Date(2026, 10, 2);
+
+  const s = dateStr.toLowerCase().trim();
+  if (s.includes('today')) {
+    return new Date(APP_TODAY);
+  }
+  if (s.includes('tomorrow')) {
+    const d = new Date(APP_TODAY);
+    d.setDate(d.getDate() + 1);
+    return d;
+  }
+  if (s.includes('weekend')) {
+    const d = new Date(APP_TODAY);
+    const daysUntilSat = (6 - d.getDay() + 7) % 7 || 7;
+    d.setDate(d.getDate() + daysUntilSat);
+    return d;
+  }
+
+  for (let m = 0; m < 12; m++) {
+    const shortName = MONTHS_SHORT[m].toLowerCase();
+    const fullName = MONTH_NAMES[m].toLowerCase();
+    if (s.includes(shortName) || s.includes(fullName)) {
+      const match = s.match(/\b(\d{1,2})\b/);
+      const day = match ? parseInt(match[1], 10) : 1;
+      const yearMatch = s.match(/\b(20\d\d)\b/);
+      const year = yearMatch ? parseInt(yearMatch[1], 10) : 2026;
+      return new Date(year, m, day);
+    }
+  }
+
+  const isoMatch = dateStr.match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if (isoMatch) {
+    return new Date(
+      parseInt(isoMatch[1], 10),
+      parseInt(isoMatch[2], 10) - 1,
+      parseInt(isoMatch[3], 10)
+    );
+  }
+
+  return new Date(2026, 10, 2);
+};
+
+const formatDisplayDate = (d: Date): string => {
+  const dayName = DAYS_SHORT[d.getDay()];
+  const dayNum = d.getDate();
+  const monthName = MONTHS_SHORT[d.getMonth()];
+  return `${dayName}, ${dayNum} ${monthName}`;
+};
+
+const isSameDay = (d1: Date, d2: Date): boolean => {
+  return (
+    d1.getFullYear() === d2.getFullYear() &&
+    d1.getMonth() === d2.getMonth() &&
+    d1.getDate() === d2.getDate()
+  );
+};
+
+interface CalendarCell {
+  key: string;
+  year: number;
+  month: number;
+  day: number;
+  isCurrentMonth: boolean;
+  isToday: boolean;
+  isSelected: boolean;
+}
+
+const CUSTOM_HOURS = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12];
+const CUSTOM_MINUTES = ['00', '15', '30', '45'];
 
 const DueDateTimeModal: React.FC<DueDateTimeModalProps> = ({
   visible,
@@ -80,44 +134,233 @@ const DueDateTimeModal: React.FC<DueDateTimeModalProps> = ({
   onSave,
 }) => {
   const insets = useSafeAreaInsets();
-  const [selectedDate, setSelectedDate] = useState<string>(initialDate);
-  const [selectedDayNumber, setSelectedDayNumber] = useState<number>(2);
+
+  // Selected date state
+  const [selectedDate, setSelectedDate] = useState<Date>(() =>
+    parseInitialDate(initialDate)
+  );
+
+  // Month & year currently shown on calendar
+  const [displayedYear, setDisplayedYear] = useState<number>(() =>
+    parseInitialDate(initialDate).getFullYear()
+  );
+  const [displayedMonth, setDisplayedMonth] = useState<number>(() =>
+    parseInitialDate(initialDate).getMonth()
+  );
+
+  // Quick Time state
   const [selectedTimeId, setSelectedTimeId] = useState<string>('evening');
+  const [selectedTimeStr, setSelectedTimeStr] = useState<string>(initialTime);
   const [noSpecificTime, setNoSpecificTime] = useState<boolean>(false);
 
-  React.useEffect(() => {
-    setSelectedDate(initialDate);
-  }, [initialDate, visible]);
+  // Custom Time Picker state
+  const [showTimePicker, setShowTimePicker] = useState<boolean>(false);
+  const [customHour, setCustomHour] = useState<number>(8);
+  const [customMinute, setCustomMinute] = useState<string>('00');
+  const [customPeriod, setCustomPeriod] = useState<'AM' | 'PM'>('PM');
 
-  const handleDayPress = (dayItem: typeof CALENDAR_DAYS[0]) => {
-    setSelectedDayNumber(dayItem.day);
-    if (dayItem.isCurrentMonth) {
-      setSelectedDate(`${dayItem.day} Nov`);
-    } else {
-      setSelectedDate(`${dayItem.day} Oct`);
+  // Sync state on open
+  React.useEffect(() => {
+    if (visible) {
+      const parsed = parseInitialDate(initialDate);
+      setSelectedDate(parsed);
+      setDisplayedYear(parsed.getFullYear());
+      setDisplayedMonth(parsed.getMonth());
+
+      if (initialTime.includes('9:00')) {
+        setSelectedTimeId('morning');
+        setSelectedTimeStr('9:00 AM');
+      } else if (initialTime.includes('2:00')) {
+        setSelectedTimeId('afternoon');
+        setSelectedTimeStr('2:00 PM');
+      } else if (initialTime.includes('6:00')) {
+        setSelectedTimeId('evening');
+        setSelectedTimeStr('6:00 PM');
+      } else {
+        setSelectedTimeId('custom');
+        setSelectedTimeStr(initialTime);
+      }
+      setShowTimePicker(false);
     }
+  }, [initialDate, initialTime, visible]);
+
+  // Compute reference dates for quick chips
+  const todayDate = useMemo(() => new Date(APP_TODAY), []);
+  const tomorrowDate = useMemo(() => {
+    const d = new Date(APP_TODAY);
+    d.setDate(d.getDate() + 1);
+    return d;
+  }, []);
+  const weekendDate = useMemo(() => {
+    const d = new Date(APP_TODAY);
+    const daysUntilSat = (6 - d.getDay() + 7) % 7 || 7;
+    d.setDate(d.getDate() + daysUntilSat);
+    return d;
+  }, []);
+
+  const isSelectedToday = isSameDay(selectedDate, todayDate);
+  const isSelectedTomorrow = isSameDay(selectedDate, tomorrowDate);
+  const isSelectedWeekend = isSameDay(selectedDate, weekendDate);
+
+  // Generate dynamic calendar matrix for displayedYear and displayedMonth
+  const calendarCells = useMemo<CalendarCell[]>(() => {
+    const firstDay = new Date(displayedYear, displayedMonth, 1);
+    const startDayOfWeek = (firstDay.getDay() + 6) % 7; // Monday=0..Sunday=6
+    const daysInMonth = new Date(displayedYear, displayedMonth + 1, 0).getDate();
+    const daysInPrevMonth = new Date(displayedYear, displayedMonth, 0).getDate();
+
+    const cells: CalendarCell[] = [];
+
+    // Preceding days from previous month
+    for (let i = startDayOfWeek - 1; i >= 0; i--) {
+      const day = daysInPrevMonth - i;
+      const prevYear = displayedMonth === 0 ? displayedYear - 1 : displayedYear;
+      const prevMonth = displayedMonth === 0 ? 11 : displayedMonth - 1;
+      const cellDate = new Date(prevYear, prevMonth, day);
+      cells.push({
+        key: `prev-${prevYear}-${prevMonth}-${day}`,
+        year: prevYear,
+        month: prevMonth,
+        day,
+        isCurrentMonth: false,
+        isToday: isSameDay(cellDate, APP_TODAY),
+        isSelected: isSameDay(cellDate, selectedDate),
+      });
+    }
+
+    // Days in current month
+    for (let day = 1; day <= daysInMonth; day++) {
+      const cellDate = new Date(displayedYear, displayedMonth, day);
+      cells.push({
+        key: `curr-${displayedYear}-${displayedMonth}-${day}`,
+        year: displayedYear,
+        month: displayedMonth,
+        day,
+        isCurrentMonth: true,
+        isToday: isSameDay(cellDate, APP_TODAY),
+        isSelected: isSameDay(cellDate, selectedDate),
+      });
+    }
+
+    // Following days from next month
+    const totalRows = Math.ceil(cells.length / 7);
+    const totalCells = totalRows * 7;
+    const remaining = totalCells - cells.length;
+    for (let day = 1; day <= remaining; day++) {
+      const nextYear = displayedMonth === 11 ? displayedYear + 1 : displayedYear;
+      const nextMonth = displayedMonth === 11 ? 0 : displayedMonth + 1;
+      const cellDate = new Date(nextYear, nextMonth, day);
+      cells.push({
+        key: `next-${nextYear}-${nextMonth}-${day}`,
+        year: nextYear,
+        month: nextMonth,
+        day,
+        isCurrentMonth: false,
+        isToday: isSameDay(cellDate, APP_TODAY),
+        isSelected: isSameDay(cellDate, selectedDate),
+      });
+    }
+
+    return cells;
+  }, [displayedYear, displayedMonth, selectedDate]);
+
+  // Calendar Navigation
+  const handlePrevMonth = useCallback(() => {
+    if (displayedMonth === 0) {
+      setDisplayedMonth(11);
+      setDisplayedYear((y) => y - 1);
+    } else {
+      setDisplayedMonth((m) => m - 1);
+    }
+  }, [displayedMonth]);
+
+  const handleNextMonth = useCallback(() => {
+    if (displayedMonth === 11) {
+      setDisplayedMonth(0);
+      setDisplayedYear((y) => y + 1);
+    } else {
+      setDisplayedMonth((m) => m + 1);
+    }
+  }, [displayedMonth]);
+
+  // Day Selection
+  const handleDayPress = useCallback((cell: CalendarCell) => {
+    const newDate = new Date(cell.year, cell.month, cell.day);
+    setSelectedDate(newDate);
+
+    // If day from prev/next month was clicked, auto-navigate
+    if (cell.month !== displayedMonth || cell.year !== displayedYear) {
+      setDisplayedMonth(cell.month);
+      setDisplayedYear(cell.year);
+    }
+  }, [displayedMonth, displayedYear]);
+
+  // Quick Date chip click handlers
+  const handleSelectToday = () => {
+    setSelectedDate(todayDate);
+    setDisplayedMonth(todayDate.getMonth());
+    setDisplayedYear(todayDate.getFullYear());
   };
 
-  const handleQuickDatePress = (item: typeof QUICK_DATES[0]) => {
-    setSelectedDate(item.dateStr);
-    if (item.id === 'nov2') {
-      setSelectedDayNumber(2);
-    }
+  const handleSelectTomorrow = () => {
+    setSelectedDate(tomorrowDate);
+    setDisplayedMonth(tomorrowDate.getMonth());
+    setDisplayedYear(tomorrowDate.getFullYear());
+  };
+
+  const handleSelectWeekend = () => {
+    setSelectedDate(weekendDate);
+    setDisplayedMonth(weekendDate.getMonth());
+    setDisplayedYear(weekendDate.getFullYear());
+  };
+
+  const handleSelectCustomPill = () => {
+    setDisplayedMonth(selectedDate.getMonth());
+    setDisplayedYear(selectedDate.getFullYear());
+  };
+
+  // Time Chip Handlers
+  const handleQuickTimePress = (id: string, timeString: string) => {
+    setSelectedTimeId(id);
+    setSelectedTimeStr(timeString);
+    setNoSpecificTime(false);
+    setShowTimePicker(false);
+  };
+
+  const handleOpenTimePicker = () => {
+    setSelectedTimeId('custom');
+    setShowTimePicker(true);
+    setNoSpecificTime(false);
+  };
+
+  const handleApplyCustomTime = () => {
+    const formattedTime = `${customHour}:${customMinute} ${customPeriod}`;
+    setSelectedTimeStr(formattedTime);
+    setSelectedTimeId('custom');
+    setShowTimePicker(false);
   };
 
   const handleDone = () => {
-    let finalFormatted = selectedDate;
-    let chosenTimeStr: string | undefined;
-
-    if (!noSpecificTime) {
-      const match = QUICK_TIMES.find((t) => t.id === selectedTimeId);
-      chosenTimeStr = match ? match.timeStr : initialTime;
-      finalFormatted = `${selectedDate} · by ${chosenTimeStr}`;
+    let dateLabel = formatDisplayDate(selectedDate);
+    if (isSelectedToday) {
+      dateLabel = 'Today';
+    } else if (isSelectedTomorrow) {
+      dateLabel = 'Tomorrow';
     }
 
-    onSave(selectedDate, finalFormatted, chosenTimeStr);
+    let finalFormatted = dateLabel;
+    let finalTimeStr: string | undefined;
+
+    if (!noSpecificTime) {
+      finalTimeStr = selectedTimeStr;
+      finalFormatted = `${dateLabel} · by ${finalTimeStr}`;
+    }
+
+    onSave(dateLabel, finalFormatted, finalTimeStr);
     onClose();
   };
+
+  const formattedSelectedPill = formatDisplayDate(selectedDate);
 
   return (
     <Modal
@@ -131,6 +374,8 @@ const DueDateTimeModal: React.FC<DueDateTimeModalProps> = ({
           style={styles.backdrop}
           activeOpacity={1}
           onPress={onClose}
+          accessibilityRole="button"
+          accessibilityLabel="Close date picker"
         />
 
         <View
@@ -149,90 +394,152 @@ const DueDateTimeModal: React.FC<DueDateTimeModalProps> = ({
             contentContainerStyle={styles.scrollContent}
           >
             {/* Quick Date Chips */}
-            <View style={styles.quickChipsRow}>
-              {QUICK_DATES.map((chip) => {
-                const isSelected = selectedDate === chip.dateStr;
-                return (
-                  <TouchableOpacity
-                    key={chip.id}
+            <View style={styles.quickChipsContainer}>
+              <View style={styles.quickChipsRow}>
+                <TouchableOpacity
+                  style={[
+                    styles.quickChip,
+                    isSelectedToday && styles.quickChipSelected,
+                  ]}
+                  onPress={handleSelectToday}
+                  activeOpacity={0.7}
+                  accessibilityRole="button"
+                  accessibilityLabel="Due today"
+                >
+                  <Text
                     style={[
-                      styles.quickChip,
-                      isSelected && styles.quickChipSelected,
+                      styles.quickChipText,
+                      isSelectedToday && styles.quickChipTextSelected,
                     ]}
-                    onPress={() => handleQuickDatePress(chip)}
-                    activeOpacity={0.7}
                   >
-                    <Text
-                      style={[
-                        styles.quickChipText,
-                        isSelected && styles.quickChipTextSelected,
-                      ]}
-                    >
-                      {chip.label}
-                    </Text>
-                  </TouchableOpacity>
-                );
-              })}
+                    Today
+                  </Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={[
+                    styles.quickChip,
+                    isSelectedTomorrow && styles.quickChipSelected,
+                  ]}
+                  onPress={handleSelectTomorrow}
+                  activeOpacity={0.7}
+                  accessibilityRole="button"
+                  accessibilityLabel="Due tomorrow"
+                >
+                  <Text
+                    style={[
+                      styles.quickChipText,
+                      isSelectedTomorrow && styles.quickChipTextSelected,
+                    ]}
+                  >
+                    Tomorrow
+                  </Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={[
+                    styles.quickChip,
+                    isSelectedWeekend && styles.quickChipSelected,
+                  ]}
+                  onPress={handleSelectWeekend}
+                  activeOpacity={0.7}
+                  accessibilityRole="button"
+                  accessibilityLabel="Due this weekend"
+                >
+                  <Text
+                    style={[
+                      styles.quickChipText,
+                      isSelectedWeekend && styles.quickChipTextSelected,
+                    ]}
+                  >
+                    This weekend
+                  </Text>
+                </TouchableOpacity>
+              </View>
+
+              {/* Row 2: Selected Date Chip (Highlighted Orange) */}
+              <View style={styles.selectedPillRow}>
+                <TouchableOpacity
+                  style={[styles.quickChip, styles.quickChipSelected]}
+                  onPress={handleSelectCustomPill}
+                  activeOpacity={0.7}
+                  accessibilityRole="button"
+                  accessibilityLabel={`Selected date: ${formattedSelectedPill}`}
+                >
+                  <Text
+                    style={[styles.quickChipText, styles.quickChipTextSelected]}
+                  >
+                    {formattedSelectedPill}
+                  </Text>
+                </TouchableOpacity>
+              </View>
             </View>
 
             {/* Interactive Calendar Card */}
             <View style={styles.calendarCard}>
-              {/* Header */}
+              {/* Header with Month / Year and Chevrons */}
               <View style={styles.calendarHeaderRow}>
                 <TouchableOpacity
                   style={styles.chevronBtn}
+                  onPress={handlePrevMonth}
                   activeOpacity={0.7}
+                  accessibilityRole="button"
+                  accessibilityLabel="Previous month"
                 >
-                  <Feather name="chevron-left" size={18} color="#CAD4DF" />
+                  <Feather name="chevron-left" size={20} color="#CAD4DF" />
                 </TouchableOpacity>
 
-                <Text style={styles.monthTitle}>November 2026</Text>
+                <Text style={styles.monthTitle}>
+                  {`${MONTH_NAMES[displayedMonth]} ${displayedYear}`}
+                </Text>
 
                 <TouchableOpacity
                   style={styles.chevronBtn}
+                  onPress={handleNextMonth}
                   activeOpacity={0.7}
+                  accessibilityRole="button"
+                  accessibilityLabel="Next month"
                 >
-                  <Feather name="chevron-right" size={18} color="#CAD4DF" />
+                  <Feather name="chevron-right" size={20} color="#CAD4DF" />
                 </TouchableOpacity>
               </View>
 
-              {/* Day of Week Labels */}
+              {/* Day of Week Labels (M T W T F S S) */}
               <View style={styles.weekHeadersRow}>
-                {['M', 'T', 'W', 'T', 'F', 'S', 'S'].map((letter, idx) => (
+                {WEEKDAY_HEADERS.map((letter, idx) => (
                   <Text key={idx} style={styles.weekHeaderText}>
                     {letter}
                   </Text>
                 ))}
               </View>
 
-              {/* Days Grid */}
+              {/* Fully Dynamic Days Grid */}
               <View style={styles.daysGrid}>
-                {CALENDAR_DAYS.map((item, idx) => {
-                  const isSelected =
-                    item.isCurrentMonth && item.day === selectedDayNumber;
-
+                {calendarCells.map((cell) => {
                   return (
                     <TouchableOpacity
-                      key={idx}
+                      key={cell.key}
                       style={styles.dayCell}
-                      onPress={() => handleDayPress(item)}
+                      onPress={() => handleDayPress(cell)}
                       activeOpacity={0.7}
+                      accessibilityRole="button"
+                      accessibilityLabel={`${cell.day} ${MONTH_NAMES[cell.month]} ${cell.year}`}
                     >
                       <View
                         style={[
                           styles.dayCircle,
-                          item.isToday && styles.todayCircle,
-                          isSelected && styles.selectedDayCircle,
+                          cell.isToday && styles.todayCircle,
+                          cell.isSelected && styles.selectedDayCircle,
                         ]}
                       >
                         <Text
                           style={[
                             styles.dayText,
-                            !item.isCurrentMonth && styles.otherMonthDayText,
-                            isSelected && styles.selectedDayText,
+                            !cell.isCurrentMonth && styles.otherMonthDayText,
+                            cell.isSelected && styles.selectedDayText,
                           ]}
                         >
-                          {item.day}
+                          {cell.day}
                         </Text>
                       </View>
                     </TouchableOpacity>
@@ -246,37 +553,231 @@ const DueDateTimeModal: React.FC<DueDateTimeModalProps> = ({
 
             {/* Quick Time Chips */}
             <View style={styles.quickTimeRow}>
-              {QUICK_TIMES.map((timeItem) => {
-                const isSelected =
-                  !noSpecificTime && selectedTimeId === timeItem.id;
-                return (
-                  <TouchableOpacity
-                    key={timeItem.id}
-                    style={[
-                      styles.quickChip,
-                      isSelected && styles.quickChipSelected,
-                      noSpecificTime && styles.chipDisabled,
-                    ]}
-                    onPress={() => {
-                      setSelectedTimeId(timeItem.id);
-                      setNoSpecificTime(false);
-                    }}
-                    disabled={noSpecificTime}
-                    activeOpacity={0.7}
-                  >
-                    <Text
-                      style={[
-                        styles.quickChipText,
-                        isSelected && styles.quickChipTextSelected,
-                        noSpecificTime && styles.chipDisabledText,
-                      ]}
-                    >
-                      {timeItem.label}
-                    </Text>
-                  </TouchableOpacity>
-                );
-              })}
+              {/* Morning 9:00 */}
+              <TouchableOpacity
+                style={[
+                  styles.quickChip,
+                  !noSpecificTime &&
+                    selectedTimeId === 'morning' &&
+                    styles.quickChipSelected,
+                  noSpecificTime && styles.chipDisabled,
+                ]}
+                onPress={() => handleQuickTimePress('morning', '9:00 AM')}
+                disabled={noSpecificTime}
+                activeOpacity={0.7}
+                accessibilityRole="button"
+                accessibilityLabel="Morning 9:00 AM"
+              >
+                <Text
+                  style={[
+                    styles.quickChipText,
+                    !noSpecificTime &&
+                      selectedTimeId === 'morning' &&
+                      styles.quickChipTextSelected,
+                    noSpecificTime && styles.chipDisabledText,
+                  ]}
+                >
+                  Morning 9:00
+                </Text>
+              </TouchableOpacity>
+
+              {/* Afternoon 2:00 */}
+              <TouchableOpacity
+                style={[
+                  styles.quickChip,
+                  !noSpecificTime &&
+                    selectedTimeId === 'afternoon' &&
+                    styles.quickChipSelected,
+                  noSpecificTime && styles.chipDisabled,
+                ]}
+                onPress={() => handleQuickTimePress('afternoon', '2:00 PM')}
+                disabled={noSpecificTime}
+                activeOpacity={0.7}
+                accessibilityRole="button"
+                accessibilityLabel="Afternoon 2:00 PM"
+              >
+                <Text
+                  style={[
+                    styles.quickChipText,
+                    !noSpecificTime &&
+                      selectedTimeId === 'afternoon' &&
+                      styles.quickChipTextSelected,
+                    noSpecificTime && styles.chipDisabledText,
+                  ]}
+                >
+                  Afternoon 2:00
+                </Text>
+              </TouchableOpacity>
+
+              {/* Evening 6:00 */}
+              <TouchableOpacity
+                style={[
+                  styles.quickChip,
+                  !noSpecificTime &&
+                    selectedTimeId === 'evening' &&
+                    styles.quickChipSelected,
+                  noSpecificTime && styles.chipDisabled,
+                ]}
+                onPress={() => handleQuickTimePress('evening', '6:00 PM')}
+                disabled={noSpecificTime}
+                activeOpacity={0.7}
+                accessibilityRole="button"
+                accessibilityLabel="Evening 6:00 PM"
+              >
+                <Text
+                  style={[
+                    styles.quickChipText,
+                    !noSpecificTime &&
+                      selectedTimeId === 'evening' &&
+                      styles.quickChipTextSelected,
+                    noSpecificTime && styles.chipDisabledText,
+                  ]}
+                >
+                  Evening 6:00
+                </Text>
+              </TouchableOpacity>
+
+              {/* Pick a time */}
+              <TouchableOpacity
+                style={[
+                  styles.quickChip,
+                  !noSpecificTime &&
+                    selectedTimeId === 'custom' &&
+                    styles.quickChipSelected,
+                  noSpecificTime && styles.chipDisabled,
+                ]}
+                onPress={handleOpenTimePicker}
+                disabled={noSpecificTime}
+                activeOpacity={0.7}
+                accessibilityRole="button"
+                accessibilityLabel="Pick a time"
+              >
+                <Text
+                  style={[
+                    styles.quickChipText,
+                    !noSpecificTime &&
+                      selectedTimeId === 'custom' &&
+                      styles.quickChipTextSelected,
+                    noSpecificTime && styles.chipDisabledText,
+                  ]}
+                >
+                  {selectedTimeId === 'custom' && selectedTimeStr
+                    ? selectedTimeStr
+                    : 'Pick a time'}
+                </Text>
+              </TouchableOpacity>
             </View>
+
+            {/* Interactive Custom Time Picker Drawer */}
+            {showTimePicker && !noSpecificTime && (
+              <View style={styles.timePickerCard}>
+                <Text style={styles.timePickerTitle}>Select Custom Time</Text>
+
+                {/* Hours Row */}
+                <Text style={styles.timePickerSubLabel}>Hour</Text>
+                <ScrollView
+                  horizontal
+                  showsHorizontalScrollIndicator={false}
+                  contentContainerStyle={styles.timePickerScrollRow}
+                >
+                  {CUSTOM_HOURS.map((hr) => {
+                    const isHrActive = customHour === hr;
+                    return (
+                      <TouchableOpacity
+                        key={hr}
+                        style={[
+                          styles.timeNumberPill,
+                          isHrActive && styles.timeNumberPillActive,
+                        ]}
+                        onPress={() => setCustomHour(hr)}
+                        activeOpacity={0.7}
+                      >
+                        <Text
+                          style={[
+                            styles.timeNumberText,
+                            isHrActive && styles.timeNumberTextActive,
+                          ]}
+                        >
+                          {hr}
+                        </Text>
+                      </TouchableOpacity>
+                    );
+                  })}
+                </ScrollView>
+
+                {/* Minutes & AM/PM Row */}
+                <View style={styles.minutePeriodRow}>
+                  <View style={styles.minuteColumn}>
+                    <Text style={styles.timePickerSubLabel}>Minute</Text>
+                    <View style={styles.minutePillsRow}>
+                      {CUSTOM_MINUTES.map((min) => {
+                        const isMinActive = customMinute === min;
+                        return (
+                          <TouchableOpacity
+                            key={min}
+                            style={[
+                              styles.timeNumberPill,
+                              isMinActive && styles.timeNumberPillActive,
+                            ]}
+                            onPress={() => setCustomMinute(min)}
+                            activeOpacity={0.7}
+                          >
+                            <Text
+                              style={[
+                                styles.timeNumberText,
+                                isMinActive && styles.timeNumberTextActive,
+                              ]}
+                            >
+                              :{min}
+                            </Text>
+                          </TouchableOpacity>
+                        );
+                      })}
+                    </View>
+                  </View>
+
+                  <View style={styles.periodColumn}>
+                    <Text style={styles.timePickerSubLabel}>Period</Text>
+                    <View style={styles.periodPillsRow}>
+                      {(['AM', 'PM'] as const).map((p) => {
+                        const isPeriodActive = customPeriod === p;
+                        return (
+                          <TouchableOpacity
+                            key={p}
+                            style={[
+                              styles.timeNumberPill,
+                              isPeriodActive && styles.timeNumberPillActive,
+                            ]}
+                            onPress={() => setCustomPeriod(p)}
+                            activeOpacity={0.7}
+                          >
+                            <Text
+                              style={[
+                                styles.timeNumberText,
+                                isPeriodActive && styles.timeNumberTextActive,
+                              ]}
+                            >
+                              {p}
+                            </Text>
+                          </TouchableOpacity>
+                        );
+                      })}
+                    </View>
+                  </View>
+                </View>
+
+                {/* Set Custom Time Button */}
+                <TouchableOpacity
+                  style={styles.applyTimeBtn}
+                  onPress={handleApplyCustomTime}
+                  activeOpacity={0.8}
+                >
+                  <Text style={styles.applyTimeBtnText}>
+                    Set {customHour}:{customMinute} {customPeriod}
+                  </Text>
+                </TouchableOpacity>
+              </View>
+            )}
 
             {/* Toggle: No specific time */}
             <View style={styles.switchRow}>
@@ -295,6 +796,8 @@ const DueDateTimeModal: React.FC<DueDateTimeModalProps> = ({
             style={styles.doneBtn}
             onPress={handleDone}
             activeOpacity={0.8}
+            accessibilityRole="button"
+            accessibilityLabel="Done"
           >
             <Text style={styles.doneBtnText}>Done</Text>
           </TouchableOpacity>
@@ -347,11 +850,17 @@ const styles = StyleSheet.create({
   scrollContent: {
     paddingBottom: 16,
   },
+  quickChipsContainer: {
+    marginBottom: 16,
+  },
   quickChipsRow: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: 8,
-    marginBottom: 16,
+    marginBottom: 8,
+  },
+  selectedPillRow: {
+    flexDirection: 'row',
   },
   quickChip: {
     height: 38,
@@ -397,8 +906,9 @@ const styles = StyleSheet.create({
     marginBottom: 14,
   },
   chevronBtn: {
-    width: 32,
-    height: 32,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -424,16 +934,16 @@ const styles = StyleSheet.create({
     flexWrap: 'wrap',
   },
   dayCell: {
-    width: `${100 / 7}%`,
-    height: 40,
+    width: '14.28%',
+    height: 42,
     justifyContent: 'center',
     alignItems: 'center',
-    marginVertical: 2,
+    marginVertical: 1,
   },
   dayCircle: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
+    width: 34,
+    height: 34,
+    borderRadius: 17,
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -467,7 +977,90 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: 8,
-    marginBottom: 20,
+    marginBottom: 16,
+  },
+  timePickerCard: {
+    backgroundColor: '#0F1E33',
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: '#1F3352',
+    padding: 14,
+    marginBottom: 16,
+  },
+  timePickerTitle: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#CAD4DF',
+    marginBottom: 8,
+  },
+  timePickerSubLabel: {
+    fontSize: 11,
+    fontWeight: '600',
+    color: '#8A97AB',
+    marginBottom: 6,
+    textTransform: 'uppercase',
+  },
+  timePickerScrollRow: {
+    flexDirection: 'row',
+    gap: 8,
+    paddingBottom: 10,
+  },
+  minutePeriodRow: {
+    flexDirection: 'row',
+    gap: 16,
+    marginBottom: 10,
+  },
+  minuteColumn: {
+    flex: 2,
+  },
+  minutePillsRow: {
+    flexDirection: 'row',
+    gap: 6,
+  },
+  periodColumn: {
+    flex: 1,
+  },
+  periodPillsRow: {
+    flexDirection: 'row',
+    gap: 6,
+  },
+  timeNumberPill: {
+    height: 34,
+    paddingHorizontal: 12,
+    borderRadius: 17,
+    backgroundColor: '#16283E',
+    borderWidth: 1,
+    borderColor: '#1F3352',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  timeNumberPillActive: {
+    backgroundColor: '#F0913A',
+    borderColor: '#F0913A',
+  },
+  timeNumberText: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#CAD4DF',
+  },
+  timeNumberTextActive: {
+    color: '#0B1A2F',
+    fontWeight: '700',
+  },
+  applyTimeBtn: {
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: '#1B3150',
+    borderWidth: 1,
+    borderColor: '#F0913A',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginTop: 6,
+  },
+  applyTimeBtnText: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#F0913A',
   },
   switchRow: {
     flexDirection: 'row',

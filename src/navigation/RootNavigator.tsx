@@ -16,7 +16,7 @@ export interface RootNavigatorProps {
 }
 
 const RootNavigator: React.FC<RootNavigatorProps> = ({
-  initialRouteName = 'Auth',
+  initialRouteName = 'Home',
   authInitialRouteName = 'Onboarding',
 }) => {
   return (

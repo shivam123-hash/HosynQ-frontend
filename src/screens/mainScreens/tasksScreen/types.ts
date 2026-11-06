@@ -71,3 +71,27 @@ export interface FamilyMemberOption {
   taskCount?: number;
 }
 
+export type ListType = 'grocery' | 'packing' | 'school' | 'party' | 'custom';
+
+export interface ListItemEntry {
+  id: string;
+  title: string;
+  quantity?: string;
+  isCompleted: boolean;
+  assignedTo?: string;
+  assignedInitial?: string;
+  assignedAvatarBg?: string;
+}
+
+export interface ListGroup {
+  id: string;
+  title: string;
+  type: ListType;
+  typeLabel: string;
+  items: ListItemEntry[];
+  sharedWith: string[];
+  isSharedWithAll: boolean;
+  isArchived?: boolean;
+}
+
+

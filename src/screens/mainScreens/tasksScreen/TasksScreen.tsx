@@ -24,9 +24,17 @@ import {
   TaskDetailModal,
   CreateTaskModal,
   ActiveFilterTag,
+  ListsOverviewSection,
+  NewListModal,
+  ListDetailModal,
+  TripPlannerModal,
+  TripScreenName,
+  TripData,
+  INITIAL_TRIP_DATA,
 } from './components';
 import {
   INITIAL_TASKS,
+  INITIAL_LISTS,
   FAMILY_MEMBERS,
   CATEGORY_META,
   PRIORITY_META,
@@ -37,6 +45,8 @@ import {
   TasksStatusTab,
   TaskFilterState,
   TaskCategory,
+  ListGroup,
+  ListType,
 } from './types';
 
 export interface TasksScreenProps {
@@ -95,6 +105,37 @@ const TasksScreen: React.FC<TasksScreenProps> = ({
   const [selectedTask, setSelectedTask] = useState<TaskItem | null>(null);
   const [createModalVisible, setCreateModalVisible] = useState(false);
   const [prefillTitle, setPrefillTitle] = useState('');
+
+  // Lists state
+  const [lists, setLists] = useState<ListGroup[]>(
+    forceEmpty ? [] : INITIAL_LISTS
+  );
+  const [selectedList, setSelectedList] = useState<ListGroup | null>(null);
+  const [newListModalVisible, setNewListModalVisible] = useState(false);
+  const [newListPrefillType, setNewListPrefillType] =
+    useState<ListType>('grocery');
+
+  // Trip planner state (TRP-01 to TRP-05 orchestrated in single container)
+  const [tripData, setTripData] = useState<TripData>(INITIAL_TRIP_DATA);
+  const [tripPlannerVisible, setTripPlannerVisible] = useState(false);
+  const [tripInitialScreen, setTripInitialScreen] = useState<TripScreenName>('dates');
+
+  const handleCreateList = useCallback((newList: ListGroup) => {
+    setLists((prev) => [newList, ...prev]);
+    setSelectedList(newList);
+  }, []);
+
+  const handleUpdateList = useCallback((updatedList: ListGroup) => {
+    setLists((prev) =>
+      prev.map((l) => (l.id === updatedList.id ? updatedList : l))
+    );
+    setSelectedList(updatedList);
+  }, []);
+
+  const handleDeleteList = useCallback((listId: string) => {
+    setLists((prev) => prev.filter((l) => l.id !== listId));
+    setSelectedList(null);
+  }, []);
 
   // Keep family member avatar and filter modal in sync
   const handleSelectMember = (memberId: string) => {
@@ -382,7 +423,21 @@ const TasksScreen: React.FC<TasksScreenProps> = ({
           onSelectTab={setMainTab}
         />
 
-        {hasZeroTasksOverall ? (
+        {mainTab === 'lists' ? (
+          <ListsOverviewSection
+            lists={lists}
+            tripData={tripData}
+            onSelectList={(list) => setSelectedList(list)}
+            onCreateNewList={(prefillType) => {
+              setNewListPrefillType(prefillType || 'grocery');
+              setNewListModalVisible(true);
+            }}
+            onOpenVacationPlanner={() => {
+              setTripInitialScreen(!tripData.step1Done ? 'dates' : 'overview');
+              setTripPlannerVisible(true);
+            }}
+          />
+        ) : hasZeroTasksOverall ? (
           /* TSK-03: No tasks yet */
           <NoTasksEmptyState
             onAddTaskPress={() => setCreateModalVisible(true)}
@@ -481,8 +536,13 @@ const TasksScreen: React.FC<TasksScreenProps> = ({
               onTabChange?.(tab);
             }}
             onAddPress={() => {
-              setPrefillTitle('');
-              setCreateModalVisible(true);
+              if (mainTab === 'lists') {
+                setNewListPrefillType('grocery');
+                setNewListModalVisible(true);
+              } else {
+                setPrefillTitle('');
+                setCreateModalVisible(true);
+              }
             }}
           />
         </View>
@@ -520,6 +580,32 @@ const TasksScreen: React.FC<TasksScreenProps> = ({
         onClose={() => setCreateModalVisible(false)}
         onCreateTask={handleCreateTask}
         initialTitle={prefillTitle}
+      />
+
+      {/* New List Modal (LST-03) */}
+      <NewListModal
+        visible={newListModalVisible}
+        prefillType={newListPrefillType}
+        onClose={() => setNewListModalVisible(false)}
+        onCreateList={handleCreateList}
+      />
+
+      {/* List Detail Modal (LST-04, LST-09) */}
+      <ListDetailModal
+        visible={Boolean(selectedList)}
+        list={selectedList}
+        onClose={() => setSelectedList(null)}
+        onUpdateList={handleUpdateList}
+        onDeleteList={handleDeleteList}
+      />
+
+      {/* Vacation Planner Modal (TRP-01 to TRP-05 orchestrated in single container) */}
+      <TripPlannerModal
+        visible={tripPlannerVisible}
+        tripData={tripData}
+        initialScreen={tripInitialScreen}
+        onClose={() => setTripPlannerVisible(false)}
+        onUpdateTripData={(updated) => setTripData(updated)}
       />
     </SafeAreaView>
   );

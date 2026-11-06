@@ -96,7 +96,7 @@ describe('TasksScreen', () => {
     expect(texts).toContain('Pay electricity bill');
   });
 
-  it('renders TaskDetailModal correctly for task without comments (no repeat badge, no empty comments box)', async () => {
+  it('renders TaskDetailModal correctly matching design for task without comments (repeat badge, comments 0, and write comment pill)', async () => {
     const task = INITIAL_TASKS.find((t) => t.id === 'tsk-1')!; // Buy Diwali sweets and diyas
     const renderer = await renderWithProvider(
       <TaskDetailModal
@@ -115,13 +115,12 @@ describe('TasksScreen', () => {
     expect(texts).toContain('Household');
     expect(texts).toContain('High priority');
 
-    // Should NOT contain repeat badge for "Doesn't repeat"
-    expect(texts).not.toContain("Doesn't repeat");
-    expect(texts).not.toContain('• Doesn’t repeat');
+    // Contains "Doesn't repeat" badge pill matching design
+    expect(texts).toContain("Doesn't repeat");
 
-    // Should NOT contain "Comments · 0" or empty "Write a comment..." box
-    expect(texts).not.toContain('Comments · 0');
-    expect(texts).not.toContain('Write a comment...');
+    // Contains "Comments · 0" and "Write a comment..." pill matching design
+    expect(texts).toContain('Comments · 0');
+    expect(texts).toContain('Write a comment...');
 
     // Should have Mark as done and Reassign buttons
     expect(texts).toContain('Mark as done');

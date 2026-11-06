@@ -285,7 +285,7 @@ const TaskDetailModal: React.FC<TaskDetailModalProps> = ({
               </TouchableOpacity>
             )}
 
-            {isRepeating && (
+            {Boolean(currentTask.repeat) && (
               <TouchableOpacity
                 style={[styles.badge, styles.repeatBadge]}
                 onPress={handleRepeatRowPress}
@@ -293,7 +293,9 @@ const TaskDetailModal: React.FC<TaskDetailModalProps> = ({
               >
                 <View style={[styles.badgeDot, styles.repeatBadgeDot]} />
                 <Text style={[styles.badgeText, styles.repeatBadgeText]}>
-                  {formatRepeatBadge(currentTask.repeat || '')}
+                  {isRepeating
+                    ? formatRepeatBadge(currentTask.repeat || '')
+                    : "Doesn't repeat"}
                 </Text>
               </TouchableOpacity>
             )}
@@ -496,21 +498,21 @@ const TaskDetailModal: React.FC<TaskDetailModalProps> = ({
           )}
 
           {/* Comments Section */}
-          {currentTask.comments && currentTask.comments.length > 0 && (
-            <View style={styles.commentsSection}>
-              <View style={styles.commentsHeaderRow}>
-                <Text style={styles.commentsTitle}>
-                  {`Comments · ${currentTask.comments.length}`}
-                </Text>
-                <TouchableOpacity
-                  onPress={() => setShowComments(true)}
-                  activeOpacity={0.7}
-                >
-                  <Text style={styles.viewAllText}>View all</Text>
-                </TouchableOpacity>
-              </View>
+          <View style={styles.commentsSection}>
+            <View style={styles.commentsHeaderRow}>
+              <Text style={styles.commentsTitle}>
+                {`Comments · ${currentTask.comments?.length || 0}`}
+              </Text>
+              <TouchableOpacity
+                onPress={() => setShowComments(true)}
+                activeOpacity={0.7}
+              >
+                <Text style={styles.viewAllText}>View all</Text>
+              </TouchableOpacity>
+            </View>
 
-              {currentTask.comments.slice(0, 2).map((comment) => (
+            {currentTask.comments && currentTask.comments.length > 0 ? (
+              currentTask.comments.slice(0, 2).map((comment) => (
                 <TouchableOpacity
                   key={comment.id}
                   style={styles.commentItem}
@@ -547,9 +549,21 @@ const TaskDetailModal: React.FC<TaskDetailModalProps> = ({
                     </View>
                   </View>
                 </TouchableOpacity>
-              ))}
-            </View>
-          )}
+              ))
+            ) : (
+              <TouchableOpacity
+                style={styles.writeCommentPill}
+                onPress={() => setShowComments(true)}
+                activeOpacity={0.7}
+                accessibilityRole="button"
+                accessibilityLabel="Write a comment"
+              >
+                <Text style={styles.writeCommentPlaceholder}>
+                  Write a comment...
+                </Text>
+              </TouchableOpacity>
+            )}
+          </View>
         </ScrollView>
 
         {/* Floating Toast Pill (When completed) */}
@@ -598,7 +612,7 @@ const TaskDetailModal: React.FC<TaskDetailModalProps> = ({
                 onPress={handleMarkDonePress}
                 activeOpacity={0.8}
               >
-                <Feather name="check" size={18} color="#FFFFFF" />
+                <Feather name="check" size={18} color="#0B1A2F" />
                 <Text style={styles.markDoneBtnText}>Mark as done</Text>
               </TouchableOpacity>
             </>
@@ -1140,7 +1154,21 @@ const styles = StyleSheet.create({
   markDoneBtnText: {
     fontSize: 16,
     fontWeight: '700',
-    color: '#FFFFFF',
+    color: '#0B1A2F',
+  },
+  writeCommentPill: {
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: '#122440',
+    borderWidth: 1,
+    borderColor: '#1F3352',
+    justifyContent: 'center',
+    paddingHorizontal: 18,
+    marginTop: 6,
+  },
+  writeCommentPlaceholder: {
+    fontSize: 14,
+    color: '#8A97AB',
   },
   reopenTaskBtn: {
     flex: 1,
