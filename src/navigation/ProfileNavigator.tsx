@@ -91,8 +91,7 @@ const Step5Wrapper: React.FC<ProfileScreenProps<'Step5'>> = ({
       onBack={() => navigation.goBack()}
       onEnterHosynQ={(selectedInterests) => {
         console.log('Profile completed! Selected interests:', selectedInterests);
-        // Navigates back to Auth or Home
-        rootNav.navigate('Auth', { screen: 'AuthMain' });
+        rootNav.navigate('Home');
       }}
     />
   );

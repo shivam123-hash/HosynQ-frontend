@@ -167,7 +167,7 @@ const OtpWrapper: React.FC<AuthScreenProps<'Otp'>> = ({
 
       // Navigate using replace so OTP screen is removed from backstack
       if (res.nextStep === 'HOME') {
-        rootNav.navigate('Profile', { screen: 'Step1' });
+        rootNav.navigate('Home');
       } else if (res.nextStep === 'CREATE_OR_JOIN_FAMILY') {
         navigation.replace('SetUpFamily');
       } else if (res.nextStep === 'WAITING_FOR_APPROVAL') {
@@ -527,7 +527,7 @@ const WelcomeFamilyWrapper: React.FC<AuthScreenProps<'WelcomeFamily'>> = ({
 );
 
 const LifeProfileIntroWrapper: React.FC<AuthScreenProps<'LifeProfileIntro'>> = ({
-  navigation,
+  navigation: _navigation,
 }) => {
   const rootNav = useNavigation<RootNavigationProp>();
 
@@ -604,7 +604,7 @@ const FamilyCreatedWrapper: React.FC<AuthScreenProps<'FamilyCreated'>> = ({
         console.log('Invite shared');
       }}
       onGoHome={() => {
-        rootNav.navigate('Profile', { screen: 'Step1' });
+        rootNav.navigate('Home');
       }}
     />
   );

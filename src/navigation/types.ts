@@ -1,13 +1,17 @@
-import type { NavigatorScreenParams, RouteProp } from '@react-navigation/native';
+import type { NavigatorScreenParams } from '@react-navigation/native';
 import type { NativeStackNavigationProp, NativeStackScreenProps } from '@react-navigation/native-stack';
 import type { SecurityOptionType, BasicProfileData } from '../screens/BasicProfileScreens';
-import type { CreateFamilyData } from '../screens/familyConnectionCreateScreens';
 import type {
   Step1FormData,
   Step2FormData,
   Step3FormData,
   Step4FormData,
 } from '../screens/completeProfileScreens';
+
+import type { BriefTimeframe, NavigationTab } from '../screens/mainScreens/homeScreen/types';
+import type { AttentionFilterType } from '../screens/mainScreens/needsAttentionScreen';
+import type { NotificationFilterType } from '../screens/mainScreens/notificationsScreen';
+import type { TasksMainTab, TasksStatusTab } from '../screens/mainScreens/tasksScreen';
 
 // Auth Stack Param List
 export type AuthStackParamList = {
@@ -78,6 +82,33 @@ export type ProfileStackParamList = {
 export type RootStackParamList = {
   Auth: NavigatorScreenParams<AuthStackParamList>;
   Profile: NavigatorScreenParams<ProfileStackParamList>;
+  Home: { initialTab?: NavigationTab } | undefined;
+  YourBrief:
+    | {
+        initialTimeframe?: BriefTimeframe;
+        forceLoading?: boolean;
+        isEmpty?: boolean;
+      }
+    | undefined;
+  NeedsAttention:
+    | {
+        initialFilter?: AttentionFilterType;
+      }
+    | undefined;
+  Notifications:
+    | {
+        isEmpty?: boolean;
+        initialFilter?: NotificationFilterType;
+      }
+    | undefined;
+  Tasks:
+    | {
+        initialTab?: NavigationTab;
+        initialMainTab?: TasksMainTab;
+        initialStatus?: TasksStatusTab;
+        forceEmpty?: boolean;
+      }
+    | undefined;
 };
 
 // Navigation Prop Types

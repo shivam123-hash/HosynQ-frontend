@@ -118,6 +118,8 @@ const OnboardingScreen: React.FC<OnboardingScreenProps> = ({
             onPress={handleSkip}
             hitSlop={{ top: 12, bottom: 12, left: 16, right: 16 }}
             activeOpacity={0.7}
+            accessibilityRole="button"
+            accessibilityLabel="Skip onboarding"
           >
             <Text style={styles.skipText}>Skip</Text>
           </TouchableOpacity>
@@ -157,11 +159,7 @@ const OnboardingScreen: React.FC<OnboardingScreenProps> = ({
                 key={index}
                 style={[
                   styles.dash,
-                  {
-                    backgroundColor: isActive
-                      ? Colors.primary
-                      : Colors.inactiveIndicator,
-                  },
+                  isActive ? styles.dashActive : styles.dashInactive,
                 ]}
               />
             );
@@ -174,12 +172,14 @@ const OnboardingScreen: React.FC<OnboardingScreenProps> = ({
             iconName="chevron-left"
             onPress={handleBack}
             disabled={isFirstSlide}
+            accessibilityLabel="Previous slide"
           />
           <NavButton
             iconName={isLastSlide ? 'check' : 'chevron-right'}
             onPress={handleNext}
             backgroundColor={Colors.primary}
             hasShadow
+            accessibilityLabel={isLastSlide ? 'Get started' : 'Next slide'}
           />
         </View>
       </View>
@@ -209,9 +209,10 @@ const styles = StyleSheet.create({
     width: 40,
   },
   skipText: {
-    color: Colors.textSecondary,
-    fontSize: RFValue(13),
+    color: '#8A97AB',
+    fontSize: RFValue(13.5),
     fontWeight: '500',
+    letterSpacing: 0.1,
   },
   skipPlaceholder: {
     width: 40,
@@ -229,10 +230,16 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   dash: {
-    width: 24,
-    height: 3.5,
+    width: 28,
+    height: 4,
     borderRadius: 2,
-    marginRight: 6,
+    marginRight: 8,
+  },
+  dashActive: {
+    backgroundColor: Colors.primary,
+  },
+  dashInactive: {
+    backgroundColor: '#1E314B',
   },
   arrowButtonsContainer: {
     flexDirection: 'row',
