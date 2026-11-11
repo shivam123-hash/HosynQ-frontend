@@ -59,7 +59,7 @@ export interface TaskFilterState {
   assignedTo: string; // 'everyone' | member name
   priority: TaskPriority | 'all';
   category: TaskCategory | 'all';
-  due: 'any' | 'overdue' | 'today' | 'this_week';
+  due: 'any' | 'overdue' | 'today' | 'this_week' | 'this_month';
 }
 
 export interface FamilyMemberOption {

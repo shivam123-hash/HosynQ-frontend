@@ -21,6 +21,19 @@ import {
   FamilyPulseSection,
   BottomNavBar,
 } from './components';
+import { CreateTaskModal } from '../tasksScreen/components';
+import { CreateEventModal } from '../calendarScreen/components';
+import { CalendarEvent } from '../calendarScreen/types';
+import {
+  AddSheetModal,
+  CreateReminderModal,
+  ScanDocumentModal,
+  AskHosynQModal,
+  UploadDocumentModal,
+  ConfirmationToast,
+  ReminderItem,
+  ToastConfig,
+} from '../addFlow';
 import {
   INITIAL_ATTENTION_ITEMS,
   INITIAL_UPCOMING_EVENTS,
@@ -51,6 +64,7 @@ export interface HomeScreenProps {
   onHeadingHomePress?: () => void;
   onAddTaskPress?: () => void;
   onAddEventPress?: () => void;
+  onAddPress?: () => void;
   onOpenBrief?: (timeframe?: BriefTimeframe) => void;
   onOpenNeedsAttention?: () => void;
   showBottomNavBar?: boolean;
@@ -70,11 +84,41 @@ const HomeScreen: React.FC<HomeScreenProps> = ({
   onHeadingHomePress,
   onAddTaskPress,
   onAddEventPress,
+  onAddPress,
   onOpenBrief,
   onOpenNeedsAttention,
 }) => {
   const [refreshing, setRefreshing] = useState(false);
   const [activeTab, setActiveTab] = useState<NavigationTab>('home');
+  const [internalCreateTaskVisible, setInternalCreateTaskVisible] = useState(false);
+  const [internalAddSheetVisible, setInternalAddSheetVisible] = useState(false);
+  const [internalEventVisible, setInternalEventVisible] = useState(false);
+  const [internalReminderVisible, setInternalReminderVisible] = useState(false);
+  const [internalScanVisible, setInternalScanVisible] = useState(false);
+  const [internalUploadVisible, setInternalUploadVisible] = useState(false);
+  const [internalAskVisible, setInternalAskVisible] = useState(false);
+
+  const [toastConfig, setToastConfig] = useState<ToastConfig>({
+    visible: false,
+    message: '',
+    type: 'success',
+  });
+
+  const showToast = (
+    message: string,
+    type: 'success' | 'cancelled' | 'info' = 'success'
+  ) => {
+    setToastConfig({
+      visible: true,
+      message,
+      type,
+      onUndo: () => setToastConfig((p) => ({ ...p, visible: false })),
+      onView: () => setToastConfig((p) => ({ ...p, visible: false })),
+    });
+    setTimeout(() => {
+      setToastConfig((p) => ({ ...p, visible: false }));
+    }, 4000);
+  };
 
   const [attentionItems] = useState<AttentionItem[]>(INITIAL_ATTENTION_ITEMS);
   const [upcomingEvents] = useState<EventItem[]>(INITIAL_UPCOMING_EVENTS);
@@ -125,13 +169,20 @@ const HomeScreen: React.FC<HomeScreenProps> = ({
     }
   };
 
+  const handleAddTaskPress = () => {
+    if (onAddTaskPress) {
+      onAddTaskPress();
+    } else {
+      setInternalCreateTaskVisible(true);
+    }
+  };
+
   const handleFabPress = () => {
-    Alert.alert('Quick Action', 'Choose an action to create:', [
-      { text: 'Add Task', onPress: onAddTaskPress },
-      { text: 'Add Event', onPress: onAddEventPress },
-      { text: 'Scan Document', onPress: onScanPress },
-      { text: 'Cancel', style: 'cancel' },
-    ]);
+    if (onAddPress) {
+      onAddPress();
+    } else {
+      setInternalAddSheetVisible(true);
+    }
   };
 
   return (
@@ -180,7 +231,7 @@ const HomeScreen: React.FC<HomeScreenProps> = ({
 
         {/* 4 Quick Action Buttons */}
         <QuickActionsBar
-          onAddTask={onAddTaskPress}
+          onAddTask={handleAddTaskPress}
           onAddEvent={onAddEventPress}
           onHeadingHome={
             onHeadingHomePress ||
@@ -271,6 +322,115 @@ const HomeScreen: React.FC<HomeScreenProps> = ({
           onAddPress={handleFabPress}
         />
       )}
+      {/* Standalone Create Task Modal */}
+      <CreateTaskModal
+        visible={internalCreateTaskVisible}
+        onClose={() => setInternalCreateTaskVisible(false)}
+        onCreateTask={(newTask) => {
+          setInternalCreateTaskVisible(false);
+          const t: TaskItem = {
+            id: `task-${Date.now()}`,
+            title: newTask.title || 'New Task',
+            dueDate: newTask.dueFormatted || 'Today',
+            assignee: 'Priya',
+            category: 'household',
+            isCompleted: false,
+            priority: 'medium',
+          };
+          setTasks((prev) => [t, ...prev]);
+          showToast('Task added to your family');
+        }}
+      />
+
+      {/* Confirmation Toast floating above bottom dock */}
+      <ConfirmationToast
+        visible={toastConfig.visible}
+        message={toastConfig.message}
+        type={toastConfig.type}
+        onUndo={toastConfig.onUndo}
+        onView={toastConfig.onView}
+      />
+
+      {/* PRIMARY ADD SHEET (ADD-01) */}
+      <AddSheetModal
+        visible={internalAddSheetVisible}
+        onClose={() => setInternalAddSheetVisible(false)}
+        onSelectTask={() => {
+          setInternalAddSheetVisible(false);
+          setInternalCreateTaskVisible(true);
+        }}
+        onSelectEvent={() => {
+          setInternalAddSheetVisible(false);
+          setInternalEventVisible(true);
+        }}
+        onSelectReminder={() => {
+          setInternalAddSheetVisible(false);
+          setInternalReminderVisible(true);
+        }}
+        onSelectList={() => {
+          setInternalAddSheetVisible(false);
+          onAllTasksPress?.();
+        }}
+        onSelectScan={() => {
+          setInternalAddSheetVisible(false);
+          setInternalScanVisible(true);
+        }}
+        onSelectUpload={() => {
+          setInternalAddSheetVisible(false);
+          setInternalUploadVisible(true);
+        }}
+        onSelectAsk={() => {
+          setInternalAddSheetVisible(false);
+          setInternalAskVisible(true);
+        }}
+      />
+
+      {/* Quick Event Creator */}
+      <CreateEventModal
+        visible={internalEventVisible}
+        onClose={() => setInternalEventVisible(false)}
+        onSaveEvent={(_event: Partial<CalendarEvent>) => {
+          setInternalEventVisible(false);
+          onOpenCalendar?.();
+          showToast('Event added to your family');
+        }}
+      />
+
+      {/* Reminder Creator (ADD-02) */}
+      <CreateReminderModal
+        visible={internalReminderVisible}
+        onClose={() => setInternalReminderVisible(false)}
+        onSaveReminder={(reminder: ReminderItem) => {
+          showToast(`Reminder set for ${reminder.whenText.toLowerCase()}`);
+        }}
+      />
+
+      {/* Document Scanner Flow (ADD-05 -> ADD-17) */}
+      <ScanDocumentModal
+        visible={internalScanVisible}
+        onClose={() => setInternalScanVisible(false)}
+        onItemsAdded={(count: number) => {
+          showToast(`Added ${count} items to your family`);
+        }}
+      />
+
+      {/* Upload Document Picker (ADD-07) */}
+      <UploadDocumentModal
+        visible={internalUploadVisible}
+        onClose={() => setInternalUploadVisible(false)}
+        onFileSelected={(_fileName: string) => {
+          setInternalScanVisible(true);
+        }}
+      />
+
+      {/* Ask HosynQ AI Assistant Flow (ADD-19 -> ADD-24) */}
+      <AskHosynQModal
+        visible={internalAskVisible}
+        onClose={() => setInternalAskVisible(false)}
+        onConfirmAdded={(title: string) => {
+          showToast(`Added "${title}" to your family`);
+        }}
+      />
     </SafeAreaView>
   );
 };

@@ -201,6 +201,7 @@ const DueDateTimeModal: React.FC<DueDateTimeModalProps> = ({
   const isSelectedToday = isSameDay(selectedDate, todayDate);
   const isSelectedTomorrow = isSameDay(selectedDate, tomorrowDate);
   const isSelectedWeekend = isSameDay(selectedDate, weekendDate);
+  const isPresetSelected = isSelectedToday || isSelectedTomorrow || isSelectedWeekend;
 
   // Generate dynamic calendar matrix for displayedYear and displayedMonth
   const calendarCells = useMemo<CalendarCell[]>(() => {
@@ -457,17 +458,23 @@ const DueDateTimeModal: React.FC<DueDateTimeModalProps> = ({
                 </TouchableOpacity>
               </View>
 
-              {/* Row 2: Selected Date Chip (Highlighted Orange) */}
+              {/* Row 2: Selected Date Chip (Highlighted Orange when custom date) */}
               <View style={styles.selectedPillRow}>
                 <TouchableOpacity
-                  style={[styles.quickChip, styles.quickChipSelected]}
+                  style={[
+                    styles.quickChip,
+                    !isPresetSelected && styles.quickChipSelected,
+                  ]}
                   onPress={handleSelectCustomPill}
                   activeOpacity={0.7}
                   accessibilityRole="button"
                   accessibilityLabel={`Selected date: ${formattedSelectedPill}`}
                 >
                   <Text
-                    style={[styles.quickChipText, styles.quickChipTextSelected]}
+                    style={[
+                      styles.quickChipText,
+                      !isPresetSelected && styles.quickChipTextSelected,
+                    ]}
                   >
                     {formattedSelectedPill}
                   </Text>
@@ -608,7 +615,9 @@ const DueDateTimeModal: React.FC<DueDateTimeModalProps> = ({
                   Afternoon 2:00
                 </Text>
               </TouchableOpacity>
+            </View>
 
+            <View style={styles.quickTimeRow}>
               {/* Evening 6:00 */}
               <TouchableOpacity
                 style={[
@@ -843,7 +852,7 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 22,
     fontWeight: '700',
-    color: '#CAD4DF',
+    color: '#FFFFFF',
     textAlign: 'center',
     marginBottom: 16,
   },
@@ -915,7 +924,7 @@ const styles = StyleSheet.create({
   monthTitle: {
     fontSize: 16,
     fontWeight: '700',
-    color: '#CAD4DF',
+    color: '#FFFFFF',
   },
   weekHeadersRow: {
     flexDirection: 'row',
@@ -949,7 +958,7 @@ const styles = StyleSheet.create({
   },
   todayCircle: {
     borderWidth: 1.5,
-    borderColor: '#3A4556',
+    borderColor: '#3A4D6B',
   },
   selectedDayCircle: {
     backgroundColor: '#F0913A',
@@ -957,10 +966,10 @@ const styles = StyleSheet.create({
   dayText: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#CAD4DF',
+    color: '#FFFFFF',
   },
   otherMonthDayText: {
-    color: '#475569',
+    color: '#4B5970',
   },
   selectedDayText: {
     color: '#0B1A2F',
@@ -1072,7 +1081,7 @@ const styles = StyleSheet.create({
   switchLabel: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#CAD4DF',
+    color: '#FFFFFF',
   },
   doneBtn: {
     height: 52,

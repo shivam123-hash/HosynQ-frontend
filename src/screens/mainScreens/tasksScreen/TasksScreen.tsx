@@ -310,6 +310,9 @@ const TasksScreen: React.FC<TasksScreenProps> = ({
         } else if (filters.due === 'this_week') {
           if (item.dueType !== 'this_week' && item.dueType !== 'today')
             return false;
+        } else if (filters.due === 'this_month') {
+          // Includes tasks due today, this week, or within the current month
+          if (item.dueType === 'overdue') return false;
         }
       }
 
@@ -384,7 +387,9 @@ const TasksScreen: React.FC<TasksScreenProps> = ({
             ? 'Overdue'
             : filters.due === 'today'
             ? 'Due today'
-            : 'Due this week',
+            : filters.due === 'this_week'
+            ? 'Due this week'
+            : 'Due this month',
         onRemove: () => setFilters((prev) => ({ ...prev, due: 'any' })),
       });
     }

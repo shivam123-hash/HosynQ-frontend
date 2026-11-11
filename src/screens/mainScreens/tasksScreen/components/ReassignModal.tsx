@@ -162,7 +162,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   sheetContainer: {
-    backgroundColor: '#0F213A',
+    backgroundColor: '#0B1A2F',
     borderTopLeftRadius: 28,
     borderTopRightRadius: 28,
     borderWidth: 1,

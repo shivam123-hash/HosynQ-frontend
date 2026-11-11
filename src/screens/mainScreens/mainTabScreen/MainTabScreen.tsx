@@ -12,9 +12,21 @@ import BottomNavBar from '../homeScreen/components/BottomNavBar';
 import { NavigationTab, BriefTimeframe } from '../homeScreen/types';
 import HomeScreen from '../homeScreen/HomeScreen';
 import TasksScreen from '../tasksScreen/TasksScreen';
+import CalendarScreen from '../calendarScreen/CalendarScreen';
 import { CreateTaskModal } from '../tasksScreen/components';
+import { CreateEventModal } from '../calendarScreen/components';
 import { TaskItem } from '../tasksScreen/types';
-import { INITIAL_UPCOMING_EVENTS } from '../homeScreen/mockData';
+import { CalendarEvent } from '../calendarScreen/types';
+import {
+  AddSheetModal,
+  CreateReminderModal,
+  ScanDocumentModal,
+  AskHosynQModal,
+  UploadDocumentModal,
+  ConfirmationToast,
+  ReminderItem,
+  ToastConfig,
+} from '../addFlow';
 
 export interface MainTabScreenProps {
   initialTab?: NavigationTab;
@@ -34,7 +46,39 @@ const MainTabScreen: React.FC<MainTabScreenProps> = ({
   onOpenNeedsAttention,
 }) => {
   const [activeTab, setActiveTab] = useState<NavigationTab>(initialTab);
-  const [createModalVisible, setCreateModalVisible] = useState(false);
+  const [addSheetVisible, setAddSheetVisible] = useState(false);
+  const [createTaskModalVisible, setCreateTaskModalVisible] = useState(false);
+  const [createEventModalVisible, setCreateEventModalVisible] = useState(false);
+  const [createReminderModalVisible, setCreateReminderModalVisible] = useState(false);
+  const [scanModalVisible, setScanModalVisible] = useState(false);
+  const [uploadModalVisible, setUploadModalVisible] = useState(false);
+  const [askModalVisible, setAskModalVisible] = useState(false);
+
+  const [toastConfig, setToastConfig] = useState<ToastConfig>({
+    visible: false,
+    message: '',
+    type: 'success',
+  });
+
+  const showToast = (
+    message: string,
+    type: 'success' | 'cancelled' | 'info' = 'success'
+  ) => {
+    setToastConfig({
+      visible: true,
+      message,
+      type,
+      onUndo: () => {
+        setToastConfig((prev) => ({ ...prev, visible: false }));
+      },
+      onView: () => {
+        setToastConfig((prev) => ({ ...prev, visible: false }));
+      },
+    });
+    setTimeout(() => {
+      setToastConfig((prev) => ({ ...prev, visible: false }));
+    }, 4000);
+  };
 
   // Sync activeTab when initialTab prop updates from navigation
   useEffect(() => {
@@ -59,6 +103,8 @@ const MainTabScreen: React.FC<MainTabScreenProps> = ({
             onOpenNeedsAttention={onOpenNeedsAttention}
             onAllTasksPress={() => setActiveTab('tasks')}
             onOpenCalendar={() => setActiveTab('calendar')}
+            onAddTaskPress={() => setCreateTaskModalVisible(true)}
+            onAddEventPress={() => setActiveTab('calendar')}
           />
         )}
 
@@ -75,38 +121,12 @@ const MainTabScreen: React.FC<MainTabScreenProps> = ({
         )}
 
         {activeTab === 'calendar' && (
-          <View style={styles.placeholderContainer}>
-            {/* Unified App Top Bar */}
-            <AppTopBar
-              onAvatarPress={onProfilePress}
-              onExplorePress={onExplorePress}
-              onNotificationsPress={onNotificationsPress}
-            />
-
-            <ScrollView
-              contentContainerStyle={styles.placeholderContent}
-              showsVerticalScrollIndicator={false}
-            >
-              <Text style={styles.calendarDateText}>Friday, 30 October</Text>
-              <Text style={styles.sectionHeading}>Upcoming family events</Text>
-
-              {INITIAL_UPCOMING_EVENTS.map((event) => (
-                <View key={event.id} style={styles.eventCard}>
-                  <View style={styles.eventTimeColumn}>
-                    <Text style={styles.eventTime}>{event.time}</Text>
-                    <Text style={styles.eventPeriod}>{event.period}</Text>
-                  </View>
-                  <View style={styles.eventDivider} />
-                  <View style={styles.eventDetails}>
-                    <Text style={styles.eventTitle}>{event.title}</Text>
-                    <Text style={styles.eventLocation}>
-                      {`${event.location} · ${event.attendees}`}
-                    </Text>
-                  </View>
-                </View>
-              ))}
-            </ScrollView>
-          </View>
+          <CalendarScreen
+            onProfilePress={onProfilePress}
+            onNotificationsPress={onNotificationsPress}
+            onExplorePress={onExplorePress}
+            onOpenChat={() => setActiveTab('chat')}
+          />
         )}
 
         {activeTab === 'chat' && (
@@ -147,17 +167,108 @@ const MainTabScreen: React.FC<MainTabScreenProps> = ({
         <BottomNavBar
           activeTab={activeTab}
           onTabChange={setActiveTab}
-          onAddPress={() => setCreateModalVisible(true)}
+          onAddPress={() => setAddSheetVisible(true)}
         />
       </View>
 
-      {/* Global Quick Task Creator from Center FAB */}
+      {/* Confirmation Toast floating above bottom dock */}
+      <ConfirmationToast
+        visible={toastConfig.visible}
+        message={toastConfig.message}
+        type={toastConfig.type}
+        onUndo={toastConfig.onUndo}
+        onView={toastConfig.onView}
+      />
+
+      {/* PRIMARY ADD SHEET (ADD-01) */}
+      <AddSheetModal
+        visible={addSheetVisible}
+        onClose={() => setAddSheetVisible(false)}
+        onSelectTask={() => {
+          setAddSheetVisible(false);
+          setCreateTaskModalVisible(true);
+        }}
+        onSelectEvent={() => {
+          setAddSheetVisible(false);
+          setCreateEventModalVisible(true);
+        }}
+        onSelectReminder={() => {
+          setAddSheetVisible(false);
+          setCreateReminderModalVisible(true);
+        }}
+        onSelectList={() => {
+          setAddSheetVisible(false);
+          setActiveTab('tasks');
+        }}
+        onSelectScan={() => {
+          setAddSheetVisible(false);
+          setScanModalVisible(true);
+        }}
+        onSelectUpload={() => {
+          setAddSheetVisible(false);
+          setUploadModalVisible(true);
+        }}
+        onSelectAsk={() => {
+          setAddSheetVisible(false);
+          setAskModalVisible(true);
+        }}
+      />
+
+      {/* Quick Task Creator (Task screen modal) */}
       <CreateTaskModal
-        visible={createModalVisible}
-        onClose={() => setCreateModalVisible(false)}
+        visible={createTaskModalVisible}
+        onClose={() => setCreateTaskModalVisible(false)}
         onCreateTask={(_task: Partial<TaskItem>) => {
           setActiveTab('tasks');
-          setCreateModalVisible(false);
+          setCreateTaskModalVisible(false);
+          showToast('Task added to your family');
+        }}
+      />
+
+      {/* Quick Event Creator (Calendar screen modal) */}
+      <CreateEventModal
+        visible={createEventModalVisible}
+        onClose={() => setCreateEventModalVisible(false)}
+        onSaveEvent={(_event: Partial<CalendarEvent>) => {
+          setActiveTab('calendar');
+          setCreateEventModalVisible(false);
+          showToast('Event added to your family');
+        }}
+      />
+
+      {/* Reminder Creator (ADD-02) */}
+      <CreateReminderModal
+        visible={createReminderModalVisible}
+        onClose={() => setCreateReminderModalVisible(false)}
+        onSaveReminder={(reminder: ReminderItem) => {
+          showToast(`Reminder set for ${reminder.whenText.toLowerCase()}`);
+        }}
+      />
+
+      {/* Document Scanner Flow (ADD-05 -> ADD-17) */}
+      <ScanDocumentModal
+        visible={scanModalVisible}
+        onClose={() => setScanModalVisible(false)}
+        onItemsAdded={(count: number) => {
+          showToast(`Added ${count} items to your family`);
+        }}
+      />
+
+      {/* Upload Document Picker (ADD-07) */}
+      <UploadDocumentModal
+        visible={uploadModalVisible}
+        onClose={() => setUploadModalVisible(false)}
+        onFileSelected={(_fileName: string) => {
+          setScanModalVisible(true);
+        }}
+      />
+
+      {/* Ask HosynQ AI Assistant Flow (ADD-19 -> ADD-24) */}
+      <AskHosynQModal
+        visible={askModalVisible}
+        onClose={() => setAskModalVisible(false)}
+        onConfirmAdded={(title: string) => {
+          showToast(`Added "${title}" to your family`);
         }}
       />
     </View>
@@ -189,58 +300,10 @@ const styles = StyleSheet.create({
     paddingTop: 20,
     paddingBottom: 150,
   },
-  calendarDateText: {
-    fontSize: 24,
-    fontWeight: '700',
-    color: '#CAD4DF',
-    marginBottom: 8,
-  },
   sectionHeading: {
     fontSize: 14,
     color: '#8A97AB',
     marginBottom: 16,
-  },
-  eventCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#122440',
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: '#1F3352',
-    padding: 16,
-    marginBottom: 12,
-  },
-  eventTimeColumn: {
-    width: 50,
-    alignItems: 'center',
-  },
-  eventTime: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: '#CAD4DF',
-  },
-  eventPeriod: {
-    fontSize: 11,
-    color: '#8A97AB',
-  },
-  eventDivider: {
-    width: 1,
-    height: 36,
-    backgroundColor: '#1F3352',
-    marginHorizontal: 14,
-  },
-  eventDetails: {
-    flex: 1,
-  },
-  eventTitle: {
-    fontSize: 15,
-    fontWeight: '600',
-    color: '#CAD4DF',
-    marginBottom: 2,
-  },
-  eventLocation: {
-    fontSize: 13,
-    color: '#8A97AB',
   },
   chatThreadCard: {
     backgroundColor: '#122440',
