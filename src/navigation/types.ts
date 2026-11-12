@@ -30,8 +30,21 @@ export type AuthStackParamList = {
   };
   TooManyAttempts: { mobileNumber: string };
   Email: undefined;
-  CheckEmail: { email: string };
+  CheckEmail: {
+    email: string;
+    verificationId?: string;
+    devVerifyUrl?: string;
+    devToken?: string;
+    resendCooldownSeconds?: number;
+  };
   AddMobileNumber: { email?: string; defaultPhoneNumber?: string } | undefined;
+  AttachPhoneOtp: {
+    phoneNumber: string;
+    verificationId: string;
+    devOtp?: string;
+    resendCooldownSeconds?: number;
+    email?: string;
+  };
   BasicProfile: { initialData?: Partial<BasicProfileData> } | undefined;
   DeviceSecurity: { initialOption?: SecurityOptionType } | undefined;
   NotificationPermission: undefined;
@@ -45,6 +58,7 @@ export type AuthStackParamList = {
     inviterName?: string;
     memberCount?: string;
     sentTime?: string;
+    inviteToken?: string;
   } | undefined;
   WaitingForApproval: {
     familyId?: string;
@@ -72,6 +86,15 @@ export type ProfileStackParamList = {
   Step3: { initialData?: Partial<Step3FormData> } | undefined;
   Step4: { initialData?: Partial<Step4FormData> } | undefined;
   Step5: undefined;
+  DocumentDetailReminders: { documentId?: string } | undefined;
+  SeniorMedicineSchedule: undefined;
+  AddMedicine: undefined;
+  WhenToTakeMedicine: undefined;
+  Vaccination: undefined;
+  AddVaccine: undefined;
+  ChildGrowth: undefined;
+  ChildMilestones: undefined;
+  InterestsAndActivities: undefined;
 };
 
 // Root Stack Param List

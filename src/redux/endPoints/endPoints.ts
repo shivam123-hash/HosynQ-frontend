@@ -1,12 +1,15 @@
 import { Platform } from 'react-native';
 
 // Local development host configuration:
-// iOS Simulator accesses localhost directly: http://localhost:5000/api/v1
-// Android Emulator accesses host via 10.0.2.2: http://10.0.2.2:5000/api/v1
+// - iOS Simulator accesses localhost: http://localhost:5000/api/v1
+// - Real Android Device accesses via Mac's Wi-Fi IP: http://192.168.1.8:5000/api/v1
+// - (Or if using USB cable with `adb reverse tcp:5000 tcp:5000`, localhost:5000 can be used)
+const DEV_MACHINE_IP = '192.168.1.8';
+
 export const API_BASE_URL = Platform.select({
-  android: 'http://10.0.2.2:5000/api/v1',
+  android: `http://${DEV_MACHINE_IP}:5000/api/v1`,
   ios: 'http://localhost:5000/api/v1',
-  default: 'http://localhost:5000/api/v1',
+  default: `http://${DEV_MACHINE_IP}:5000/api/v1`,
 });
 
 const API_ROUTES = {
@@ -16,8 +19,7 @@ const API_ROUTES = {
   AUTH_REFRESH: 'auth/refresh',
   AUTH_EMAIL_SEND_LINK: 'auth/email/send-link',
   AUTH_EMAIL_VERIFY: 'auth/email/verify',
-  AUTH_EMAIL_STATUS: (verificationId: string) =>
-    `auth/email/status/${verificationId}`,
+  AUTH_EMAIL_STATUS: (verificationId: string) => `auth/email/status/${verificationId}`,
   AUTH_EMAIL_ATTACH: 'auth/email/attach',
   AUTH_PHONE_ATTACH: 'auth/phone/attach',
   AUTH_LOGOUT: 'auth/logout',
@@ -37,6 +39,8 @@ const API_ROUTES = {
   FAMILY_MEMBER_BY_ID: (memberId: string) => `family/members/${memberId}`,
   FAMILY_MEMBER_ROLE: (memberId: string) => `family/members/${memberId}/role`,
   FAMILY_INVITATIONS: 'family/invitations',
+  FAMILY_INVITATION_PREVIEW: 'family/invitations/preview',
+  FAMILY_MY_FAMILY: 'family/my-family',
   FAMILY_TRANSFER_OWNERSHIP: 'family/transfer-ownership',
   FAMILY_LIFE_PROFILE: 'family/life-profile',
 };

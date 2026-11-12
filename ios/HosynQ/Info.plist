@@ -41,6 +41,8 @@
 	<string>HosynQ needs access to your camera to take photos of your certificates and profile picture.</string>
 	<key>NSPhotoLibraryAddUsageDescription</key>
 	<string>HosynQ needs access to save photos to your photo library.</string>
+	<key>NSFaceIDUsageDescription</key>
+	<string>HosynQ uses Face ID to quickly and securely unlock your family account.</string>
 	<key>RCTNewArchEnabled</key>
 	<true/>
 	<key>UILaunchStoryboardName</key>
@@ -67,6 +69,17 @@
 		<string>Feather.ttf</string>
 		<string>Ionicons.ttf</string>
 		<string>MaterialIcons.ttf</string>
+	</array>
+	<key>CFBundleURLTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleTypeRole</key>
+			<string>Editor</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>com.googleusercontent.apps.187094340142-kgn9erc0p5a4c7mfjgkv854c2635pore</string>
+			</array>
+		</dict>
 	</array>
 </dict>
 </plist>

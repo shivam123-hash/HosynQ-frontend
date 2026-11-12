@@ -3,7 +3,6 @@ import {
   TouchableOpacity,
   Text,
   StyleSheet,
-  ActivityIndicator,
   View,
   StyleProp,
   ViewStyle,
@@ -11,6 +10,7 @@ import {
   DimensionValue,
 } from 'react-native';
 import Colors from '../units/Colors';
+import ThreeDotsLoader from './ThreeDotsLoader';
 
 export interface CommonBtnProps {
   title: string;
@@ -76,7 +76,7 @@ const CommonBtn: React.FC<CommonBtnProps> = ({
       ]}
     >
       {loading ? (
-        <ActivityIndicator color={textColor} size="small" />
+        <ThreeDotsLoader color={textColor} />
       ) : (
         <View style={styles.content}>
           {leftComponent}

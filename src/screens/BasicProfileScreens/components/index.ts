@@ -2,6 +2,8 @@ import ChooseAvatarBottomSheet, {
   ChooseAvatarBottomSheetProps,
   AvatarSelection,
   AVATAR_COLORS,
+  AVATAR_COLOR_OPTIONS,
+  AvatarColorOption,
 } from './ChooseAvatarBottomSheet';
 import SecurityOptionCard, {
   SecurityOptionCardProps,
@@ -13,6 +15,7 @@ import NotificationPreviewCard, {
 export {
   ChooseAvatarBottomSheet,
   AVATAR_COLORS,
+  AVATAR_COLOR_OPTIONS,
   SecurityOptionCard,
   NotificationPreviewCard,
 };
@@ -20,6 +23,7 @@ export {
 export type {
   ChooseAvatarBottomSheetProps,
   AvatarSelection,
+  AvatarColorOption,
   SecurityOptionCardProps,
   NotificationPreviewCardProps,
 };

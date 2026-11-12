@@ -13,7 +13,13 @@ import {
   verifyOtp,
   clearAuthError,
 } from '../redux/features/mobileFlow/authSlice';
+import {
+  attachPhone,
+  verifyAttachedPhone,
+  clearPhoneError,
+} from '../redux/features/emailFlow/authSlice';
 import { getDeviceInfo } from '../units/deviceInfo';
+import { signInWithGoogle } from '../services';
 // Onboarding Screens
 import OnboardingScreen from '../screens/onBordingScreens/OnboardingScreen';
 // Auth Screens
@@ -60,17 +66,56 @@ const OnboardingWrapper: React.FC<AuthScreenProps<'Onboarding'>> = ({
 
 const AuthMainWrapper: React.FC<AuthScreenProps<'AuthMain'>> = ({
   navigation,
-}) => (
-  <AuthCreateAccountScreen
-    onBack={() => {
-      if (navigation.canGoBack()) {
-        navigation.goBack();
+}) => {
+  const [googleLoading, setGoogleLoading] = React.useState(false);
+
+  const handleGoogleSignIn = async () => {
+    try {
+      setGoogleLoading(true);
+      const res = await signInWithGoogle();
+      if (res.success && res.user) {
+        Alert.alert(
+          'Google Sign-In Successful',
+          `Logged in as: ${res.user.name || res.user.email}\nEmail: ${res.user.email}`,
+          [
+            {
+              text: 'OK',
+              onPress: () => {
+                navigation.replace('BasicProfile');
+              },
+            },
+          ],
+        );
+      } else if (!res.cancelled) {
+        Alert.alert(
+          'Google Sign-In Error',
+          res.error || 'Failed to sign in with Google',
+        );
       }
-    }}
-    onContinueMobile={() => navigation.navigate('MobileNumber')}
-    onUseEmail={() => navigation.navigate('Email')}
-  />
-);
+    } catch (err: any) {
+      Alert.alert(
+        'Google Sign-In Error',
+        err?.message || 'Something went wrong',
+      );
+    } finally {
+      setGoogleLoading(false);
+    }
+  };
+
+  return (
+    <AuthCreateAccountScreen
+      onBack={() => {
+        if (navigation.canGoBack()) {
+          navigation.goBack();
+        }
+      }}
+      onContinueMobile={() => navigation.navigate('MobileNumber')}
+      onUseEmail={() => navigation.navigate('Email')}
+      onContinueGoogle={handleGoogleSignIn}
+      isGoogleLoading={googleLoading}
+    />
+  );
+};
 
 const MobileNumberWrapper: React.FC<AuthScreenProps<'MobileNumber'>> = ({
   navigation,
@@ -239,11 +284,15 @@ const EmailWrapper: React.FC<AuthScreenProps<'Email'>> = ({ navigation }) => (
         navigation.navigate('AuthMain');
       }
     }}
-    onSendLink={(email) =>
+    onSendLink={(res) => {
       navigation.navigate('CheckEmail', {
-        email: email && email.trim().length > 0 ? email : 'priya.sharma@gmail.com',
-      })
-    }
+        email: typeof res === 'string' ? res : res.email,
+        verificationId: res?.verificationId,
+        devVerifyUrl: res?.verifyUrl,
+        devToken: res?.token,
+        resendCooldownSeconds: res?.resendCooldownSeconds || 60,
+      });
+    }}
   />
 );
 
@@ -253,6 +302,10 @@ const CheckEmailWrapper: React.FC<AuthScreenProps<'CheckEmail'>> = ({
 }) => (
   <CheckEmailScreen
     email={route.params?.email || 'priya.sharma@gmail.com'}
+    verificationId={route.params?.verificationId}
+    devVerifyUrl={route.params?.devVerifyUrl}
+    devToken={route.params?.devToken}
+    resendCooldownSeconds={route.params?.resendCooldownSeconds || 60}
     onBack={() => {
       if (navigation.canGoBack()) {
         navigation.goBack();
@@ -267,9 +320,9 @@ const CheckEmailWrapper: React.FC<AuthScreenProps<'CheckEmail'>> = ({
         navigation.navigate('Email');
       }
     }}
-    onResendLink={() =>
-      navigation.navigate('AddMobileNumber', { email: route.params?.email })
-    }
+    onResendLink={() => {
+      console.log('Resend triggered in CheckEmailWrapper');
+    }}
   />
 );
 
@@ -278,22 +331,117 @@ const AddMobileNumberWrapper: React.FC<AuthScreenProps<'AddMobileNumber'>> = ({
   route,
 }) => (
   <AddMobileNumberScreen
-    email={route.params?.email || 'priya.sharma@gmail.com'}
-    defaultPhoneNumber={route.params?.defaultPhoneNumber || '98765 43210'}
+    email={route.params?.email}
+    defaultPhoneNumber={route.params?.defaultPhoneNumber}
     onBack={() => {
       if (navigation.canGoBack()) {
         navigation.goBack();
       } else {
-        navigation.navigate('CheckEmail', { email: route.params?.email || 'priya.sharma@gmail.com' });
+        navigation.navigate('CheckEmail', {
+          email: route.params?.email || 'team@gmail.com',
+        });
       }
     }}
-    onSendCode={(phone) => {
-      console.log('Phone added:', phone);
+    onSendCode={(res) => {
+      console.log('[AddMobileNumberWrapper] Code sent, navigating to AttachPhoneOtp:', res);
+      navigation.navigate('AttachPhoneOtp', {
+        phoneNumber: res?.phoneNumber || '',
+        verificationId: res?.verificationId || '',
+        devOtp: res?.otp,
+        resendCooldownSeconds: res?.resendCooldownSeconds || 60,
+        email: route.params?.email,
+      });
+    }}
+    onSkip={() => {
+      console.log('[AddMobileNumberWrapper] Skipping phone attach, going to BasicProfile');
       navigation.replace('BasicProfile');
     }}
     onContinueWithGoogle={() => navigation.replace('AuthMain')}
   />
 );
+
+const AttachPhoneOtpWrapper: React.FC<AuthScreenProps<'AttachPhoneOtp'>> = ({
+  navigation,
+  route,
+}) => {
+  const dispatch = useAppDispatch();
+  const {
+    phoneLoading,
+    phoneError,
+    phoneVerificationId,
+    attachedPhoneNumber,
+    devPhoneOtp,
+  } = useAppSelector((state) => state.emailAuth);
+
+  const verificationId = route.params?.verificationId || phoneVerificationId;
+  const phoneNumber = route.params?.phoneNumber || attachedPhoneNumber || '';
+  const devOtp = route.params?.devOtp || devPhoneOtp;
+  const cooldown = route.params?.resendCooldownSeconds || 60;
+  const email = route.params?.email;
+
+  React.useEffect(() => {
+    dispatch(clearPhoneError());
+  }, [dispatch]);
+
+  const handleVerify = async (code: string) => {
+    if (!verificationId) {
+      Alert.alert(
+        'Session Expired',
+        'Verification session expired. Please request a new OTP.'
+      );
+      navigation.navigate('AddMobileNumber', { email });
+      return;
+    }
+
+    try {
+      const res = await dispatch(
+        verifyAttachedPhone({
+          verificationId,
+          otp: code,
+          deviceInfo: getDeviceInfo(),
+        })
+      ).unwrap();
+
+      console.log('[AttachPhoneOtp] Phone attached verified:', res);
+      // Navigate to BasicProfile as requested
+      navigation.replace('BasicProfile');
+    } catch (err: any) {
+      console.log('[AttachPhoneOtp] verify error:', err);
+    }
+  };
+
+  const handleResendOtp = async () => {
+    if (!phoneNumber) return;
+    try {
+      await dispatch(attachPhone({ phoneNumber })).unwrap();
+    } catch (err: any) {
+      console.log('[AttachPhoneOtp] resend error:', err);
+    }
+  };
+
+  return (
+    <OtpScreen
+      mobileNumber={phoneNumber}
+      devOtp={devOtp}
+      resendCooldownSeconds={cooldown}
+      loading={phoneLoading}
+      errorMessage={phoneError}
+      onBack={() => {
+        if (navigation.canGoBack()) {
+          navigation.goBack();
+        } else {
+          navigation.navigate('AddMobileNumber', { email });
+        }
+      }}
+      onChangeNumber={() => {
+        navigation.navigate('AddMobileNumber', { email });
+      }}
+      onVerify={handleVerify}
+      onResendOtp={handleResendOtp}
+      onSendNewCode={handleResendOtp}
+    />
+  );
+};
 
 const BasicProfileWrapper: React.FC<AuthScreenProps<'BasicProfile'>> = ({
   navigation,
@@ -397,9 +545,18 @@ const JoinFamilyIdWrapper: React.FC<AuthScreenProps<'JoinFamilyId'>> = ({
         navigation.navigate('SetUpFamily');
       }
     }}
-    onSendJoinRequest={(familyId) => {
-      console.log('Join request sent for ID:', familyId);
-      navigation.navigate('FamilyInviteFound', { familyId });
+    onSendJoinRequest={(data) => {
+      console.log('Join request sent successfully:', data);
+      const targetFamilyId =
+        typeof data === 'string' ? data : data.familyCode || data.familyId;
+      const targetFamilyName =
+        typeof data === 'string' ? 'The Sharma Family' : data.familyName;
+
+      navigation.navigate('WaitingForApproval', {
+        familyId: targetFamilyId,
+        familyName: targetFamilyName,
+        requestedTime: 'Just now',
+      });
     }}
     onScanQrCode={() => {
       console.log('Scan QR Code clicked');
@@ -418,6 +575,7 @@ const FamilyInviteFoundWrapper: React.FC<AuthScreenProps<'FamilyInviteFound'>> =
       inviterName={route.params?.inviterName || 'Priya'}
       memberCount={route.params?.memberCount || '5 people'}
       sentTime={route.params?.sentTime || 'Today, 10:48 AM'}
+      inviteToken={route.params?.inviteToken}
       onBack={() => {
         if (navigation.canGoBack()) {
           navigation.goBack();
@@ -425,11 +583,19 @@ const FamilyInviteFoundWrapper: React.FC<AuthScreenProps<'FamilyInviteFound'>> =
           navigation.navigate('JoinFamilyId');
         }
       }}
-      onAskToJoin={() => {
-        console.log('Ask to join clicked');
+      onAskToJoin={(res) => {
+        console.log('Ask to join succeeded:', res);
         navigation.navigate('WaitingForApproval', {
-          familyId: route.params?.familyId || 'HSQ-4821',
-          familyName: route.params?.familyName || 'The Sharma Family',
+          familyId:
+            res?.familyCode ||
+            res?.familyId ||
+            route.params?.familyId ||
+            'HSQ-4821',
+          familyName:
+            res?.familyName ||
+            route.params?.familyName ||
+            'The Sharma Family',
+          requestedTime: 'Just now',
         });
       }}
       onNotMyFamily={() => {
@@ -468,9 +634,12 @@ const WaitingForApprovalWrapper: React.FC<AuthScreenProps<'WaitingForApproval'>>
         familyName: route.params?.familyName || 'The Sharma Family',
       });
     }}
-    onApproved={() => {
+    onApproved={(familyData) => {
       navigation.navigate('WelcomeFamily', {
-        familyName: route.params?.familyName || 'The Sharma Family',
+        familyName:
+          familyData?.name ||
+          route.params?.familyName ||
+          'The Sharma Family',
       });
     }}
     onRejected={() => {
@@ -577,7 +746,7 @@ const CreateFamilyWrapper: React.FC<AuthScreenProps<'CreateFamily'>> = ({
       console.log('Family created:', data);
       navigation.navigate('FamilyCreated', {
         familyName: data.familyName,
-        familyId: 'HSQ-4821',
+        familyId: data.familyCode || 'HSQ-4821',
       });
     }}
   />
@@ -588,11 +757,23 @@ const FamilyCreatedWrapper: React.FC<AuthScreenProps<'FamilyCreated'>> = ({
   route,
 }) => {
   const rootNav = useNavigation<RootNavigationProp>();
+  const familyState = useAppSelector((state) => state.family);
+
+  const displayFamilyName =
+    route.params?.familyName ||
+    familyState.family?.name ||
+    'The Sharma Family';
+
+  const displayFamilyId =
+    route.params?.familyId ||
+    familyState.familyCode ||
+    familyState.family?.familyCode ||
+    'HSQ-4821';
 
   return (
     <FamilyCreatedScreen
-      familyName={route.params?.familyName || 'The Sharma Family'}
-      familyId={route.params?.familyId || 'HSQ-4821'}
+      familyName={displayFamilyName}
+      familyId={displayFamilyId}
       onBack={() => {
         if (navigation.canGoBack()) {
           navigation.goBack();
@@ -639,6 +820,7 @@ const AuthNavigator: React.FC<AuthNavigatorProps> = ({
       <Stack.Screen name="Email" component={EmailWrapper} />
       <Stack.Screen name="CheckEmail" component={CheckEmailWrapper} />
       <Stack.Screen name="AddMobileNumber" component={AddMobileNumberWrapper} />
+      <Stack.Screen name="AttachPhoneOtp" component={AttachPhoneOtpWrapper} />
       <Stack.Screen name="BasicProfile" component={BasicProfileWrapper} />
       <Stack.Screen name="DeviceSecurity" component={DeviceSecurityWrapper} />
       <Stack.Screen

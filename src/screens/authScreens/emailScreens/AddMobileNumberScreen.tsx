@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -14,38 +14,109 @@ import CommonBtn from '../../../components/CommonBtn';
 import CommonInput from '../../../components/CommonInput';
 import KeyboardAvoidingWrapper from '../../../components/KeyboardAvoidingWrapper';
 import { AccountAlreadyExistsModal } from './components';
+import { useAppDispatch, useAppSelector } from '../../../redux';
+import {
+  attachPhone,
+  clearPhoneError,
+} from '../../../redux/features/emailFlow/authSlice';
 
 export interface AddMobileNumberScreenProps {
   email?: string;
   defaultPhoneNumber?: string;
   onBack?: () => void;
-  onSendCode?: (phoneNumber: string) => void;
+  onSendCode?: (response: any) => void;
   onSkip?: () => void;
   onContinueWithGoogle?: () => void;
+  loading?: boolean;
+  errorMessage?: string | null;
 }
 
 const AddMobileNumberScreen: React.FC<AddMobileNumberScreenProps> = ({
-  email = 'priya.sharma@gmail.com',
-  defaultPhoneNumber = '98765 43210',
+  email: propEmail,
+  defaultPhoneNumber = '',
   onBack,
   onSendCode,
   onSkip,
   onContinueWithGoogle,
+  loading: externalLoading,
+  errorMessage: externalErrorMessage,
 }) => {
   const insets = useSafeAreaInsets();
+  const dispatch = useAppDispatch();
+  const {
+    email: reduxEmail,
+    phoneLoading,
+    phoneError,
+  } = useAppSelector((state) => state.emailAuth);
+
+  const activeEmail = propEmail || reduxEmail || 'team@gmail.com';
   const [phoneNumber, setPhoneNumber] = useState(defaultPhoneNumber);
+  const [localError, setLocalError] = useState<string | null>(null);
   const [isModalVisible, setIsModalVisible] = useState(false);
 
-  const handleSendCode = () => {
-    onSendCode?.(phoneNumber || '98765 43210');
+  const cleanDigits = phoneNumber.replace(/\D/g, '');
+  const loading = externalLoading ?? phoneLoading;
+  const rawError = externalErrorMessage ?? localError ?? phoneError;
+  const isConflict =
+    typeof rawError === 'string' &&
+    (rawError.toLowerCase().includes('already in use') ||
+      rawError.toLowerCase().includes('conflict'));
+
+  const errorMessage = isConflict ? null : rawError;
+  const isButtonDisabled = loading || cleanDigits.length !== 10 || Boolean(errorMessage);
+
+  useEffect(() => {
+    dispatch(clearPhoneError());
+    setLocalError(null);
+  }, [dispatch]);
+
+  // Show modal if phone number is already attached to another account
+  useEffect(() => {
+    if (isConflict) {
+      setIsModalVisible(true);
+    }
+  }, [isConflict]);
+
+  const handlePhoneChange = (text: string) => {
+    const digits = text.replace(/\D/g, '');
+    if (digits.length <= 10) {
+      setPhoneNumber(digits);
+      setLocalError(null);
+      if (phoneError) {
+        dispatch(clearPhoneError());
+      }
+    } else {
+      setLocalError('Please enter a valid 10-digit mobile number');
+    }
+  };
+
+  const handleSendCode = async () => {
+    if (cleanDigits.length !== 10) {
+      setLocalError('Please enter a valid 10-digit mobile number');
+      return;
+    }
+
+    const formattedWithPrefix = `+91${cleanDigits}`;
+    console.log('[AddMobileNumberScreen] Submitting phone number:', formattedWithPrefix);
+
+    try {
+      const res = await dispatch(
+        attachPhone({ phoneNumber: formattedWithPrefix })
+      ).unwrap();
+
+      console.log('[AddMobileNumberScreen] attachPhone response:', res);
+      onSendCode?.(res);
+    } catch (err) {
+      console.log('[AddMobileNumberScreen] attachPhone failed:', err);
+    }
   };
 
   const handleSkip = () => {
-    setIsModalVisible(true);
+    console.log('[AddMobileNumberScreen] User skipped adding mobile number');
     onSkip?.();
   };
 
-  const initialLetter = email ? email.charAt(0).toUpperCase() : 'P';
+  const initialLetter = activeEmail ? activeEmail.charAt(0).toUpperCase() : 'T';
 
   return (
     <View style={[styles.container, { paddingTop: insets.top, paddingBottom: insets.bottom }]}>
@@ -73,7 +144,7 @@ const AddMobileNumberScreen: React.FC<AddMobileNumberScreenProps> = ({
               <Text style={styles.avatarLetter}>{initialLetter}</Text>
             </View>
             <Text style={styles.signedInText} numberOfLines={1}>
-              Signed in as {email}
+              Signed in as {activeEmail}
             </Text>
           </View>
 
@@ -86,10 +157,10 @@ const AddMobileNumberScreen: React.FC<AddMobileNumberScreenProps> = ({
           {/* Mobile Number Input with Orange Border */}
           <CommonInput
             value={phoneNumber}
-            onChangeText={setPhoneNumber}
+            onChangeText={handlePhoneChange}
             placeholder="98765 43210"
             keyboardType="phone-pad"
-            maxLength={15}
+            maxLength={10}
             activeBackgroundColor={Colors.cardBackground}
             inactiveBackgroundColor="transparent"
             activeBorderColor={Colors.primary}
@@ -112,6 +183,14 @@ const AddMobileNumberScreen: React.FC<AddMobileNumberScreenProps> = ({
             }
             inputContainerStyle={styles.phoneInputContainer}
           />
+
+          {/* Inline Validation / Error Message */}
+          {errorMessage ? (
+            <View style={styles.errorContainer}>
+              <Feather name="alert-circle" size={14} color="#EF4444" style={styles.errorIcon} />
+              <Text style={styles.errorText}>{errorMessage}</Text>
+            </View>
+          ) : null}
         </View>
 
         {/* Bottom Actions Section */}
@@ -119,14 +198,16 @@ const AddMobileNumberScreen: React.FC<AddMobileNumberScreenProps> = ({
           <CommonBtn
             title="Send Code"
             onPress={handleSendCode}
-            backgroundColor={Colors.primary}
-            textColor="#FFFFFF"
+            disabled={isButtonDisabled}
+            loading={loading}
+            backgroundColor={isButtonDisabled ? '#3A4452' : Colors.primary}
+            textColor={isButtonDisabled ? '#8E9AA8' : '#FFFFFF'}
             height={56}
             borderRadius={28}
             fontSize={RFValue(14.5)}
           />
 
-          {/* Skip link button: opens the Account Already Exists modal */}
+          {/* Skip link button: User proceeds directly without adding phone */}
           <TouchableOpacity
             activeOpacity={0.7}
             onPress={handleSkip}
@@ -137,17 +218,22 @@ const AddMobileNumberScreen: React.FC<AddMobileNumberScreenProps> = ({
         </View>
       </KeyboardAvoidingWrapper>
 
-      {/* Account Already Exists Modal */}
+      {/* Account Already Exists Modal (for 409 Conflict) */}
       <AccountAlreadyExistsModal
         visible={isModalVisible}
-        phoneNumber={`+91 ${phoneNumber || '98765 43210'}`}
-        onClose={() => setIsModalVisible(false)}
+        phoneNumber={`+91 ${cleanDigits || '98765 43210'}`}
+        onClose={() => {
+          setIsModalVisible(false);
+          dispatch(clearPhoneError());
+        }}
         onContinueWithGoogle={() => {
           setIsModalVisible(false);
           onContinueWithGoogle?.();
         }}
         onUseDifferentNumber={() => {
           setIsModalVisible(false);
+          dispatch(clearPhoneError());
+          setPhoneNumber('');
         }}
       />
     </View>
@@ -257,6 +343,21 @@ const styles = StyleSheet.create({
     backgroundColor: '#1F3249',
     marginRight: 4,
   },
+  errorContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    alignSelf: 'flex-start',
+    marginTop: 8,
+    paddingHorizontal: 8,
+  },
+  errorIcon: {
+    marginRight: 6,
+  },
+  errorText: {
+    color: '#EF4444',
+    fontSize: RFValue(11.5),
+    fontWeight: '500',
+  },
   bottomSection: {
     width: '100%',
     alignItems: 'center',
@@ -277,4 +378,3 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
 });
-

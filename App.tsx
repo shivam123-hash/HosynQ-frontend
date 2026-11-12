@@ -6,9 +6,11 @@ import { Provider } from 'react-redux';
 import Colors from './src/units/Colors';
 import RootNavigator from './src/navigation/RootNavigator';
 import { store, loadInitialState } from './src/redux';
+import { configureGoogleSignIn } from './src/services';
 
 export default function App() {
   useEffect(() => {
+    configureGoogleSignIn();
     store.dispatch(loadInitialState());
   }, []);
 

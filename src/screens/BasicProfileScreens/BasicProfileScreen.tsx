@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -15,7 +15,19 @@ import CommonBtn from '../../components/CommonBtn';
 import CommonInput from '../../components/CommonInput';
 import CommonDropdown from '../../components/CommonDropdown';
 import KeyboardAvoidingWrapper from '../../components/KeyboardAvoidingWrapper';
-import { ChooseAvatarBottomSheet, AvatarSelection, AVATAR_COLORS } from './components';
+import {
+  ChooseAvatarBottomSheet,
+  AvatarSelection,
+  AVATAR_COLOR_OPTIONS,
+  AVATAR_COLORS,
+} from './components';
+import { useAppDispatch, useAppSelector } from '../../redux';
+import {
+  uploadAvatar,
+  updateBasicProfile,
+  clearProfileError,
+  clearAvatarError,
+} from '../../redux/features/baseProfileSet/baseProfileSlice';
 
 export interface BasicProfileData {
   fullName: string;
@@ -35,6 +47,10 @@ export interface BasicProfileScreenProps {
 const GENDER_OPTIONS = ['Male', 'Female', 'Other', 'Prefer not to say'];
 
 const FAMILY_ROLE_OPTIONS = [
+  'Father',
+  'Mother',
+  'Son',
+  'Daughter',
   'Head of Family',
   'Parent',
   'Child',
@@ -50,34 +66,111 @@ const BasicProfileScreen: React.FC<BasicProfileScreenProps> = ({
   onContinue,
 }) => {
   const insets = useSafeAreaInsets();
+  const dispatch = useAppDispatch();
+  const {
+    profileLoading,
+    profileError,
+    avatarLoading,
+    avatarError,
+    user,
+  } = useAppSelector((state) => state.baseProfile);
 
-  const [fullName, setFullName] = useState(initialData?.fullName || 'Rupesh Sharma');
-  const [gender, setGender] = useState(initialData?.gender || '');
-  const [familyRole, setFamilyRole] = useState(initialData?.familyRole || '');
-
-  // Default avatar initial setup
-  const [avatar, setAvatar] = useState<AvatarSelection | null>(
-    initialData?.avatar || {
-      type: 'color',
-      color: AVATAR_COLORS[0],
-      initial: 'R',
-    }
+  const [fullName, setFullName] = useState(
+    initialData?.fullName || user?.fullName || 'Rupesh Sharma'
   );
+  const [gender, setGender] = useState(
+    initialData?.gender || user?.gender || 'Male'
+  );
+  const [familyRole, setFamilyRole] = useState(
+    initialData?.familyRole || user?.familyRole || 'Father'
+  );
+  const [localError, setLocalError] = useState<string | null>(null);
+
+  // Initial avatar setup
+  const [avatar, setAvatar] = useState<AvatarSelection | null>(() => {
+    if (initialData?.avatar) return initialData.avatar;
+    if (user?.avatarUrl) {
+      return { type: 'image', uri: user.avatarUrl };
+    }
+    const colorKey = user?.avatarColor || 'amber';
+    const opt =
+      AVATAR_COLOR_OPTIONS.find((c) => c.key === colorKey) ||
+      AVATAR_COLOR_OPTIONS[0];
+    return {
+      type: 'color',
+      color: opt.hex,
+      colorKey: opt.key,
+      initial: 'R',
+    };
+  });
 
   const [isAvatarSheetVisible, setIsAvatarSheetVisible] = useState(false);
 
-  // Sync avatar initial if user hasn't chosen an image
-  const displayInitial = fullName.trim().length > 0
-    ? fullName.trim().charAt(0).toUpperCase()
-    : 'U';
+  useEffect(() => {
+    dispatch(clearProfileError());
+    dispatch(clearAvatarError());
+  }, [dispatch]);
 
-  const handleContinue = () => {
-    onContinue?.({
-      fullName,
-      gender,
-      familyRole,
-      avatar,
-    });
+  // Sync avatar initial if user hasn't chosen an image
+  const displayInitial =
+    fullName.trim().length > 0
+      ? fullName.trim().charAt(0).toUpperCase()
+      : 'R';
+
+  // Handle Save Avatar from BottomSheet
+  const handleSaveAvatar = async (newAvatar: AvatarSelection) => {
+    try {
+      const formData = new FormData();
+      if (newAvatar.type === 'image') {
+        formData.append('file', {
+          uri: newAvatar.uri,
+          type: newAvatar.mime || 'image/jpeg',
+          name: newAvatar.fileName || 'avatar.jpg',
+        } as any);
+      } else {
+        formData.append('avatarColor', newAvatar.colorKey || 'amber');
+      }
+
+      console.log('[BasicProfileScreen] Saving avatar:', newAvatar);
+      const res = await dispatch(uploadAvatar(formData)).unwrap();
+      console.log('[BasicProfileScreen] Avatar uploaded successfully:', res);
+
+      setAvatar(newAvatar);
+      setIsAvatarSheetVisible(false);
+    } catch (err: any) {
+      console.log('[BasicProfileScreen] Error uploading avatar:', err);
+    }
+  };
+
+  // Handle Profile Details submission
+  const handleContinue = async () => {
+    if (!fullName.trim()) {
+      setLocalError('Please enter your full name');
+      return;
+    }
+
+    setLocalError(null);
+    try {
+      console.log('[BasicProfileScreen] Updating basic profile details...');
+      const res = await dispatch(
+        updateBasicProfile({
+          fullName: fullName.trim(),
+          gender: gender || 'Male',
+          familyRole: familyRole || 'Father',
+        })
+      ).unwrap();
+
+      console.log('[BasicProfileScreen] Profile updated successfully:', res);
+
+      onContinue?.({
+        fullName: fullName.trim(),
+        gender: gender || 'Male',
+        familyRole: familyRole || 'Father',
+        avatar,
+      });
+    } catch (err: any) {
+      console.log('[BasicProfileScreen] Error updating profile:', err);
+    }
   };
 
   return (
@@ -158,11 +251,17 @@ const BasicProfileScreen: React.FC<BasicProfileScreenProps> = ({
 
           {/* Profile Form Fields */}
           <View style={styles.formSection}>
-            {/* 1. Full Name Input with Floating Label */}
+            {/* 1. Full Name Input */}
             <CommonInput
               label="Full Name"
               value={fullName}
-              onChangeText={setFullName}
+              onChangeText={(text) => {
+                setFullName(text);
+                setLocalError(null);
+                if (profileError) {
+                  dispatch(clearProfileError());
+                }
+              }}
               placeholder="Full Name"
               activeBackgroundColor={Colors.cardBackground}
               inactiveBackgroundColor="transparent"
@@ -193,9 +292,20 @@ const BasicProfileScreen: React.FC<BasicProfileScreenProps> = ({
 
         {/* Continue Button pinned to bottom */}
         <View style={styles.buttonSection}>
+          {localError || profileError || avatarError ? (
+            <View style={styles.errorContainer}>
+              <Feather name="alert-circle" size={14} color="#EF4444" style={styles.errorIcon} />
+              <Text style={styles.errorText}>
+                {localError || profileError || avatarError}
+              </Text>
+            </View>
+          ) : null}
+
           <CommonBtn
             title="Continue"
             onPress={handleContinue}
+            loading={profileLoading}
+            disabled={profileLoading || !fullName.trim()}
             backgroundColor={Colors.primary}
             textColor="#FFFFFF"
             height={56}
@@ -210,10 +320,9 @@ const BasicProfileScreen: React.FC<BasicProfileScreenProps> = ({
         visible={isAvatarSheetVisible}
         fullName={fullName}
         currentAvatar={avatar}
+        loading={avatarLoading}
         onClose={() => setIsAvatarSheetVisible(false)}
-        onSaveAvatar={(newAvatar) => {
-          setAvatar(newAvatar);
-        }}
+        onSaveAvatar={handleSaveAvatar}
       />
     </View>
   );
@@ -258,7 +367,8 @@ const styles = StyleSheet.create({
     flex: 1,
     height: 3.5,
     borderRadius: 2,
-    backgroundColor: '#16283E',
+    backgroundColor: 'rgba(255, 255, 255, 0.08)',
+    marginRight: 12,
     overflow: 'hidden',
   },
   progressFill: {
@@ -271,53 +381,42 @@ const styles = StyleSheet.create({
   },
   progressText: {
     color: Colors.textSecondary,
-    fontSize: RFValue(11),
+    fontSize: RFValue(11.5),
     fontWeight: '600',
-    marginLeft: 14,
   },
   scrollContent: {
     flexGrow: 1,
     paddingHorizontal: 24,
-    paddingBottom: 24,
     justifyContent: 'space-between',
+    paddingBottom: 24,
   },
   topContent: {
     width: '100%',
   },
   headingSection: {
-    alignItems: 'center',
     marginTop: 18,
     marginBottom: 20,
+    alignItems: 'center',
   },
   title: {
-    fontSize: RFValue(21),
+    fontSize: RFValue(22),
     fontWeight: '700',
-    color: '#FFFFFF',
+    color: Colors.text,
     textAlign: 'center',
-    marginBottom: 8,
+    marginBottom: 6,
   },
   subtitle: {
-    fontSize: RFValue(12.5),
+    fontSize: RFValue(13),
     color: Colors.textSecondary,
     textAlign: 'center',
-    paddingHorizontal: 16,
   },
   avatarSection: {
     alignItems: 'center',
-    marginBottom: 18,
+    marginBottom: 24,
   },
   avatarTouchable: {
-    width: 88,
-    height: 88,
-    borderRadius: 44,
     position: 'relative',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  avatarImage: {
-    width: 88,
-    height: 88,
-    borderRadius: 44,
+    marginBottom: 8,
   },
   avatarColorCircle: {
     width: 88,
@@ -326,41 +425,61 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
+  avatarImage: {
+    width: 88,
+    height: 88,
+    borderRadius: 44,
+  },
   avatarInitialText: {
     color: '#FFFFFF',
-    fontSize: RFValue(30),
+    fontSize: RFValue(34),
     fontWeight: '700',
   },
   plusBadge: {
     position: 'absolute',
     bottom: 2,
     right: 2,
-    width: 24,
-    height: 24,
-    borderRadius: 12,
     backgroundColor: Colors.primary,
+    width: 22,
+    height: 22,
+    borderRadius: 11,
     justifyContent: 'center',
     alignItems: 'center',
     borderWidth: 2,
     borderColor: Colors.background,
   },
   changeAvatarButton: {
-    marginTop: 10,
     paddingVertical: 4,
     paddingHorizontal: 8,
   },
   changeAvatarText: {
     color: Colors.primary,
-    fontSize: RFValue(12.5),
+    fontSize: RFValue(13.5),
     fontWeight: '600',
   },
   formSection: {
     width: '100%',
+    gap: 16,
   },
   buttonSection: {
     width: '100%',
+    paddingTop: 24,
     marginTop: 'auto',
-    paddingTop: 32,
-    marginBottom: 34,
+  },
+  errorContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    alignSelf: 'center',
+    marginBottom: 10,
+    paddingHorizontal: 8,
+  },
+  errorIcon: {
+    marginRight: 6,
+  },
+  errorText: {
+    color: '#EF4444',
+    fontSize: RFValue(12),
+    fontWeight: '500',
+    textAlign: 'center',
   },
 });

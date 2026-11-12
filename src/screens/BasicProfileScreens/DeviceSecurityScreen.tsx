@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -6,6 +6,8 @@ import {
   TouchableOpacity,
   StatusBar,
   ScrollView,
+  Platform,
+  Alert,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Feather from '@react-native-vector-icons/feather';
@@ -14,8 +16,11 @@ import { RFValue } from 'react-native-responsive-fontsize';
 import Colors from '../../units/Colors';
 import CommonBtn from '../../components/CommonBtn';
 import { SecurityOptionCard } from './components';
+import biometricService, {
+  BiometricOptionType,
+} from '../../units/biometricService';
 
-export type SecurityOptionType = 'fingerprint' | 'facelock';
+export type SecurityOptionType = BiometricOptionType;
 
 export interface DeviceSecurityScreenProps {
   initialOption?: SecurityOptionType;
@@ -31,9 +36,97 @@ const DeviceSecurityScreen: React.FC<DeviceSecurityScreenProps> = ({
   const insets = useSafeAreaInsets();
   const [selectedSecurity, setSelectedSecurity] =
     useState<SecurityOptionType>(initialOption);
+  const [loading, setLoading] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [detectedSensor, setDetectedSensor] = useState<string>('Biometrics');
+  const [isFaceIdDevice, setIsFaceIdDevice] = useState(false);
 
-  const handleContinue = () => {
-    onContinue?.(selectedSecurity);
+  useEffect(() => {
+    // Detect hardware capabilities on mount
+    biometricService.checkAvailability().then((res) => {
+      setDetectedSensor(res.sensorName);
+      if (res.biometryType === 'FaceID' || (Platform.OS === 'ios' && res.available)) {
+        setIsFaceIdDevice(true);
+        setSelectedSecurity('facelock');
+      }
+    });
+  }, []);
+
+  const handleContinue = async () => {
+    setLoading(true);
+    setErrorMessage(null);
+
+    try {
+      const { available, sensorName } = await biometricService.checkAvailability();
+
+      if (!available) {
+        setLoading(false);
+        Alert.alert(
+          'Biometrics Not Active',
+          `Biometric sensor (${sensorName}) was not detected. This happens when:\n1. The app needs a fresh build (run: npm run android) to include the new native package.\n2. Or your phone does not have Fingerprint/Face Lock enabled in Settings.\n\nDo you want to proceed to the next step?`,
+          [
+            {
+              text: 'Cancel',
+              style: 'cancel',
+              onPress: () => setLoading(false),
+            },
+            {
+              text: 'Proceed Anyway',
+              onPress: async () => {
+                await biometricService.savePreference(true, selectedSecurity);
+                onContinue?.(selectedSecurity);
+              },
+            },
+          ]
+        );
+        return;
+      }
+
+      const promptMsg =
+        selectedSecurity === 'facelock'
+          ? 'Scan Face ID to set up HosynQ lock'
+          : 'Touch fingerprint sensor to set up HosynQ lock';
+
+      console.log('[DeviceSecurityScreen] Prompting for biometric setup:', promptMsg);
+      const authResult = await biometricService.authenticate(promptMsg);
+
+      if (!authResult.success) {
+        setLoading(false);
+        if (authResult.cancelled) {
+          console.log('[DeviceSecurityScreen] Biometric setup prompt cancelled by user');
+          return;
+        }
+        setErrorMessage(
+          authResult.error || 'Biometric verification failed. Please try again.'
+        );
+        return;
+      }
+
+      console.log('[DeviceSecurityScreen] ✅ Biometric setup successfully verified!');
+
+      // Save preference so app remembers user choice on re-open
+      await biometricService.savePreference(true, selectedSecurity);
+      onContinue?.(selectedSecurity);
+    } catch (error: any) {
+      console.log('[DeviceSecurityScreen] Biometric verification warning:', error);
+      setLoading(false);
+      Alert.alert(
+        'Setup Notice',
+        error?.message || 'Biometric verification could not be completed. Please rebuild the app to load native drivers.',
+        [
+          { text: 'Cancel', style: 'cancel' },
+          {
+            text: 'Proceed',
+            onPress: async () => {
+              await biometricService.savePreference(true, selectedSecurity);
+              onContinue?.(selectedSecurity);
+            },
+          },
+        ]
+      );
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -76,14 +169,17 @@ const DeviceSecurityScreen: React.FC<DeviceSecurityScreenProps> = ({
 
         {/* 2 Security Options (Fingerprint & Face Lock) */}
         <View style={styles.optionsSection}>
-          {/* Option 1: Fingerprint (Recommended) */}
+          {/* Option 1: Fingerprint */}
           <SecurityOptionCard
             id="fingerprint"
             title="Fingerprint"
             description="Fastest. Uses the biometrics already on your phone."
-            isRecommended={true}
+            isRecommended={!isFaceIdDevice}
             isSelected={selectedSecurity === 'fingerprint'}
-            onSelect={(id) => setSelectedSecurity(id as SecurityOptionType)}
+            onSelect={(id) => {
+              setSelectedSecurity(id as SecurityOptionType);
+              setErrorMessage(null);
+            }}
             icon={
               <Ionicons
                 name="finger-print-outline"
@@ -96,10 +192,14 @@ const DeviceSecurityScreen: React.FC<DeviceSecurityScreenProps> = ({
           {/* Option 2: Face Lock */}
           <SecurityOptionCard
             id="facelock"
-            title="Face lock"
+            title={isFaceIdDevice ? 'Face ID' : 'Face lock'}
             description="Quick & secure. Uses facial recognition on your phone."
+            isRecommended={isFaceIdDevice}
             isSelected={selectedSecurity === 'facelock'}
-            onSelect={(id) => setSelectedSecurity(id as SecurityOptionType)}
+            onSelect={(id) => {
+              setSelectedSecurity(id as SecurityOptionType);
+              setErrorMessage(null);
+            }}
             icon={
               <Ionicons
                 name="scan-outline"
@@ -112,9 +212,18 @@ const DeviceSecurityScreen: React.FC<DeviceSecurityScreenProps> = ({
 
         {/* Bottom Actions */}
         <View style={styles.bottomSection}>
+          {errorMessage ? (
+            <View style={styles.errorContainer}>
+              <Feather name="alert-circle" size={14} color="#EF4444" style={styles.errorIcon} />
+              <Text style={styles.errorText}>{errorMessage}</Text>
+            </View>
+          ) : null}
+
           <CommonBtn
             title="Continue"
             onPress={handleContinue}
+            loading={loading}
+            disabled={loading}
             backgroundColor={Colors.primary}
             textColor="#FFFFFF"
             height={56}
@@ -164,13 +273,14 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: 24,
     marginTop: 6,
-    marginBottom: 12,
+    marginBottom: 10,
   },
   progressTrack: {
     flex: 1,
     height: 3.5,
     borderRadius: 2,
-    backgroundColor: '#16283E',
+    backgroundColor: 'rgba(255, 255, 255, 0.08)',
+    marginRight: 12,
     overflow: 'hidden',
   },
   progressFill: {
@@ -183,50 +293,62 @@ const styles = StyleSheet.create({
   },
   progressText: {
     color: Colors.textSecondary,
-    fontSize: RFValue(11),
+    fontSize: RFValue(11.5),
     fontWeight: '600',
-    marginLeft: 14,
   },
   scrollContent: {
     flexGrow: 1,
     paddingHorizontal: 24,
-    paddingBottom: 24,
     justifyContent: 'space-between',
+    paddingBottom: 24,
   },
   headingSection: {
-    alignItems: 'center',
-    marginTop: 20,
-    marginBottom: 26,
+    marginTop: 18,
+    marginBottom: 24,
   },
   title: {
-    fontSize: RFValue(21),
+    fontSize: RFValue(22),
     fontWeight: '700',
-    color: '#FFFFFF',
+    color: Colors.text,
     textAlign: 'center',
-    marginBottom: 10,
+    marginBottom: 8,
   },
   subtitle: {
-    fontSize: RFValue(12.5),
+    fontSize: RFValue(13),
     color: Colors.textSecondary,
     textAlign: 'center',
     lineHeight: RFValue(18),
-    paddingHorizontal: 12,
   },
   optionsSection: {
     width: '100%',
+    gap: 14,
+  },
+  errorContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    alignSelf: 'center',
+    marginBottom: 12,
+    paddingHorizontal: 8,
+  },
+  errorIcon: {
+    marginRight: 6,
+  },
+  errorText: {
+    color: '#EF4444',
+    fontSize: RFValue(12),
+    fontWeight: '500',
+    textAlign: 'center',
   },
   bottomSection: {
     width: '100%',
-    alignItems: 'center',
+    paddingTop: 24,
     marginTop: 'auto',
-    paddingTop: 32,
+    alignItems: 'center',
   },
   securityFooterNote: {
-    color: '#6C7D93',
-    fontSize: RFValue(11.5),
+    color: Colors.textSecondary,
+    fontSize: RFValue(12),
     textAlign: 'center',
-    marginTop: 18,
-    fontWeight: '400',
+    marginTop: 14,
   },
 });
-
