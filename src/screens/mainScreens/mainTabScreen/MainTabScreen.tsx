@@ -3,16 +3,14 @@ import {
   View,
   StyleSheet,
   StatusBar,
-  Text,
-  ScrollView,
 } from 'react-native';
 import Colors from '../../../units/Colors';
-import AppTopBar from '../../../components/AppTopBar';
 import BottomNavBar from '../homeScreen/components/BottomNavBar';
 import { NavigationTab, BriefTimeframe } from '../homeScreen/types';
 import HomeScreen from '../homeScreen/HomeScreen';
 import TasksScreen from '../tasksScreen/TasksScreen';
 import CalendarScreen from '../calendarScreen/CalendarScreen';
+import ChatsScreen from '../chatScreen/ChatsScreen';
 import { CreateTaskModal } from '../tasksScreen/components';
 import { CreateEventModal } from '../calendarScreen/components';
 import { TaskItem } from '../tasksScreen/types';
@@ -23,6 +21,7 @@ import {
   ScanDocumentModal,
   AskHosynQModal,
   UploadDocumentModal,
+  FamilyVaultModal,
   ConfirmationToast,
   ReminderItem,
   ToastConfig,
@@ -53,6 +52,10 @@ const MainTabScreen: React.FC<MainTabScreenProps> = ({
   const [scanModalVisible, setScanModalVisible] = useState(false);
   const [uploadModalVisible, setUploadModalVisible] = useState(false);
   const [askModalVisible, setAskModalVisible] = useState(false);
+  const [vaultModalVisible, setVaultModalVisible] = useState(false);
+  const [uploadedFileForScan, setUploadedFileForScan] = useState<
+    string | undefined
+  >(undefined);
 
   const [toastConfig, setToastConfig] = useState<ToastConfig>({
     visible: false,
@@ -104,7 +107,9 @@ const MainTabScreen: React.FC<MainTabScreenProps> = ({
             onAllTasksPress={() => setActiveTab('tasks')}
             onOpenCalendar={() => setActiveTab('calendar')}
             onAddTaskPress={() => setCreateTaskModalVisible(true)}
-            onAddEventPress={() => setActiveTab('calendar')}
+            onAddEventPress={() => setCreateEventModalVisible(true)}
+            onScanPress={() => setScanModalVisible(true)}
+            onAddPress={() => setAddSheetVisible(true)}
           />
         )}
 
@@ -130,35 +135,12 @@ const MainTabScreen: React.FC<MainTabScreenProps> = ({
         )}
 
         {activeTab === 'chat' && (
-          <View style={styles.placeholderContainer}>
-            {/* Unified App Top Bar */}
-            <AppTopBar
-              onAvatarPress={onProfilePress}
-              onExplorePress={onExplorePress}
-              onNotificationsPress={onNotificationsPress}
-            />
-
-            <ScrollView
-              contentContainerStyle={styles.placeholderContent}
-              showsVerticalScrollIndicator={false}
-            >
-              <Text style={styles.sectionHeading}>The Sharma Family</Text>
-              <View style={styles.chatThreadCard}>
-                <View style={styles.chatThreadHeader}>
-                  <View style={styles.chatAvatar}>
-                    <Text style={styles.chatAvatarText}>S</Text>
-                  </View>
-                  <View style={styles.chatThreadInfo}>
-                    <Text style={styles.chatThreadName}>Family General</Text>
-                    <Text style={styles.chatThreadLastMsg}>
-                      Rohan: Switched it off now. Thanks!
-                    </Text>
-                  </View>
-                  <Text style={styles.chatTime}>9:45 AM</Text>
-                </View>
-              </View>
-            </ScrollView>
-          </View>
+          <ChatsScreen
+            onProfilePress={onProfilePress}
+            onNotificationsPress={onNotificationsPress}
+            onExplorePress={onExplorePress}
+            onOpenVault={() => setVaultModalVisible(true)}
+          />
         )}
       </View>
 
@@ -243,22 +225,52 @@ const MainTabScreen: React.FC<MainTabScreenProps> = ({
         onSaveReminder={(reminder: ReminderItem) => {
           showToast(`Reminder set for ${reminder.whenText.toLowerCase()}`);
         }}
+        onConvertToTask={() => {
+          setCreateReminderModalVisible(false);
+          setCreateTaskModalVisible(true);
+        }}
       />
 
       {/* Document Scanner Flow (ADD-05 -> ADD-17) */}
       <ScanDocumentModal
         visible={scanModalVisible}
-        onClose={() => setScanModalVisible(false)}
+        onClose={() => {
+          setScanModalVisible(false);
+          setUploadedFileForScan(undefined);
+        }}
         onItemsAdded={(count: number) => {
           showToast(`Added ${count} items to your family`);
         }}
+        onOpenUpload={() => {
+          setScanModalVisible(false);
+          setUploadModalVisible(true);
+        }}
+        onTypeDetailsMyself={() => {
+          setScanModalVisible(false);
+          setUploadedFileForScan(undefined);
+          setCreateTaskModalVisible(true);
+        }}
+        onOpenVault={() => {
+          setScanModalVisible(false);
+          setVaultModalVisible(true);
+        }}
+        onIgnore={() => {
+          showToast('Ignored. Nothing was added. The file is saved.', 'cancelled');
+        }}
+        scannedFileName={uploadedFileForScan}
       />
 
-      {/* Upload Document Picker (ADD-07) */}
+      {/* Upload Document Picker (ADD-07, ADD-08, ADD-09) */}
       <UploadDocumentModal
         visible={uploadModalVisible}
         onClose={() => setUploadModalVisible(false)}
-        onFileSelected={(_fileName: string) => {
+        onFileSelected={(fileName: string) => {
+          setUploadedFileForScan(fileName);
+          setUploadModalVisible(false);
+          setScanModalVisible(true);
+        }}
+        onScanWithCamera={() => {
+          setUploadModalVisible(false);
           setScanModalVisible(true);
         }}
       />
@@ -270,6 +282,23 @@ const MainTabScreen: React.FC<MainTabScreenProps> = ({
         onConfirmAdded={(title: string) => {
           showToast(`Added "${title}" to your family`);
         }}
+        onCancelProposal={() => {
+          showToast('Cancelled. Nothing was changed.', 'cancelled');
+        }}
+        onMakeTask={() => {
+          setAskModalVisible(false);
+          setCreateTaskModalVisible(true);
+        }}
+        onMakeEvent={() => {
+          setAskModalVisible(false);
+          setCreateEventModalVisible(true);
+        }}
+      />
+
+      {/* Family Vault (ADD-13) */}
+      <FamilyVaultModal
+        visible={vaultModalVisible}
+        onClose={() => setVaultModalVisible(false)}
       />
     </View>
   );

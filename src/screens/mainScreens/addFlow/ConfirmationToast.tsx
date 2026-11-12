@@ -1,6 +1,7 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import Feather from '@react-native-vector-icons/feather';
+import Colors from '../../../units/Colors';
 
 export interface ConfirmationToastProps {
   visible: boolean;
@@ -24,9 +25,9 @@ export const ConfirmationToast: React.FC<ConfirmationToastProps> = ({
       <View style={styles.toast}>
         <View style={styles.left}>
           {type === 'success' ? (
-            <Feather name="check-circle" size={20} color="#1FA066" />
+            <Feather name="check-circle" size={20} color={Colors.accentGreen} />
           ) : (
-            <Feather name="minus-circle" size={20} color="#5C6B7E" />
+            <Feather name="minus-circle" size={20} color={Colors.textMutedSlate} />
           )}
           <Text style={styles.message} numberOfLines={2}>
             {message}
@@ -69,14 +70,14 @@ const styles = StyleSheet.create({
   },
   toast: {
     width: '100%',
-    backgroundColor: '#E6EDF5',
+    backgroundColor: Colors.toastText,
     borderRadius: 18,
     paddingVertical: 14,
     paddingHorizontal: 16,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    shadowColor: '#000',
+    shadowColor: Colors.black,
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.25,
     shadowRadius: 10,
@@ -91,7 +92,7 @@ const styles = StyleSheet.create({
   message: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#0A131F',
+    color: Colors.cardInsetDark,
     marginLeft: 10,
     flexShrink: 1,
   },
@@ -103,6 +104,6 @@ const styles = StyleSheet.create({
   actionText: {
     fontSize: 14,
     fontWeight: '700',
-    color: '#B55D17',
+    color: Colors.amberDark,
   },
 });

@@ -12,25 +12,93 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Feather from '@react-native-vector-icons/feather';
+import Colors from '../../../units/Colors';
 import { ReminderItem } from './types';
 
 export interface CreateReminderModalProps {
   visible: boolean;
   onClose: () => void;
   onSaveReminder: (reminder: ReminderItem) => void;
+  onConvertToTask?: () => void;
 }
+
+interface FamilyMemberOption {
+  id: string;
+  name: string;
+  displayName: string;
+  initial: string;
+  color: string;
+  textColor: string;
+}
+
+const FAMILY_MEMBERS: FamilyMemberOption[] = [
+  {
+    id: 'm1',
+    name: 'You',
+    displayName: 'Priya (you)',
+    initial: 'P',
+    color: Colors.avatarBrown,
+    textColor: Colors.amberLight,
+  },
+  {
+    id: 'm2',
+    name: 'Rohan',
+    displayName: 'Rohan',
+    initial: 'R',
+    color: Colors.avatarNavy,
+    textColor: Colors.accentBlueSoft,
+  },
+  {
+    id: 'm3',
+    name: 'Anaya',
+    displayName: 'Anaya',
+    initial: 'A',
+    color: Colors.avatarWine,
+    textColor: Colors.accentPink,
+  },
+  {
+    id: 'm4',
+    name: 'Aarav',
+    displayName: 'Aarav',
+    initial: 'Aa',
+    color: Colors.avatarOlive,
+    textColor: Colors.accentYellow,
+  },
+  {
+    id: 'm5',
+    name: 'Dadi',
+    displayName: 'Dadi',
+    initial: 'D',
+    color: Colors.avatarGreen,
+    textColor: Colors.accentGreenSoft,
+  },
+];
+
+const REPEAT_OPTIONS = [
+  'Doesn’t repeat',
+  'Daily',
+  'Every week',
+  'Every month',
+  'Every year',
+];
 
 export const CreateReminderModal: React.FC<CreateReminderModalProps> = ({
   visible,
   onClose,
   onSaveReminder,
+  onConvertToTask,
 }) => {
   const insets = useSafeAreaInsets();
   const [title, setTitle] = useState('Call the plumber about the kitchen tap');
   const [reminderType, setReminderType] = useState<'time' | 'place'>('time');
   const [selectedWhen, setSelectedWhen] = useState('This evening, 7:00 PM');
   const [assignee, setAssignee] = useState('You');
-  const [repeat, setRepeat] = useState("Doesn't repeat");
+  const [repeat, setRepeat] = useState('Doesn’t repeat');
+  const [showAssigneeModal, setShowAssigneeModal] = useState(false);
+  const [showRepeatModal, setShowRepeatModal] = useState(false);
+
+  const currentMember =
+    FAMILY_MEMBERS.find((m) => m.name === assignee) || FAMILY_MEMBERS[0];
 
   const whenChips = [
     'In 1 hour',
@@ -60,45 +128,45 @@ export const CreateReminderModal: React.FC<CreateReminderModalProps> = ({
       onRequestClose={onClose}
     >
       <View style={[styles.container, { paddingTop: insets.top }]}>
-        {/* Header */}
-        <View style={styles.header}>
-          <TouchableOpacity
-            onPress={onClose}
-            activeOpacity={0.7}
-            style={styles.closeBtn}
-            accessibilityRole="button"
-            accessibilityLabel="Close"
-          >
-            <Feather name="x" size={20} color="#FFFFFF" />
-          </TouchableOpacity>
-          <Text style={styles.headerTitle}>New reminder</Text>
-          <View style={styles.headerRightSpacer} />
-        </View>
-
         <KeyboardAvoidingView
           behavior={Platform.OS === 'ios' ? 'padding' : undefined}
           style={styles.flex}
         >
+          {/* Header */}
+          <View style={styles.header}>
+            <TouchableOpacity
+              onPress={onClose}
+              activeOpacity={0.7}
+              style={styles.closeBtn}
+              accessibilityRole="button"
+              accessibilityLabel="Close"
+            >
+              <Feather name="x" size={20} color={Colors.white} />
+            </TouchableOpacity>
+            <View style={styles.headerTitleContainer} pointerEvents="none">
+              <Text style={styles.headerTitle}>New reminder</Text>
+            </View>
+          </View>
+
           <ScrollView
             style={styles.scrollView}
             contentContainerStyle={styles.scrollContent}
-            keyboardShouldPersistTaps="handled"
             showsVerticalScrollIndicator={false}
           >
-            {/* Input Label & Box */}
+            {/* Remind me to... Input */}
             <Text style={styles.inputLabel}>Remind me to...</Text>
             <View style={styles.inputBox}>
               <TextInput
                 value={title}
                 onChangeText={setTitle}
-                placeholder="What do you want to be reminded of?"
-                placeholderTextColor="#687B91"
-                multiline
+                placeholder="What do you want to be reminded about?"
+                placeholderTextColor={Colors.textPlaceholder}
                 style={styles.textInput}
+                multiline
               />
             </View>
 
-            {/* Type Toggle: At a time vs At a place */}
+            {/* At a time / At a place Segmented Control */}
             <View style={styles.segmentedControl}>
               <TouchableOpacity
                 onPress={() => setReminderType('time')}
@@ -107,11 +175,13 @@ export const CreateReminderModal: React.FC<CreateReminderModalProps> = ({
                   styles.segmentBtn,
                   reminderType === 'time' && styles.segmentBtnActive,
                 ]}
+                accessibilityRole="button"
+                accessibilityLabel="At a time"
               >
                 <Feather
                   name="clock"
                   size={16}
-                  color={reminderType === 'time' ? '#0A131F' : '#8E9BAE'}
+                  color={reminderType === 'time' ? Colors.cardInsetDark : Colors.textSubtle}
                   style={styles.segmentIcon}
                 />
                 <Text
@@ -131,11 +201,13 @@ export const CreateReminderModal: React.FC<CreateReminderModalProps> = ({
                   styles.segmentBtn,
                   reminderType === 'place' && styles.segmentBtnActive,
                 ]}
+                accessibilityRole="button"
+                accessibilityLabel="At a place"
               >
                 <Feather
                   name="map-pin"
                   size={16}
-                  color={reminderType === 'place' ? '#0A131F' : '#8E9BAE'}
+                  color={reminderType === 'place' ? Colors.cardInsetDark : Colors.textSubtle}
                   style={styles.segmentIcon}
                 />
                 <Text
@@ -152,92 +224,121 @@ export const CreateReminderModal: React.FC<CreateReminderModalProps> = ({
             {/* WHEN Section */}
             <Text style={styles.sectionHeading}>WHEN</Text>
             <View style={styles.chipsContainer}>
-              {whenChips.map((chip) => {
-                const isSelected = selectedWhen === chip;
+              {whenChips.map((chipText) => {
+                const isSelected = selectedWhen === chipText;
                 return (
                   <TouchableOpacity
-                    key={chip}
-                    onPress={() => setSelectedWhen(chip)}
+                    key={chipText}
+                    onPress={() => setSelectedWhen(chipText)}
                     activeOpacity={0.7}
                     style={[
                       styles.chip,
                       isSelected ? styles.chipSelected : styles.chipUnselected,
                     ]}
+                    accessibilityRole="button"
+                    accessibilityLabel={chipText}
                   >
                     <Text
                       style={[
                         styles.chipText,
-                        isSelected ? styles.chipTextSelected : styles.chipTextUnselected,
+                        isSelected
+                          ? styles.chipTextSelected
+                          : styles.chipTextUnselected,
                       ]}
                     >
-                      {chip}
+                      {chipText}
                     </Text>
                   </TouchableOpacity>
                 );
               })}
             </View>
 
-            {/* Settings Card: Remind & Repeat */}
+            {/* Remind & Repeat Card Container */}
             <View style={styles.cardContainer}>
+              {/* Remind row */}
               <TouchableOpacity
-                onPress={() =>
-                  setAssignee(assignee === 'You' ? 'Rohan' : 'You')
-                }
+                onPress={() => setShowAssigneeModal(true)}
                 activeOpacity={0.7}
                 style={styles.rowItem}
+                accessibilityRole="button"
+                accessibilityLabel={`Remind ${assignee}`}
               >
                 <View style={styles.rowLeft}>
-                  <Feather name="user" size={18} color="#8E9BAE" />
+                  <Feather name="user" size={18} color={Colors.textSubtle} />
                   <View style={styles.rowTextCol}>
                     <Text style={styles.rowLabel}>Remind</Text>
                     <View style={styles.avatarRow}>
-                      <View style={styles.avatarCircle}>
-                        <Text style={styles.avatarText}>P</Text>
+                      <View
+                        style={[
+                          styles.avatarCircle,
+                          { backgroundColor: currentMember.color },
+                        ]}
+                      >
+                        <Text
+                          style={[
+                            styles.avatarText,
+                            { color: currentMember.textColor },
+                          ]}
+                        >
+                          {currentMember.initial}
+                        </Text>
                       </View>
                       <Text style={styles.rowValue}>{assignee}</Text>
                     </View>
                   </View>
                 </View>
-                <Feather name="chevron-right" size={18} color="#5C6E82" />
+                <Feather name="chevron-right" size={18} color={Colors.textMutedSoft} />
               </TouchableOpacity>
 
               <View style={styles.rowDivider} />
 
+              {/* Repeat row */}
               <TouchableOpacity
-                onPress={() =>
-                  setRepeat(
-                    repeat === "Doesn't repeat" ? 'Daily' : "Doesn't repeat"
-                  )
-                }
+                onPress={() => setShowRepeatModal(true)}
                 activeOpacity={0.7}
                 style={styles.rowItem}
+                accessibilityRole="button"
+                accessibilityLabel={`Repeat ${repeat}`}
               >
                 <View style={styles.rowLeft}>
-                  <Feather name="repeat" size={18} color="#8E9BAE" />
+                  <Feather name="repeat" size={18} color={Colors.textSubtle} />
                   <View style={styles.rowTextCol}>
                     <Text style={styles.rowLabel}>Repeat</Text>
                     <Text style={styles.rowValue}>{repeat}</Text>
                   </View>
                 </View>
-                <Feather name="chevron-right" size={18} color="#5C6E82" />
+                <Feather name="chevron-right" size={18} color={Colors.textMutedSoft} />
               </TouchableOpacity>
             </View>
 
-            {/* Hint Box (Dashed) */}
+            {/* Hint Box (Nudge to task) */}
             <View style={styles.hintBox}>
-              <Feather name="bell" size={18} color="#8E9BAE" style={styles.hintIcon} />
+              <Feather
+                name="bell"
+                size={16}
+                color={Colors.textSubtle}
+                style={styles.hintIcon}
+              />
               <Text style={styles.hintText}>
-                A reminder is just a nudge. If someone needs to get it done,
-                make it a task instead.
+                A reminder is just a nudge. If someone needs to get it done,{' '}
+                <Text
+                  onPress={() => {
+                    onClose();
+                    onConvertToTask?.();
+                  }}
+                  style={styles.hintLink}
+                >
+                  make it a task instead.
+                </Text>
               </Text>
             </View>
           </ScrollView>
 
-          {/* Bottom Button */}
+          {/* Bottom Submit Button */}
           <View
             style={[
               styles.bottomBar,
-              { paddingBottom: Math.max(insets.bottom, 16) },
+              { paddingBottom: Math.max(insets.bottom + 8, 24) },
             ]}
           >
             <TouchableOpacity
@@ -251,6 +352,135 @@ export const CreateReminderModal: React.FC<CreateReminderModalProps> = ({
             </TouchableOpacity>
           </View>
         </KeyboardAvoidingView>
+
+        {/* Assignee Picker Bottom Sheet Modal */}
+        <Modal
+          visible={showAssigneeModal}
+          transparent
+          animationType="fade"
+          onRequestClose={() => setShowAssigneeModal(false)}
+        >
+          <View style={styles.pickerOverlay}>
+            <TouchableOpacity
+              style={styles.pickerBackdrop}
+              activeOpacity={1}
+              onPress={() => setShowAssigneeModal(false)}
+            />
+            <View
+              style={[
+                styles.pickerSheet,
+                { paddingBottom: Math.max(insets.bottom + 16, 24) },
+              ]}
+            >
+              <View style={styles.pickerHandle} />
+              <Text style={styles.pickerTitle}>Remind who?</Text>
+              <Text style={styles.pickerSubtitle}>
+                Choose a family member to notify
+              </Text>
+              <View style={styles.pickerCard}>
+                {FAMILY_MEMBERS.map((member, idx) => {
+                  const isSelected = assignee === member.name;
+                  return (
+                    <TouchableOpacity
+                      key={member.id}
+                      style={[
+                        styles.pickerRow,
+                        idx > 0 && styles.pickerRowDivider,
+                      ]}
+                      onPress={() => {
+                        setAssignee(member.name);
+                        setShowAssigneeModal(false);
+                      }}
+                      activeOpacity={0.7}
+                    >
+                      <View
+                        style={[
+                          styles.avatarCircle,
+                          { backgroundColor: member.color },
+                        ]}
+                      >
+                        <Text
+                          style={[
+                            styles.avatarText,
+                            { color: member.textColor },
+                          ]}
+                        >
+                          {member.initial}
+                        </Text>
+                      </View>
+                      <Text style={styles.pickerRowText}>
+                        {member.displayName}
+                      </Text>
+                      <View
+                        style={[
+                          styles.radioOuter,
+                          isSelected && styles.radioOuterSelected,
+                        ]}
+                      >
+                        {isSelected && <View style={styles.radioInner} />}
+                      </View>
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
+            </View>
+          </View>
+        </Modal>
+
+        {/* Repeat Picker Bottom Sheet Modal */}
+        <Modal
+          visible={showRepeatModal}
+          transparent
+          animationType="fade"
+          onRequestClose={() => setShowRepeatModal(false)}
+        >
+          <View style={styles.pickerOverlay}>
+            <TouchableOpacity
+              style={styles.pickerBackdrop}
+              activeOpacity={1}
+              onPress={() => setShowRepeatModal(false)}
+            />
+            <View
+              style={[
+                styles.pickerSheet,
+                { paddingBottom: Math.max(insets.bottom + 16, 24) },
+              ]}
+            >
+              <View style={styles.pickerHandle} />
+              <Text style={styles.pickerTitle}>Repeat</Text>
+              <Text style={styles.pickerSubtitle}>Set reminder cadence</Text>
+              <View style={styles.pickerCard}>
+                {REPEAT_OPTIONS.map((opt, idx) => {
+                  const isSelected = repeat === opt;
+                  return (
+                    <TouchableOpacity
+                      key={opt}
+                      style={[
+                        styles.pickerRow,
+                        idx > 0 && styles.pickerRowDivider,
+                      ]}
+                      onPress={() => {
+                        setRepeat(opt);
+                        setShowRepeatModal(false);
+                      }}
+                      activeOpacity={0.7}
+                    >
+                      <Text style={styles.pickerRowText}>{opt}</Text>
+                      <View
+                        style={[
+                          styles.radioOuter,
+                          isSelected && styles.radioOuterSelected,
+                        ]}
+                      >
+                        {isSelected && <View style={styles.radioInner} />}
+                      </View>
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
+            </View>
+          </View>
+        </Modal>
       </View>
     </Modal>
   );
@@ -259,102 +489,112 @@ export const CreateReminderModal: React.FC<CreateReminderModalProps> = ({
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#0B1A2F',
+    backgroundColor: Colors.background,
   },
   flex: {
     flex: 1,
   },
   header: {
-    height: 54,
+    height: 56,
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: '#162434',
+    paddingHorizontal: 20,
+    position: 'relative',
   },
-  closeBtn: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: '#162536',
+  headerTitleContainer: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
     alignItems: 'center',
     justifyContent: 'center',
   },
   headerTitle: {
     fontSize: 18,
     fontWeight: '700',
-    color: '#FFFFFF',
+    color: Colors.white,
+    letterSpacing: -0.2,
+    textAlign: 'center',
   },
-  headerRightSpacer: {
-    width: 36,
+  closeBtn: {
+    width: 42,
+    height: 42,
+    borderRadius: 21,
+    backgroundColor: Colors.transparent,
+    borderWidth: 1.5,
+    borderColor: Colors.borderMutedAlt,
+    alignItems: 'center',
+    justifyContent: 'center',
+    zIndex: 2,
   },
   scrollView: {
     flex: 1,
   },
   scrollContent: {
-    padding: 16,
-    paddingBottom: 32,
+    paddingHorizontal: 24,
+    paddingTop: 8,
+    paddingBottom: 24,
   },
   inputLabel: {
     fontSize: 13,
-    color: '#8E9BAE',
+    color: Colors.textSubtle,
     marginBottom: 8,
     fontWeight: '500',
   },
   inputBox: {
-    backgroundColor: '#101F2F',
+    backgroundColor: Colors.cardBackground,
     borderWidth: 1.5,
-    borderColor: '#F0913A',
-    borderRadius: 16,
-    padding: 16,
-    marginBottom: 20,
-    minHeight: 88,
+    borderColor: Colors.primary,
+    borderRadius: 18,
+    paddingHorizontal: 18,
+    paddingVertical: 18,
+    marginBottom: 24,
+    minHeight: 96,
   },
   textInput: {
-    fontSize: 17,
+    fontSize: 18,
     fontWeight: '700',
-    color: '#FFFFFF',
-    lineHeight: 24,
+    color: Colors.white,
+    lineHeight: 25,
     padding: 0,
   },
   segmentedControl: {
     flexDirection: 'row',
-    backgroundColor: '#112030',
-    borderRadius: 24,
+    backgroundColor: Colors.cardInsetAlt,
+    borderRadius: 28,
     padding: 4,
-    marginBottom: 24,
+    marginBottom: 26,
     borderWidth: 1,
-    borderColor: '#192C3E',
+    borderColor: Colors.surfaceNavyDark,
+    height: 54,
   },
   segmentBtn: {
     flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 10,
-    borderRadius: 20,
+    borderRadius: 24,
+    height: 44,
   },
   segmentBtnActive: {
-    backgroundColor: '#F0913A',
+    backgroundColor: Colors.primary,
   },
   segmentIcon: {
-    marginRight: 6,
+    marginRight: 8,
   },
   segmentText: {
-    fontSize: 14,
+    fontSize: 15,
     fontWeight: '600',
-    color: '#8E9BAE',
+    color: Colors.textSubtle,
   },
   segmentTextActive: {
-    color: '#0A131F',
+    color: Colors.cardInsetDark,
     fontWeight: '700',
   },
   sectionHeading: {
     fontSize: 12,
     fontWeight: '700',
-    color: '#7D8B9B',
-    letterSpacing: 0.8,
+    color: Colors.textPlaceholder,
+    letterSpacing: 1,
     marginBottom: 12,
   },
   chipsContainer: {
@@ -368,39 +608,43 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     borderRadius: 20,
     borderWidth: 1,
+    height: 42,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   chipSelected: {
-    backgroundColor: '#F0913A',
-    borderColor: '#F0913A',
+    backgroundColor: Colors.primary,
+    borderColor: Colors.primary,
   },
   chipUnselected: {
-    backgroundColor: '#112030',
-    borderColor: '#1C2E42',
+    backgroundColor: Colors.cardBackground,
+    borderColor: Colors.borderBold,
   },
   chipText: {
-    fontSize: 13,
+    fontSize: 14,
   },
   chipTextSelected: {
-    color: '#0A131F',
+    color: Colors.cardInsetDark,
     fontWeight: '700',
   },
   chipTextUnselected: {
-    color: '#FFFFFF',
-    fontWeight: '500',
+    color: Colors.white,
+    fontWeight: '600',
   },
   cardContainer: {
-    backgroundColor: '#112030',
-    borderRadius: 16,
+    backgroundColor: Colors.cardBackground,
+    borderRadius: 18,
     borderWidth: 1,
-    borderColor: '#1B2C3E',
+    borderColor: Colors.borderBold,
     marginBottom: 20,
+    overflow: 'hidden',
   },
   rowItem: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingVertical: 14,
-    paddingHorizontal: 16,
+    paddingVertical: 16,
+    paddingHorizontal: 18,
   },
   rowLeft: {
     flexDirection: 'row',
@@ -411,72 +655,158 @@ const styles = StyleSheet.create({
   },
   rowLabel: {
     fontSize: 12,
-    color: '#8E9BAE',
-    marginBottom: 2,
+    color: Colors.textTertiaryAlt,
+    marginBottom: 4,
+    fontWeight: '500',
   },
   avatarRow: {
     flexDirection: 'row',
     alignItems: 'center',
   },
   avatarCircle: {
-    width: 20,
-    height: 20,
-    borderRadius: 10,
-    backgroundColor: '#C87D32',
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    backgroundColor: Colors.avatarBrown,
     alignItems: 'center',
     justifyContent: 'center',
-    marginRight: 6,
+    marginRight: 8,
   },
   avatarText: {
-    fontSize: 11,
+    fontSize: 12,
     fontWeight: '700',
-    color: '#FFFFFF',
+    color: Colors.amberLight,
   },
   rowValue: {
-    fontSize: 15,
+    fontSize: 17,
     fontWeight: '700',
-    color: '#FFFFFF',
+    color: Colors.white,
   },
   rowDivider: {
     height: 1,
-    backgroundColor: '#172739',
-    marginLeft: 48,
+    backgroundColor: Colors.surfaceElevated2,
   },
   hintBox: {
     flexDirection: 'row',
-    alignItems: 'center',
-    borderWidth: 1,
+    alignItems: 'flex-start',
+    borderWidth: 1.5,
     borderStyle: 'dashed',
-    borderColor: '#24364A',
-    borderRadius: 14,
-    padding: 14,
+    borderColor: Colors.surfaceNavyLight,
+    borderRadius: 16,
+    paddingVertical: 14,
+    paddingHorizontal: 16,
+    backgroundColor: Colors.transparent,
+    marginBottom: 20,
   },
   hintIcon: {
     marginRight: 12,
+    marginTop: 2,
   },
   hintText: {
     flex: 1,
-    fontSize: 13,
-    color: '#8E9BAE',
-    lineHeight: 18,
+    fontSize: 13.5,
+    color: Colors.textSubtle,
+    lineHeight: 19,
+  },
+  hintLink: {
+    color: Colors.textLightMutedAlt,
+    fontWeight: '600',
+    textDecorationLine: 'underline',
   },
   bottomBar: {
-    paddingHorizontal: 16,
-    paddingTop: 12,
-    backgroundColor: '#0B1A2F',
-    borderTopWidth: 1,
-    borderTopColor: '#142232',
+    paddingHorizontal: 24,
+    paddingTop: 8,
+    backgroundColor: Colors.transparent,
   },
   submitBtn: {
-    backgroundColor: '#F0913A',
-    height: 52,
-    borderRadius: 26,
+    backgroundColor: Colors.primary,
+    height: 54,
+    borderRadius: 27,
     alignItems: 'center',
     justifyContent: 'center',
   },
   submitBtnText: {
     fontSize: 16,
     fontWeight: '700',
-    color: '#FFFFFF',
+    color: Colors.white,
+  },
+  pickerOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(5, 11, 18, 0.7)',
+    justifyContent: 'flex-end',
+  },
+  pickerBackdrop: {
+    ...StyleSheet.absoluteFill,
+  },
+  pickerSheet: {
+    backgroundColor: Colors.background,
+    borderTopLeftRadius: 28,
+    borderTopRightRadius: 28,
+    paddingTop: 12,
+    paddingHorizontal: 20,
+    borderWidth: 1,
+    borderColor: Colors.borderBold,
+  },
+  pickerHandle: {
+    width: 44,
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: Colors.borderMuted,
+    alignSelf: 'center',
+    marginBottom: 16,
+  },
+  pickerTitle: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: Colors.white,
+    marginBottom: 4,
+  },
+  pickerSubtitle: {
+    fontSize: 13,
+    color: Colors.textTertiary,
+    marginBottom: 18,
+  },
+  pickerCard: {
+    backgroundColor: Colors.cardBackground,
+    borderRadius: 18,
+    borderWidth: 1,
+    borderColor: Colors.borderBold,
+    overflow: 'hidden',
+  },
+  pickerRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 14,
+    paddingHorizontal: 16,
+    justifyContent: 'space-between',
+  },
+  pickerRowDivider: {
+    borderTopWidth: 1,
+    borderTopColor: Colors.surfaceElevated2,
+  },
+  pickerRowText: {
+    flex: 1,
+    fontSize: 16,
+    fontWeight: '600',
+    color: Colors.white,
+    marginLeft: 12,
+  },
+  radioOuter: {
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    borderWidth: 1.5,
+    borderColor: Colors.borderLightAlt,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  radioOuterSelected: {
+    borderColor: Colors.primary,
+  },
+  radioInner: {
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+    backgroundColor: Colors.primary,
   },
 });

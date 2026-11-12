@@ -30,10 +30,12 @@ import {
   ScanDocumentModal,
   AskHosynQModal,
   UploadDocumentModal,
+  FamilyVaultModal,
   ConfirmationToast,
   ReminderItem,
   ToastConfig,
 } from '../addFlow';
+import { FamilyPulseModal, FamilyHubModal } from '../familyPulse';
 import {
   INITIAL_ATTENTION_ITEMS,
   INITIAL_UPCOMING_EVENTS,
@@ -60,6 +62,7 @@ export interface HomeScreenProps {
   onAllTasksPress?: () => void;
   onContinueProfile?: () => void;
   onOpenPulse?: () => void;
+  onOpenFamilyHub?: () => void;
   onScanPress?: () => void;
   onHeadingHomePress?: () => void;
   onAddTaskPress?: () => void;
@@ -80,6 +83,7 @@ const HomeScreen: React.FC<HomeScreenProps> = ({
   onAllTasksPress,
   onContinueProfile,
   onOpenPulse,
+  onOpenFamilyHub,
   onScanPress,
   onHeadingHomePress,
   onAddTaskPress,
@@ -97,6 +101,12 @@ const HomeScreen: React.FC<HomeScreenProps> = ({
   const [internalScanVisible, setInternalScanVisible] = useState(false);
   const [internalUploadVisible, setInternalUploadVisible] = useState(false);
   const [internalAskVisible, setInternalAskVisible] = useState(false);
+  const [internalVaultVisible, setInternalVaultVisible] = useState(false);
+  const [internalPulseVisible, setInternalPulseVisible] = useState(false);
+  const [internalFamilyHubVisible, setInternalFamilyHubVisible] = useState(false);
+  const [internalUploadedFile, setInternalUploadedFile] = useState<
+    string | undefined
+  >(undefined);
 
   const [toastConfig, setToastConfig] = useState<ToastConfig>({
     visible: false,
@@ -287,10 +297,14 @@ const HomeScreen: React.FC<HomeScreenProps> = ({
         <FamilyPulseSection
           members={familyMembers}
           suggestion={suggestion}
-          onOpenPulse={onOpenPulse}
-          onMemberPress={(m) =>
-            Alert.alert(m.name, `Location: ${m.location}\nStatus: ${m.status}`)
-          }
+          onOpenPulse={onOpenPulse || (() => setInternalPulseVisible(true))}
+          onMemberPress={(_m) => {
+            if (onOpenFamilyHub) {
+              onOpenFamilyHub();
+            } else {
+              setInternalFamilyHubVisible(true);
+            }
+          }}
           onConfirmSuggestion={() =>
             setSuggestion((prev) => ({
               ...prev,
@@ -403,22 +417,52 @@ const HomeScreen: React.FC<HomeScreenProps> = ({
         onSaveReminder={(reminder: ReminderItem) => {
           showToast(`Reminder set for ${reminder.whenText.toLowerCase()}`);
         }}
+        onConvertToTask={() => {
+          setInternalReminderVisible(false);
+          setInternalCreateTaskVisible(true);
+        }}
       />
 
       {/* Document Scanner Flow (ADD-05 -> ADD-17) */}
       <ScanDocumentModal
         visible={internalScanVisible}
-        onClose={() => setInternalScanVisible(false)}
+        onClose={() => {
+          setInternalScanVisible(false);
+          setInternalUploadedFile(undefined);
+        }}
         onItemsAdded={(count: number) => {
           showToast(`Added ${count} items to your family`);
         }}
+        onOpenUpload={() => {
+          setInternalScanVisible(false);
+          setInternalUploadVisible(true);
+        }}
+        onTypeDetailsMyself={() => {
+          setInternalScanVisible(false);
+          setInternalUploadedFile(undefined);
+          setInternalCreateTaskVisible(true);
+        }}
+        onOpenVault={() => {
+          setInternalScanVisible(false);
+          setInternalVaultVisible(true);
+        }}
+        onIgnore={() => {
+          showToast('Ignored. Nothing was added. The file is saved.', 'cancelled');
+        }}
+        scannedFileName={internalUploadedFile}
       />
 
-      {/* Upload Document Picker (ADD-07) */}
+      {/* Upload Document Picker (ADD-07, ADD-08, ADD-09) */}
       <UploadDocumentModal
         visible={internalUploadVisible}
         onClose={() => setInternalUploadVisible(false)}
-        onFileSelected={(_fileName: string) => {
+        onFileSelected={(fileName: string) => {
+          setInternalUploadedFile(fileName);
+          setInternalUploadVisible(false);
+          setInternalScanVisible(true);
+        }}
+        onScanWithCamera={() => {
+          setInternalUploadVisible(false);
           setInternalScanVisible(true);
         }}
       />
@@ -429,6 +473,43 @@ const HomeScreen: React.FC<HomeScreenProps> = ({
         onClose={() => setInternalAskVisible(false)}
         onConfirmAdded={(title: string) => {
           showToast(`Added "${title}" to your family`);
+        }}
+        onCancelProposal={() => {
+          showToast('Cancelled. Nothing was changed.', 'cancelled');
+        }}
+        onMakeTask={() => {
+          setInternalAskVisible(false);
+          setInternalCreateTaskVisible(true);
+        }}
+        onMakeEvent={() => {
+          setInternalAskVisible(false);
+          setInternalEventVisible(true);
+        }}
+      />
+
+      {/* Family Vault (ADD-13) */}
+      <FamilyVaultModal
+        visible={internalVaultVisible}
+        onClose={() => setInternalVaultVisible(false)}
+      />
+
+      {/* Family Pulse Modal (PUL-01 & PUL-11) */}
+      <FamilyPulseModal
+        visible={internalPulseVisible}
+        onClose={() => setInternalPulseVisible(false)}
+      />
+
+      {/* Family Hub Modal (FAM-01) */}
+      <FamilyHubModal
+        visible={internalFamilyHubVisible}
+        onClose={() => setInternalFamilyHubVisible(false)}
+        onOpenPulse={() => {
+          setInternalFamilyHubVisible(false);
+          setInternalPulseVisible(true);
+        }}
+        onOpenVault={() => {
+          setInternalFamilyHubVisible(false);
+          setInternalVaultVisible(true);
         }}
       />
     </SafeAreaView>

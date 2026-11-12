@@ -9,6 +9,7 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Feather from '@react-native-vector-icons/feather';
+import Colors from '../../../units/Colors';
 
 export interface AddSheetModalProps {
   visible: boolean;
@@ -61,17 +62,17 @@ export const AddSheetModal: React.FC<AddSheetModalProps> = ({
                   onPress={onClose}
                   activeOpacity={0.7}
                   style={styles.closeBtn}
-                  accessibilityLabel="Close Add Sheet"
                   accessibilityRole="button"
+                  accessibilityLabel="Close"
                 >
-                  <Feather name="x" size={20} color="#FFFFFF" />
+                  <Feather name="x" size={20} color={Colors.white} />
                 </TouchableOpacity>
               </View>
 
-              {/* AI Prompt Bar */}
+              {/* AI Prompt Input Bar */}
               <TouchableOpacity
                 onPress={onSelectAsk}
-                activeOpacity={0.85}
+                activeOpacity={0.8}
                 style={styles.aiPromptBar}
                 accessibilityRole="button"
                 accessibilityLabel="Ask HosynQ to add something"
@@ -83,7 +84,7 @@ export const AddSheetModal: React.FC<AddSheetModalProps> = ({
                   </Text>
                 </View>
                 <View style={styles.micCircle}>
-                  <Feather name="mic" size={17} color="#FFFFFF" />
+                  <Feather name="mic" size={17} color={Colors.white} />
                 </View>
               </TouchableOpacity>
 
@@ -103,7 +104,7 @@ export const AddSheetModal: React.FC<AddSheetModalProps> = ({
                   accessibilityLabel="Add Task"
                 >
                   <View style={[styles.iconCircle, styles.taskIconRing]}>
-                    <Feather name="check-square" size={22} color="#F0913A" />
+                    <Feather name="check-square" size={22} color={Colors.primary} />
                   </View>
                   <Text style={styles.cardTitle}>Task</Text>
                   <Text style={styles.cardSubtitle}>Something to do</Text>
@@ -118,7 +119,7 @@ export const AddSheetModal: React.FC<AddSheetModalProps> = ({
                   accessibilityLabel="Add Event"
                 >
                   <View style={[styles.iconCircle, styles.eventIconRing]}>
-                    <Feather name="calendar" size={22} color="#3A8EF0" />
+                    <Feather name="calendar" size={22} color={Colors.accentBlue} />
                   </View>
                   <Text style={styles.cardTitle}>Event</Text>
                   <Text style={styles.cardSubtitle}>Something at a time</Text>
@@ -133,7 +134,7 @@ export const AddSheetModal: React.FC<AddSheetModalProps> = ({
                   accessibilityLabel="Add Reminder"
                 >
                   <View style={[styles.iconCircle, styles.reminderIconRing]}>
-                    <Feather name="bell" size={22} color="#9D65E5" />
+                    <Feather name="bell" size={22} color={Colors.accentPurple} />
                   </View>
                   <Text style={styles.cardTitle}>Reminder</Text>
                   <Text style={styles.cardSubtitle}>
@@ -150,7 +151,7 @@ export const AddSheetModal: React.FC<AddSheetModalProps> = ({
                   accessibilityLabel="Add List"
                 >
                   <View style={[styles.iconCircle, styles.listIconRing]}>
-                    <Feather name="list" size={22} color="#2EC4B6" />
+                    <Feather name="list" size={22} color={Colors.accentTeal} />
                   </View>
                   <Text style={styles.cardTitle}>List</Text>
                   <Text style={styles.cardSubtitle}>Groceries, packing</Text>
@@ -165,7 +166,7 @@ export const AddSheetModal: React.FC<AddSheetModalProps> = ({
                   accessibilityLabel="Scan Document"
                 >
                   <View style={[styles.iconCircle, styles.scanIconRing]}>
-                    <Feather name="maximize" size={22} color="#00C2CB" />
+                    <Feather name="maximize" size={22} color={Colors.accentCyan} />
                   </View>
                   <Text style={styles.cardTitle}>Scan</Text>
                   <Text style={styles.cardSubtitle}>Bills, circulars</Text>
@@ -180,7 +181,7 @@ export const AddSheetModal: React.FC<AddSheetModalProps> = ({
                   accessibilityLabel="Upload Document"
                 >
                   <View style={[styles.iconCircle, styles.uploadIconRing]}>
-                    <Feather name="image" size={22} color="#E84A5F" />
+                    <Feather name="image" size={22} color={Colors.accentRed} />
                   </View>
                   <Text style={styles.cardTitle}>Upload</Text>
                   <Text style={styles.cardSubtitle}>Photo or PDF</Text>
@@ -201,19 +202,19 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-end',
   },
   sheetContainer: {
-    backgroundColor: '#0B1A2F',
+    backgroundColor: Colors.background,
     borderTopLeftRadius: 28,
     borderTopRightRadius: 28,
     paddingTop: 12,
-    paddingHorizontal: 16,
+    paddingHorizontal: 20,
     borderWidth: 1,
-    borderColor: '#1C2B3D',
+    borderColor: Colors.borderBold,
   },
   dragHandle: {
     width: 44,
     height: 4,
     borderRadius: 2,
-    backgroundColor: '#334457',
+    backgroundColor: Colors.borderMuted,
     alignSelf: 'center',
     marginBottom: 16,
   },
@@ -226,25 +227,27 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: 22,
     fontWeight: '700',
-    color: '#FFFFFF',
+    color: Colors.white,
     letterSpacing: -0.3,
   },
   closeBtn: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: '#182738',
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: Colors.surfaceCardDark,
+    borderWidth: 1,
+    borderColor: Colors.borderMedium,
     alignItems: 'center',
     justifyContent: 'center',
   },
   aiPromptBar: {
-    backgroundColor: '#101F2F',
+    backgroundColor: Colors.cardBackground,
     borderWidth: 1.5,
-    borderColor: '#F0913A',
-    borderRadius: 24,
-    paddingVertical: 10,
-    paddingLeft: 16,
-    paddingRight: 8,
+    borderColor: Colors.primary,
+    borderRadius: 26,
+    height: 52,
+    paddingLeft: 18,
+    paddingRight: 6,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
@@ -255,93 +258,93 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   sparkleIcon: {
-    color: '#F0913A',
-    fontSize: 18,
+    color: Colors.primary,
+    fontSize: 20,
     marginRight: 10,
     fontWeight: 'bold',
   },
   aiPlaceholder: {
-    color: '#8E9BAE',
+    color: Colors.textSubtle,
     fontSize: 15,
     fontWeight: '500',
   },
   micCircle: {
-    width: 34,
-    height: 34,
-    borderRadius: 17,
-    backgroundColor: '#F0913A',
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: Colors.primary,
     alignItems: 'center',
     justifyContent: 'center',
   },
   hintText: {
-    color: '#7D8B9B',
-    fontSize: 12,
+    color: Colors.textTertiary,
+    fontSize: 13,
     textAlign: 'center',
-    marginTop: 10,
-    marginBottom: 18,
+    marginTop: 12,
+    marginBottom: 20,
   },
   grid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     justifyContent: 'space-between',
-    rowGap: 12,
+    rowGap: 14,
   },
   card: {
-    width: '31.5%',
-    backgroundColor: '#112030',
-    borderRadius: 16,
-    paddingVertical: 16,
-    paddingHorizontal: 8,
+    width: '31%',
+    backgroundColor: Colors.cardBackground,
+    borderRadius: 18,
+    paddingVertical: 18,
+    paddingHorizontal: 6,
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 1,
-    borderColor: '#192B3E',
-    minHeight: 120,
+    borderColor: Colors.borderBold,
+    minHeight: 126,
   },
   iconCircle: {
-    width: 50,
-    height: 50,
-    borderRadius: 25,
+    width: 52,
+    height: 52,
+    borderRadius: 26,
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 1.5,
-    marginBottom: 10,
+    marginBottom: 12,
   },
   taskIconRing: {
-    backgroundColor: 'rgba(240, 145, 58, 0.1)',
-    borderColor: '#F0913A',
+    backgroundColor: 'rgba(240, 145, 58, 0.12)',
+    borderColor: Colors.primary,
   },
   eventIconRing: {
-    backgroundColor: 'rgba(58, 142, 240, 0.1)',
-    borderColor: '#3A8EF0',
+    backgroundColor: 'rgba(58, 142, 240, 0.12)',
+    borderColor: Colors.accentBlue,
   },
   reminderIconRing: {
-    backgroundColor: 'rgba(157, 101, 229, 0.1)',
-    borderColor: '#9D65E5',
+    backgroundColor: 'rgba(157, 101, 229, 0.12)',
+    borderColor: Colors.accentPurple,
   },
   listIconRing: {
-    backgroundColor: 'rgba(46, 196, 182, 0.1)',
-    borderColor: '#2EC4B6',
+    backgroundColor: 'rgba(46, 196, 182, 0.12)',
+    borderColor: Colors.accentTeal,
   },
   scanIconRing: {
-    backgroundColor: 'rgba(0, 194, 203, 0.1)',
-    borderColor: '#00C2CB',
+    backgroundColor: 'rgba(0, 194, 203, 0.12)',
+    borderColor: Colors.accentCyan,
   },
   uploadIconRing: {
-    backgroundColor: 'rgba(232, 74, 95, 0.1)',
-    borderColor: '#E84A5F',
+    backgroundColor: 'rgba(232, 74, 95, 0.12)',
+    borderColor: Colors.accentRed,
   },
   cardTitle: {
     fontSize: 15,
     fontWeight: '700',
-    color: '#FFFFFF',
+    color: Colors.white,
     marginBottom: 4,
     textAlign: 'center',
   },
   cardSubtitle: {
     fontSize: 11,
-    color: '#7D8B9B',
+    color: Colors.textTertiary,
     textAlign: 'center',
-    lineHeight: 14,
+    lineHeight: 15,
   },
 });

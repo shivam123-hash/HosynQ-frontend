@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   View,
   Text,
@@ -12,22 +12,39 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Feather from '@react-native-vector-icons/feather';
+import Colors from '../../../units/Colors';
+
+export type AskHosynQStage =
+  | 'initial'
+  | 'thinking'
+  | 'clarifying'
+  | 'proposed'
+  | 'editing'
+  | 'couldNotUnderstand';
 
 export interface AskHosynQModalProps {
   visible: boolean;
   onClose: () => void;
   onConfirmAdded: (title: string) => void;
+  onCancelProposal?: () => void;
+  onMakeTask?: () => void;
+  onMakeEvent?: () => void;
+  initialStage?: AskHosynQStage;
+  thinkingDurationMs?: number;
 }
-
-type ScreenStage = 'initial' | 'clarifying' | 'proposed' | 'editing';
 
 export const AskHosynQModal: React.FC<AskHosynQModalProps> = ({
   visible,
   onClose,
   onConfirmAdded,
+  onCancelProposal,
+  onMakeTask,
+  onMakeEvent,
+  initialStage,
+  thinkingDurationMs = 700,
 }) => {
   const insets = useSafeAreaInsets();
-  const [stage, setStage] = useState<ScreenStage>('initial');
+  const [stage, setStage] = useState<AskHosynQStage>(initialStage || 'initial');
   const [inputMessage, setInputMessage] = useState(
     "Add Aarav's PTM Friday 3 PM and remind both of us Thursday"
   );
@@ -40,15 +57,47 @@ export const AskHosynQModal: React.FC<AskHosynQModalProps> = ({
   const [eventWhere, setEventWhere] = useState("St. Mary's School");
   const [eventCategory, _setEventCategory] = useState('Family');
 
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
   useEffect(() => {
     if (!visible) {
-      setStage('initial');
+      if (timerRef.current) {
+        clearTimeout(timerRef.current);
+        timerRef.current = null;
+      }
+      setStage(initialStage || 'initial');
+    } else if (initialStage) {
+      setStage(initialStage);
     }
-  }, [visible]);
+    return () => {
+      if (timerRef.current) {
+        clearTimeout(timerRef.current);
+      }
+    };
+  }, [visible, initialStage]);
+
+  const triggerThinkingToProposed = () => {
+    if (thinkingDurationMs === 0) {
+      setStage('proposed');
+      return;
+    }
+    setStage('thinking');
+    timerRef.current = setTimeout(() => {
+      setStage('proposed');
+    }, thinkingDurationMs);
+  };
 
   const handleSend = () => {
     if (stage === 'initial') {
-      setStage('proposed');
+      const lower = inputMessage.toLowerCase();
+      if (lower.includes('sort') || lower.includes('dadi next week')) {
+        setStage('couldNotUnderstand');
+        setInputMessage('Book Dadi’s eye check-up');
+        return;
+      }
+      triggerThinkingToProposed();
+    } else if (stage === 'couldNotUnderstand' || stage === 'clarifying') {
+      triggerThinkingToProposed();
     }
   };
 
@@ -57,7 +106,7 @@ export const AskHosynQModal: React.FC<AskHosynQModalProps> = ({
     if (text.includes('Dadi')) {
       setStage('clarifying');
     } else {
-      setStage('proposed');
+      triggerThinkingToProposed();
     }
   };
 
@@ -68,6 +117,9 @@ export const AskHosynQModal: React.FC<AskHosynQModalProps> = ({
 
   const handleCancel = () => {
     onClose();
+    if (stage === 'proposed') {
+      onCancelProposal?.();
+    }
   };
 
   return (
@@ -94,7 +146,7 @@ export const AskHosynQModal: React.FC<AskHosynQModalProps> = ({
             <Feather
               name={stage === 'editing' ? 'chevron-left' : 'x'}
               size={20}
-              color="#FFFFFF"
+              color={Colors.white}
             />
           </TouchableOpacity>
 
@@ -118,7 +170,9 @@ export const AskHosynQModal: React.FC<AskHosynQModalProps> = ({
             keyboardShouldPersistTaps="handled"
             showsVerticalScrollIndicator={false}
           >
-            {/* STAGE 1: INITIAL */}
+            {/* =========================================================================
+                STAGE 1: INITIAL (ADD-19)
+            ========================================================================= */}
             {stage === 'initial' && (
               <View style={styles.initialContainer}>
                 {/* Center Star Badge */}
@@ -142,11 +196,13 @@ export const AskHosynQModal: React.FC<AskHosynQModalProps> = ({
                   }
                   activeOpacity={0.7}
                   style={styles.suggestionCard}
+                  accessibilityRole="button"
+                  accessibilityLabel="Remind Dadi suggestion"
                 >
                   <Text style={styles.suggestionText}>
                     Remind Dadi about her BP tablets at 9 PM every day
                   </Text>
-                  <Feather name="chevron-right" size={18} color="#F0913A" />
+                  <Feather name="chevron-right" size={18} color={Colors.primary} />
                 </TouchableOpacity>
 
                 <TouchableOpacity
@@ -157,11 +213,13 @@ export const AskHosynQModal: React.FC<AskHosynQModalProps> = ({
                   }
                   activeOpacity={0.7}
                   style={styles.suggestionCard}
+                  accessibilityRole="button"
+                  accessibilityLabel="Grocery list suggestion"
                 >
                   <Text style={styles.suggestionText}>
                     Grocery list for Saturday: milk, atta, dal, onions
                   </Text>
-                  <Feather name="chevron-right" size={18} color="#F0913A" />
+                  <Feather name="chevron-right" size={18} color={Colors.primary} />
                 </TouchableOpacity>
 
                 <TouchableOpacity
@@ -172,16 +230,59 @@ export const AskHosynQModal: React.FC<AskHosynQModalProps> = ({
                   }
                   activeOpacity={0.7}
                   style={styles.suggestionCard}
+                  accessibilityRole="button"
+                  accessibilityLabel="Rohan pickup suggestion"
                 >
                   <Text style={styles.suggestionText}>
                     Rohan picks up Anaya from badminton at 7:30 tonight
                   </Text>
-                  <Feather name="chevron-right" size={18} color="#F0913A" />
+                  <Feather name="chevron-right" size={18} color={Colors.primary} />
                 </TouchableOpacity>
               </View>
             )}
 
-            {/* STAGE 2: CLARIFYING */}
+            {/* =========================================================================
+                STAGE 2: THINKING (ADD-20)
+            ========================================================================= */}
+            {stage === 'thinking' && (
+              <View style={styles.chatFlow}>
+                {/* User bubble */}
+                <View style={styles.userBubble}>
+                  <Text style={styles.userBubbleText}>
+                    Add Aarav’s PTM Friday 3 PM and remind both of us Thursday
+                  </Text>
+                </View>
+
+                {/* Assistant Thinking Indicator */}
+                <View style={styles.botRow}>
+                  <View style={styles.botIconBox}>
+                    <Text style={styles.botSparkle}>✦</Text>
+                  </View>
+                  <View style={styles.thinkingBubble}>
+                    <View style={styles.dotsRow}>
+                      <View style={styles.orangeDot} />
+                      <View style={[styles.orangeDot, styles.dotSpacing]} />
+                      <View style={[styles.orangeDotMuted, styles.dotSpacing]} />
+                    </View>
+                    <Text style={styles.thinkingText}>
+                      Working out the dates and people...
+                    </Text>
+                  </View>
+                </View>
+
+                {/* Skeleton Card */}
+                <View style={styles.skeletonCard}>
+                  <View style={styles.skeletonLine40} />
+                  <View style={styles.skeletonLine80} />
+                  <View style={styles.skeletonLine60} />
+                  <View style={styles.skeletonLine50} />
+                </View>
+              </View>
+            )}
+
+            {/* =========================================================================
+                STAGE 3: CLARIFYING (ADD-21)
+            ========================================================================= */}
             {stage === 'clarifying' && (
               <View style={styles.chatFlow}>
                 {/* User bubble */}
@@ -193,7 +294,7 @@ export const AskHosynQModal: React.FC<AskHosynQModalProps> = ({
 
                 {/* Assistant prompt */}
                 <View style={styles.botRow}>
-                  <View style={styles.botIconCircle}>
+                  <View style={styles.botIconBox}>
                     <Text style={styles.botSparkle}>✦</Text>
                   </View>
                   <View style={styles.botBubble}>
@@ -203,7 +304,7 @@ export const AskHosynQModal: React.FC<AskHosynQModalProps> = ({
                   </View>
                 </View>
 
-                <View style={styles.clarifyCard}>
+                <View style={styles.clarifySection}>
                   <Text style={styles.clarifyHeading}>Which Friday?</Text>
                   <View style={styles.clarifyChipsRow}>
                     {['This Friday, 6 Nov', 'Next Friday, 13 Nov'].map(
@@ -218,6 +319,8 @@ export const AskHosynQModal: React.FC<AskHosynQModalProps> = ({
                               ? styles.chipSelected
                               : styles.chipUnselected,
                           ]}
+                          accessibilityRole="button"
+                          accessibilityLabel={item}
                         >
                           <Text
                             style={[
@@ -243,7 +346,10 @@ export const AskHosynQModal: React.FC<AskHosynQModalProps> = ({
                         key={item}
                         onPress={() => {
                           setSelectedTime(item);
-                          setStage('proposed');
+                          setStage('thinking');
+                          timerRef.current = setTimeout(() => {
+                            setStage('proposed');
+                          }, 700);
                         }}
                         activeOpacity={0.7}
                         style={[
@@ -252,6 +358,8 @@ export const AskHosynQModal: React.FC<AskHosynQModalProps> = ({
                             ? styles.chipSelected
                             : styles.chipUnselected,
                         ]}
+                        accessibilityRole="button"
+                        accessibilityLabel={item}
                       >
                         <Text
                           style={[
@@ -270,7 +378,9 @@ export const AskHosynQModal: React.FC<AskHosynQModalProps> = ({
               </View>
             )}
 
-            {/* STAGE 3: PROPOSED */}
+            {/* =========================================================================
+                STAGE 4: PROPOSED ACTION CARD (ADD-22)
+            ========================================================================= */}
             {stage === 'proposed' && (
               <View style={styles.chatFlow}>
                 {/* User bubble */}
@@ -282,7 +392,7 @@ export const AskHosynQModal: React.FC<AskHosynQModalProps> = ({
 
                 {/* Assistant bubble */}
                 <View style={styles.botRow}>
-                  <View style={styles.botIconCircle}>
+                  <View style={styles.botIconBox}>
                     <Text style={styles.botSparkle}>✦</Text>
                   </View>
                   <View style={styles.botBubble}>
@@ -292,23 +402,23 @@ export const AskHosynQModal: React.FC<AskHosynQModalProps> = ({
                   </View>
                 </View>
 
-                {/* Proposed Action Card */}
+                {/* Proposed Action Card with Orange Outline */}
                 <View style={styles.proposalCard}>
                   {/* Event item */}
                   <View style={styles.proposalSection}>
                     <View style={styles.proposalSectionHeader}>
-                      <Feather name="calendar" size={14} color="#3A8EF0" />
+                      <Feather name="calendar" size={14} color={Colors.accentBlue} />
                       <Text style={styles.proposalEventTag}>CREATE EVENT</Text>
                     </View>
                     <Text style={styles.proposalItemTitle}>{eventTitle}</Text>
                     <View style={styles.proposalRow}>
-                      <Feather name="clock" size={14} color="#8E9BAE" />
+                      <Feather name="clock" size={14} color={Colors.textSubtle} />
                       <Text style={styles.proposalRowText}>
                         Fri, 6 Nov · {selectedTime}
                       </Text>
                     </View>
                     <View style={styles.proposalRow}>
-                      <Feather name="tag" size={14} color="#8E9BAE" />
+                      <Feather name="tag" size={14} color={Colors.textSubtle} />
                       <Text style={styles.proposalRowText}>{eventCategory}</Text>
                     </View>
                   </View>
@@ -318,30 +428,32 @@ export const AskHosynQModal: React.FC<AskHosynQModalProps> = ({
                   {/* Reminder item */}
                   <View style={styles.proposalSection}>
                     <View style={styles.proposalSectionHeader}>
-                      <Feather name="bell" size={14} color="#9D65E5" />
+                      <Feather name="bell" size={14} color={Colors.accentPurple} />
                       <Text style={styles.proposalReminderTag}>REMINDER</Text>
                     </View>
                     <Text style={styles.proposalItemTitle}>
                       Aarav’s PTM tomorrow
                     </Text>
                     <View style={styles.proposalRow}>
-                      <Feather name="clock" size={14} color="#8E9BAE" />
+                      <Feather name="clock" size={14} color={Colors.textSubtle} />
                       <Text style={styles.proposalRowText}>
                         Thu, 5 Nov · 7:00 PM
                       </Text>
                     </View>
                     <View style={styles.proposalRow}>
-                      <Feather name="users" size={14} color="#8E9BAE" />
+                      <Feather name="users" size={14} color={Colors.textSubtle} />
                       <Text style={styles.proposalRowText}>Priya and Rohan</Text>
                     </View>
                   </View>
 
-                  {/* Action Buttons */}
+                  {/* Action Buttons: Confirm, Edit, Cancel */}
                   <View style={styles.proposalActionsRow}>
                     <TouchableOpacity
                       onPress={handleConfirm}
                       activeOpacity={0.8}
                       style={styles.confirmBtn}
+                      accessibilityRole="button"
+                      accessibilityLabel="Confirm"
                     >
                       <Text style={styles.confirmBtnText}>Confirm</Text>
                     </TouchableOpacity>
@@ -350,6 +462,8 @@ export const AskHosynQModal: React.FC<AskHosynQModalProps> = ({
                       onPress={() => setStage('editing')}
                       activeOpacity={0.7}
                       style={styles.editBtn}
+                      accessibilityRole="button"
+                      accessibilityLabel="Edit"
                     >
                       <Text style={styles.editBtnText}>Edit</Text>
                     </TouchableOpacity>
@@ -358,6 +472,8 @@ export const AskHosynQModal: React.FC<AskHosynQModalProps> = ({
                       onPress={handleCancel}
                       activeOpacity={0.7}
                       style={styles.cancelTextBtn}
+                      accessibilityRole="button"
+                      accessibilityLabel="Cancel proposal"
                     >
                       <Text style={styles.cancelText}>Cancel</Text>
                     </TouchableOpacity>
@@ -366,74 +482,168 @@ export const AskHosynQModal: React.FC<AskHosynQModalProps> = ({
               </View>
             )}
 
-            {/* STAGE 4: EDITING */}
+            {/* =========================================================================
+                STAGE 5: COULDN'T UNDERSTAND (ADD-24)
+            ========================================================================= */}
+            {stage === 'couldNotUnderstand' && (
+              <View style={styles.chatFlow}>
+                {/* User bubble */}
+                <View style={styles.userBubble}>
+                  <Text style={styles.userBubbleText}>
+                    sort the thing for dadi next week
+                  </Text>
+                </View>
+
+                {/* Assistant bubble */}
+                <View style={styles.botRow}>
+                  <View style={styles.botIconBox}>
+                    <Text style={styles.botSparkle}>✦</Text>
+                  </View>
+                  <View style={styles.botBubble}>
+                    <Text style={styles.botText}>
+                      Sorry, I’m not sure what to add. What needs doing, and
+                      when? For example: “Book Dadi’s eye check-up next Tuesday.”
+                    </Text>
+                  </View>
+                </View>
+
+                {/* Choice buttons */}
+                <View style={styles.choiceChipsCol}>
+                  <TouchableOpacity
+                    onPress={() => {
+                      onClose();
+                      onMakeTask?.();
+                    }}
+                    activeOpacity={0.7}
+                    style={styles.choiceChip}
+                    accessibilityRole="button"
+                    accessibilityLabel="Make a task instead"
+                  >
+                    <Text style={styles.choiceChipText}>Make a task instead</Text>
+                  </TouchableOpacity>
+
+                  <TouchableOpacity
+                    onPress={() => {
+                      onClose();
+                      onMakeEvent?.();
+                    }}
+                    activeOpacity={0.7}
+                    style={styles.choiceChip}
+                    accessibilityRole="button"
+                    accessibilityLabel="Make an event instead"
+                  >
+                    <Text style={styles.choiceChipText}>Make an event instead</Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
+            )}
+
+            {/* =========================================================================
+                STAGE 6: EDIT BEFORE ADDING (ADD-23)
+            ========================================================================= */}
             {stage === 'editing' && (
               <View style={styles.editingFlow}>
+                {/* Event Section Tag */}
+                <View style={styles.editSectionKickerRow}>
+                  <Feather name="calendar" size={14} color={Colors.accentBlue} />
+                  <Text style={styles.editSectionKickerEvent}>EVENT</Text>
+                </View>
+
                 {/* Event Edit Card */}
                 <View style={styles.editCardGroup}>
-                  <View style={styles.editCardHeader}>
-                    <Feather name="calendar" size={14} color="#3A8EF0" />
-                    <Text style={styles.proposalEventTag}>EVENT</Text>
-                  </View>
-
                   <View style={styles.editRow}>
-                    <Text style={styles.editFieldLabel}>Title</Text>
+                    <View style={styles.editCheckSquare}>
+                      <Feather name="check" size={14} color={Colors.cardInsetDark} />
+                    </View>
+                    <Text style={styles.editFieldLabelOrange}>Title</Text>
                     <TextInput
                       value={eventTitle}
                       onChangeText={setEventTitle}
                       style={styles.editFieldInput}
                     />
-                    <Feather name="chevron-right" size={16} color="#5C6E82" />
+                    <View style={styles.orangeCursor} />
+                    <Feather name="chevron-right" size={16} color={Colors.textMutedAlt} />
                   </View>
 
                   <View style={styles.editRowDivider} />
 
                   <View style={styles.editRow}>
+                    <Feather name="clock" size={16} color={Colors.textSubtle} style={styles.editIconLeft} />
                     <Text style={styles.editFieldLabel}>When</Text>
                     <Text style={styles.editFieldVal}>{eventWhen}</Text>
-                    <Feather name="chevron-right" size={16} color="#5C6E82" />
+                    <Feather name="chevron-right" size={16} color={Colors.textMutedAlt} />
                   </View>
 
                   <View style={styles.editRowDivider} />
 
                   <View style={styles.editRow}>
+                    <Feather name="map-pin" size={16} color={Colors.textSubtle} style={styles.editIconLeft} />
                     <Text style={styles.editFieldLabel}>Where</Text>
                     <TextInput
                       value={eventWhere}
                       onChangeText={setEventWhere}
                       style={styles.editFieldInput}
                     />
-                    <Feather name="chevron-right" size={16} color="#5C6E82" />
+                    <Feather name="chevron-right" size={16} color={Colors.textMutedAlt} />
                   </View>
 
                   <View style={styles.editRowDivider} />
 
                   <View style={styles.editRow}>
+                    <Feather name="tag" size={16} color={Colors.textSubtle} style={styles.editIconLeft} />
                     <Text style={styles.editFieldLabel}>Category</Text>
                     <Text style={styles.editFieldVal}>{eventCategory}</Text>
-                    <Feather name="chevron-right" size={16} color="#5C6E82" />
+                    <Feather name="chevron-right" size={16} color={Colors.textMutedAlt} />
+                  </View>
+
+                  <View style={styles.editRowDivider} />
+
+                  <View style={styles.editRow}>
+                    <Feather name="users" size={16} color={Colors.textSubtle} style={styles.editIconLeft} />
+                    <Text style={styles.editFieldLabel}>Invite</Text>
+                    <View style={styles.avatarClusterRow}>
+                      <View style={styles.avatarSmallPriya}>
+                        <Text style={styles.avatarSmallTextPriya}>P</Text>
+                      </View>
+                      <View style={styles.avatarSmallRohan}>
+                        <Text style={styles.avatarSmallTextRohan}>R</Text>
+                      </View>
+                      <Text style={styles.inviteNamesText}>Priya, Rohan</Text>
+                    </View>
+                    <Feather name="chevron-right" size={16} color={Colors.textMutedAlt} />
                   </View>
                 </View>
 
-                {/* Reminder Edit Card */}
-                <View style={[styles.editCardGroup, styles.mt16]}>
-                  <View style={styles.editCardHeader}>
-                    <Feather name="bell" size={14} color="#9D65E5" />
-                    <Text style={styles.proposalReminderTag}>REMINDER</Text>
-                  </View>
+                {/* Reminder Section Tag */}
+                <View style={[styles.editSectionKickerRow, styles.mt20]}>
+                  <Feather name="bell" size={14} color={Colors.accentPurple} />
+                  <Text style={styles.editSectionKickerReminder}>REMINDER</Text>
+                </View>
 
+                {/* Reminder Edit Card */}
+                <View style={styles.editCardGroup}>
                   <View style={styles.editRow}>
+                    <Feather name="clock" size={16} color={Colors.textSubtle} style={styles.editIconLeft} />
                     <Text style={styles.editFieldLabel}>When</Text>
                     <Text style={styles.editFieldVal}>Thu, 5 Nov · 7:00 PM</Text>
-                    <Feather name="chevron-right" size={16} color="#5C6E82" />
+                    <Feather name="chevron-right" size={16} color={Colors.textMutedAlt} />
                   </View>
 
                   <View style={styles.editRowDivider} />
 
                   <View style={styles.editRow}>
+                    <Feather name="users" size={16} color={Colors.textSubtle} style={styles.editIconLeft} />
                     <Text style={styles.editFieldLabel}>Remind</Text>
-                    <Text style={styles.editFieldVal}>Priya, Rohan</Text>
-                    <Feather name="chevron-right" size={16} color="#5C6E82" />
+                    <View style={styles.avatarClusterRow}>
+                      <View style={styles.avatarSmallPriya}>
+                        <Text style={styles.avatarSmallTextPriya}>P</Text>
+                      </View>
+                      <View style={styles.avatarSmallRohan}>
+                        <Text style={styles.avatarSmallTextRohan}>R</Text>
+                      </View>
+                      <Text style={styles.inviteNamesText}>Priya, Rohan</Text>
+                    </View>
+                    <Feather name="chevron-right" size={16} color={Colors.textMutedAlt} />
                   </View>
                 </View>
 
@@ -441,44 +651,59 @@ export const AskHosynQModal: React.FC<AskHosynQModalProps> = ({
                 <TouchableOpacity
                   onPress={handleConfirm}
                   activeOpacity={0.8}
-                  style={[styles.confirmBtn, styles.confirmBtnFull]}
+                  style={styles.confirmAndAddBtn}
+                  accessibilityRole="button"
+                  accessibilityLabel="Confirm and add"
                 >
-                  <Text style={styles.confirmBtnText}>Confirm and add</Text>
+                  <Text style={styles.confirmAndAddBtnText}>Confirm and add</Text>
                 </TouchableOpacity>
               </View>
             )}
           </ScrollView>
 
-          {/* Bottom Chat / Input Bar (Shown in initial, clarifying, and proposed stages) */}
+          {/* Bottom Chat / Input Bar (Shown in initial, thinking, clarifying, proposed, and couldNotUnderstand) */}
           {stage !== 'editing' && (
             <View
               style={[
                 styles.bottomInputBar,
-                { paddingBottom: Math.max(insets.bottom, 12) },
+                { paddingBottom: Math.max(insets.bottom + 4, 12) },
               ]}
             >
-              <View style={styles.inputOuter}>
+              <View
+                style={[
+                  styles.inputOuter,
+                  stage === 'initial' && styles.inputOuterActive,
+                ]}
+              >
                 <TextInput
                   value={inputMessage}
                   onChangeText={setInputMessage}
                   placeholder={
-                    stage === 'initial'
-                      ? 'Ask HosynQ to add something'
+                    stage === 'clarifying'
+                      ? 'Or type your answer'
                       : 'Write a message'
                   }
-                  placeholderTextColor="#6D8096"
+                  placeholderTextColor={Colors.textMutedSoft}
                   style={styles.chatTextInput}
                 />
+                {stage === 'initial' && <View style={styles.orangeCursorInline} />}
               </View>
+
               <TouchableOpacity
                 onPress={handleSend}
                 activeOpacity={0.8}
                 style={styles.sendBtn}
+                accessibilityRole="button"
+                accessibilityLabel="Send"
               >
                 <Feather
-                  name={stage === 'initial' ? 'send' : 'mic'}
+                  name={
+                    stage === 'initial' || stage === 'couldNotUnderstand'
+                      ? 'send'
+                      : 'mic'
+                  }
                   size={18}
-                  color="#FFFFFF"
+                  color={Colors.white}
                 />
               </TouchableOpacity>
             </View>
@@ -498,7 +723,7 @@ export const AskHosynQModal: React.FC<AskHosynQModalProps> = ({
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#0B1A2F',
+    backgroundColor: Colors.background,
   },
   flex: {
     flex: 1,
@@ -510,13 +735,13 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingHorizontal: 16,
     borderBottomWidth: 1,
-    borderBottomColor: '#162434',
+    borderBottomColor: Colors.surfaceSubtle,
   },
   circleBtn: {
     width: 36,
     height: 36,
     borderRadius: 18,
-    backgroundColor: '#162536',
+    backgroundColor: Colors.surfaceHighlight,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -528,14 +753,14 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   headerSparkle: {
-    color: '#F0913A',
+    color: Colors.primary,
     fontSize: 16,
     fontWeight: 'bold',
   },
   headerTitle: {
     fontSize: 17,
     fontWeight: '700',
-    color: '#FFFFFF',
+    color: Colors.white,
   },
   scrollView: {
     flex: 1,
@@ -552,27 +777,27 @@ const styles = StyleSheet.create({
     width: 68,
     height: 68,
     borderRadius: 34,
-    backgroundColor: '#112030',
+    backgroundColor: Colors.surfaceDeep,
     borderWidth: 1.5,
-    borderColor: '#F0913A',
+    borderColor: Colors.primary,
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: 20,
   },
   centerSparkle: {
-    color: '#F0913A',
+    color: Colors.primary,
     fontSize: 28,
   },
   initialTitle: {
     fontSize: 24,
     fontWeight: '700',
-    color: '#FFFFFF',
+    color: Colors.white,
     marginBottom: 10,
     textAlign: 'center',
   },
   initialSubtitle: {
     fontSize: 14,
-    color: '#8E9BAE',
+    color: Colors.textSubtle,
     textAlign: 'center',
     lineHeight: 20,
     paddingHorizontal: 12,
@@ -582,36 +807,35 @@ const styles = StyleSheet.create({
     alignSelf: 'flex-start',
     fontSize: 12,
     fontWeight: '700',
-    color: '#7D8B9B',
+    color: Colors.textTertiary,
     letterSpacing: 0.8,
     marginBottom: 12,
   },
   suggestionCard: {
     width: '100%',
-    backgroundColor: '#112030',
+    backgroundColor: Colors.cardBackground,
     borderRadius: 16,
     padding: 16,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     borderWidth: 1,
-    borderColor: '#192C3E',
+    borderColor: Colors.borderBold,
     marginBottom: 12,
   },
   suggestionText: {
-    flex: 1,
     fontSize: 14,
-    fontWeight: '600',
-    color: '#FFFFFF',
-    paddingRight: 10,
+    color: Colors.textNearWhiteSoft,
     lineHeight: 20,
+    flex: 1,
+    paddingRight: 10,
   },
   chatFlow: {
     paddingTop: 8,
   },
   userBubble: {
     alignSelf: 'flex-end',
-    backgroundColor: '#F0913A',
+    backgroundColor: Colors.primaryDark,
     borderRadius: 18,
     borderBottomRightRadius: 4,
     paddingVertical: 12,
@@ -621,57 +845,128 @@ const styles = StyleSheet.create({
   },
   userBubbleText: {
     fontSize: 15,
-    fontWeight: '700',
-    color: '#0A131F',
+    color: Colors.cardInsetDark,
+    fontWeight: '600',
     lineHeight: 20,
   },
   botRow: {
     flexDirection: 'row',
     alignItems: 'flex-start',
-    marginBottom: 16,
+    marginBottom: 10,
   },
-  botIconCircle: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
-    backgroundColor: '#112030',
-    borderWidth: 1,
-    borderColor: '#F0913A',
+  botIconBox: {
+    width: 30,
+    height: 30,
+    borderRadius: 8,
+    borderWidth: 1.5,
+    borderColor: Colors.primary,
     alignItems: 'center',
     justifyContent: 'center',
-    marginRight: 10,
-    marginTop: 2,
+    backgroundColor: 'rgba(240, 145, 58, 0.12)',
   },
   botSparkle: {
-    color: '#F0913A',
+    color: Colors.primary,
     fontSize: 14,
+    fontWeight: '700',
   },
   botBubble: {
     flex: 1,
-    backgroundColor: '#112030',
+    backgroundColor: Colors.cardBackground,
     borderRadius: 16,
-    borderTopLeftRadius: 4,
-    padding: 14,
+    borderBottomLeftRadius: 4,
+    paddingVertical: 12,
+    paddingHorizontal: 14,
+    marginLeft: 10,
     borderWidth: 1,
-    borderColor: '#1C2E42',
+    borderColor: Colors.borderBold,
   },
   botText: {
     fontSize: 14,
-    color: '#FFFFFF',
+    color: Colors.textNearWhiteAlt,
     lineHeight: 20,
   },
-  clarifyCard: {
-    backgroundColor: '#112030',
+  thinkingBubble: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: Colors.cardBackground,
     borderRadius: 16,
-    padding: 16,
+    borderBottomLeftRadius: 4,
+    paddingVertical: 12,
+    paddingHorizontal: 14,
+    marginLeft: 10,
     borderWidth: 1,
-    borderColor: '#1C2E42',
+    borderColor: Colors.borderBold,
+  },
+  dotsRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginRight: 8,
+  },
+  orangeDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: Colors.primary,
+  },
+  orangeDotMuted: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: 'rgba(240, 145, 58, 0.4)',
+  },
+  dotSpacing: {
+    marginLeft: 4,
+  },
+  thinkingText: {
+    fontSize: 13,
+    color: Colors.textLightMuted,
+    fontWeight: '500',
+  },
+  skeletonCard: {
+    marginLeft: 40,
+    backgroundColor: Colors.cardBackground,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: Colors.borderBold,
+    padding: 18,
+    marginTop: 6,
+  },
+  skeletonLine40: {
+    width: '40%',
+    height: 12,
+    backgroundColor: Colors.surfaceNavy,
+    borderRadius: 3,
+    marginBottom: 10,
+  },
+  skeletonLine80: {
+    width: '80%',
+    height: 12,
+    backgroundColor: Colors.surfaceNavy,
+    borderRadius: 3,
+    marginBottom: 10,
+  },
+  skeletonLine60: {
+    width: '60%',
+    height: 12,
+    backgroundColor: Colors.surfaceNavy,
+    borderRadius: 3,
+    marginBottom: 10,
+  },
+  skeletonLine50: {
+    width: '50%',
+    height: 12,
+    backgroundColor: Colors.surfaceNavy,
+    borderRadius: 3,
+  },
+  clarifySection: {
+    marginLeft: 40,
+    marginTop: 6,
   },
   clarifyHeading: {
-    fontSize: 15,
+    fontSize: 14,
     fontWeight: '700',
-    color: '#FFFFFF',
-    marginBottom: 10,
+    color: Colors.white,
+    marginBottom: 8,
   },
   clarifyChipsRow: {
     flexDirection: 'row',
@@ -680,36 +975,37 @@ const styles = StyleSheet.create({
   },
   chip: {
     paddingVertical: 8,
-    paddingHorizontal: 14,
-    borderRadius: 18,
+    paddingHorizontal: 16,
+    borderRadius: 20,
     borderWidth: 1,
   },
   chipSelected: {
-    backgroundColor: '#F0913A',
-    borderColor: '#F0913A',
+    backgroundColor: Colors.primary,
+    borderColor: Colors.primary,
   },
   chipUnselected: {
-    backgroundColor: '#132436',
-    borderColor: '#20344A',
+    backgroundColor: Colors.cardBackground,
+    borderColor: Colors.borderBold,
   },
   chipText: {
     fontSize: 13,
+    fontWeight: '600',
   },
   chipTextSelected: {
-    color: '#0A131F',
+    color: Colors.cardInsetDark,
     fontWeight: '700',
   },
   chipTextUnselected: {
-    color: '#FFFFFF',
-    fontWeight: '500',
+    color: Colors.textSubtle,
   },
   proposalCard: {
-    backgroundColor: '#112030',
+    marginLeft: 40,
+    backgroundColor: Colors.cardBackground,
     borderRadius: 16,
     borderWidth: 1.5,
-    borderColor: '#F0913A',
+    borderColor: Colors.primary,
     padding: 16,
-    marginTop: 6,
+    marginTop: 8,
   },
   proposalSection: {
     paddingVertical: 4,
@@ -717,171 +1013,290 @@ const styles = StyleSheet.create({
   proposalSectionHeader: {
     flexDirection: 'row',
     alignItems: 'center',
+    gap: 6,
     marginBottom: 6,
   },
   proposalEventTag: {
-    fontSize: 12,
+    fontSize: 11,
     fontWeight: '700',
-    color: '#3A8EF0',
-    marginLeft: 6,
-    letterSpacing: 0.5,
+    color: Colors.accentBlue,
+    letterSpacing: 0.8,
   },
   proposalReminderTag: {
-    fontSize: 12,
+    fontSize: 11,
     fontWeight: '700',
-    color: '#9D65E5',
-    marginLeft: 6,
-    letterSpacing: 0.5,
+    color: Colors.accentPurple,
+    letterSpacing: 0.8,
   },
   proposalItemTitle: {
     fontSize: 16,
     fontWeight: '700',
-    color: '#FFFFFF',
-    marginBottom: 8,
+    color: Colors.white,
+    marginBottom: 6,
   },
   proposalRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginTop: 4,
+    gap: 8,
+    marginTop: 3,
   },
   proposalRowText: {
     fontSize: 13,
-    color: '#8E9BAE',
-    marginLeft: 8,
+    color: Colors.textSubtle,
   },
   proposalDivider: {
     height: 1,
-    backgroundColor: '#1B2C3E',
+    backgroundColor: Colors.borderBold,
     marginVertical: 12,
   },
   proposalActionsRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginTop: 16,
-    gap: 12,
+    marginTop: 14,
+    gap: 10,
   },
   confirmBtn: {
-    backgroundColor: '#F0913A',
-    paddingVertical: 12,
-    paddingHorizontal: 20,
-    borderRadius: 24,
+    backgroundColor: Colors.primary,
+    borderRadius: 22,
+    height: 44,
+    paddingHorizontal: 24,
     alignItems: 'center',
     justifyContent: 'center',
-  },
-  confirmBtnFull: {
-    marginTop: 24,
-    width: '100%',
-  },
-  mt16: {
-    marginTop: 16,
   },
   confirmBtnText: {
-    fontSize: 14,
+    color: Colors.white,
+    fontSize: 15,
     fontWeight: '700',
-    color: '#FFFFFF',
   },
   editBtn: {
-    borderWidth: 1,
-    borderColor: '#2A3D54',
-    paddingVertical: 12,
+    backgroundColor: Colors.cardBackground,
+    borderRadius: 22,
+    height: 44,
     paddingHorizontal: 20,
-    borderRadius: 24,
     alignItems: 'center',
     justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: Colors.borderBold,
   },
   editBtnText: {
+    color: Colors.white,
     fontSize: 14,
     fontWeight: '600',
-    color: '#FFFFFF',
   },
   cancelTextBtn: {
-    paddingVertical: 12,
+    paddingVertical: 10,
     paddingHorizontal: 8,
+    marginLeft: 'auto',
   },
   cancelText: {
+    color: Colors.textSubtle,
     fontSize: 14,
-    color: '#7D8B9B',
-    fontWeight: '500',
+    fontWeight: '600',
+  },
+  choiceChipsCol: {
+    marginLeft: 40,
+    gap: 10,
+    marginTop: 8,
+  },
+  choiceChip: {
+    alignSelf: 'flex-start',
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+    borderRadius: 20,
+    backgroundColor: Colors.cardBackground,
+    borderWidth: 1,
+    borderColor: Colors.borderBold,
+  },
+  choiceChipText: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: Colors.textNearWhiteAlt,
   },
   editingFlow: {
     paddingTop: 8,
   },
-  editCardGroup: {
-    backgroundColor: '#112030',
-    borderRadius: 16,
-    padding: 16,
-    borderWidth: 1,
-    borderColor: '#1C2E42',
-  },
-  editCardHeader: {
+  editSectionKickerRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 12,
+    gap: 6,
+    marginBottom: 8,
+  },
+  editSectionKickerEvent: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: Colors.accentBlue,
+    letterSpacing: 0.8,
+  },
+  editSectionKickerReminder: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: Colors.accentPurple,
+    letterSpacing: 0.8,
+  },
+  editCardGroup: {
+    backgroundColor: Colors.cardBackground,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: Colors.borderBold,
+    overflow: 'hidden',
   },
   editRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingVertical: 10,
+    paddingVertical: 14,
+    paddingHorizontal: 16,
+  },
+  editCheckSquare: {
+    width: 20,
+    height: 20,
+    borderRadius: 4,
+    backgroundColor: Colors.primary,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 10,
+  },
+  editIconLeft: {
+    marginRight: 10,
   },
   editFieldLabel: {
-    fontSize: 13,
-    color: '#8E9BAE',
     width: 70,
+    fontSize: 14,
+    color: Colors.textTertiary,
+    fontWeight: '500',
+  },
+  editFieldLabelOrange: {
+    width: 50,
+    fontSize: 14,
+    color: Colors.primary,
+    fontWeight: '600',
   },
   editFieldInput: {
     flex: 1,
-    fontSize: 15,
-    fontWeight: '700',
-    color: '#FFFFFF',
-    padding: 0,
+    fontSize: 14,
+    color: Colors.white,
+    fontWeight: '600',
+    paddingVertical: 0,
+  },
+  orangeCursor: {
+    width: 2,
+    height: 18,
+    backgroundColor: Colors.primary,
+    marginRight: 8,
+  },
+  orangeCursorInline: {
+    width: 2,
+    height: 18,
+    backgroundColor: Colors.primary,
+    marginLeft: 2,
   },
   editFieldVal: {
     flex: 1,
-    fontSize: 15,
+    fontSize: 14,
+    color: Colors.white,
+    fontWeight: '500',
+  },
+  avatarClusterRow: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  avatarSmallPriya: {
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+    backgroundColor: Colors.avatarBrown,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  avatarSmallTextPriya: {
+    fontSize: 10,
+    color: Colors.amberLight,
     fontWeight: '700',
-    color: '#FFFFFF',
+  },
+  avatarSmallRohan: {
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+    backgroundColor: Colors.surfaceElevated3,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginLeft: -4,
+  },
+  avatarSmallTextRohan: {
+    fontSize: 10,
+    color: Colors.accentBlueLight,
+    fontWeight: '700',
+  },
+  inviteNamesText: {
+    fontSize: 13,
+    color: Colors.white,
+    marginLeft: 8,
   },
   editRowDivider: {
     height: 1,
-    backgroundColor: '#18293B',
+    backgroundColor: Colors.surfaceElevated3,
+    marginLeft: 16,
+  },
+  confirmAndAddBtn: {
+    backgroundColor: Colors.primary,
+    height: 52,
+    borderRadius: 26,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 24,
+    marginBottom: 8,
+  },
+  confirmAndAddBtnText: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: Colors.white,
   },
   bottomInputBar: {
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 16,
     paddingTop: 8,
-    backgroundColor: '#0B1A2F',
     gap: 10,
   },
   inputOuter: {
     flex: 1,
-    backgroundColor: '#101F2F',
-    borderWidth: 1.5,
-    borderColor: '#F0913A',
-    borderRadius: 24,
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: Colors.cardBackground,
+    borderRadius: 22,
+    borderWidth: 1,
+    borderColor: Colors.borderBold,
     paddingHorizontal: 16,
-    height: 46,
-    justifyContent: 'center',
+    height: 48,
+  },
+  inputOuterActive: {
+    borderColor: Colors.primary,
   },
   chatTextInput: {
+    flex: 1,
     fontSize: 14,
-    color: '#FFFFFF',
-    padding: 0,
+    color: Colors.white,
+    paddingVertical: 0,
   },
   sendBtn: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    backgroundColor: '#F0913A',
+    width: 46,
+    height: 46,
+    borderRadius: 23,
+    backgroundColor: Colors.primary,
     alignItems: 'center',
     justifyContent: 'center',
   },
   footerDisclaimer: {
-    fontSize: 11,
-    color: '#65778C',
     textAlign: 'center',
-    marginTop: 4,
-    marginBottom: 8,
+    fontSize: 12,
+    color: Colors.textTertiary,
+    paddingBottom: 6,
+    paddingTop: 4,
+  },
+  mt16: {
+    marginTop: 16,
+  },
+  mt20: {
+    marginTop: 20,
   },
 });

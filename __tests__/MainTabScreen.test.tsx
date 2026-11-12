@@ -139,8 +139,9 @@ describe('MainTabScreen - Unified Navigation Bar', () => {
     const texts = textNodes.map((n) => n.props.children).flat();
 
     expect(texts).toContain('HosynQ');
-    expect(texts).toContain('The Sharma Family');
-    expect(texts).toContain('Family General');
+    expect(texts).toContain('Chats');
+    expect(texts).toContain('Family chat');
+    expect(texts).toContain('Just Us');
   });
 
   it('opens CreateTaskModal when tapping "Add task" on homepage and NOT on bottom dock +', async () => {

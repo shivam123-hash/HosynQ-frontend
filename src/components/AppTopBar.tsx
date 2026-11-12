@@ -1,59 +1,76 @@
 import React, { memo } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import Feather from '@react-native-vector-icons/feather';
+import Colors from '../units/Colors';
 
 export interface AppTopBarProps {
   userAvatarBg?: string;
+  userInitial?: string;
   hasUnreadNotifications?: boolean;
+  unreadCount?: number;
   onAvatarPress?: () => void;
   onExplorePress?: () => void;
   onNotificationsPress?: () => void;
+  onMenuPress?: () => void;
 }
 
 const AppTopBar: React.FC<AppTopBarProps> = ({
-  userAvatarBg = '#F472B6',
+  userAvatarBg = Colors.avatarBrown,
+  userInitial = 'P',
   hasUnreadNotifications = true,
+  unreadCount = 3,
   onAvatarPress,
   onExplorePress,
   onNotificationsPress,
+  onMenuPress,
 }) => {
   return (
     <View style={styles.container}>
-      {/* User Avatar */}
+      {/* Left Menu / Hamburger Icon */}
       <TouchableOpacity
-        onPress={onAvatarPress}
-        activeOpacity={0.8}
+        onPress={onMenuPress || onExplorePress}
+        activeOpacity={0.7}
         accessibilityRole="button"
-        accessibilityLabel="Open profile"
-        style={[styles.avatarButton, { backgroundColor: userAvatarBg }]}
+        accessibilityLabel="Menu"
+        style={styles.menuButton}
       >
-        <Text style={styles.avatarEmoji}>👩🏻‍💼</Text>
+        <Feather name="menu" size={24} color={Colors.white} />
       </TouchableOpacity>
 
-      {/* Brand Title */}
-      <Text style={styles.brandTitle}>HosynQ</Text>
+      {/* Center Brand Logo (Orange house square + HosynQ) */}
+      <View style={styles.brandContainer}>
+        <View style={styles.logoSquare}>
+          <Feather name="home" size={16} color={Colors.white} />
+        </View>
+        <Text style={styles.brandTitle}>HosynQ</Text>
+      </View>
 
-      {/* Right Action Icons */}
+      {/* Right Actions (Notification Bell with Badge + User Avatar) */}
       <View style={styles.rightActions}>
-        <TouchableOpacity
-          onPress={onExplorePress}
-          activeOpacity={0.7}
-          accessibilityRole="button"
-          accessibilityLabel="Explore"
-          style={styles.iconButton}
-        >
-          <Feather name="compass" size={20} color="#CAD4DF" />
-        </TouchableOpacity>
-
         <TouchableOpacity
           onPress={onNotificationsPress}
           activeOpacity={0.7}
           accessibilityRole="button"
           accessibilityLabel="Notifications"
-          style={styles.iconButton}
+          style={styles.bellButton}
         >
-          <Feather name="bell" size={20} color="#CAD4DF" />
-          {hasUnreadNotifications && <View style={styles.notificationDot} />}
+          <Feather name="bell" size={22} color={Colors.white} />
+          {hasUnreadNotifications && (
+            <View style={styles.badgeContainer}>
+              <Text style={styles.badgeText}>{unreadCount}</Text>
+            </View>
+          )}
+        </TouchableOpacity>
+
+        {/* User Profile Avatar */}
+        <TouchableOpacity
+          onPress={onAvatarPress}
+          activeOpacity={0.8}
+          accessibilityRole="button"
+          accessibilityLabel="Open profile"
+          style={[styles.avatarButton, { backgroundColor: userAvatarBg }]}
+        >
+          <Text style={styles.avatarInitial}>{userInitial}</Text>
         </TouchableOpacity>
       </View>
     </View>
@@ -69,51 +86,74 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: 20,
-    backgroundColor: '#0B1A2F',
+    backgroundColor: Colors.background,
   },
-  avatarButton: {
+  menuButton: {
     width: 40,
     height: 40,
-    borderRadius: 20,
+    alignItems: 'flex-start',
     justifyContent: 'center',
-    alignItems: 'center',
-    borderWidth: 2,
-    borderColor: '#3A4B60',
-    overflow: 'hidden',
   },
-  avatarEmoji: {
-    fontSize: 22,
+  brandContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  logoSquare: {
+    width: 30,
+    height: 30,
+    borderRadius: 8,
+    backgroundColor: Colors.primary,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 8,
   },
   brandTitle: {
-    fontSize: 20,
-    fontWeight: '700',
-    color: '#F0913A',
-    letterSpacing: 0.2,
+    fontSize: 22,
+    fontWeight: '800',
+    color: Colors.white,
+    letterSpacing: -0.3,
   },
   rightActions: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
+    gap: 12,
   },
-  iconButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: '#122440',
-    borderWidth: 1,
-    borderColor: '#1F3352',
-    justifyContent: 'center',
+  bellButton: {
+    width: 36,
+    height: 36,
     alignItems: 'center',
+    justifyContent: 'center',
     position: 'relative',
   },
-  notificationDot: {
+  badgeContainer: {
     position: 'absolute',
-    top: 9,
-    right: 10,
-    width: 7,
-    height: 7,
-    borderRadius: 3.5,
-    backgroundColor: '#F0913A',
+    top: 2,
+    right: 2,
+    width: 17,
+    height: 17,
+    borderRadius: 8.5,
+    backgroundColor: Colors.primary,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  badgeText: {
+    color: Colors.black,
+    fontSize: 10,
+    fontWeight: '800',
+  },
+  avatarButton: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 1.5,
+    borderColor: Colors.primary,
+    overflow: 'hidden',
+  },
+  avatarInitial: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: Colors.white,
   },
 });
-
