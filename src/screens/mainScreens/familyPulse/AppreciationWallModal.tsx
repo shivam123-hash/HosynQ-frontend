@@ -6,6 +6,7 @@ import {
   StyleSheet,
   Modal,
   ScrollView,
+  StatusBar,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Feather from '@react-native-vector-icons/feather';
@@ -27,10 +28,12 @@ const DEFAULT_ITEMS: AppreciationItem[] = [
     senderName: 'Rohan',
     senderInitial: 'R',
     senderColor: Colors.avatarNavy,
+    senderTextColor: Colors.accentBlueSoft,
     receiverId: 'dadi',
     receiverName: 'Dadi',
     receiverInitial: 'D',
     receiverColor: Colors.avatarGreen,
+    receiverTextColor: Colors.accentGreenSoft,
     timeText: 'Yesterday',
     message: 'Thank you for making kheer for Aarav’s class party. Everyone loved it!',
     heartsCount: 4,
@@ -43,10 +46,12 @@ const DEFAULT_ITEMS: AppreciationItem[] = [
     senderName: 'Anaya',
     senderInitial: 'A',
     senderColor: Colors.avatarWine,
+    senderTextColor: Colors.accentPink,
     receiverId: 'you',
     receiverName: 'you',
     receiverInitial: 'P',
     receiverColor: Colors.avatarBrown,
+    receiverTextColor: Colors.primarySubtle,
     timeText: 'Mon',
     message: 'Thanks Mumma for staying up to help with my science project.',
     heartsCount: 3,
@@ -59,10 +64,12 @@ const DEFAULT_ITEMS: AppreciationItem[] = [
     senderName: 'You',
     senderInitial: 'P',
     senderColor: Colors.avatarBrown,
+    senderTextColor: Colors.primarySubtle,
     receiverId: 'aarav',
     receiverName: 'Aarav',
     receiverInitial: 'Aa',
     receiverColor: Colors.avatarOlive,
+    receiverTextColor: Colors.accentYellow,
     timeText: 'Sun',
     message: 'So proud of you for reading to Dadi every night this week.',
     heartsCount: 2,
@@ -121,6 +128,8 @@ export const AppreciationWallModal: React.FC<AppreciationWallModalProps> = ({
       onRequestClose={onClose}
     >
       <View style={[styles.container, { paddingTop: Math.max(insets.top, 16) }]}>
+        <StatusBar barStyle="light-content" />
+
         {/* Header */}
         <View style={styles.header}>
           <TouchableOpacity
@@ -130,10 +139,9 @@ export const AppreciationWallModal: React.FC<AppreciationWallModalProps> = ({
             accessibilityRole="button"
             accessibilityLabel="Back"
           >
-            <Feather name="chevron-left" size={24} color={Colors.white} />
+            <Feather name="chevron-left" size={22} color={Colors.white} />
           </TouchableOpacity>
           <Text style={styles.headerTitle}>Appreciation wall</Text>
-          <View style={styles.headerRightSpacer} />
         </View>
 
         {/* Filter Chips */}
@@ -184,7 +192,14 @@ export const AppreciationWallModal: React.FC<AppreciationWallModalProps> = ({
                       { backgroundColor: item.senderColor },
                     ]}
                   >
-                    <Text style={styles.avatarInitial}>{item.senderInitial}</Text>
+                    <Text
+                      style={[
+                        styles.avatarInitial,
+                        item.senderTextColor ? { color: item.senderTextColor } : null,
+                      ]}
+                    >
+                      {item.senderInitial}
+                    </Text>
                   </View>
 
                   <Feather
@@ -201,12 +216,21 @@ export const AppreciationWallModal: React.FC<AppreciationWallModalProps> = ({
                       { backgroundColor: item.receiverColor },
                     ]}
                   >
-                    <Text style={styles.avatarInitial}>{item.receiverInitial}</Text>
+                    <Text
+                      style={[
+                        styles.avatarInitial,
+                        item.receiverTextColor ? { color: item.receiverTextColor } : null,
+                      ]}
+                    >
+                      {item.receiverInitial}
+                    </Text>
                   </View>
 
                   {/* Header Title Text */}
                   <Text style={styles.cardActorTitle} numberOfLines={1}>
-                    {item.senderName} thanked {item.receiverName}
+                    <Text style={styles.actorNameBold}>{item.senderName}</Text>
+                    <Text style={styles.thankedText}> thanked </Text>
+                    <Text style={styles.actorNameBold}>{item.receiverName}</Text>
                   </Text>
                 </View>
 
@@ -219,40 +243,100 @@ export const AppreciationWallModal: React.FC<AppreciationWallModalProps> = ({
 
               {/* Reactions Row */}
               <View style={styles.reactionsRow}>
-                {item.heartsCount > 0 && (
-                  <TouchableOpacity
-                    style={[
-                      styles.reactionPill,
-                      item.userReacted && styles.reactionPillActive,
-                    ]}
-                    onPress={() => handleToggleReaction(item.id, 'heart')}
-                    activeOpacity={0.7}
-                  >
-                    <Feather
-                      name="heart"
-                      size={14}
-                      color={item.userReacted ? Colors.primary : Colors.textSecondary}
-                    />
-                    <Text
-                      style={[
-                        styles.reactionCountText,
-                        item.userReacted && styles.reactionCountTextActive,
-                      ]}
-                    >
-                      {item.heartsCount}
-                    </Text>
-                  </TouchableOpacity>
-                )}
-
-                {item.starsCount > 0 && (
-                  <TouchableOpacity
-                    style={styles.reactionPill}
-                    onPress={() => handleToggleReaction(item.id, 'star')}
-                    activeOpacity={0.7}
-                  >
-                    <Feather name="star" size={14} color={Colors.textSecondary} />
-                    <Text style={styles.reactionCountText}>{item.starsCount}</Text>
-                  </TouchableOpacity>
+                {item.id === 'appr-3' ? (
+                  <>
+                    {item.starsCount > 0 && (
+                      <TouchableOpacity
+                        style={styles.reactionPill}
+                        onPress={() => handleToggleReaction(item.id, 'star')}
+                        activeOpacity={0.7}
+                      >
+                        <Feather
+                          name="star"
+                          size={13}
+                          color={Colors.textSecondary}
+                        />
+                        <Text style={styles.reactionCountText}>
+                          {item.starsCount}
+                        </Text>
+                      </TouchableOpacity>
+                    )}
+                    {item.heartsCount > 0 && (
+                      <TouchableOpacity
+                        style={[
+                          styles.reactionPill,
+                          item.userReacted && styles.reactionPillActive,
+                        ]}
+                        onPress={() => handleToggleReaction(item.id, 'heart')}
+                        activeOpacity={0.7}
+                      >
+                        <Feather
+                          name="heart"
+                          size={13}
+                          color={
+                            item.userReacted
+                              ? Colors.primary
+                              : Colors.textSecondary
+                          }
+                        />
+                        <Text
+                          style={[
+                            styles.reactionCountText,
+                            item.userReacted && styles.reactionCountTextActive,
+                          ]}
+                        >
+                          {item.heartsCount}
+                        </Text>
+                      </TouchableOpacity>
+                    )}
+                  </>
+                ) : (
+                  <>
+                    {item.heartsCount > 0 && (
+                      <TouchableOpacity
+                        style={[
+                          styles.reactionPill,
+                          item.userReacted && styles.reactionPillActive,
+                        ]}
+                        onPress={() => handleToggleReaction(item.id, 'heart')}
+                        activeOpacity={0.7}
+                      >
+                        <Feather
+                          name="heart"
+                          size={13}
+                          color={
+                            item.userReacted
+                              ? Colors.primary
+                              : Colors.textSecondary
+                          }
+                        />
+                        <Text
+                          style={[
+                            styles.reactionCountText,
+                            item.userReacted && styles.reactionCountTextActive,
+                          ]}
+                        >
+                          {item.heartsCount}
+                        </Text>
+                      </TouchableOpacity>
+                    )}
+                    {item.starsCount > 0 && (
+                      <TouchableOpacity
+                        style={styles.reactionPill}
+                        onPress={() => handleToggleReaction(item.id, 'star')}
+                        activeOpacity={0.7}
+                      >
+                        <Feather
+                          name="star"
+                          size={13}
+                          color={Colors.textSecondary}
+                        />
+                        <Text style={styles.reactionCountText}>
+                          {item.starsCount}
+                        </Text>
+                      </TouchableOpacity>
+                    )}
+                  </>
                 )}
 
                 {/* Plus button */}
@@ -304,60 +388,67 @@ const styles = StyleSheet.create({
   header: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
+    justifyContent: 'center',
     paddingHorizontal: 20,
-    paddingVertical: 12,
+    paddingTop: 12,
+    paddingBottom: 8,
+    position: 'relative',
+    minHeight: 48,
   },
   backButton: {
+    position: 'absolute',
+    left: 20,
     width: 44,
     height: 44,
     borderRadius: 22,
-    backgroundColor: Colors.cardBackground,
+    backgroundColor: 'transparent',
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 1,
-    borderColor: Colors.border,
+    borderColor: '#3A4556',
+    zIndex: 10,
   },
   headerTitle: {
-    fontSize: 18,
+    fontSize: 20,
     fontWeight: '700',
     color: Colors.white,
-    letterSpacing: -0.2,
-  },
-  headerRightSpacer: {
-    width: 44,
+    letterSpacing: -0.3,
+    textAlign: 'center',
   },
   filterRow: {
     flexDirection: 'row',
     paddingHorizontal: 20,
-    paddingTop: 8,
+    paddingTop: 6,
     paddingBottom: 16,
-    gap: 10,
+    gap: 8,
   },
   filterChip: {
     paddingHorizontal: 18,
     paddingVertical: 8,
-    borderRadius: 20,
+    borderRadius: 22,
     alignItems: 'center',
     justifyContent: 'center',
   },
   filterChipActive: {
     backgroundColor: Colors.primary,
+    borderWidth: 1,
+    borderColor: Colors.primary,
   },
   filterChipInactive: {
-    backgroundColor: Colors.surfaceSubtle,
+    backgroundColor: 'transparent',
     borderWidth: 1,
-    borderColor: Colors.border,
+    borderColor: '#3A4556',
   },
   filterChipText: {
-    fontSize: 14,
-    fontWeight: '600',
+    fontSize: 14.5,
   },
   filterChipTextActive: {
-    color: Colors.black,
+    color: '#0B1A2F',
+    fontWeight: '700',
   },
   filterChipTextInactive: {
-    color: Colors.textSecondary,
+    color: '#99A3B1',
+    fontWeight: '500',
   },
   scrollArea: {
     flex: 1,
@@ -368,16 +459,16 @@ const styles = StyleSheet.create({
   },
   card: {
     backgroundColor: Colors.cardBackground,
-    borderRadius: 16,
-    padding: 18,
+    borderRadius: 20,
+    padding: 16,
     borderWidth: 1,
-    borderColor: Colors.border,
+    borderColor: '#1E314B',
   },
   cardHeaderRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginBottom: 12,
+    marginBottom: 10,
   },
   actorsRow: {
     flexDirection: 'row',
@@ -403,20 +494,27 @@ const styles = StyleSheet.create({
   cardActorTitle: {
     marginLeft: 8,
     color: Colors.white,
-    fontSize: 14,
-    fontWeight: '600',
+    fontSize: 15,
     flexShrink: 1,
   },
+  actorNameBold: {
+    fontWeight: '700',
+    color: Colors.white,
+  },
+  thankedText: {
+    fontWeight: '400',
+    color: Colors.white,
+  },
   timeText: {
-    color: Colors.textMutedSoft,
+    color: Colors.textSecondary,
     fontSize: 13,
     fontWeight: '500',
   },
   messageText: {
-    color: Colors.textNearWhite,
-    fontSize: 14,
-    lineHeight: 20,
-    marginBottom: 16,
+    color: '#C5D2E0',
+    fontSize: 14.5,
+    lineHeight: 21,
+    marginBottom: 14,
   },
   reactionsRow: {
     flexDirection: 'row',
@@ -426,34 +524,39 @@ const styles = StyleSheet.create({
   reactionPill: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: Colors.surfaceSubtle,
-    paddingHorizontal: 10,
+    backgroundColor: Colors.cardBackground,
+    paddingHorizontal: 12,
     paddingVertical: 6,
-    borderRadius: 16,
+    borderRadius: 9,
     borderWidth: 1,
-    borderColor: Colors.border,
+    borderColor: '#2D3E56',
     gap: 6,
   },
   reactionPillActive: {
+    backgroundColor: 'rgba(240, 145, 58, 0.08)',
     borderColor: Colors.primary,
+    borderWidth: 1.5,
   },
   reactionCountText: {
-    color: Colors.textSecondary,
-    fontSize: 13,
+    color: Colors.white,
+    fontSize: 12.5,
     fontWeight: '600',
   },
   reactionCountTextActive: {
     color: Colors.primary,
+    fontSize: 12.5,
+    fontWeight: '700',
   },
   plusButton: {
-    width: 30,
-    height: 30,
-    borderRadius: 15,
-    backgroundColor: Colors.surfaceSubtle,
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: 'transparent',
     alignItems: 'center',
     justifyContent: 'center',
-    borderWidth: 1,
-    borderColor: Colors.border,
+    borderWidth: 1.5,
+    borderColor: '#3A4B62',
+    borderStyle: 'dashed',
   },
   bottomBar: {
     position: 'absolute',
@@ -464,7 +567,7 @@ const styles = StyleSheet.create({
     paddingTop: 12,
     backgroundColor: Colors.background,
     borderTopWidth: 1,
-    borderTopColor: Colors.borderSubtle,
+    borderTopColor: '#1A293E',
   },
   writeButton: {
     height: 52,
@@ -479,7 +582,7 @@ const styles = StyleSheet.create({
   },
   writeButtonText: {
     color: Colors.white,
-    fontSize: 15,
+    fontSize: 16,
     fontWeight: '700',
   },
 });

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -20,46 +20,42 @@ export interface TodayMoodModalProps {
   onSelectMood: (mood: MoodType, note?: string) => void;
 }
 
+const MOOD_MINT_GREEN = '#4CC38A';
+
 const MOODS: {
   id: MoodType;
   label: string;
   iconName: string;
-  circleColor: string;
   iconColor: string;
 }[] = [
   {
     id: 'great',
     label: 'Great',
     iconName: 'smile',
-    circleColor: 'rgba(46, 196, 182, 0.15)',
-    iconColor: Colors.accentTeal,
+    iconColor: MOOD_MINT_GREEN,
   },
   {
     id: 'good',
     label: 'Good',
     iconName: 'smile',
-    circleColor: 'rgba(46, 196, 182, 0.15)',
-    iconColor: Colors.accentTeal,
+    iconColor: MOOD_MINT_GREEN,
   },
   {
     id: 'okay',
     label: 'Okay',
     iconName: 'meh',
-    circleColor: 'rgba(242, 193, 77, 0.15)',
     iconColor: Colors.accentYellow,
   },
   {
     id: 'tired',
     label: 'Tired',
     iconName: 'minus-circle',
-    circleColor: 'rgba(58, 142, 240, 0.15)',
-    iconColor: Colors.accentBlue,
+    iconColor: Colors.accentBlueSoft,
   },
   {
     id: 'stressed',
     label: 'Stressed',
     iconName: 'frown',
-    circleColor: 'rgba(232, 74, 95, 0.15)',
     iconColor: Colors.accentRed,
   },
 ];
@@ -74,6 +70,12 @@ export const TodayMoodModal: React.FC<TodayMoodModalProps> = ({
   const [selectedMood, setSelectedMood] = useState<MoodType>(currentMood);
   const [showNoteInput, setShowNoteInput] = useState(false);
   const [note, setNote] = useState('');
+
+  useEffect(() => {
+    if (visible && currentMood) {
+      setSelectedMood(currentMood);
+    }
+  }, [visible, currentMood]);
 
   const handleSelect = (mood: MoodType) => {
     setSelectedMood(mood);
@@ -124,19 +126,20 @@ export const TodayMoodModal: React.FC<TodayMoodModalProps> = ({
                       accessibilityRole="button"
                       accessibilityLabel={item.label}
                     >
-                      <View
+                      <Feather
+                        name={item.iconName as any}
+                        size={30}
+                        color={item.iconColor}
+                        style={styles.moodIcon}
+                      />
+                      <Text
                         style={[
-                          styles.moodIconCircle,
-                          { backgroundColor: item.circleColor },
+                          styles.moodLabel,
+                          isSelected && styles.moodLabelSelected,
                         ]}
                       >
-                        <Feather
-                          name={item.iconName as any}
-                          size={24}
-                          color={item.iconColor}
-                        />
-                      </View>
-                      <Text style={styles.moodLabel}>{item.label}</Text>
+                        {item.label}
+                      </Text>
                     </TouchableOpacity>
                   );
                 })}
@@ -146,8 +149,8 @@ export const TodayMoodModal: React.FC<TodayMoodModalProps> = ({
               <View style={styles.statusRow}>
                 <Feather
                   name="check-circle"
-                  size={16}
-                  color={Colors.accentTeal}
+                  size={18}
+                  color={MOOD_MINT_GREEN}
                   style={styles.statusIcon}
                 />
                 <Text style={styles.statusText}>
@@ -184,7 +187,7 @@ export const TodayMoodModal: React.FC<TodayMoodModalProps> = ({
                 >
                   <Feather
                     name="edit-2"
-                    size={15}
+                    size={16}
                     color={Colors.primary}
                     style={styles.addNoteIcon}
                   />
@@ -214,91 +217,90 @@ const styles = StyleSheet.create({
     paddingTop: 12,
     paddingHorizontal: 20,
     borderWidth: 1,
-    borderColor: Colors.borderBold,
+    borderColor: '#1E314B',
   },
   dragHandle: {
     width: 44,
     height: 4,
     borderRadius: 2,
-    backgroundColor: Colors.borderMuted,
+    backgroundColor: '#3A4B62',
     alignSelf: 'center',
-    marginBottom: 18,
+    marginBottom: 20,
   },
   title: {
-    fontSize: 22,
+    fontSize: 24,
     fontWeight: '700',
+    letterSpacing: -0.3,
     color: Colors.white,
-    textAlign: 'center',
+    textAlign: 'left',
     marginBottom: 6,
   },
   subtitle: {
-    fontSize: 13,
-    color: Colors.textSubtle,
-    textAlign: 'center',
-    lineHeight: 18,
-    marginBottom: 20,
+    fontSize: 15,
+    color: Colors.textSecondary,
+    textAlign: 'left',
+    lineHeight: 22,
+    marginBottom: 22,
   },
   moodRow: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginBottom: 20,
+    gap: 8,
+    marginBottom: 22,
   },
   moodCard: {
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 14,
-    borderRadius: 16,
-    backgroundColor: Colors.surfaceSubtle,
-    marginHorizontal: 3,
-    borderWidth: 1.5,
-    borderColor: Colors.transparent,
+    paddingVertical: 18,
+    paddingHorizontal: 2,
+    borderRadius: 20,
+    backgroundColor: Colors.cardBackground,
+    borderWidth: 1,
+    borderColor: '#1E314B',
   },
   moodCardSelected: {
     borderColor: Colors.primary,
-    backgroundColor: Colors.surfaceNavyDark,
+    borderWidth: 2,
+    backgroundColor: Colors.cardBackground,
   },
-  moodIconCircle: {
-    width: 42,
-    height: 42,
-    borderRadius: 21,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 8,
+  moodIcon: {
+    marginBottom: 10,
   },
   moodLabel: {
-    fontSize: 12,
-    fontWeight: '600',
+    fontSize: 13.5,
+    fontWeight: '500',
+    color: Colors.textSecondary,
+  },
+  moodLabelSelected: {
     color: Colors.white,
+    fontWeight: '700',
   },
   statusRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 16,
-    paddingHorizontal: 16,
+    marginBottom: 24,
+    paddingHorizontal: 2,
   },
   statusIcon: {
-    marginRight: 8,
+    marginRight: 12,
   },
   statusText: {
-    fontSize: 12,
-    color: Colors.textSubtle,
-    textAlign: 'center',
-    lineHeight: 16,
-    flexShrink: 1,
+    fontSize: 14,
+    color: '#C5D2E0',
+    lineHeight: 20,
+    flex: 1,
   },
   addNoteBtn: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 10,
+    paddingVertical: 14,
   },
   addNoteIcon: {
-    marginRight: 6,
+    marginRight: 8,
   },
   addNoteText: {
-    fontSize: 14,
+    fontSize: 16,
     fontWeight: '600',
     color: Colors.primary,
   },

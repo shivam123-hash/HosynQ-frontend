@@ -53,6 +53,14 @@ describe('Family Hub and Pulse Screens (FAM-01, PUL-01 through PUL-11)', () => {
       .map((t) => t.props.children)
       .flat();
 
+    // Verify Header Top Bar
+    expect(texts).toContain('Family');
+    const touchables = renderer.root.findAllByType(TouchableOpacity);
+    const labels = touchables.map((t) => t.props.accessibilityLabel);
+    expect(labels).toContain('Back');
+    expect(labels).toContain('Invite member');
+    expect(labels).toContain('Theme');
+
     // Verify Family Card & ID
     expect(texts).toContain('The Sharma Family');
     expect(texts).toContain('HSQ-4821');
@@ -111,6 +119,17 @@ describe('Family Hub and Pulse Screens (FAM-01, PUL-01 through PUL-11)', () => {
     expect(texts).toContain('Appreciation wall');
     expect(texts).toContain('Family poll');
     expect(texts).toContain('Milestones');
+
+    // Verify tapping "See all" opens AppreciationWallModal
+    const seeAllBtn = renderer.root.findAllByType(TouchableOpacity).find(
+      (btn) => btn.props.accessibilityLabel === 'See all appreciations'
+    );
+    expect(seeAllBtn).toBeDefined();
+    await ReactTestRenderer.act(async () => {
+      seeAllBtn!.props.onPress();
+    });
+    const appWallModal = renderer.root.findByType(AppreciationWallModal);
+    expect(appWallModal.props.visible).toBe(true);
   });
 
   it('renders FamilyPulseModal (PUL-11) in empty state with waveform and 3 CTAs', async () => {
@@ -252,7 +271,85 @@ describe('Family Hub and Pulse Screens (FAM-01, PUL-01 through PUL-11)', () => {
     expect(texts).toContain('Question');
     expect(texts).toContain('OPTIONS');
     expect(texts).toContain('Allow more than one choice');
+    expect(texts).toContain('Closes');
+    expect(texts).toContain('Who can vote');
     expect(texts).toContain('Post poll');
+
+    // Test opening "Closes" modal
+    const closesBtn = renderer.root
+      .findAllByType(TouchableOpacity)
+      .find(
+        (btn) =>
+          btn.props.accessibilityLabel === 'Change when poll closes'
+      );
+    expect(closesBtn).toBeTruthy();
+    await ReactTestRenderer.act(async () => {
+      closesBtn?.props.onPress();
+    });
+
+    let modalTexts = renderer.root
+      .findAllByType(Text)
+      .map((t) => t.props.children)
+      .flat();
+    expect(modalTexts).toContain('Poll closes');
+    expect(modalTexts).toContain('Tomorrow · 8:00 PM');
+    expect(modalTexts).toContain('Pick custom date & time...');
+
+    // Select preset "Tomorrow · 8:00 PM"
+    const presetBtn = renderer.root
+      .findAllByType(TouchableOpacity)
+      .find((btn) => {
+        const textNodes = btn.findAllByType(Text);
+        return textNodes.some((t) => t.props.children === 'Tomorrow · 8:00 PM');
+      });
+    expect(presetBtn).toBeTruthy();
+    await ReactTestRenderer.act(async () => {
+      presetBtn?.props.onPress();
+    });
+
+    // Test opening "Who can vote" modal
+    const whoCanVoteBtn = renderer.root
+      .findAllByType(TouchableOpacity)
+      .find(
+        (btn) =>
+          btn.props.accessibilityLabel === 'Change who can vote'
+      );
+    expect(whoCanVoteBtn).toBeTruthy();
+    await ReactTestRenderer.act(async () => {
+      whoCanVoteBtn?.props.onPress();
+    });
+
+    modalTexts = renderer.root
+      .findAllByType(Text)
+      .map((t) => t.props.children)
+      .flat();
+    expect(modalTexts).toContain('Who can vote?');
+    expect(modalTexts).toContain('Adults only (3)');
+    expect(modalTexts).toContain('Kids only (2)');
+
+    // Select "Adults only (3)"
+    const adultsChip = renderer.root
+      .findAllByType(TouchableOpacity)
+      .find((btn) => {
+        const textNodes = btn.findAllByType(Text);
+        return textNodes.some((t) => t.props.children === 'Adults only (3)');
+      });
+    expect(adultsChip).toBeTruthy();
+    await ReactTestRenderer.act(async () => {
+      adultsChip?.props.onPress();
+    });
+
+    // Press Done on Who Can Vote modal
+    const doneBtn = renderer.root
+      .findAllByType(TouchableOpacity)
+      .find((btn) => {
+        const textNodes = btn.findAllByType(Text);
+        return textNodes.some((t) => t.props.children === 'Done');
+      });
+    expect(doneBtn).toBeTruthy();
+    await ReactTestRenderer.act(async () => {
+      doneBtn?.props.onPress();
+    });
 
     // Test submit button
     const postBtn = renderer.root
@@ -267,7 +364,13 @@ describe('Family Hub and Pulse Screens (FAM-01, PUL-01 through PUL-11)', () => {
       postBtn?.props.onPress();
     });
 
-    expect(onSubmitPoll).toHaveBeenCalled();
+    expect(onSubmitPoll).toHaveBeenCalledWith(
+      expect.objectContaining({
+        question: 'What should we do on Sunday?',
+        closesText: 'Tomorrow · 8:00 PM',
+        whoCanVote: 'Only adults (3)',
+      })
+    );
   });
 
   it('renders PollResultsModal (PUL-07) with winner highlight and Add to calendar button', async () => {
@@ -339,7 +442,55 @@ describe('Family Hub and Pulse Screens (FAM-01, PUL-01 through PUL-11)', () => {
     expect(texts).toContain('New milestone');
     expect(texts).toContain('WHOSE MILESTONE?');
     expect(texts).toContain('What happened?');
+    expect(texts).toContain('When');
+    expect(texts).toContain('PHOTOS');
+    expect(texts).toContain('1 of 6');
     expect(texts).toContain('Save milestone');
+
+    // Test opening Date Picker
+    const whenBtn = renderer.root
+      .findAllByType(TouchableOpacity)
+      .find((btn) => btn.props.accessibilityLabel === 'Change milestone date');
+    expect(whenBtn).toBeTruthy();
+    await ReactTestRenderer.act(async () => {
+      whenBtn?.props.onPress();
+    });
+
+    // Test opening Photo Options and taking a photo
+    const addPhotoBtn = renderer.root
+      .findAllByType(TouchableOpacity)
+      .find((btn) => btn.props.accessibilityLabel === 'Add photo');
+    expect(addPhotoBtn).toBeTruthy();
+    await ReactTestRenderer.act(async () => {
+      addPhotoBtn?.props.onPress();
+    });
+
+    // Tap Take Photo button inside photo options sheet
+    const takePhotoBtn = renderer.root
+      .findAllByType(TouchableOpacity)
+      .find((btn) => {
+        const textNodes = btn.findAllByType(Text);
+        return textNodes.some((t) => t.props.children === 'Take photo');
+      });
+    expect(takePhotoBtn).toBeTruthy();
+    await ReactTestRenderer.act(async () => {
+      takePhotoBtn?.props.onPress();
+    });
+
+    const updatedTexts = renderer.root
+      .findAllByType(Text)
+      .map((t) => t.props.children)
+      .flat();
+    expect(updatedTexts).toContain('2 of 6');
+
+    // Test removing a photo
+    const removeBtns = renderer.root
+      .findAllByType(TouchableOpacity)
+      .filter((btn) => btn.props.accessibilityLabel === 'Remove photo');
+    expect(removeBtns.length).toBeGreaterThan(0);
+    await ReactTestRenderer.act(async () => {
+      removeBtns[0].props.onPress();
+    });
 
     const saveBtn = renderer.root
       .findAllByType(TouchableOpacity)

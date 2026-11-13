@@ -10,6 +10,7 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Feather from '@react-native-vector-icons/feather';
+import Ionicons from '@react-native-vector-icons/ionicons';
 import Colors from '../../../units/Colors';
 import { PollItem } from './types';
 
@@ -111,7 +112,7 @@ export const PollResultsModal: React.FC<PollResultsModalProps> = ({
             accessibilityRole="button"
             accessibilityLabel="Share results"
           >
-            <Feather name="share" size={20} color={Colors.white} />
+            <Feather name="upload" size={20} color={Colors.white} />
           </TouchableOpacity>
         </View>
 
@@ -135,7 +136,7 @@ export const PollResultsModal: React.FC<PollResultsModalProps> = ({
               <Text style={styles.closedBadgeText}>Closed</Text>
             </View>
             <Text style={styles.votedSubtitle}>
-              {poll.totalVotes} of 5 voted · Asked by {poll.authorName}
+              {poll.totalVotes} of 5 voted · Asked by {poll.authorName === 'you' ? 'you' : poll.authorName}
             </Text>
           </View>
 
@@ -146,11 +147,11 @@ export const PollResultsModal: React.FC<PollResultsModalProps> = ({
           {winningOption && (
             <View style={styles.winnerCard}>
               <View style={styles.mostVotesHeader}>
-                <Feather
-                  name="award"
+                <Ionicons
+                  name="trophy-outline"
                   size={16}
                   color={Colors.primary}
-                  style={styles.awardIcon}
+                  style={styles.trophyIcon}
                 />
                 <Text style={styles.mostVotesLabel}>MOST VOTES</Text>
               </View>
@@ -158,9 +159,12 @@ export const PollResultsModal: React.FC<PollResultsModalProps> = ({
               <View style={styles.optionTitleRow}>
                 <View style={styles.optionNameWithCheck}>
                   <Text style={styles.winnerOptionText}>{winningOption.text}</Text>
-                  <View style={styles.checkCircle}>
-                    <Feather name="check" size={12} color={Colors.primary} />
-                  </View>
+                  <Feather
+                    name="check-circle"
+                    size={16}
+                    color={Colors.primary}
+                    style={styles.checkCircle}
+                  />
                 </View>
                 <Text style={styles.winnerPercentageText}>
                   {winningOption.votes} votes · {winningOption.percentage}%
@@ -188,6 +192,7 @@ export const PollResultsModal: React.FC<PollResultsModalProps> = ({
                       key={`winner-voter-${idx}`}
                       style={[
                         styles.voterAvatar,
+                        styles.voterAvatarWinner,
                         idx > 0 && styles.voterAvatarOverlap,
                         { backgroundColor: voter.bgColor },
                       ]}
@@ -204,9 +209,13 @@ export const PollResultsModal: React.FC<PollResultsModalProps> = ({
           {otherOptions.length > 0 && (
             <View style={styles.otherOptionsCard}>
               {otherOptions.map((opt, index) => (
-                <View key={opt.id} style={styles.otherOptionItem}>
-                  {index > 0 && <View style={styles.otherDivider} />}
-
+                <View
+                  key={opt.id}
+                  style={[
+                    styles.otherOptionItem,
+                    index > 0 && styles.otherOptionItemSpaced,
+                  ]}
+                >
                   <View style={styles.optionTitleRow}>
                     <Text style={styles.otherOptionName}>{opt.text}</Text>
                     <Text style={styles.otherPercentageText}>
@@ -219,10 +228,8 @@ export const PollResultsModal: React.FC<PollResultsModalProps> = ({
                     <View
                       style={[
                         styles.progressBarFill,
-                        {
-                          width: `${opt.percentage}%`,
-                          backgroundColor: Colors.surfaceNavyLight,
-                        },
+                        styles.otherProgressFill,
+                        { width: `${opt.percentage}%` },
                       ]}
                     />
                   </View>
@@ -235,6 +242,7 @@ export const PollResultsModal: React.FC<PollResultsModalProps> = ({
                           key={`other-voter-${opt.id}-${idx}`}
                           style={[
                             styles.voterAvatar,
+                            styles.voterAvatarOther,
                             idx > 0 && styles.voterAvatarOverlap,
                             { backgroundColor: voter.bgColor },
                           ]}
@@ -251,14 +259,9 @@ export const PollResultsModal: React.FC<PollResultsModalProps> = ({
 
           {/* AI Plan Recommendation Card */}
           <View style={styles.aiPlanCard}>
-            <Feather
-              name="compass"
-              size={18}
-              color={Colors.primary}
-              style={styles.aiPlanIcon}
-            />
+            <Text style={styles.aiPlanSparkle}>✧</Text>
             <Text style={styles.aiPlanText}>
-              Make it a plan? HosynQ can add "{winningOption?.text || 'Picnic'}" to
+              Make it a plan? HosynQ can add “{winningOption?.text || 'Picnic at Lodhi Garden'}” to
               Sunday, 1 Nov.
             </Text>
           </View>
@@ -304,27 +307,30 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.background,
   },
   header: {
+    height: 56,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: 20,
-    paddingVertical: 12,
+    marginBottom: 4,
   },
   circleButton: {
     width: 44,
     height: 44,
     borderRadius: 22,
-    backgroundColor: Colors.cardBackground,
+    backgroundColor: 'transparent',
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 1,
-    borderColor: Colors.border,
+    borderColor: '#3A4556',
   },
   headerTitle: {
-    fontSize: 18,
+    flex: 1,
+    fontSize: 20,
     fontWeight: '700',
     color: Colors.white,
-    letterSpacing: -0.2,
+    letterSpacing: -0.3,
+    textAlign: 'center',
   },
   scrollArea: {
     flex: 1,
@@ -336,29 +342,30 @@ const styles = StyleSheet.create({
   statusRow: {
     flexDirection: 'row',
     alignItems: 'center',
+    marginTop: 8,
     marginBottom: 16,
     gap: 10,
   },
   closedBadge: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: Colors.surfaceSubtle,
+    backgroundColor: 'transparent',
     paddingHorizontal: 10,
-    paddingVertical: 4,
+    paddingVertical: 5,
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: Colors.border,
+    borderColor: '#3A4556',
   },
   lockIcon: {
-    marginRight: 4,
+    marginRight: 5,
   },
   closedBadgeText: {
-    color: Colors.textSecondary,
+    color: '#BDC6D1',
     fontSize: 12,
     fontWeight: '600',
   },
   votedSubtitle: {
-    color: Colors.textSecondary,
+    color: '#8A97AB',
     fontSize: 13,
     fontWeight: '500',
   },
@@ -366,24 +373,24 @@ const styles = StyleSheet.create({
     fontSize: 22,
     fontWeight: '800',
     color: Colors.white,
-    letterSpacing: -0.4,
+    letterSpacing: -0.3,
     lineHeight: 28,
     marginBottom: 20,
   },
   winnerCard: {
-    backgroundColor: Colors.cardBackground,
+    backgroundColor: '#1A2B47',
     borderRadius: 20,
     borderWidth: 1.5,
     borderColor: Colors.primary,
-    padding: 18,
-    marginBottom: 16,
+    padding: 16,
+    marginBottom: 14,
   },
   mostVotesHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 12,
+    marginBottom: 8,
   },
-  awardIcon: {
+  trophyIcon: {
     marginRight: 6,
   },
   mostVotesLabel: {
@@ -396,7 +403,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginBottom: 10,
+    marginBottom: 8,
   },
   optionNameWithCheck: {
     flexDirection: 'row',
@@ -406,7 +413,7 @@ const styles = StyleSheet.create({
   },
   winnerOptionText: {
     color: Colors.white,
-    fontSize: 16,
+    fontSize: 15,
     fontWeight: '700',
   },
   checkCircle: {
@@ -414,81 +421,90 @@ const styles = StyleSheet.create({
   },
   winnerPercentageText: {
     color: Colors.primary,
-    fontSize: 14,
+    fontSize: 13,
     fontWeight: '600',
   },
   progressBarTrack: {
-    height: 6,
-    backgroundColor: Colors.surfaceNavyDark,
-    borderRadius: 3,
+    height: 5,
+    backgroundColor: '#1F3352',
+    borderRadius: 2.5,
     overflow: 'hidden',
-    marginBottom: 14,
+    marginBottom: 8,
   },
   progressBarFill: {
-    height: 6,
-    borderRadius: 3,
+    height: 5,
+    borderRadius: 2.5,
+  },
+  otherProgressFill: {
+    backgroundColor: '#3A4556',
   },
   votersRow: {
     flexDirection: 'row',
     alignItems: 'center',
   },
   voterAvatar: {
-    width: 24,
-    height: 24,
-    borderRadius: 12,
+    width: 20,
+    height: 20,
+    borderRadius: 10,
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 1.5,
-    borderColor: Colors.cardBackground,
+  },
+  voterAvatarWinner: {
+    borderColor: '#1A2B47',
+  },
+  voterAvatarOther: {
+    borderColor: '#122440',
   },
   voterAvatarOverlap: {
-    marginLeft: -6,
+    marginLeft: -5,
   },
   voterAvatarText: {
     color: Colors.white,
-    fontSize: 11,
+    fontSize: 9,
     fontWeight: '700',
   },
   otherOptionsCard: {
-    backgroundColor: Colors.cardBackground,
+    backgroundColor: '#122440',
     borderRadius: 20,
     borderWidth: 1,
-    borderColor: Colors.border,
-    padding: 18,
-    marginBottom: 16,
+    borderColor: '#1F3352',
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    marginBottom: 14,
   },
-  otherOptionItem: {
-    paddingVertical: 6,
-  },
-  otherDivider: {
-    height: 1,
-    backgroundColor: Colors.borderSubtle,
-    marginVertical: 12,
+  otherOptionItem: {},
+  otherOptionItemSpaced: {
+    marginTop: 16,
   },
   otherOptionName: {
     color: Colors.white,
-    fontSize: 15,
+    fontSize: 14,
     fontWeight: '600',
   },
   otherPercentageText: {
-    color: Colors.textSecondary,
-    fontSize: 14,
+    color: '#8FA0B5',
+    fontSize: 13,
     fontWeight: '500',
   },
   aiPlanCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: Colors.cardElevated,
+    backgroundColor: '#1A2B47',
     borderRadius: 16,
-    padding: 16,
+    padding: 14,
     borderWidth: 1,
-    borderColor: Colors.border,
+    borderColor: '#1F3352',
+    marginBottom: 16,
   },
-  aiPlanIcon: {
+  aiPlanSparkle: {
+    fontSize: 18,
+    lineHeight: 20,
+    color: Colors.primary,
     marginRight: 12,
   },
   aiPlanText: {
-    color: Colors.textNearWhite,
+    color: '#CAD4DF',
     fontSize: 14,
     lineHeight: 20,
     flex: 1,
@@ -508,9 +524,9 @@ const styles = StyleSheet.create({
   },
   calendarButton: {
     width: '100%',
-    height: 52,
+    height: 54,
     backgroundColor: Colors.primary,
-    borderRadius: 26,
+    borderRadius: 27,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
@@ -525,7 +541,9 @@ const styles = StyleSheet.create({
     fontWeight: '700',
   },
   chatButton: {
-    paddingVertical: 6,
+    paddingVertical: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   chatButtonText: {
     color: Colors.primary,

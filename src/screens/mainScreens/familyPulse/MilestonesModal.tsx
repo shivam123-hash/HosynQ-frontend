@@ -9,6 +9,8 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Feather from '@react-native-vector-icons/feather';
+import Ionicons from '@react-native-vector-icons/ionicons';
+import MaterialIcons from '@react-native-vector-icons/material-icons';
 import Colors from '../../../units/Colors';
 import { MilestoneItem } from './types';
 
@@ -169,9 +171,9 @@ export const MilestonesModal: React.FC<MilestonesModalProps> = ({
                         {/* Details */}
                         <View style={styles.featuredBody}>
                           <View style={styles.categoryRow}>
-                            <Feather
-                              name="award"
-                              size={14}
+                            <Ionicons
+                              name="trophy-outline"
+                              size={15}
                               color={Colors.primary}
                               style={styles.awardIcon}
                             />
@@ -202,16 +204,20 @@ export const MilestonesModal: React.FC<MilestonesModalProps> = ({
                           styles.iconBox,
                           item.iconType === 'cake'
                             ? styles.iconBoxOrange
-                            : styles.iconBoxNavy,
+                            : styles.iconBoxBlue,
                         ]}
                       >
                         {item.iconType === 'cake' ? (
-                          <Feather name="gift" size={18} color={Colors.primary} />
+                          <MaterialIcons
+                            name="cake"
+                            size={20}
+                            color={Colors.primary}
+                          />
                         ) : (
                           <Feather
                             name="book-open"
                             size={18}
-                            color={Colors.accentBlue}
+                            color={Colors.white}
                           />
                         )}
                       </View>
@@ -227,7 +233,7 @@ export const MilestonesModal: React.FC<MilestonesModalProps> = ({
 
                       <Feather
                         name="chevron-right"
-                        size={18}
+                        size={20}
                         color={Colors.textSecondary}
                       />
                     </TouchableOpacity>
@@ -270,62 +276,69 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.background,
   },
   header: {
+    height: 56,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: 20,
-    paddingVertical: 12,
+    marginBottom: 4,
   },
   circleButton: {
     width: 44,
     height: 44,
     borderRadius: 22,
-    backgroundColor: Colors.cardBackground,
+    backgroundColor: 'transparent',
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 1,
-    borderColor: Colors.border,
+    borderColor: '#3A4556',
   },
   headerTitle: {
-    fontSize: 18,
+    flex: 1,
+    fontSize: 20,
     fontWeight: '700',
     color: Colors.white,
-    letterSpacing: -0.2,
+    letterSpacing: -0.3,
+    textAlign: 'center',
   },
   headerRightSpacer: {
     width: 44,
+    height: 44,
   },
   filterRow: {
     flexDirection: 'row',
     paddingHorizontal: 20,
-    paddingTop: 8,
+    paddingTop: 6,
     paddingBottom: 16,
-    gap: 10,
+    gap: 8,
   },
   filterChip: {
     paddingHorizontal: 18,
     paddingVertical: 8,
-    borderRadius: 20,
+    borderRadius: 22,
     alignItems: 'center',
     justifyContent: 'center',
   },
   filterChipActive: {
     backgroundColor: Colors.primary,
+    borderWidth: 1,
+    borderColor: Colors.primary,
   },
   filterChipInactive: {
-    backgroundColor: Colors.surfaceSubtle,
+    backgroundColor: 'transparent',
     borderWidth: 1,
-    borderColor: Colors.border,
+    borderColor: '#3A4556',
   },
   filterChipText: {
-    fontSize: 14,
-    fontWeight: '600',
+    fontSize: 14.5,
   },
   filterChipTextActive: {
-    color: Colors.black,
+    color: '#0B1A2F',
+    fontWeight: '700',
   },
   filterChipTextInactive: {
-    color: Colors.textSecondary,
+    color: '#CAD4DF',
+    fontWeight: '500',
   },
   scrollArea: {
     flex: 1,
@@ -339,8 +352,8 @@ const styles = StyleSheet.create({
   monthHeader: {
     fontSize: 12,
     fontWeight: '700',
-    color: Colors.textSecondary,
-    letterSpacing: 0.6,
+    color: '#8A97AB',
+    letterSpacing: 0.8,
     marginBottom: 12,
   },
   itemsList: {
@@ -350,24 +363,24 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.cardBackground,
     borderRadius: 20,
     borderWidth: 1,
-    borderColor: Colors.border,
+    borderColor: '#1F3352',
     overflow: 'hidden',
   },
   featuredPhotoContainer: {
     height: 140,
-    backgroundColor: '#1E3F33',
+    backgroundColor: '#164035',
     position: 'relative',
     margin: 12,
-    borderRadius: 14,
+    borderRadius: 16,
     overflow: 'hidden',
   },
   courtNetVertical: {
     position: 'absolute',
     left: '50%',
     top: 0,
-    bottom: 0,
+    bottom: '50%',
     width: 2,
-    backgroundColor: 'rgba(255,255,255,0.4)',
+    backgroundColor: 'rgba(255, 255, 255, 0.45)',
   },
   courtNetHorizontal: {
     position: 'absolute',
@@ -375,15 +388,15 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     height: 2,
-    backgroundColor: 'rgba(255,255,255,0.4)',
+    backgroundColor: 'rgba(255, 255, 255, 0.45)',
   },
   shuttlecockBall: {
     position: 'absolute',
-    top: '30%',
+    top: '26%',
     left: '68%',
-    width: 14,
-    height: 14,
-    borderRadius: 7,
+    width: 16,
+    height: 16,
+    borderRadius: 8,
     backgroundColor: Colors.white,
   },
   featuredBody: {
@@ -402,41 +415,47 @@ const styles = StyleSheet.create({
     color: Colors.primary,
     fontSize: 12,
     fontWeight: '700',
-    letterSpacing: 0.6,
+    letterSpacing: 0.8,
   },
   featuredTitle: {
-    fontSize: 16,
+    fontSize: 17,
     fontWeight: '700',
     color: Colors.white,
     marginBottom: 6,
+    letterSpacing: -0.2,
   },
   featuredSubtext: {
     fontSize: 13,
-    color: Colors.textSecondary,
+    color: '#8A97AB',
     fontWeight: '500',
   },
   standardRow: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: Colors.cardBackground,
-    borderRadius: 16,
+    borderRadius: 20,
     borderWidth: 1,
-    borderColor: Colors.border,
-    padding: 14,
+    borderColor: '#1F3352',
+    paddingHorizontal: 16,
+    paddingVertical: 14,
   },
   iconBox: {
     width: 44,
     height: 44,
-    borderRadius: 12,
+    borderRadius: 14,
     alignItems: 'center',
     justifyContent: 'center',
     marginRight: 14,
   },
-  iconBoxNavy: {
-    backgroundColor: Colors.surfaceNavy,
+  iconBoxBlue: {
+    backgroundColor: 'rgba(58, 142, 240, 0.12)',
+    borderWidth: 1.5,
+    borderColor: '#3A8EF0',
   },
   iconBoxOrange: {
-    backgroundColor: 'rgba(240, 145, 58, 0.15)',
+    backgroundColor: 'rgba(240, 145, 58, 0.12)',
+    borderWidth: 1.5,
+    borderColor: Colors.primary,
   },
   standardRowTextGroup: {
     flex: 1,
@@ -444,13 +463,14 @@ const styles = StyleSheet.create({
   },
   standardTitle: {
     fontSize: 15,
-    fontWeight: '600',
+    fontWeight: '700',
     color: Colors.white,
-    marginBottom: 3,
+    marginBottom: 4,
   },
   standardSubtitle: {
     fontSize: 13,
-    color: Colors.textSecondary,
+    color: '#8A97AB',
+    fontWeight: '500',
   },
   bottomBar: {
     position: 'absolute',

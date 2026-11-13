@@ -6,16 +6,20 @@ import {
   StyleSheet,
   Modal,
   ScrollView,
+  StatusBar,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Feather from '@react-native-vector-icons/feather';
+import Ionicons from '@react-native-vector-icons/ionicons';
 import Colors from '../../../units/Colors';
 import {
   MoodType,
   FamilyMemberPulse,
+  AppreciationItem,
 } from './types';
 import { TodayMoodModal } from './TodayMoodModal';
 import { WriteAppreciationModal } from './WriteAppreciationModal';
+import { AppreciationWallModal } from './AppreciationWallModal';
 import { ReactionPackModal } from './ReactionPackModal';
 import { FamilyPollsModal } from './FamilyPollsModal';
 import { CreatePollModal } from './CreatePollModal';
@@ -36,7 +40,7 @@ const DEFAULT_MEMBERS: FamilyMemberPulse[] = [
     displayName: 'You',
     initial: 'P',
     bgColor: Colors.avatarBrown,
-    textColor: Colors.white,
+    textColor: Colors.primarySubtle,
     mood: { type: 'good', label: 'Good' },
   },
   {
@@ -45,7 +49,7 @@ const DEFAULT_MEMBERS: FamilyMemberPulse[] = [
     displayName: 'Rohan',
     initial: 'R',
     bgColor: Colors.avatarNavy,
-    textColor: Colors.white,
+    textColor: Colors.accentBlueSoft,
     mood: { type: 'tired', label: 'Tired' },
   },
   {
@@ -54,7 +58,7 @@ const DEFAULT_MEMBERS: FamilyMemberPulse[] = [
     displayName: 'Dadi',
     initial: 'D',
     bgColor: Colors.avatarGreen,
-    textColor: Colors.white,
+    textColor: Colors.accentGreenSoft,
     mood: { type: 'great', label: 'Great' },
   },
   {
@@ -63,7 +67,7 @@ const DEFAULT_MEMBERS: FamilyMemberPulse[] = [
     displayName: 'Anaya',
     initial: 'A',
     bgColor: Colors.avatarWine,
-    textColor: Colors.white,
+    textColor: Colors.accentPink,
   },
   {
     id: 'aarav',
@@ -71,7 +75,7 @@ const DEFAULT_MEMBERS: FamilyMemberPulse[] = [
     displayName: 'Aarav',
     initial: 'Aa',
     bgColor: Colors.avatarOlive,
-    textColor: Colors.white,
+    textColor: Colors.accentYellow,
   },
 ];
 
@@ -86,8 +90,10 @@ export const FamilyPulseModal: React.FC<FamilyPulseModalProps> = ({
 
   // Sub-modal states
   const [showMoodModal, setShowMoodModal] = useState(false);
+  const [showAppreciationWall, setShowAppreciationWall] = useState(false);
   const [showWriteAppreciation, setShowWriteAppreciation] = useState(false);
   const [showReactionPack, setShowReactionPack] = useState(false);
+  const [selectedAppreciationItem, setSelectedAppreciationItem] = useState<AppreciationItem | null>(null);
   const [showPollsModal, setShowPollsModal] = useState(false);
   const [showCreatePoll, setShowCreatePoll] = useState(false);
   const [showPollResults, setShowPollResults] = useState(false);
@@ -122,6 +128,8 @@ export const FamilyPulseModal: React.FC<FamilyPulseModalProps> = ({
       onRequestClose={onClose}
     >
       <View style={[styles.container, { paddingTop: Math.max(insets.top, 16) }]}>
+        <StatusBar barStyle="light-content" />
+
         {/* Header */}
         <View style={styles.header}>
           <TouchableOpacity
@@ -131,7 +139,7 @@ export const FamilyPulseModal: React.FC<FamilyPulseModalProps> = ({
             accessibilityRole="button"
             accessibilityLabel="Back"
           >
-            <Feather name="chevron-left" size={24} color={Colors.white} />
+            <Feather name="chevron-left" size={22} color={Colors.white} />
           </TouchableOpacity>
           <View style={styles.headerTitleGroup}>
             <Text style={styles.headerTitle}>Family Pulse</Text>
@@ -210,7 +218,7 @@ export const FamilyPulseModal: React.FC<FamilyPulseModalProps> = ({
             style={styles.scrollArea}
             contentContainerStyle={[
               styles.scrollContent,
-              { paddingBottom: insets.bottom + 40 },
+              { paddingBottom: Math.max(insets.bottom, 20) + 24 },
             ]}
             showsVerticalScrollIndicator={false}
           >
@@ -232,9 +240,15 @@ export const FamilyPulseModal: React.FC<FamilyPulseModalProps> = ({
                       style={[
                         styles.memberAvatarCircle,
                         { backgroundColor: member.bgColor },
+                        !member.mood && styles.memberAvatarCircleNotCheckedIn,
                       ]}
                     >
-                      <Text style={styles.memberAvatarInitial}>
+                      <Text
+                        style={[
+                          styles.memberAvatarInitial,
+                          { color: member.textColor || Colors.white },
+                        ]}
+                      >
                         {member.initial}
                       </Text>
                     </View>
@@ -243,12 +257,24 @@ export const FamilyPulseModal: React.FC<FamilyPulseModalProps> = ({
                     {member.mood ? (
                       <View style={styles.moodStatusRow}>
                         <Feather
-                          name={member.mood.type === 'tired' ? 'meh' : 'smile'}
+                          name={
+                            member.mood.type === 'tired'
+                              ? 'minus-circle'
+                              : member.mood.type === 'stressed'
+                              ? 'frown'
+                              : member.mood.type === 'okay'
+                              ? 'meh'
+                              : 'smile'
+                          }
                           size={12}
                           color={
                             member.mood.type === 'tired'
                               ? Colors.accentBlueSoft
-                              : Colors.accentTeal
+                              : member.mood.type === 'stressed'
+                              ? Colors.accentRed
+                              : member.mood.type === 'okay'
+                              ? Colors.accentYellow
+                              : '#4CC38A'
                           }
                           style={styles.moodStatusIcon}
                         />
@@ -259,7 +285,11 @@ export const FamilyPulseModal: React.FC<FamilyPulseModalProps> = ({
                               color:
                                 member.mood.type === 'tired'
                                   ? Colors.accentBlueSoft
-                                  : Colors.accentTeal,
+                                  : member.mood.type === 'stressed'
+                                  ? Colors.accentRed
+                                  : member.mood.type === 'okay'
+                                  ? Colors.accentYellow
+                                  : '#4CC38A',
                             },
                           ]}
                         >
@@ -297,12 +327,11 @@ export const FamilyPulseModal: React.FC<FamilyPulseModalProps> = ({
                 onPress={() => setShowCreatePoll(true)}
                 activeOpacity={0.7}
               >
-                <Feather
-                  name="bar-chart-2"
-                  size={20}
-                  color={Colors.primary}
-                  style={styles.actionBtnIcon}
-                />
+                <View style={styles.pollBarsIconContainer}>
+                  <View style={[styles.pollBar, styles.pollBarLeft]} />
+                  <View style={[styles.pollBar, styles.pollBarCenter]} />
+                  <View style={[styles.pollBar, styles.pollBarRight]} />
+                </View>
                 <Text style={styles.actionBtnText}>New poll</Text>
               </TouchableOpacity>
 
@@ -312,8 +341,8 @@ export const FamilyPulseModal: React.FC<FamilyPulseModalProps> = ({
                 onPress={() => setShowAddMilestone(true)}
                 activeOpacity={0.7}
               >
-                <Feather
-                  name="award"
+                <Ionicons
+                  name="trophy-outline"
                   size={20}
                   color={Colors.primary}
                   style={styles.actionBtnIcon}
@@ -326,22 +355,21 @@ export const FamilyPulseModal: React.FC<FamilyPulseModalProps> = ({
             <View style={styles.sectionHeaderRow}>
               <Text style={styles.sectionTitle}>Appreciation wall</Text>
               <TouchableOpacity
-                onPress={() => setShowWriteAppreciation(false)}
+                onPress={() => setShowAppreciationWall(true)}
                 activeOpacity={0.7}
+                accessibilityRole="button"
+                accessibilityLabel="See all appreciations"
               >
-                <Text
-                  style={styles.seeAllText}
-                  onPress={() => {
-                    // Open full wall modal or trigger submodal
-                  }}
-                >
-                  See all
-                </Text>
+                <Text style={styles.seeAllText}>See all</Text>
               </TouchableOpacity>
             </View>
 
             {/* Appreciation Preview Card */}
-            <View style={styles.previewCard}>
+            <TouchableOpacity
+              style={styles.previewCard}
+              onPress={() => setShowAppreciationWall(true)}
+              activeOpacity={0.85}
+            >
               <View style={styles.previewCardHeader}>
                 <View style={styles.previewActorsGroup}>
                   <View
@@ -350,11 +378,18 @@ export const FamilyPulseModal: React.FC<FamilyPulseModalProps> = ({
                       { backgroundColor: Colors.avatarNavy },
                     ]}
                   >
-                    <Text style={styles.smallAvatarText}>R</Text>
+                    <Text
+                      style={[
+                        styles.smallAvatarText,
+                        { color: Colors.accentBlueSoft },
+                      ]}
+                    >
+                      R
+                    </Text>
                   </View>
                   <Feather
                     name="chevron-right"
-                    size={12}
+                    size={13}
                     color={Colors.textSecondary}
                     style={styles.smallChevron}
                   />
@@ -364,7 +399,14 @@ export const FamilyPulseModal: React.FC<FamilyPulseModalProps> = ({
                       { backgroundColor: Colors.avatarGreen },
                     ]}
                   >
-                    <Text style={styles.smallAvatarText}>D</Text>
+                    <Text
+                      style={[
+                        styles.smallAvatarText,
+                        { color: Colors.accentGreenSoft },
+                      ]}
+                    >
+                      D
+                    </Text>
                   </View>
                   <Text style={styles.previewActorTitle}>
                     Rohan thanked Dadi
@@ -382,6 +424,7 @@ export const FamilyPulseModal: React.FC<FamilyPulseModalProps> = ({
                 <TouchableOpacity
                   style={styles.previewReactionPillActive}
                   onPress={() => setShowReactionPack(true)}
+                  activeOpacity={0.7}
                 >
                   <Feather name="heart" size={13} color={Colors.primary} />
                   <Text style={styles.previewReactionTextActive}>4</Text>
@@ -390,12 +433,13 @@ export const FamilyPulseModal: React.FC<FamilyPulseModalProps> = ({
                 <TouchableOpacity
                   style={styles.previewReactionPill}
                   onPress={() => setShowReactionPack(true)}
+                  activeOpacity={0.7}
                 >
-                  <Feather name="star" size={13} color={Colors.textSecondary} />
+                  <Feather name="star" size={13} color={Colors.white} />
                   <Text style={styles.previewReactionText}>2</Text>
                 </TouchableOpacity>
               </View>
-            </View>
+            </TouchableOpacity>
 
             {/* Family poll Section */}
             <View style={styles.sectionHeaderRow}>
@@ -403,6 +447,8 @@ export const FamilyPulseModal: React.FC<FamilyPulseModalProps> = ({
               <TouchableOpacity
                 onPress={() => setShowPollsModal(true)}
                 activeOpacity={0.7}
+                accessibilityRole="button"
+                accessibilityLabel="See all polls"
               >
                 <Text style={styles.seeAllText}>See all</Text>
               </TouchableOpacity>
@@ -424,7 +470,7 @@ export const FamilyPulseModal: React.FC<FamilyPulseModalProps> = ({
                     <Text style={styles.pollOptionName}>Picnic at Lodhi Garden</Text>
                     <Feather
                       name="check-circle"
-                      size={14}
+                      size={15}
                       color={Colors.primary}
                       style={styles.checkIcon}
                     />
@@ -479,8 +525,8 @@ export const FamilyPulseModal: React.FC<FamilyPulseModalProps> = ({
               activeOpacity={0.85}
             >
               <View style={styles.milestoneCategoryRow}>
-                <Feather
-                  name="award"
+                <Ionicons
+                  name="trophy-outline"
                   size={14}
                   color={Colors.primary}
                   style={styles.awardIcon}
@@ -504,6 +550,19 @@ export const FamilyPulseModal: React.FC<FamilyPulseModalProps> = ({
           onSelectMood={handleSelectMood}
         />
 
+        <AppreciationWallModal
+          visible={showAppreciationWall}
+          onClose={() => setShowAppreciationWall(false)}
+          onOpenWrite={() => {
+            setShowAppreciationWall(false);
+            setShowWriteAppreciation(true);
+          }}
+          onOpenReactionPack={(item) => {
+            setSelectedAppreciationItem(item);
+            setShowReactionPack(true);
+          }}
+        />
+
         <WriteAppreciationModal
           visible={showWriteAppreciation}
           onClose={() => setShowWriteAppreciation(false)}
@@ -514,9 +573,17 @@ export const FamilyPulseModal: React.FC<FamilyPulseModalProps> = ({
 
         <ReactionPackModal
           visible={showReactionPack}
+          targetTitle={
+            selectedAppreciationItem
+              ? `To ${selectedAppreciationItem.senderName}’s thanks for ${selectedAppreciationItem.receiverName}`
+              : 'To Rohan’s thanks for Dadi'
+          }
           onClose={() => setShowReactionPack(false)}
           onSelectReaction={(_reactionId) => {
-            // Handled
+            setShowReactionPack(false);
+          }}
+          onRemoveReaction={() => {
+            setShowReactionPack(false);
           }}
         />
 
@@ -582,24 +649,24 @@ const styles = StyleSheet.create({
     width: 44,
     height: 44,
     borderRadius: 22,
-    backgroundColor: Colors.cardBackground,
+    backgroundColor: 'transparent',
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 1,
-    borderColor: Colors.border,
+    borderColor: Colors.borderMutedAlt,
   },
   headerTitleGroup: {
     alignItems: 'center',
   },
   headerTitle: {
-    fontSize: 18,
+    fontSize: 20,
     fontWeight: '700',
     color: Colors.white,
-    letterSpacing: -0.2,
+    letterSpacing: -0.3,
   },
   headerSubtitle: {
     fontSize: 13,
-    color: Colors.textSecondary,
+    color: Colors.textSubtle,
     marginTop: 2,
   },
   headerRightSpacer: {
@@ -697,32 +764,33 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     paddingHorizontal: 20,
-    paddingTop: 8,
+    paddingTop: 16,
   },
   moodCard: {
     backgroundColor: Colors.cardBackground,
     borderRadius: 20,
     borderWidth: 1,
     borderColor: Colors.border,
-    padding: 18,
-    marginBottom: 16,
+    paddingVertical: 20,
+    paddingHorizontal: 16,
+    marginBottom: 24,
   },
   moodCardHeader: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginBottom: 16,
+    marginBottom: 18,
   },
   moodCardHeaderTitle: {
     color: Colors.primary,
-    fontSize: 12,
+    fontSize: 11.5,
     fontWeight: '700',
     letterSpacing: 0.8,
   },
   moodCardHeaderCount: {
-    color: Colors.textSecondary,
-    fontSize: 13,
-    fontWeight: '500',
+    color: Colors.textSubtle,
+    fontSize: 12.5,
+    fontWeight: '400',
   },
   membersMoodRow: {
     flexDirection: 'row',
@@ -733,20 +801,22 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   memberAvatarCircle: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
+    width: 46,
+    height: 46,
+    borderRadius: 23,
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 6,
+    marginBottom: 8,
+  },
+  memberAvatarCircleNotCheckedIn: {
+    opacity: 0.45,
   },
   memberAvatarInitial: {
-    color: Colors.white,
-    fontSize: 16,
+    fontSize: 17,
     fontWeight: '700',
   },
   memberMoodName: {
-    fontSize: 12,
+    fontSize: 12.5,
     fontWeight: '600',
     color: Colors.white,
     marginBottom: 4,
@@ -756,7 +826,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   moodStatusIcon: {
-    marginRight: 3,
+    marginRight: 4,
   },
   moodStatusText: {
     fontSize: 12,
@@ -764,41 +834,67 @@ const styles = StyleSheet.create({
   },
   notYetText: {
     fontSize: 12,
-    color: Colors.textSecondary,
+    color: Colors.textSubtle,
+    fontWeight: '400',
   },
   actionButtonsRow: {
     flexDirection: 'row',
-    gap: 10,
-    marginBottom: 24,
+    gap: 9,
+    marginBottom: 28,
   },
   actionButton: {
     flex: 1,
-    backgroundColor: Colors.cardBackground,
-    borderRadius: 16,
+    backgroundColor: 'transparent',
+    borderRadius: 20,
     borderWidth: 1,
-    borderColor: Colors.border,
-    paddingVertical: 14,
+    borderColor: '#243A5E',
+    height: 88,
     alignItems: 'center',
     justifyContent: 'center',
+    paddingHorizontal: 4,
   },
   actionBtnIcon: {
-    marginBottom: 6,
+    marginBottom: 8,
+  },
+  pollBarsIconContainer: {
+    flexDirection: 'row',
+    alignItems: 'flex-end',
+    height: 20,
+    gap: 4,
+    marginBottom: 8,
+    justifyContent: 'center',
+  },
+  pollBar: {
+    width: 2.8,
+    backgroundColor: Colors.primary,
+    borderRadius: 1.5,
+  },
+  pollBarLeft: {
+    height: 11,
+  },
+  pollBarCenter: {
+    height: 18,
+  },
+  pollBarRight: {
+    height: 8,
   },
   actionBtnText: {
     color: Colors.white,
-    fontSize: 12,
+    fontSize: 13.5,
     fontWeight: '600',
+    textAlign: 'center',
   },
   sectionHeaderRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginBottom: 12,
+    marginBottom: 14,
   },
   sectionTitle: {
-    fontSize: 18,
+    fontSize: 20,
     fontWeight: '700',
     color: Colors.white,
+    letterSpacing: -0.3,
   },
   seeAllText: {
     color: Colors.primary,
@@ -811,13 +907,13 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: Colors.border,
     padding: 16,
-    marginBottom: 20,
+    marginBottom: 24,
   },
   previewCardHeader: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginBottom: 10,
+    marginBottom: 12,
   },
   previewActorsGroup: {
     flexDirection: 'row',
@@ -826,87 +922,88 @@ const styles = StyleSheet.create({
     marginRight: 8,
   },
   smallAvatar: {
-    width: 24,
-    height: 24,
-    borderRadius: 12,
+    width: 28,
+    height: 28,
+    borderRadius: 14,
     alignItems: 'center',
     justifyContent: 'center',
   },
   smallAvatarText: {
-    color: Colors.white,
-    fontSize: 11,
+    fontSize: 13,
     fontWeight: '700',
   },
   smallChevron: {
-    marginHorizontal: 4,
+    marginHorizontal: 6,
   },
   previewActorTitle: {
-    marginLeft: 6,
+    marginLeft: 8,
     color: Colors.white,
-    fontSize: 13,
-    fontWeight: '600',
+    fontSize: 15,
+    fontWeight: '700',
     flexShrink: 1,
   },
   previewTimeText: {
     color: Colors.textSecondary,
-    fontSize: 12,
+    fontSize: 13,
+    fontWeight: '500',
   },
   previewMessage: {
     color: Colors.textNearWhite,
-    fontSize: 14,
-    lineHeight: 20,
-    marginBottom: 12,
+    fontSize: 14.5,
+    lineHeight: 21,
+    marginBottom: 14,
   },
   previewReactionsRow: {
     flexDirection: 'row',
-    gap: 8,
+    gap: 9,
   },
   previewReactionPillActive: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: Colors.surfaceSubtle,
-    borderRadius: 14,
+    backgroundColor: 'rgba(240, 145, 58, 0.08)',
+    borderRadius: 9,
     borderWidth: 1,
     borderColor: Colors.primary,
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    gap: 4,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    gap: 6,
   },
   previewReactionTextActive: {
     color: Colors.primary,
-    fontSize: 12,
-    fontWeight: '600',
+    fontSize: 13,
+    fontWeight: '700',
   },
   previewReactionPill: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: Colors.surfaceSubtle,
-    borderRadius: 14,
+    backgroundColor: 'transparent',
+    borderRadius: 9,
     borderWidth: 1,
-    borderColor: Colors.border,
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    gap: 4,
+    borderColor: '#243A5E',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    gap: 6,
   },
   previewReactionText: {
-    color: Colors.textSecondary,
-    fontSize: 12,
+    color: Colors.white,
+    fontSize: 13,
     fontWeight: '600',
   },
   pollPreviewQuestion: {
-    fontSize: 15,
+    fontSize: 16,
     fontWeight: '700',
     color: Colors.white,
-    marginBottom: 14,
+    lineHeight: 22,
+    marginBottom: 16,
   },
   pollPreviewOption: {
-    marginBottom: 10,
+    marginBottom: 16,
   },
   pollPreviewLabelRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginBottom: 4,
+    marginBottom: 8,
   },
   optionNameWithCheck: {
     flexDirection: 'row',
@@ -914,31 +1011,31 @@ const styles = StyleSheet.create({
   },
   pollOptionName: {
     color: Colors.white,
-    fontSize: 13,
-    fontWeight: '500',
+    fontSize: 15,
+    fontWeight: '600',
   },
   checkIcon: {
-    marginLeft: 6,
+    marginLeft: 8,
   },
   pollOptionPercent: {
-    color: Colors.textSecondary,
-    fontSize: 12,
+    color: Colors.textSubtle,
+    fontSize: 14.5,
     fontWeight: '600',
   },
   pollOptionPercentActive: {
     color: Colors.primary,
-    fontSize: 12,
-    fontWeight: '600',
+    fontSize: 14.5,
+    fontWeight: '700',
   },
   pollTrack: {
-    height: 4,
-    backgroundColor: Colors.surfaceNavyDark,
-    borderRadius: 2,
+    height: 6,
+    backgroundColor: '#162844',
+    borderRadius: 3,
     overflow: 'hidden',
   },
   pollFill: {
-    height: 4,
-    borderRadius: 2,
+    height: 6,
+    borderRadius: 3,
   },
   pollFill60: {
     width: '60%',
@@ -946,12 +1043,13 @@ const styles = StyleSheet.create({
   },
   pollFill20: {
     width: '20%',
-    backgroundColor: Colors.surfaceNavyLight,
+    backgroundColor: '#273C56',
   },
   pollPreviewFooter: {
-    color: Colors.textSecondary,
-    fontSize: 12,
-    marginTop: 6,
+    color: Colors.textSubtle,
+    fontSize: 13,
+    marginTop: 2,
+    fontWeight: '400',
   },
   milestoneCategoryRow: {
     flexDirection: 'row',

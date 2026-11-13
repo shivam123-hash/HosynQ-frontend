@@ -22,10 +22,12 @@ export interface AppreciationItem {
   senderName: string;
   senderInitial: string;
   senderColor: string;
+  senderTextColor?: string;
   receiverId: string;
   receiverName: string;
   receiverInitial: string;
   receiverColor: string;
+  receiverTextColor?: string;
   timeText: string;
   message: string;
   heartsCount: number;

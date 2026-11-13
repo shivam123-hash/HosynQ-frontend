@@ -7,7 +7,6 @@ import {
   Modal,
   TouchableWithoutFeedback,
   TextInput,
-  ScrollView,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Feather from '@react-native-vector-icons/feather';
@@ -46,6 +45,7 @@ export const WriteAppreciationModal: React.FC<WriteAppreciationModalProps> = ({
   const [message, setMessage] = useState(
     'Thank you for picking Aarav up from school every day this week.'
   );
+  const [isFocused, setIsFocused] = useState(false);
 
   const handlePost = () => {
     onPostAppreciation({
@@ -91,25 +91,19 @@ export const WriteAppreciationModal: React.FC<WriteAppreciationModalProps> = ({
                     >
                       <View
                         style={[
-                          styles.avatarOuter,
-                          isSelected && styles.avatarOuterSelected,
+                          styles.avatarCircle,
+                          { backgroundColor: m.bgColor },
+                          isSelected && styles.avatarCircleSelected,
                         ]}
                       >
-                        <View
+                        <Text
                           style={[
-                            styles.avatarCircle,
-                            { backgroundColor: m.bgColor },
+                            styles.avatarText,
+                            { color: m.textColor },
                           ]}
                         >
-                          <Text
-                            style={[
-                              styles.avatarText,
-                              { color: m.textColor },
-                            ]}
-                          >
-                            {m.initial}
-                          </Text>
-                        </View>
+                          {m.initial}
+                        </Text>
                       </View>
                       <Text
                         style={[
@@ -124,24 +118,28 @@ export const WriteAppreciationModal: React.FC<WriteAppreciationModalProps> = ({
                 })}
               </View>
 
-              {/* Text Input with Orange Border */}
-              <View style={styles.inputContainer}>
+              {/* Text Input with Orange Border on Focus */}
+              <View
+                style={[
+                  styles.inputContainer,
+                  isFocused && styles.inputContainerFocused,
+                ]}
+              >
                 <TextInput
                   value={message}
                   onChangeText={setMessage}
+                  onFocus={() => setIsFocused(true)}
+                  onBlur={() => setIsFocused(false)}
                   placeholder="Write your note of appreciation..."
                   placeholderTextColor={Colors.textPlaceholder}
                   style={styles.textInput}
                   multiline
+                  selectionColor={Colors.primary}
                 />
               </View>
 
               {/* Suggestion Chips */}
-              <ScrollView
-                horizontal
-                showsHorizontalScrollIndicator={false}
-                contentContainerStyle={styles.chipsRow}
-              >
+              <View style={styles.chipsWrap}>
                 {SUGGESTION_CHIPS.map((chip) => (
                   <TouchableOpacity
                     key={chip}
@@ -152,7 +150,7 @@ export const WriteAppreciationModal: React.FC<WriteAppreciationModalProps> = ({
                     <Text style={styles.chipText}>{chip}</Text>
                   </TouchableOpacity>
                 ))}
-              </ScrollView>
+              </View>
 
               {/* Privacy Footer */}
               <View style={styles.privacyRow}>
@@ -198,114 +196,116 @@ const styles = StyleSheet.create({
     paddingTop: 12,
     paddingHorizontal: 20,
     borderWidth: 1,
-    borderColor: Colors.borderBold,
+    borderColor: '#1E314B',
   },
   dragHandle: {
     width: 44,
     height: 4,
     borderRadius: 2,
-    backgroundColor: Colors.borderMuted,
+    backgroundColor: '#3A4B62',
     alignSelf: 'center',
-    marginBottom: 16,
+    marginBottom: 20,
   },
   title: {
-    fontSize: 22,
+    fontSize: 24,
     fontWeight: '700',
+    letterSpacing: -0.3,
     color: Colors.white,
-    marginBottom: 18,
+    marginBottom: 20,
   },
   sectionKicker: {
-    fontSize: 11,
+    fontSize: 12,
     fontWeight: '700',
-    color: Colors.textSubtle,
+    color: Colors.textSecondary,
     letterSpacing: 0.8,
-    marginBottom: 14,
+    marginBottom: 16,
   },
   membersRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginBottom: 20,
-    paddingHorizontal: 6,
+    marginBottom: 22,
+    paddingHorizontal: 4,
   },
   memberCol: {
     alignItems: 'center',
   },
-  avatarOuter: {
-    width: 56,
-    height: 56,
-    borderRadius: 28,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 2,
-    borderColor: Colors.transparent,
-  },
-  avatarOuterSelected: {
-    borderColor: Colors.primary,
-  },
   avatarCircle: {
-    width: 46,
-    height: 46,
-    borderRadius: 23,
+    width: 50,
+    height: 50,
+    borderRadius: 25,
     alignItems: 'center',
     justifyContent: 'center',
+    borderWidth: 2.5,
+    borderColor: 'transparent',
+  },
+  avatarCircleSelected: {
+    borderColor: Colors.primary,
   },
   avatarText: {
     fontSize: 17,
     fontWeight: '700',
   },
   memberName: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: Colors.textSubtle,
-    marginTop: 6,
+    fontSize: 13.5,
+    fontWeight: '500',
+    color: Colors.textSecondary,
+    marginTop: 8,
   },
   memberNameSelected: {
+    fontWeight: '700',
     color: Colors.white,
   },
   inputContainer: {
-    backgroundColor: Colors.surfaceSubtle,
-    borderWidth: 1.5,
-    borderColor: Colors.primary,
-    borderRadius: 16,
+    backgroundColor: Colors.cardBackground,
+    borderWidth: 1,
+    borderColor: '#1E314B',
+    borderRadius: 20,
     padding: 16,
-    minHeight: 104,
-    marginBottom: 16,
+    minHeight: 120,
+    marginBottom: 18,
+  },
+  inputContainerFocused: {
+    borderColor: Colors.primary,
+    borderWidth: 1.5,
   },
   textInput: {
     fontSize: 15,
     color: Colors.white,
     lineHeight: 22,
     padding: 0,
+    textAlignVertical: 'top',
   },
-  chipsRow: {
+  chipsWrap: {
     flexDirection: 'row',
+    flexWrap: 'wrap',
     gap: 8,
-    marginBottom: 18,
+    marginBottom: 22,
   },
   chip: {
-    paddingVertical: 8,
-    paddingHorizontal: 14,
-    borderRadius: 20,
-    backgroundColor: Colors.surfaceSubtle,
+    paddingVertical: 9,
+    paddingHorizontal: 16,
+    borderRadius: 22,
+    backgroundColor: Colors.cardBackground,
     borderWidth: 1,
-    borderColor: Colors.borderBold,
+    borderColor: '#3A4556',
   },
   chipText: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: Colors.textSubtle,
+    fontSize: 14,
+    fontWeight: '500',
+    color: '#C5D2E0',
   },
   privacyRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 20,
+    marginBottom: 22,
+    paddingHorizontal: 2,
   },
   privacyIcon: {
     marginRight: 8,
   },
   privacyText: {
-    fontSize: 12.5,
-    color: Colors.textSubtle,
+    fontSize: 13.5,
+    color: Colors.textSecondary,
   },
   postBtn: {
     height: 54,

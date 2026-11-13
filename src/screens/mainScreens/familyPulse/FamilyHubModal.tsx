@@ -7,6 +7,7 @@ import {
   Modal,
   ScrollView,
   Alert,
+  StatusBar,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Feather from '@react-native-vector-icons/feather';
@@ -21,6 +22,8 @@ export interface FamilyHubModalProps {
   onClose: () => void;
   onOpenVault?: () => void;
   onOpenPulse?: () => void;
+  onInviteMember?: () => void;
+  onThemePress?: () => void;
 }
 
 interface MemberHub {
@@ -28,6 +31,7 @@ interface MemberHub {
   name: string;
   initial: string;
   bgColor: string;
+  textColor: string;
   statusLocation: string;
   isOnline: boolean;
 }
@@ -38,6 +42,7 @@ const MEMBERS: MemberHub[] = [
     name: 'Priya',
     initial: 'P',
     bgColor: Colors.avatarBrown,
+    textColor: Colors.primarySubtle,
     statusLocation: 'You',
     isOnline: true,
   },
@@ -46,6 +51,7 @@ const MEMBERS: MemberHub[] = [
     name: 'Rohan',
     initial: 'R',
     bgColor: Colors.avatarNavy,
+    textColor: Colors.accentBlueSoft,
     statusLocation: 'Office',
     isOnline: true,
   },
@@ -54,6 +60,7 @@ const MEMBERS: MemberHub[] = [
     name: 'Anaya',
     initial: 'A',
     bgColor: Colors.avatarWine,
+    textColor: Colors.accentPink,
     statusLocation: 'Home',
     isOnline: true,
   },
@@ -62,6 +69,7 @@ const MEMBERS: MemberHub[] = [
     name: 'Aarav',
     initial: 'Aa',
     bgColor: Colors.avatarOlive,
+    textColor: Colors.accentYellow,
     statusLocation: 'School',
     isOnline: true,
   },
@@ -70,6 +78,7 @@ const MEMBERS: MemberHub[] = [
     name: 'Dadi',
     initial: 'D',
     bgColor: Colors.avatarGreen,
+    textColor: Colors.accentGreenSoft,
     statusLocation: 'Home',
     isOnline: false,
   },
@@ -88,6 +97,8 @@ export const FamilyHubModal: React.FC<FamilyHubModalProps> = ({
   onClose,
   onOpenVault,
   onOpenPulse,
+  onInviteMember,
+  onThemePress,
 }) => {
   const insets = useSafeAreaInsets();
   const [selectedMood, setSelectedMood] = useState<MoodType>('good');
@@ -123,34 +134,51 @@ export const FamilyHubModal: React.FC<FamilyHubModalProps> = ({
       onRequestClose={onClose}
     >
       <View style={[styles.container, { paddingTop: Math.max(insets.top, 16) }]}>
+        <StatusBar barStyle="light-content" />
+
         {/* Header */}
         <View style={styles.header}>
-          <TouchableOpacity
-            style={styles.circleButton}
-            onPress={onClose}
-            activeOpacity={0.7}
-            accessibilityRole="button"
-            accessibilityLabel="Back"
-          >
-            <Feather name="chevron-left" size={24} color={Colors.white} />
-          </TouchableOpacity>
-          <Text style={styles.headerTitle}>Family</Text>
+          <View style={styles.headerLeftGroup}>
+            <TouchableOpacity
+              style={styles.circleButton}
+              onPress={onClose}
+              activeOpacity={0.7}
+              accessibilityRole="button"
+              accessibilityLabel="Back"
+            >
+              <Feather name="chevron-left" size={22} color={Colors.white} />
+            </TouchableOpacity>
+            <Text style={styles.headerTitle}>Family</Text>
+          </View>
+
           <View style={styles.headerRightActions}>
             <TouchableOpacity
               style={styles.circleButton}
+              onPress={
+                onInviteMember ||
+                (() =>
+                  Alert.alert(
+                    'Invite Member',
+                    'Share invite link or Family ID HSQ-4821'
+                  ))
+              }
               activeOpacity={0.7}
               accessibilityRole="button"
               accessibilityLabel="Invite member"
             >
-              <Feather name="user-plus" size={18} color={Colors.white} />
+              <Feather name="user-plus" size={19} color={Colors.white} />
             </TouchableOpacity>
             <TouchableOpacity
               style={styles.circleButton}
+              onPress={
+                onThemePress ||
+                (() => Alert.alert('Theme', 'Dark theme active'))
+              }
               activeOpacity={0.7}
               accessibilityRole="button"
-              accessibilityLabel="Settings"
+              accessibilityLabel="Theme"
             >
-              <Feather name="settings" size={18} color={Colors.white} />
+              <Feather name="sun" size={19} color={Colors.white} />
             </TouchableOpacity>
           </View>
         </View>
@@ -159,7 +187,7 @@ export const FamilyHubModal: React.FC<FamilyHubModalProps> = ({
           style={styles.scrollArea}
           contentContainerStyle={[
             styles.scrollContent,
-            { paddingBottom: insets.bottom + 40 },
+            { paddingBottom: Math.max(insets.bottom, 16) + 16 },
           ]}
           showsVerticalScrollIndicator={false}
         >
@@ -176,11 +204,13 @@ export const FamilyHubModal: React.FC<FamilyHubModalProps> = ({
               style={styles.familyIdBadge}
               onPress={handleCopyFamilyId}
               activeOpacity={0.7}
+              accessibilityRole="button"
+              accessibilityLabel="Copy Family ID"
             >
               <Text style={styles.familyIdText}>HSQ-4821</Text>
               <Feather
                 name="copy"
-                size={12}
+                size={13}
                 color={Colors.primary}
                 style={styles.copyIcon}
               />
@@ -188,11 +218,7 @@ export const FamilyHubModal: React.FC<FamilyHubModalProps> = ({
           </View>
 
           {/* Members Avatars Row */}
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={styles.membersRow}
-          >
+          <View style={styles.membersRow}>
             {MEMBERS.map((member) => (
               <View key={member.id} style={styles.memberItem}>
                 <View style={styles.avatarContainer}>
@@ -202,7 +228,14 @@ export const FamilyHubModal: React.FC<FamilyHubModalProps> = ({
                       { backgroundColor: member.bgColor },
                     ]}
                   >
-                    <Text style={styles.memberAvatarInitial}>{member.initial}</Text>
+                    <Text
+                      style={[
+                        styles.memberAvatarInitial,
+                        { color: member.textColor },
+                      ]}
+                    >
+                      {member.initial}
+                    </Text>
                   </View>
                   <View
                     style={[
@@ -221,13 +254,36 @@ export const FamilyHubModal: React.FC<FamilyHubModalProps> = ({
             ))}
 
             {/* Add Member Button */}
-            <TouchableOpacity style={styles.memberItem} activeOpacity={0.7}>
-              <View style={styles.addMemberCircle}>
-                <Feather name="plus" size={20} color={Colors.primary} />
+            <TouchableOpacity
+              style={styles.memberItem}
+              activeOpacity={0.7}
+              onPress={
+                onInviteMember ||
+                (() =>
+                  Alert.alert(
+                    'Add Member',
+                    'Share invite link or Family ID HSQ-4821'
+                  ))
+              }
+              accessibilityRole="button"
+              accessibilityLabel="Add family member"
+            >
+              <View style={styles.avatarContainer}>
+                <View style={styles.addMemberCircle}>
+                  <Feather name="plus" size={20} color={Colors.primary} />
+                </View>
               </View>
               <Text style={styles.addMemberText}>Add</Text>
+              <Text
+                style={[
+                  styles.memberLocationText,
+                  styles.memberLocationSpacer,
+                ]}
+              >
+                {'\u00A0'}
+              </Text>
             </TouchableOpacity>
-          </ScrollView>
+          </View>
 
           {/* 2x2 Feature Grid */}
           <View style={styles.gridContainer}>
@@ -236,20 +292,31 @@ export const FamilyHubModal: React.FC<FamilyHubModalProps> = ({
               style={styles.gridCard}
               onPress={handleOpenPulse}
               activeOpacity={0.85}
+              accessibilityRole="button"
+              accessibilityLabel="Family Pulse, 3 of 5 checked in today"
             >
-              <View style={styles.gridIconCirclePulse}>
-                <Feather name="activity" size={20} color={Colors.accentPurple} />
+              <View style={styles.gridCardTopRow}>
+                <View style={styles.gridIconCirclePulse}>
+                  <Feather name="activity" size={20} color={Colors.accentPurple} />
+                </View>
               </View>
-              <Text style={styles.gridCardTitle}>Family Pulse</Text>
-              <Text style={styles.gridCardSubtitle}>3 of 5 checked in today</Text>
+              <View style={styles.gridCardBottomGroup}>
+                <Text style={styles.gridCardTitle}>Family Pulse</Text>
+                <Text style={styles.gridCardSubtitle}>3 of 5 checked in today</Text>
+              </View>
             </TouchableOpacity>
 
             {/* Family Chat */}
-            <TouchableOpacity style={styles.gridCard} activeOpacity={0.85}>
+            <TouchableOpacity
+              style={styles.gridCard}
+              activeOpacity={0.85}
+              accessibilityRole="button"
+              accessibilityLabel="Family chat, 2 unread messages"
+            >
               <View style={styles.gridCardTopRow}>
                 <View style={styles.gridIconCircleChat}>
                   <Feather
-                    name="message-circle"
+                    name="message-square"
                     size={20}
                     color={Colors.accentBlue}
                   />
@@ -258,23 +325,39 @@ export const FamilyHubModal: React.FC<FamilyHubModalProps> = ({
                   <Text style={styles.counterBadgeText}>2</Text>
                 </View>
               </View>
-              <Text style={styles.gridCardTitle}>Family chat</Text>
-              <Text style={styles.gridCardSubtitle}>
-                Anaya: Can someone pick me up?
-              </Text>
+              <View style={styles.gridCardBottomGroup}>
+                <Text style={styles.gridCardTitle}>Family chat</Text>
+                <Text style={styles.gridCardSubtitle}>
+                  Anaya: Can someone pick me up?
+                </Text>
+              </View>
             </TouchableOpacity>
 
             {/* Compass */}
-            <TouchableOpacity style={styles.gridCard} activeOpacity={0.85}>
-              <View style={styles.gridIconCircleCompass}>
-                <Feather name="navigation" size={20} color={Colors.accentTeal} />
+            <TouchableOpacity
+              style={styles.gridCard}
+              activeOpacity={0.85}
+              accessibilityRole="button"
+              accessibilityLabel="Compass, 4 sharing location"
+            >
+              <View style={styles.gridCardTopRow}>
+                <View style={styles.gridIconCircleCompass}>
+                  <Feather name="navigation" size={20} color={Colors.accentTeal} />
+                </View>
               </View>
-              <Text style={styles.gridCardTitle}>Compass</Text>
-              <Text style={styles.gridCardSubtitle}>4 sharing location</Text>
+              <View style={styles.gridCardBottomGroup}>
+                <Text style={styles.gridCardTitle}>Compass</Text>
+                <Text style={styles.gridCardSubtitle}>4 sharing location</Text>
+              </View>
             </TouchableOpacity>
 
             {/* Members */}
-            <TouchableOpacity style={styles.gridCard} activeOpacity={0.85}>
+            <TouchableOpacity
+              style={styles.gridCard}
+              activeOpacity={0.85}
+              accessibilityRole="button"
+              accessibilityLabel="Members, 1 join request to review"
+            >
               <View style={styles.gridCardTopRow}>
                 <View style={styles.gridIconCircleMembers}>
                   <Feather name="users" size={20} color={Colors.accentGreen} />
@@ -283,10 +366,12 @@ export const FamilyHubModal: React.FC<FamilyHubModalProps> = ({
                   <Text style={styles.counterBadgeText}>1</Text>
                 </View>
               </View>
-              <Text style={styles.gridCardTitle}>Members</Text>
-              <Text style={styles.gridCardSubtitle}>
-                1 join request to review
-              </Text>
+              <View style={styles.gridCardBottomGroup}>
+                <Text style={styles.gridCardTitle}>Members</Text>
+                <Text style={styles.gridCardSubtitle}>
+                  1 join request to review
+                </Text>
+              </View>
             </TouchableOpacity>
           </View>
 
@@ -295,9 +380,11 @@ export const FamilyHubModal: React.FC<FamilyHubModalProps> = ({
             style={styles.vaultCard}
             onPress={handleOpenVault}
             activeOpacity={0.85}
+            accessibilityRole="button"
+            accessibilityLabel="Family Vault, Documents, insurance, warranties, contacts"
           >
             <View style={styles.vaultIconBox}>
-              <Feather name="folder" size={22} color={Colors.primary} />
+              <Feather name="instagram" size={20} color={Colors.primary} />
             </View>
             <View style={styles.vaultTextGroup}>
               <Text style={styles.vaultTitle}>Family Vault</Text>
@@ -308,18 +395,14 @@ export const FamilyHubModal: React.FC<FamilyHubModalProps> = ({
             <Feather
               name="chevron-right"
               size={20}
-              color={Colors.textSecondary}
+              color={Colors.textSubtle}
             />
           </TouchableOpacity>
 
           {/* How are you today? Card */}
           <View style={styles.moodCard}>
             <Text style={styles.moodSectionTitle}>How are you today?</Text>
-            <ScrollView
-              horizontal
-              showsHorizontalScrollIndicator={false}
-              contentContainerStyle={styles.moodChipsRow}
-            >
+            <View style={styles.moodChipsWrap}>
               {MOOD_OPTIONS.map((option) => {
                 const isSelected = selectedMood === option.id;
                 return (
@@ -334,6 +417,8 @@ export const FamilyHubModal: React.FC<FamilyHubModalProps> = ({
                       setShowMoodModal(true);
                     }}
                     activeOpacity={0.7}
+                    accessibilityRole="button"
+                    accessibilityLabel={option.label}
                   >
                     <Text
                       style={[
@@ -348,7 +433,7 @@ export const FamilyHubModal: React.FC<FamilyHubModalProps> = ({
                   </TouchableOpacity>
                 );
               })}
-            </ScrollView>
+            </View>
           </View>
         </ScrollView>
 
@@ -386,25 +471,31 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingVertical: 12,
   },
+  headerLeftGroup: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 16,
+  },
   circleButton: {
     width: 44,
     height: 44,
     borderRadius: 22,
-    backgroundColor: Colors.cardBackground,
+    backgroundColor: 'transparent',
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 1,
-    borderColor: Colors.border,
+    borderColor: Colors.borderMutedAlt,
   },
   headerTitle: {
-    fontSize: 22,
-    fontWeight: '800',
+    fontSize: 26,
+    fontWeight: '700',
     color: Colors.white,
-    letterSpacing: -0.3,
+    letterSpacing: -0.4,
   },
   headerRightActions: {
     flexDirection: 'row',
-    gap: 10,
+    alignItems: 'center',
+    gap: 12,
   },
   scrollArea: {
     flex: 1,
@@ -420,67 +511,74 @@ const styles = StyleSheet.create({
     borderColor: Colors.border,
     flexDirection: 'row',
     alignItems: 'center',
-    padding: 16,
-    marginBottom: 20,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    marginBottom: 16,
   },
   familyAvatar: {
-    width: 46,
-    height: 46,
-    borderRadius: 23,
+    width: 44,
+    height: 44,
+    borderRadius: 22,
     backgroundColor: Colors.primary,
     alignItems: 'center',
     justifyContent: 'center',
     marginRight: 14,
   },
   familyAvatarText: {
-    color: Colors.white,
-    fontSize: 20,
-    fontWeight: '800',
+    color: Colors.black,
+    fontSize: 19,
+    fontWeight: '700',
   },
   familyTextGroup: {
     flex: 1,
+    justifyContent: 'center',
   },
   familyName: {
-    fontSize: 16,
+    fontSize: 17,
     fontWeight: '700',
     color: Colors.white,
-    marginBottom: 2,
+    letterSpacing: -0.2,
+    marginBottom: 3,
   },
   familyMeta: {
     fontSize: 13,
-    color: Colors.textSecondary,
+    fontWeight: '400',
+    color: Colors.textSubtle,
   },
   familyIdBadge: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: Colors.surfaceSubtle,
-    borderRadius: 14,
+    backgroundColor: 'transparent',
+    borderRadius: 10,
     borderWidth: 1,
-    borderColor: Colors.border,
-    paddingHorizontal: 10,
-    paddingVertical: 6,
+    borderColor: Colors.borderMutedAlt,
+    paddingHorizontal: 11,
+    paddingVertical: 7,
   },
   familyIdText: {
     color: Colors.white,
-    fontSize: 12,
+    fontSize: 13,
     fontWeight: '700',
+    letterSpacing: 0.2,
     marginRight: 6,
   },
   copyIcon: {
-    marginLeft: 2,
+    marginLeft: 1,
   },
   membersRow: {
     flexDirection: 'row',
-    gap: 16,
-    marginBottom: 24,
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    marginBottom: 20,
+    paddingHorizontal: 2,
   },
   memberItem: {
     alignItems: 'center',
-    width: 54,
+    width: 52,
   },
   avatarContainer: {
     position: 'relative',
-    marginBottom: 6,
+    marginBottom: 8,
   },
   memberAvatarCircle: {
     width: 48,
@@ -490,35 +588,40 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   memberAvatarInitial: {
-    color: Colors.white,
-    fontSize: 16,
+    fontSize: 17,
     fontWeight: '700',
   },
   statusDot: {
-    width: 12,
-    height: 12,
-    borderRadius: 6,
+    width: 13,
+    height: 13,
+    borderRadius: 6.5,
     position: 'absolute',
-    bottom: 0,
-    right: 0,
+    bottom: -1,
+    right: -1,
     borderWidth: 2,
     borderColor: Colors.background,
   },
   statusDotGreen: {
-    backgroundColor: Colors.accentTeal,
+    backgroundColor: '#4CC38A',
   },
   statusDotGray: {
-    backgroundColor: Colors.textSecondary,
+    backgroundColor: '#5A6880',
   },
   memberNameText: {
-    fontSize: 12,
+    fontSize: 12.5,
     fontWeight: '600',
     color: Colors.white,
     marginBottom: 2,
+    textAlign: 'center',
   },
   memberLocationText: {
-    fontSize: 11,
-    color: Colors.textSecondary,
+    fontSize: 11.5,
+    fontWeight: '400',
+    color: Colors.textSubtle,
+    textAlign: 'center',
+  },
+  memberLocationSpacer: {
+    opacity: 0,
   },
   addMemberCircle: {
     width: 48,
@@ -529,69 +632,79 @@ const styles = StyleSheet.create({
     borderStyle: 'dashed',
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 6,
   },
   addMemberText: {
-    fontSize: 12,
+    fontSize: 12.5,
     fontWeight: '600',
     color: Colors.primary,
+    marginBottom: 2,
+    textAlign: 'center',
   },
   gridContainer: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 14,
-    marginBottom: 16,
+    justifyContent: 'space-between',
+    gap: 12,
+    marginBottom: 14,
   },
   gridCard: {
-    width: '47.5%',
+    width: '48.2%',
     backgroundColor: Colors.cardBackground,
     borderRadius: 20,
     borderWidth: 1,
     borderColor: Colors.border,
     padding: 16,
-    minHeight: 140,
+    minHeight: 136,
     justifyContent: 'space-between',
   },
   gridCardTopRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
+    marginBottom: 14,
+  },
+  gridCardBottomGroup: {
+    justifyContent: 'flex-end',
   },
   gridIconCirclePulse: {
     width: 44,
     height: 44,
     borderRadius: 22,
     backgroundColor: 'rgba(157, 101, 229, 0.15)',
+    borderWidth: 1.5,
+    borderColor: Colors.accentPurple,
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 12,
   },
   gridIconCircleChat: {
     width: 44,
     height: 44,
     borderRadius: 22,
     backgroundColor: 'rgba(58, 142, 240, 0.15)',
+    borderWidth: 1.5,
+    borderColor: Colors.accentBlue,
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 12,
   },
   gridIconCircleCompass: {
     width: 44,
     height: 44,
     borderRadius: 22,
     backgroundColor: 'rgba(46, 196, 182, 0.15)',
+    borderWidth: 1.5,
+    borderColor: Colors.accentTeal,
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 12,
   },
   gridIconCircleMembers: {
     width: 44,
     height: 44,
     borderRadius: 22,
     backgroundColor: 'rgba(31, 160, 102, 0.15)',
+    borderWidth: 1.5,
+    borderColor: Colors.accentGreen,
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 12,
   },
   counterBadge: {
     width: 24,
@@ -600,11 +713,10 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.primary,
     alignItems: 'center',
     justifyContent: 'center',
-    alignSelf: 'flex-start',
   },
   counterBadgeText: {
-    color: Colors.white,
-    fontSize: 12,
+    color: Colors.black,
+    fontSize: 13,
     fontWeight: '700',
   },
   gridCardTitle: {
@@ -614,9 +726,9 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   gridCardSubtitle: {
-    fontSize: 12,
-    color: Colors.textSecondary,
-    lineHeight: 16,
+    fontSize: 12.5,
+    color: Colors.textSubtle,
+    lineHeight: 17,
   },
   vaultCard: {
     backgroundColor: Colors.cardBackground,
@@ -625,74 +737,86 @@ const styles = StyleSheet.create({
     borderColor: Colors.border,
     flexDirection: 'row',
     alignItems: 'center',
-    padding: 16,
-    marginBottom: 20,
+    paddingHorizontal: 16,
+    paddingVertical: 16,
+    marginBottom: 14,
   },
   vaultIconBox: {
     width: 44,
     height: 44,
     borderRadius: 14,
-    backgroundColor: 'rgba(240, 145, 58, 0.15)',
+    backgroundColor: 'transparent',
+    borderWidth: 1.5,
+    borderColor: Colors.primary,
     alignItems: 'center',
     justifyContent: 'center',
-    marginRight: 14,
+    marginRight: 16,
   },
   vaultTextGroup: {
     flex: 1,
-    marginRight: 8,
+    marginRight: 12,
   },
   vaultTitle: {
-    fontSize: 16,
+    fontSize: 17,
     fontWeight: '700',
     color: Colors.white,
-    marginBottom: 2,
+    letterSpacing: -0.2,
+    marginBottom: 4,
   },
   vaultSubtitle: {
-    fontSize: 12,
-    color: Colors.textSecondary,
+    fontSize: 13,
+    fontWeight: '400',
+    color: Colors.textSubtle,
+    lineHeight: 18,
   },
   moodCard: {
     backgroundColor: Colors.cardBackground,
     borderRadius: 20,
     borderWidth: 1,
     borderColor: Colors.border,
-    padding: 16,
+    paddingHorizontal: 16,
+    paddingVertical: 16,
     marginBottom: 16,
   },
   moodSectionTitle: {
-    fontSize: 16,
+    fontSize: 17,
     fontWeight: '700',
     color: Colors.white,
+    letterSpacing: -0.2,
     marginBottom: 14,
   },
-  moodChipsRow: {
+  moodChipsWrap: {
     flexDirection: 'row',
-    gap: 10,
+    flexWrap: 'wrap',
+    gap: 8,
   },
   moodChip: {
-    paddingHorizontal: 18,
+    paddingHorizontal: 16,
     paddingVertical: 10,
-    borderRadius: 20,
+    borderRadius: 22,
     alignItems: 'center',
     justifyContent: 'center',
   },
   moodChipActive: {
     backgroundColor: Colors.primary,
+    borderWidth: 1,
+    borderColor: Colors.primary,
   },
   moodChipInactive: {
-    backgroundColor: Colors.surfaceSubtle,
+    backgroundColor: 'transparent',
     borderWidth: 1,
-    borderColor: Colors.border,
+    borderColor: Colors.borderMutedAlt,
   },
   moodChipText: {
     fontSize: 14,
-    fontWeight: '600',
   },
   moodChipTextActive: {
     color: Colors.black,
+    fontWeight: '700',
   },
   moodChipTextInactive: {
     color: Colors.white,
+    fontWeight: '500',
   },
 });
 
