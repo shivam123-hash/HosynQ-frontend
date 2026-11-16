@@ -36,6 +36,7 @@ import {
   ToastConfig,
 } from '../addFlow';
 import { FamilyPulseModal, FamilyHubModal } from '../familyPulse';
+import { CompassModal, CompassScreenMode } from '../compassScreen';
 import {
   INITIAL_ATTENTION_ITEMS,
   INITIAL_UPCOMING_EVENTS,
@@ -104,6 +105,8 @@ const HomeScreen: React.FC<HomeScreenProps> = ({
   const [internalVaultVisible, setInternalVaultVisible] = useState(false);
   const [internalPulseVisible, setInternalPulseVisible] = useState(false);
   const [internalFamilyHubVisible, setInternalFamilyHubVisible] = useState(false);
+  const [internalCompassVisible, setInternalCompassVisible] = useState(false);
+  const [compassInitialScreen, setCompassInitialScreen] = useState<CompassScreenMode>('compass');
   const [internalUploadedFile, setInternalUploadedFile] = useState<
     string | undefined
   >(undefined);
@@ -195,6 +198,15 @@ const HomeScreen: React.FC<HomeScreenProps> = ({
     }
   };
 
+  const handleHeadingHomePress = () => {
+    if (onHeadingHomePress) {
+      onHeadingHomePress();
+    } else {
+      setCompassInitialScreen('headingHome');
+      setInternalCompassVisible(true);
+    }
+  };
+
   return (
     <SafeAreaView style={styles.safeArea} edges={['top', 'left', 'right']}>
       <StatusBar barStyle="light-content" />
@@ -243,10 +255,7 @@ const HomeScreen: React.FC<HomeScreenProps> = ({
         <QuickActionsBar
           onAddTask={handleAddTaskPress}
           onAddEvent={onAddEventPress}
-          onHeadingHome={
-            onHeadingHomePress ||
-            (() => Alert.alert('Heading Home', 'ETA shared with family members!'))
-          }
+          onHeadingHome={handleHeadingHomePress}
           onScan={onScanPress}
         />
 
@@ -511,6 +520,18 @@ const HomeScreen: React.FC<HomeScreenProps> = ({
           setInternalFamilyHubVisible(false);
           setInternalVaultVisible(true);
         }}
+        onOpenCompass={() => {
+          setInternalFamilyHubVisible(false);
+          setCompassInitialScreen('compass');
+          setInternalCompassVisible(true);
+        }}
+      />
+
+      {/* Compass & Heading Home Modal (CMP-01 to CMP-13) */}
+      <CompassModal
+        visible={internalCompassVisible}
+        initialScreen={compassInitialScreen}
+        onClose={() => setInternalCompassVisible(false)}
       />
     </SafeAreaView>
   );

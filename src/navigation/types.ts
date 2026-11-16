@@ -136,6 +136,16 @@ export type RootStackParamList = {
         forceEmpty?: boolean;
       }
     | undefined;
+  Members: undefined;
+  JoinRequests: undefined;
+  InviteAdult: undefined;
+  InvitationSent: undefined;
+  AddChild: undefined;
+  ChangeRole: { member?: any } | undefined;
+  FamilyActionConfirmation: { type?: any; memberName?: string } | undefined;
+  TransferOwnership: undefined;
+  DeleteFamily: undefined;
+  Staff: undefined;
 };
 
 // Navigation Prop Types

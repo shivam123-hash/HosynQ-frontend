@@ -18,10 +18,14 @@ export default function App() {
       <SafeAreaProvider>
         <StatusBar barStyle="light-content" />
         <NavigationContainer>
+<<<<<<< HEAD
           <RootNavigator
             initialRouteName="Auth"
             authInitialRouteName="Onboarding"
           />
+=======
+          <RootNavigator initialRouteName="DeleteFamily" />
+>>>>>>> 8ab347b (commit 16 nov monday)
         </NavigationContainer>
       </SafeAreaProvider>
     </Provider>

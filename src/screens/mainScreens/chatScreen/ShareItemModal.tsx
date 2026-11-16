@@ -30,8 +30,8 @@ const ITEMS_BY_TAB: Record<TabType, SelectableShareItem[]> = {
       title: 'Aarav’s PTM',
       subtitle: 'Fri, 6 Nov · 3:00 PM · St. Mary’s School',
       iconName: 'calendar',
-      iconColor: Colors.accentBlue,
-      iconBgColor: 'rgba(58, 142, 240, 0.15)',
+      iconColor: '#3A8EF0',
+      iconBgColor: 'transparent',
     },
     {
       id: 'ev-2',
@@ -39,8 +39,8 @@ const ITEMS_BY_TAB: Record<TabType, SelectableShareItem[]> = {
       title: 'Badminton',
       subtitle: 'Today · 6:30 PM · Anaya',
       iconName: 'calendar',
-      iconColor: Colors.accentTeal,
-      iconBgColor: 'rgba(46, 196, 182, 0.15)',
+      iconColor: '#4CC38A',
+      iconBgColor: 'transparent',
     },
     {
       id: 'ev-3',
@@ -48,8 +48,8 @@ const ITEMS_BY_TAB: Record<TabType, SelectableShareItem[]> = {
       title: 'Dinner at Nani’s',
       subtitle: 'Today · 8:00 PM',
       iconName: 'calendar',
-      iconColor: Colors.accentBlue,
-      iconBgColor: 'rgba(58, 142, 240, 0.15)',
+      iconColor: '#3A8EF0',
+      iconBgColor: 'transparent',
     },
     {
       id: 'ev-4',
@@ -57,8 +57,8 @@ const ITEMS_BY_TAB: Record<TabType, SelectableShareItem[]> = {
       title: 'Nani’s birthday',
       subtitle: 'Wed, 4 Nov · All day',
       iconName: 'gift',
-      iconColor: Colors.primary,
-      iconBgColor: 'rgba(240, 145, 58, 0.15)',
+      iconColor: '#F0913A',
+      iconBgColor: 'transparent',
     },
   ],
   tasks: [
@@ -194,9 +194,9 @@ export const ShareItemModal: React.FC<ShareItemModalProps> = ({
                 >
                   <Feather
                     name="check-square"
-                    size={15}
+                    size={16}
                     color={
-                      activeTab === 'tasks' ? Colors.black : Colors.textSecondary
+                      activeTab === 'tasks' ? '#171612' : '#C8D1DC'
                     }
                     style={styles.tabIcon}
                   />
@@ -224,9 +224,9 @@ export const ShareItemModal: React.FC<ShareItemModalProps> = ({
                 >
                   <Feather
                     name="calendar"
-                    size={15}
+                    size={16}
                     color={
-                      activeTab === 'events' ? Colors.black : Colors.textSecondary
+                      activeTab === 'events' ? '#171612' : '#C8D1DC'
                     }
                     style={styles.tabIcon}
                   />
@@ -254,9 +254,9 @@ export const ShareItemModal: React.FC<ShareItemModalProps> = ({
                 >
                   <Feather
                     name="list"
-                    size={15}
+                    size={16}
                     color={
-                      activeTab === 'lists' ? Colors.black : Colors.textSecondary
+                      activeTab === 'lists' ? '#171612' : '#C8D1DC'
                     }
                     style={styles.tabIcon}
                   />
@@ -275,8 +275,8 @@ export const ShareItemModal: React.FC<ShareItemModalProps> = ({
               <View style={styles.searchBar}>
                 <Feather
                   name="search"
-                  size={16}
-                  color={Colors.textSecondary}
+                  size={18}
+                  color="#8A97AB"
                   style={styles.searchIcon}
                 />
                 <TextInput
@@ -284,7 +284,7 @@ export const ShareItemModal: React.FC<ShareItemModalProps> = ({
                   value={searchQuery}
                   onChangeText={setSearchQuery}
                   placeholder={`Search ${activeTab}`}
-                  placeholderTextColor={Colors.textPlaceholder}
+                  placeholderTextColor="#8A97AB"
                 />
               </View>
 
@@ -314,7 +314,7 @@ export const ShareItemModal: React.FC<ShareItemModalProps> = ({
                         ]}
                       >
                         {isSelected && (
-                          <Feather name="check" size={12} color={Colors.white} />
+                          <Feather name="check" size={14} color="#171612" />
                         )}
                       </View>
 
@@ -322,12 +322,12 @@ export const ShareItemModal: React.FC<ShareItemModalProps> = ({
                       <View
                         style={[
                           styles.itemIconBox,
-                          { backgroundColor: item.iconBgColor },
+                          { borderColor: item.iconColor },
                         ]}
                       >
                         <Feather
                           name={item.iconName as any}
-                          size={18}
+                          size={20}
                           color={item.iconColor}
                         />
                       </View>
@@ -365,7 +365,7 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-end',
   },
   sheetContainer: {
-    backgroundColor: Colors.cardBackground,
+    backgroundColor: '#0F1D33',
     borderTopLeftRadius: 28,
     borderTopRightRadius: 28,
     paddingHorizontal: 20,
@@ -373,37 +373,39 @@ const styles = StyleSheet.create({
     borderTopWidth: 1,
     borderLeftWidth: 1,
     borderRightWidth: 1,
-    borderColor: Colors.border,
-    maxHeight: '85%',
+    borderColor: '#1F3249',
+    maxHeight: '88%',
   },
   handleBar: {
-    width: 40,
+    width: 44,
     height: 4,
     borderRadius: 2,
-    backgroundColor: Colors.borderLight,
+    backgroundColor: '#3A4A62',
     alignSelf: 'center',
-    marginBottom: 16,
+    marginBottom: 18,
   },
   sheetTitle: {
     fontSize: 20,
-    fontWeight: '800',
+    fontWeight: '700',
     color: Colors.white,
     letterSpacing: -0.3,
-    marginBottom: 16,
+    marginBottom: 18,
   },
   tabBar: {
     flexDirection: 'row',
-    backgroundColor: Colors.surfaceSubtle,
-    borderRadius: 24,
+    backgroundColor: '#0B1728',
+    borderRadius: 26,
     padding: 4,
     borderWidth: 1,
-    borderColor: Colors.border,
+    borderColor: '#1F3249',
     marginBottom: 16,
+    height: 52,
+    alignItems: 'center',
   },
   tabButton: {
     flex: 1,
-    height: 40,
-    borderRadius: 20,
+    height: 44,
+    borderRadius: 22,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
@@ -416,21 +418,22 @@ const styles = StyleSheet.create({
   },
   tabText: {
     fontSize: 14,
-    fontWeight: '600',
-    color: Colors.textSecondary,
+    fontWeight: '500',
+    color: '#C8D1DC',
   },
   tabTextActive: {
-    color: Colors.black,
+    color: '#171612',
+    fontWeight: '700',
   },
   searchBar: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: Colors.surfaceSubtle,
-    borderRadius: 22,
+    backgroundColor: '#0B1728',
+    borderRadius: 25,
     paddingHorizontal: 16,
-    height: 44,
+    height: 50,
     borderWidth: 1,
-    borderColor: Colors.border,
+    borderColor: '#1F3249',
     marginBottom: 16,
   },
   searchIcon: {
@@ -439,67 +442,72 @@ const styles = StyleSheet.create({
   searchInput: {
     flex: 1,
     color: Colors.white,
-    fontSize: 14,
+    fontSize: 15,
+    padding: 0,
   },
   listScrollView: {
-    maxHeight: 280,
-    marginBottom: 16,
+    maxHeight: 290,
+    marginBottom: 20,
   },
   listContainer: {
-    backgroundColor: Colors.cardElevated,
+    backgroundColor: '#0E1E34',
     borderRadius: 20,
     borderWidth: 1,
-    borderColor: Colors.border,
+    borderColor: '#1F3249',
     overflow: 'hidden',
   },
   itemRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    padding: 14,
+    paddingVertical: 14,
+    paddingHorizontal: 16,
   },
   itemRowDivider: {
     borderTopWidth: 1,
-    borderTopColor: Colors.borderSubtle,
+    borderTopColor: '#172740',
   },
   checkbox: {
-    width: 20,
-    height: 20,
+    width: 24,
+    height: 24,
     borderRadius: 6,
     borderWidth: 1.5,
-    borderColor: Colors.borderLight,
+    borderColor: '#3A4A62',
     alignItems: 'center',
     justifyContent: 'center',
     marginRight: 14,
+    backgroundColor: 'transparent',
   },
   checkboxSelected: {
     backgroundColor: Colors.primary,
     borderColor: Colors.primary,
   },
   itemIconBox: {
-    width: 40,
-    height: 40,
-    borderRadius: 12,
+    width: 44,
+    height: 44,
+    borderRadius: 14,
     alignItems: 'center',
     justifyContent: 'center',
-    marginRight: 12,
+    marginRight: 14,
+    backgroundColor: 'transparent',
+    borderWidth: 1.5,
   },
   itemTextGroup: {
     flex: 1,
   },
   itemTitle: {
-    fontSize: 15,
+    fontSize: 16,
     fontWeight: '600',
     color: Colors.white,
-    marginBottom: 2,
+    marginBottom: 4,
   },
   itemSubtitle: {
-    fontSize: 12,
-    color: Colors.textSecondary,
+    fontSize: 13,
+    color: '#8A97AB',
   },
   shareCTAButton: {
-    height: 52,
+    height: 54,
     backgroundColor: Colors.primary,
-    borderRadius: 26,
+    borderRadius: 27,
     alignItems: 'center',
     justifyContent: 'center',
   },

@@ -7,6 +7,16 @@ import YourBriefScreen from '../screens/mainScreens/yourBriefScreen/YourBriefScr
 import NeedsAttentionScreen from '../screens/mainScreens/needsAttentionScreen/NeedsAttentionScreen';
 import NotificationsScreen from '../screens/mainScreens/notificationsScreen/NotificationsScreen';
 import MainTabScreen from '../screens/mainScreens/mainTabScreen/MainTabScreen';
+import MembersScreen from '../screens/mainScreens/familyPulse/MembersScreen';
+import JoinRequestsScreen from '../screens/mainScreens/familyPulse/JoinRequestsScreen';
+import InviteAdultScreen from '../screens/mainScreens/familyPulse/InviteAdultScreen';
+import InvitationSentScreen from '../screens/mainScreens/familyPulse/InvitationSentScreen';
+import AddChildScreen from '../screens/mainScreens/familyPulse/AddChildScreen';
+import ChangeRoleScreen from '../screens/mainScreens/familyPulse/ChangeRoleScreen';
+import FamilyActionConfirmationScreen from '../screens/mainScreens/familyPulse/FamilyActionConfirmationScreen';
+import TransferOwnershipScreen from '../screens/mainScreens/familyPulse/TransferOwnershipScreen';
+import DeleteFamilyScreen from '../screens/mainScreens/familyPulse/DeleteFamilyScreen';
+import StaffScreen from '../screens/mainScreens/familyPulse/StaffScreen';
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
 
@@ -104,6 +114,86 @@ const RootNavigator: React.FC<RootNavigatorProps> = ({
             onNotificationsPress={() =>
               props.navigation.navigate('Notifications')
             }
+          />
+        )}
+      </Stack.Screen>
+      <Stack.Screen name="Members">
+        {(props) => (
+          <MembersScreen
+            {...props}
+            onBack={() => props.navigation.navigate('Home')}
+          />
+        )}
+      </Stack.Screen>
+      <Stack.Screen name="JoinRequests">
+        {(props) => (
+          <JoinRequestsScreen
+            {...props}
+            onBack={() => props.navigation.navigate('Members')}
+          />
+        )}
+      </Stack.Screen>
+      <Stack.Screen name="InviteAdult">
+        {(props) => (
+          <InviteAdultScreen
+            {...props}
+            onBack={() => props.navigation.navigate('Members')}
+          />
+        )}
+      </Stack.Screen>
+      <Stack.Screen name="InvitationSent">
+        {(props) => (
+          <InvitationSentScreen
+            {...props}
+            onBack={() => props.navigation.navigate('Members')}
+          />
+        )}
+      </Stack.Screen>
+      <Stack.Screen name="AddChild">
+        {(props) => (
+          <AddChildScreen
+            {...props}
+            onBack={() => props.navigation.navigate('Members')}
+          />
+        )}
+      </Stack.Screen>
+      <Stack.Screen name="ChangeRole">
+        {(props) => (
+          <ChangeRoleScreen
+            {...props}
+            onBack={() => props.navigation.navigate('Members')}
+          />
+        )}
+      </Stack.Screen>
+      <Stack.Screen name="FamilyActionConfirmation">
+        {(props) => (
+          <FamilyActionConfirmationScreen
+            {...props}
+            onBack={() => props.navigation.navigate('Members')}
+          />
+        )}
+      </Stack.Screen>
+      <Stack.Screen name="TransferOwnership">
+        {(props) => (
+          <TransferOwnershipScreen
+            {...props}
+            onBack={() => props.navigation.navigate('Members')}
+          />
+        )}
+      </Stack.Screen>
+      <Stack.Screen name="DeleteFamily">
+        {(props) => (
+          <DeleteFamilyScreen
+            {...props}
+            onBack={() => props.navigation.navigate('Members')}
+          />
+        )}
+      </Stack.Screen>
+      <Stack.Screen name="Staff">
+        {(props) => (
+          <StaffScreen
+            {...props}
+            onBack={() => props.navigation.navigate('Members')}
           />
         )}
       </Stack.Screen>
