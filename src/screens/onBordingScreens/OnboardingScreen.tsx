@@ -241,6 +241,7 @@ const styles = StyleSheet.create({
     color: '#8C98AB',
     fontSize: RFValue(13.5),
     fontWeight: '500',
+    letterSpacing: 0.1,
   },
   skipPlaceholder: {
     height: 30,

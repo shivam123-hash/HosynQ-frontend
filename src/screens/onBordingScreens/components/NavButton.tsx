@@ -23,43 +23,47 @@ export interface NavButtonProps {
   activeOpacity?: number;
   disabledBorderColor?: string;
   disabledIconColor?: string;
+  accessibilityLabel?: string;
 }
 
 const NavButton: React.FC<NavButtonProps> = ({
   iconName,
   onPress,
   disabled = false,
-  size = 50,
+  size = 52,
   iconSize = 22,
   iconColor,
   backgroundColor = 'transparent',
   borderColor = Colors.border,
-  borderWidth = 1.5,
   hasShadow = false,
   style,
   activeOpacity = 0.7,
-  disabledBorderColor = '#152438',
-  disabledIconColor = '#22364E',
+  disabledBorderColor = '#192A44',
+  disabledIconColor = '#3A4D67',
+  accessibilityLabel,
 }) => {
+  const isTransparent = backgroundColor === 'transparent';
   const resolvedBorderColor = disabled ? disabledBorderColor : borderColor;
   const resolvedIconColor = disabled
     ? disabledIconColor
-    : iconColor || (backgroundColor === 'transparent' ? Colors.text : Colors.buttonText);
+    : iconColor || (isTransparent ? Colors.text : Colors.buttonText);
 
   return (
     <TouchableOpacity
       onPress={onPress}
       disabled={disabled}
       activeOpacity={activeOpacity}
+      accessibilityRole="button"
+      accessibilityLabel={accessibilityLabel}
       style={[
         styles.base,
+        isTransparent ? styles.outlined : styles.filled,
         {
           width: size,
           height: size,
           borderRadius: size / 2,
           backgroundColor,
           borderColor: resolvedBorderColor,
-          borderWidth: backgroundColor === 'transparent' ? borderWidth : 0,
         },
         hasShadow && styles.shadow,
         disabled && styles.disabled,
@@ -78,6 +82,12 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
+  outlined: {
+    borderWidth: 1.5,
+  },
+  filled: {
+    borderWidth: 0,
+  },
   shadow: {
     shadowColor: Colors.primary,
     shadowOffset: { width: 0, height: 4 },
@@ -86,6 +96,7 @@ const styles = StyleSheet.create({
     elevation: 4,
   },
   disabled: {
-    opacity: 0.5,
+    opacity: 0.6,
   },
 });
+

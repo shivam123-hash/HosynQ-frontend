@@ -2,6 +2,7 @@ import CommonBtn, { CommonBtnProps } from './CommonBtn';
 import CommonInput, { CommonInputProps, CommonInputRef } from './CommonInput';
 import CommonDropdown, { CommonDropdownProps, DropdownOption } from './CommonDropdown';
 import KeyboardAvoidingWrapper, { KeyboardAvoidingWrapperProps } from './KeyboardAvoidingWrapper';
+import AppTopBar, { AppTopBarProps } from './AppTopBar';
 import ThreeDotsLoader, { ThreeDotsLoaderProps } from './ThreeDotsLoader';
 import QRCodeView, { QRCodeViewProps } from './QRCodeView';
 import AppDateTimePicker, {
@@ -17,6 +18,7 @@ export {
   CommonInput,
   CommonDropdown,
   KeyboardAvoidingWrapper,
+  AppTopBar,
   ThreeDotsLoader,
   QRCodeView,
   AppDateTimePicker,
@@ -32,6 +34,7 @@ export type {
   CommonDropdownProps,
   DropdownOption,
   KeyboardAvoidingWrapperProps,
+  AppTopBarProps,
   ThreeDotsLoaderProps,
   QRCodeViewProps,
   AppDateTimePickerProps,
@@ -43,6 +46,7 @@ export default {
   CommonInput,
   CommonDropdown,
   KeyboardAvoidingWrapper,
+  AppTopBar,
   ThreeDotsLoader,
   QRCodeView,
 };
