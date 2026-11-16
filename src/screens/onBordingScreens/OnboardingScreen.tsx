@@ -3,18 +3,19 @@ import {
   View,
   Text,
   StyleSheet,
-  Dimensions,
-  FlatList,
-  TouchableOpacity,
+  Pressable,
   StatusBar,
+  PanResponder,
 } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { RFValue } from 'react-native-responsive-fontsize';
 import Colors from '../../units/Colors';
 import ImagePath from '../../units/ImagePath';
-import { RenderSlide, NavButton, SlideItem } from './components';
+import { OrbitAnimationVisual, SlideItem } from './components';
 
-const { width: SCREEN_WIDTH } = Dimensions.get('window');
+const ORANGE = '#F0963C';
+const BG = Colors.background || '#0E1A2E';
+const DISABLED = '#3A4A60';
 
 export const ONBOARDING_DATA: SlideItem[] = [
   {
@@ -43,7 +44,7 @@ export const ONBOARDING_DATA: SlideItem[] = [
   },
 ];
 
-interface OnboardingScreenProps {
+export interface OnboardingScreenProps {
   onFinish?: () => void;
   onSkip?: () => void;
 }
@@ -52,191 +53,284 @@ const OnboardingScreen: React.FC<OnboardingScreenProps> = ({
   onFinish,
   onSkip,
 }) => {
-  const insets = useSafeAreaInsets();
-  const [currentIndex, setCurrentIndex] = useState(0);
-  const flatListRef = useRef<FlatList<SlideItem>>(null);
+  const [activePage, setActivePage] = useState(0);
 
-  const onViewableItemsChanged = useRef(
-    ({ viewableItems }: { viewableItems: any[] }) => {
-      if (viewableItems.length > 0 && viewableItems[0].index !== null) {
-        setCurrentIndex(viewableItems[0].index ?? 0);
-      }
-    }
-  ).current;
+  const isFirst = activePage === 0;
+  const isLast = activePage === ONBOARDING_DATA.length - 1;
+  const isReversedNavigation = activePage >= 2;
 
-  const viewabilityConfig = useRef({
-    viewAreaCoveragePercentThreshold: 50,
-  }).current;
+  const page = ONBOARDING_DATA[activePage];
 
-  const handleNext = useCallback(() => {
-    if (currentIndex < ONBOARDING_DATA.length - 1) {
-      flatListRef.current?.scrollToIndex({
-        index: currentIndex + 1,
-        animated: true,
-      });
-    } else {
+  const goNext = useCallback(() => {
+    if (isLast) {
       onFinish?.();
+    } else {
+      setActivePage((prev) => Math.min(ONBOARDING_DATA.length - 1, prev + 1));
     }
-  }, [currentIndex, onFinish]);
+  }, [isLast, onFinish]);
 
-  const handleBack = useCallback(() => {
-    if (currentIndex > 0) {
-      flatListRef.current?.scrollToIndex({
-        index: currentIndex - 1,
-        animated: true,
-      });
-    }
-  }, [currentIndex]);
+  const goPrev = useCallback(() => {
+    setActivePage((prev) => Math.max(0, prev - 1));
+  }, []);
 
   const handleSkip = useCallback(() => {
     if (onSkip) {
       onSkip();
     } else {
-      flatListRef.current?.scrollToIndex({
-        index: ONBOARDING_DATA.length - 1,
-        animated: true,
-      });
+      onFinish?.();
     }
-  }, [onSkip]);
+  }, [onSkip, onFinish]);
 
-  const renderSlideItem = useCallback(({ item }: { item: SlideItem }) => {
-    return <RenderSlide item={item} />;
-  }, []);
-
-  const isFirstSlide = currentIndex === 0;
-  const isLastSlide = currentIndex === ONBOARDING_DATA.length - 1;
+  // Swipe gesture support across onboarding slides
+  const panResponder = useRef(
+    PanResponder.create({
+      onMoveShouldSetPanResponder: (_, gestureState) => {
+        return (
+          Math.abs(gestureState.dx) > 25 && Math.abs(gestureState.dy) < 40
+        );
+      },
+      onPanResponderRelease: (_, gestureState) => {
+        if (gestureState.dx < -50) {
+          goNext();
+        } else if (gestureState.dx > 50) {
+          goPrev();
+        }
+      },
+    }),
+  ).current;
 
   return (
-    <View style={[styles.container, { paddingTop: insets.top, paddingBottom: insets.bottom }]}>
+    <SafeAreaView style={styles.safeArea}>
       <StatusBar barStyle="light-content" />
+      <View style={styles.container} {...panResponder.panHandlers}>
+        {/* Top Header with Skip Button */}
+        <View style={styles.header}>
+          {!isLast ? (
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Skip onboarding"
+              onPress={handleSkip}
+              hitSlop={{ top: 12, bottom: 12, left: 16, right: 16 }}
+              style={styles.skipButton}
+            >
+              <Text style={styles.skipText}>Skip</Text>
+            </Pressable>
+          ) : (
+            <View style={styles.skipPlaceholder} />
+          )}
+        </View>
 
-      {/* Header with Skip button */}
-      <View style={styles.header}>
-        <View style={styles.headerSpacer} />
-        {!isLastSlide ? (
-          <TouchableOpacity
-            onPress={handleSkip}
-            hitSlop={{ top: 12, bottom: 12, left: 16, right: 16 }}
-            activeOpacity={0.7}
-          >
-            <Text style={styles.skipText}>Skip</Text>
-          </TouchableOpacity>
-        ) : (
-          <View style={styles.skipPlaceholder} />
-        )}
-      </View>
+        {/* Orbit Animated Visual Area */}
+        <OrbitAnimationVisual />
 
-      {/* 4 Slides FlatList Carousel */}
-      <FlatList
-        ref={flatListRef}
-        data={ONBOARDING_DATA}
-        renderItem={renderSlideItem}
-        keyExtractor={(item) => item.id}
-        horizontal
-        pagingEnabled
-        showsHorizontalScrollIndicator={false}
-        bounces={false}
-        onViewableItemsChanged={onViewableItemsChanged}
-        viewabilityConfig={viewabilityConfig}
-        getItemLayout={(_, index) => ({
-          length: SCREEN_WIDTH,
-          offset: SCREEN_WIDTH * index,
-          index,
-        })}
-        style={styles.flexOne}
-      />
+        {/* Copy (Title & Description) */}
+        <View style={styles.copy}>
+          <Text style={styles.title}>{page.title}</Text>
+          <Text style={styles.description}>{page.subtitle}</Text>
+        </View>
 
-      {/* Bottom Bar: Indicators & Reusable Nav Buttons */}
-      <View style={styles.bottomBar}>
-        {/* Progress Bar (4 dashes with Colors.primary on active dash) */}
-        <View style={styles.indicatorContainer}>
-          {ONBOARDING_DATA.map((_, index) => {
-            const isActive = index === currentIndex;
-            return (
+        {/* Bottom Navigation */}
+        <View style={styles.navigation}>
+          {/* Pagination Indicators */}
+          <View style={styles.pagination}>
+            {ONBOARDING_DATA.map((item, index) => (
               <View
-                key={index}
+                key={item.id}
                 style={[
-                  styles.dash,
-                  {
-                    backgroundColor: isActive
-                      ? Colors.primary
-                      : Colors.inactiveIndicator,
-                  },
+                  styles.segment,
+                  index === activePage && styles.segmentActive,
                 ]}
               />
-            );
-          })}
-        </View>
+            ))}
+          </View>
 
-        {/* Reusable Nav Buttons */}
-        <View style={styles.arrowButtonsContainer}>
-          <NavButton
-            iconName="chevron-left"
-            onPress={handleBack}
-            disabled={isFirstSlide}
-          />
-          <NavButton
-            iconName={isLastSlide ? 'check' : 'chevron-right'}
-            onPress={handleNext}
-            backgroundColor={Colors.primary}
-            hasShadow
-          />
+          {/* Controls (< and >) */}
+          <View style={styles.controls}>
+            {/* Back Button */}
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Previous onboarding page"
+              disabled={isFirst}
+              onPress={goPrev}
+              style={({ pressed }) => [
+                styles.btn,
+                isReversedNavigation ? styles.btnFilled : styles.btnOutline,
+                isFirst && styles.btnDisabled,
+                pressed && !isFirst && styles.pressed,
+              ]}
+            >
+              <View style={styles.iconCenter}>
+                <Text
+                  style={[
+                    styles.chevron,
+                    {
+                      color: isFirst
+                        ? 'rgba(58, 74, 96, 0.4)'
+                        : isReversedNavigation
+                        ? BG
+                        : '#FFFFFF',
+                    },
+                  ]}
+                >
+                  ‹
+                </Text>
+              </View>
+            </Pressable>
+
+            {/* Next Button */}
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={isLast ? 'Get started' : 'Next onboarding page'}
+              onPress={goNext}
+              style={({ pressed }) => [
+                styles.btn,
+                isReversedNavigation || isLast
+                  ? styles.btnOutline
+                  : styles.btnFilled,
+                pressed && styles.pressed,
+              ]}
+            >
+              <View style={styles.iconCenter}>
+                <Text
+                  style={[
+                    styles.chevron,
+                    {
+                      color:
+                        isReversedNavigation || isLast
+                          ? '#FFFFFF'
+                          : BG,
+                    },
+                  ]}
+                >
+                  ›
+                </Text>
+              </View>
+            </Pressable>
+          </View>
         </View>
       </View>
-    </View>
+    </SafeAreaView>
   );
 };
 
 export default OnboardingScreen;
 
 const styles = StyleSheet.create({
+  safeArea: {
+    flex: 1,
+    backgroundColor: BG,
+  },
   container: {
     flex: 1,
-    backgroundColor: Colors.background,
+    paddingHorizontal: 28,
     justifyContent: 'space-between',
-  },
-  flexOne: {
-    flex: 1,
   },
   header: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
+    justifyContent: 'flex-end',
     alignItems: 'center',
-    paddingHorizontal: 24,
-    height: 48,
+    paddingTop: 8,
+    paddingBottom: 4,
+    minHeight: 40,
   },
-  headerSpacer: {
-    width: 40,
+  skipButton: {
+    paddingVertical: 6,
+    paddingHorizontal: 12,
   },
   skipText: {
-    color: Colors.textSecondary,
-    fontSize: RFValue(13),
+    color: '#8C98AB',
+    fontSize: RFValue(13.5),
     fontWeight: '500',
   },
   skipPlaceholder: {
-    width: 40,
+    height: 30,
   },
-  bottomBar: {
+  copy: {
+    justifyContent: 'flex-end',
+    marginBottom: 20,
+    marginTop: 8,
+  },
+  title: {
+    color: '#FFFFFF',
+    fontSize: RFValue(24),
+    lineHeight: RFValue(31),
+    fontWeight: '700',
+    marginBottom: 8,
+    textAlign: 'left',
+  },
+  description: {
+    color: '#8C98AB',
+    fontSize: RFValue(12.5),
+    lineHeight: RFValue(18),
+    maxWidth: 320,
+    textAlign: 'left',
+  },
+  navigation: {
     flexDirection: 'row',
+    alignItems: 'center',
     justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: 28,
     paddingBottom: 24,
-    paddingTop: 12,
+    paddingTop: 8,
   },
-  indicatorContainer: {
+  pagination: {
     flexDirection: 'row',
+    gap: 6,
     alignItems: 'center',
   },
-  dash: {
+  segment: {
     width: 24,
     height: 3.5,
     borderRadius: 2,
-    marginRight: 6,
+    backgroundColor: '#1E2A4A',
   },
-  arrowButtonsContainer: {
+  segmentActive: {
+    backgroundColor: ORANGE,
+  },
+  controls: {
     flexDirection: 'row',
-    alignItems: 'center',
+    justifyContent: 'flex-end',
     gap: 12,
+    alignItems: 'center',
+  },
+  btn: {
+    width: 54,
+    height: 54,
+    borderRadius: 27,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  btnFilled: {
+    backgroundColor: '#FFFFFF',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  btnOutline: {
+    borderWidth: 1.2,
+    borderColor: DISABLED,
+    backgroundColor: 'transparent',
+  },
+  btnDisabled: {
+    borderColor: 'rgba(58, 74, 96, 0.35)',
+    backgroundColor: 'transparent',
+  },
+  pressed: {
+    opacity: 0.75,
+  },
+  iconCenter: {
+    width: 54,
+    height: 54,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  chevron: {
+    includeFontPadding: false,
+    textAlign: 'center',
+    textAlignVertical: 'center',
+    fontSize: RFValue(30),
+    lineHeight: RFValue(30),
+    fontWeight: '400',
   },
 });

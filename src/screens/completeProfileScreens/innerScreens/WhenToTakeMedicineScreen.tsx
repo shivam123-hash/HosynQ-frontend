@@ -13,7 +13,11 @@ import Feather from '@react-native-vector-icons/feather';
 import { RFValue } from 'react-native-responsive-fontsize';
 import Colors from '../../../units/Colors';
 import CommonBtn from '../../../components/CommonBtn';
-import PickTimeModal from '../components/PickTimeModal';
+import {
+  AppDateTimePicker,
+  formatTime,
+  parseDateTimeString,
+} from '../../../components';
 
 export interface WhenToTakeMedicineData {
   frequency: string;
@@ -392,14 +396,22 @@ const WhenToTakeMedicineScreen: React.FC<WhenToTakeMedicineScreenProps> = ({
         />
       </View>
 
-      {/* Integrated Pick Time Modal Bottom Sheet */}
-      <PickTimeModal
+      {/* Integrated Pick Time Modal using AppDateTimePicker */}
+      <AppDateTimePicker
         visible={isTimePickerVisible}
-        doseTitle={
+        mode="time"
+        title={
           activeDoseTarget === 'dose1' ? 'Dose 1 · Morning' : 'Dose 2 · Night'
         }
-        onClose={() => setIsTimePickerVisible(false)}
-        onSetTime={handleSetTime}
+        date={parseDateTimeString(
+          activeDoseTarget === 'dose1' ? dose1Time : dose2Time,
+          'time',
+        )}
+        onConfirm={(date) => {
+          setIsTimePickerVisible(false);
+          handleSetTime(formatTime(date));
+        }}
+        onCancel={() => setIsTimePickerVisible(false)}
       />
     </View>
   );

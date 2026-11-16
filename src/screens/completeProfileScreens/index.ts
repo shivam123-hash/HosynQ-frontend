@@ -3,8 +3,8 @@ import { View, Text } from 'react-native';
 import PersonalInfoScreen, {
   PersonalInfoScreenData,
 } from './innerScreens/PersonalInfoScreen';
-import ImportantDocumentsScreen from './innerScreens/ImportantDocumentsScreen';
-import DocumentDetailRemindersScreen from './innerScreens/DocumentDetailRemindersScreen';
+import ImportantDocumentsScreen from './importantDocmentsScreens/ImportantDocumentsScreen';
+import DocumentDetailRemindersScreen from './importantDocmentsScreens/DocumentDetailRemindersScreen';
 import HealthProfileScreen, {
   HealthProfileData,
 } from './innerScreens/HealthProfileScreen';
@@ -26,6 +26,9 @@ import InterestsAndActivitiesScreen from './innerScreens/InterestsAndActivitiesS
 export { default as MyLifeProfileScreen } from './MyLifeProfileScreen';
 export * from './MyLifeProfileScreen';
 
+export { default as LifeProfileIntroScreen } from '../familyConnectionCreateScreens/joinFamilayScreens/LifeProfileIntroScreen';
+export * from '../familyConnectionCreateScreens/joinFamilayScreens/LifeProfileIntroScreen';
+
 // Export all inner screens
 export * from './innerScreens';
 
@@ -45,12 +48,15 @@ export interface Step4FormData {
 }
 
 export interface CompleteProfileStep1ScreenProps {
+  memberId?: string;
   initialData?: Partial<Step1FormData>;
+  initialMode?: 'input' | 'details';
   onBack?: () => void;
   onContinue?: (data: Step1FormData) => void;
 }
 
 export interface CompleteProfileStep2ScreenProps {
+  memberId?: string;
   initialData?: Partial<Step2FormData>;
   onBack?: () => void;
   onContinue?: (data: Step2FormData) => void;
@@ -59,34 +65,45 @@ export interface CompleteProfileStep2ScreenProps {
 }
 
 export interface CompleteProfileStep3ScreenProps {
+  memberId?: string;
   initialData?: Partial<Step3FormData>;
+  initialMode?: 'input' | 'details';
   onBack?: () => void;
   onContinue?: (data: Step3FormData) => void;
   onCheckupItemPress?: (id: string) => void;
+  onAddMedicine?: () => void;
 }
 
 export interface CompleteProfileStep4ScreenProps {
+  memberId?: string;
   initialData?: Partial<Step4FormData>;
+  initialMode?: 'form' | 'details';
+  childName?: string;
   onBack?: () => void;
   onContinue?: (data: Step4FormData) => void;
   onCheckupItemPress?: (id: string) => void;
 }
 
 export interface CompleteProfileStep5ScreenProps {
+  memberId?: string;
   onBack?: () => void;
   onEnterHosynQ?: (selectedInterests: string[]) => void;
   onSave?: (selectedInterests: string[]) => void;
 }
 
 export const CompleteProfileStep1Screen: React.FC<CompleteProfileStep1ScreenProps> = ({
+  memberId,
   initialData,
+  initialMode = 'input',
   onBack,
   onContinue,
 }) =>
   React.createElement(PersonalInfoScreen, {
+    memberId,
     initialData: initialData as any,
+    initialMode,
     onBack,
-    onSave: (data: PersonalInfoScreenData) => {
+    onSave: (data: any) => {
       if (onContinue) {
         onContinue(data);
       }
@@ -94,32 +111,39 @@ export const CompleteProfileStep1Screen: React.FC<CompleteProfileStep1ScreenProp
   });
 
 export const CompleteProfileStep2Screen: React.FC<CompleteProfileStep2ScreenProps> = ({
+  memberId,
   onBack,
   onContinue,
   onDocumentPress,
   onAddDocument,
 }) =>
   React.createElement(ImportantDocumentsScreen, {
+    memberId,
     onBack,
     onDocumentPress,
-    onAddDocument: () => {
-      if (onAddDocument) {
-        onAddDocument();
-      } else if (onContinue) {
-        onContinue({});
+    onAddDocument,
+    onContinue: (data: any) => {
+      if (onContinue) {
+        onContinue(data);
       }
     },
   });
 
 export const CompleteProfileStep3Screen: React.FC<CompleteProfileStep3ScreenProps> = ({
+  memberId,
   initialData,
+  initialMode,
   onBack,
   onContinue,
+  onAddMedicine,
 }) =>
   React.createElement(HealthProfileScreen, {
+    memberId,
     initialData: initialData as any,
+    initialMode,
     onBack,
-    onSave: (data: HealthProfileData) => {
+    onAddMedicine,
+    onSave: (data: any) => {
       if (onContinue) {
         onContinue(data);
       }
@@ -127,24 +151,49 @@ export const CompleteProfileStep3Screen: React.FC<CompleteProfileStep3ScreenProp
   });
 
 export const CompleteProfileStep4Screen: React.FC<CompleteProfileStep4ScreenProps> = ({
+  memberId,
+  initialData,
+  initialMode = 'form',
+  childName = 'Aarav',
   onBack,
   onContinue,
-}) =>
-  React.createElement(VaccinationScreen, {
-    onBack,
-    onAddVaccineRecord: () => {
+}) => {
+  const [currentMode, setCurrentMode] = React.useState<'form' | 'details'>(
+    initialMode,
+  );
+
+  if (currentMode === 'details') {
+    return React.createElement(VaccinationScreen, {
+      memberId,
+      childName,
+      onBack,
+      onAddVaccineRecord: () => {
+        setCurrentMode('form');
+      },
+    });
+  }
+
+  return React.createElement(AddVaccineScreen, {
+    initialData: initialData as any,
+    childName,
+    onClose: onBack,
+    onSave: (data: AddVaccineFormData) => {
+      setCurrentMode('details');
       if (onContinue) {
-        onContinue({});
+        onContinue(data as any);
       }
     },
   });
+};
 
 export const CompleteProfileStep5Screen: React.FC<CompleteProfileStep5ScreenProps> = ({
+  memberId,
   onBack,
   onEnterHosynQ,
   onSave,
 }) =>
   React.createElement(InterestsAndActivitiesScreen, {
+    memberId,
     onBack,
     onEnterHosynQ,
     onSave: (interests: string[]) => {

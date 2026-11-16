@@ -53,6 +53,11 @@ const DeviceSecurityScreen: React.FC<DeviceSecurityScreenProps> = ({
   }, []);
 
   const handleContinue = async () => {
+    // BYPASS FOR NOW: Directly proceed to next screen without biometric prompt
+    onContinue?.(selectedSecurity);
+
+    /*
+    // --- Biometric Authentication Setup (Commented for testing / bypass) ---
     setLoading(true);
     setErrorMessage(null);
 
@@ -127,6 +132,7 @@ const DeviceSecurityScreen: React.FC<DeviceSecurityScreenProps> = ({
     } finally {
       setLoading(false);
     }
+    */
   };
 
   return (

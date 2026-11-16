@@ -7,4 +7,5 @@ export * from './features/mobileFlow/authSlice';
 export * from './features/emailFlow/authSlice';
 export * from './features/baseProfileSet/baseProfileSlice';
 export * from './features/family/familySlice';
+export * from './features/lifeProfile/lifeProfileSlice';
 

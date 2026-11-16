@@ -19,7 +19,10 @@ export default function App() {
       <SafeAreaProvider>
         <StatusBar barStyle="light-content" />
         <NavigationContainer>
-          <RootNavigator authInitialRouteName="Onboarding" />
+          <RootNavigator
+            initialRouteName="Auth"
+            authInitialRouteName="Onboarding"
+          />
         </NavigationContainer>
       </SafeAreaProvider>
     </Provider>

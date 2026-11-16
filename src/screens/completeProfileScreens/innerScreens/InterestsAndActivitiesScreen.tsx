@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -15,6 +15,7 @@ import Feather from '@react-native-vector-icons/feather';
 import { RFValue } from 'react-native-responsive-fontsize';
 import Colors from '../../../units/Colors';
 import CommonBtn from '../../../components/CommonBtn';
+import { useAppDispatch, useAppSelector, fetchLifeProfileSectionThunk } from '../../../redux';
 import {
   PersonalInfoHeader,
   InterestCategoryGroup,
@@ -26,6 +27,7 @@ export interface InterestCategoryData {
 }
 
 export interface InterestsAndActivitiesScreenProps {
+  memberId?: string;
   userName?: string;
   onBack?: () => void;
   onSave?: (selectedInterests: string[]) => void;
@@ -76,17 +78,47 @@ const DEFAULT_SELECTED = [
 const InterestsAndActivitiesScreen: React.FC<
   InterestsAndActivitiesScreenProps
 > = ({
+  memberId,
   userName = 'Priya',
   onBack,
   onSave,
   onEnterHosynQ,
 }) => {
   const insets = useSafeAreaInsets();
+  const dispatch = useAppDispatch();
   const [selectedInterests, setSelectedInterests] =
     useState<string[]>(DEFAULT_SELECTED);
   const [customItems, setCustomItems] = useState<string[]>([]);
   const [isAddingCustom, setIsAddingCustom] = useState<boolean>(false);
   const [customInputText, setCustomInputText] = useState<string>('');
+
+  const authUser = useAppSelector((state) => state.auth?.user || state.emailAuth?.user);
+  const lifeProfileInterests = useAppSelector((state) => state.lifeProfile?.interests);
+
+  const resolvedMemberId =
+    memberId ||
+    authUser?.memberId ||
+    authUser?.id ||
+    authUser?._id ||
+    'me';
+
+  // API Call Structure: GET {{BaseURL}}/api/v1/family/members/{{memberId}}/life-profile?section=interests
+  useEffect(() => {
+    if (resolvedMemberId) {
+      dispatch(
+        fetchLifeProfileSectionThunk({
+          memberId: resolvedMemberId,
+          section: 'interests',
+        })
+      );
+    }
+  }, [dispatch, resolvedMemberId]);
+
+  /*
+   * DATA MAPPING (Ready to connect when interests data is available):
+   * const interestsData = lifeProfileInterests?.data || lifeProfileInterests;
+   * // const dynamicInterests = interestsData?.interests ?? DEFAULT_SELECTED;
+   */
 
   const toggleInterest = (item: string) => {
     setSelectedInterests((prev) =>

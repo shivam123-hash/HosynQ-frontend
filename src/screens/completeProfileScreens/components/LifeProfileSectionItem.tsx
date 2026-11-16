@@ -87,7 +87,7 @@ const LifeProfileSectionItem: React.FC<LifeProfileSectionItemProps> = ({
         {/* Right Chevron */}
         <Feather
           name="chevron-right"
-          size={18}
+          size={16}
           color="rgba(255, 255, 255, 0.3)"
           style={styles.chevronIcon}
         />
@@ -104,39 +104,41 @@ const styles = StyleSheet.create({
   rowContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 14,
-    paddingHorizontal: 16,
+    paddingVertical: 12,
+    paddingHorizontal: 14,
   },
   iconBox: {
-    width: 44,
-    height: 44,
-    borderRadius: 14,
+    width: 38,
+    height: 38,
+    borderRadius: 11,
     borderWidth: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: 14,
+    marginRight: 12,
   },
   textContainer: {
     flex: 1,
     justifyContent: 'center',
+    marginRight: 8,
   },
   titleText: {
     color: '#FFFFFF',
-    fontSize: RFValue(13.5),
+    fontSize: RFValue(12),
     fontWeight: '600',
-    lineHeight: RFValue(18),
+    lineHeight: RFValue(16.5),
   },
   subtitleText: {
     color: Colors.textSecondary,
-    fontSize: RFValue(12),
-    marginTop: 3,
+    fontSize: RFValue(10.5),
+    lineHeight: RFValue(14.5),
+    marginTop: 2.5,
   },
   badgePill: {
-    paddingHorizontal: 10,
-    paddingVertical: 3,
-    borderRadius: 12,
+    paddingHorizontal: 8,
+    paddingVertical: 2.5,
+    borderRadius: 10,
     borderWidth: 1,
-    marginRight: 8,
+    marginRight: 6,
   },
   badgePillDone: {
     backgroundColor: 'rgba(45, 212, 191, 0.12)',
@@ -147,7 +149,7 @@ const styles = StyleSheet.create({
     borderColor: 'rgba(240, 145, 58, 0.6)',
   },
   badgeText: {
-    fontSize: RFValue(11),
+    fontSize: RFValue(10),
     fontWeight: '600',
   },
   badgeTextDone: {
@@ -157,12 +159,12 @@ const styles = StyleSheet.create({
     color: '#F0913A',
   },
   chevronIcon: {
-    marginLeft: 2,
+    marginLeft: 1,
   },
   divider: {
     height: 1,
     backgroundColor: 'rgba(255, 255, 255, 0.05)',
-    marginHorizontal: 16,
+    marginHorizontal: 14,
   },
 });
 

@@ -31,6 +31,9 @@ export * from './WorkDetailsSection';
 export { default as DocumentReminderBanner } from './DocumentReminderBanner';
 export * from './DocumentReminderBanner';
 
+export { default as AddDocumentBottomSheet } from './AddDocumentBottomSheet';
+export * from './AddDocumentBottomSheet';
+
 export { default as DocumentItemRow } from './DocumentItemRow';
 export * from './DocumentItemRow';
 
@@ -48,9 +51,6 @@ export * from './VaccineItemRow';
 
 export { default as GrowthLineChart } from './GrowthLineChart';
 export * from './GrowthLineChart';
-
-export { default as PickTimeModal } from './PickTimeModal';
-export * from './PickTimeModal';
 
 export { default as InterestCategoryGroup } from './InterestCategoryGroup';
 export * from './InterestCategoryGroup';

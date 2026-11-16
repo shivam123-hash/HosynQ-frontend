@@ -7,12 +7,14 @@ export interface PersonalInfoHeaderProps {
   title?: string;
   subtitle?: string;
   onBack?: () => void;
+  icon?: 'back' | 'close';
 }
 
 const PersonalInfoHeader: React.FC<PersonalInfoHeaderProps> = ({
   title = 'Personal information',
   subtitle = 'Priya · Section 1 of 5',
   onBack,
+  icon = 'back',
 }) => {
   return (
     <View style={styles.headerContainer}>
@@ -21,9 +23,13 @@ const PersonalInfoHeader: React.FC<PersonalInfoHeaderProps> = ({
         onPress={onBack}
         style={styles.backButton}
         accessibilityRole="button"
-        accessibilityLabel="Go back"
+        accessibilityLabel={icon === 'close' ? 'Close' : 'Go back'}
       >
-        <Feather name="chevron-left" size={22} color="#FFFFFF" />
+        <Feather
+          name={icon === 'close' ? 'x' : 'chevron-left'}
+          size={icon === 'close' ? 18 : 22}
+          color="#FFFFFF"
+        />
       </TouchableOpacity>
 
       <View style={styles.titleContainer}>

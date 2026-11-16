@@ -1,18 +1,12 @@
-import React, { useState } from 'react';
-import {
-  View,
-  Text,
-  StyleSheet,
-  StatusBar,
-  ScrollView,
-  TouchableOpacity,
-} from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import Feather from '@react-native-vector-icons/feather';
-import { RFValue } from 'react-native-responsive-fontsize';
-import Colors from '../../../units/Colors';
-import CommonBtn from '../../../components/CommonBtn';
-import { PersonalInfoHeader } from '../components';
+import React, { useState, useEffect } from 'react';
+import { useAppDispatch, useAppSelector, fetchLifeProfileSectionThunk } from '../../../redux';
+import HealthProfileInputScreen, {
+  HealthProfileFormValues,
+  DEFAULT_HEALTH_FORM_VALUES,
+} from './HealthProfileInputScreen';
+import HealthProfileDetailsScreen from './HealthProfileDetailsScreen';
+
+export type HealthProfileMode = 'input' | 'details';
 
 export interface HealthProfileData {
   doctor: string;
@@ -25,19 +19,7 @@ export interface HealthProfileData {
   eyesight: string;
 }
 
-export interface HealthProfileScreenProps {
-  initialData?: Partial<HealthProfileData>;
-  onBack?: () => void;
-  onSave?: (data: HealthProfileData) => void;
-  onDoctorPress?: () => void;
-  onClinicPress?: () => void;
-  onHospitalPress?: () => void;
-  onAddAllergy?: () => void;
-  onCheckupsPress?: () => void;
-  onEyesightPress?: () => void;
-}
-
-const DEFAULT_HEALTH_DATA: HealthProfileData = {
+export const DEFAULT_HEALTH_DATA: HealthProfileData = {
   doctor: 'Dr. Anjali Rao · General physician',
   clinicLocation: 'Rao Clinic, Sector 47',
   hospital: 'CityCare Hospital, Sector 38',
@@ -48,10 +30,30 @@ const DEFAULT_HEALTH_DATA: HealthProfileData = {
   eyesight: 'Right -1.25, Left -1.00 · Glasses',
 };
 
+export interface HealthProfileScreenProps {
+  memberId?: string;
+  initialData?: Partial<HealthProfileFormValues | HealthProfileData>;
+  initialMode?: HealthProfileMode;
+  userName?: string;
+  onBack?: () => void;
+  onSave?: (data: HealthProfileFormValues) => void;
+  onAddMedicine?: () => void;
+  onDoctorPress?: () => void;
+  onClinicPress?: () => void;
+  onHospitalPress?: () => void;
+  onAddAllergy?: () => void;
+  onCheckupsPress?: () => void;
+  onEyesightPress?: () => void;
+}
+
 const HealthProfileScreen: React.FC<HealthProfileScreenProps> = ({
+  memberId,
   initialData,
+  initialMode = 'input',
+  userName = 'Priya',
   onBack,
   onSave,
+  onAddMedicine,
   onDoctorPress,
   onClinicPress,
   onHospitalPress,
@@ -59,327 +61,86 @@ const HealthProfileScreen: React.FC<HealthProfileScreenProps> = ({
   onCheckupsPress,
   onEyesightPress,
 }) => {
-  const insets = useSafeAreaInsets();
-  const [data, setData] = useState<HealthProfileData>({
-    ...DEFAULT_HEALTH_DATA,
-    ...(initialData || {}),
+  const dispatch = useAppDispatch();
+  const authUser = useAppSelector((state) => state.auth?.user || state.emailAuth?.user);
+  const lifeProfileHealth = useAppSelector((state) => state.lifeProfile?.health);
+
+  const resolvedMemberId =
+    memberId ||
+    authUser?.memberId ||
+    authUser?.id ||
+    authUser?._id ||
+    'me';
+
+  // API Call Structure: GET {{BaseURL}}/api/v1/family/members/{{memberId}}/life-profile?section=health
+  useEffect(() => {
+    if (resolvedMemberId) {
+      dispatch(
+        fetchLifeProfileSectionThunk({
+          memberId: resolvedMemberId,
+          section: 'health',
+        })
+      );
+    }
+  }, [dispatch, resolvedMemberId]);
+
+  /*
+   * DATA MAPPING (Ready to connect when backend health data is ready):
+   * const healthData = lifeProfileHealth?.data || lifeProfileHealth;
+   * // doctor = healthData?.doctor
+   * // clinicLocation = healthData?.clinicLocation
+   * // allergies = healthData?.allergies
+   * // conditions = healthData?.conditions
+   * // medications = healthData?.medications
+   */
+  const [currentMode, setCurrentMode] = useState<HealthProfileMode>(initialMode);
+  const [formData, setFormData] = useState<HealthProfileFormValues>(() => {
+    // If incoming data matches form values directly
+    if (initialData && 'doctor' in initialData && typeof initialData.doctor === 'object') {
+      return {
+        ...DEFAULT_HEALTH_FORM_VALUES,
+        ...(initialData as HealthProfileFormValues),
+      };
+    }
+    return DEFAULT_HEALTH_FORM_VALUES;
   });
 
-  const handleSave = () => {
-    onSave?.(data);
+  const handleInputSave = (savedValues: HealthProfileFormValues) => {
+    setFormData(savedValues);
+    setCurrentMode('details');
   };
 
-  return (
-    <View
-      style={[
-        styles.container,
-        { paddingTop: insets.top, paddingBottom: insets.bottom },
-      ]}
-    >
-      <StatusBar barStyle="light-content" />
-
-      {/* Header */}
-      <PersonalInfoHeader
-        title="Health profile"
-        subtitle="Priya · Section 3 of 5"
-        onBack={onBack}
+  if (currentMode === 'details') {
+    return (
+      <HealthProfileDetailsScreen
+        data={formData}
+        userName={userName}
+        onBack={() => {
+          if (onBack) {
+            onBack();
+          } else {
+            setCurrentMode('input');
+          }
+        }}
+        onEditPress={() => setCurrentMode('input')}
+        onAddMedicine={onAddMedicine}
+        onDoctorPress={onDoctorPress}
+        onClinicPress={onClinicPress}
+        onHospitalPress={onHospitalPress}
+        onCheckupsPress={onCheckupsPress}
+        onEyesightPress={onEyesightPress}
       />
+    );
+  }
 
-      <ScrollView
-        style={styles.scrollContainer}
-        contentContainerStyle={styles.scrollContent}
-        showsVerticalScrollIndicator={false}
-      >
-        {/* Privacy Notice Banner */}
-        <View style={styles.privacyBanner}>
-          <Feather
-            name="lock"
-            size={14}
-            color="#8E9BAE"
-            style={styles.privacyIcon}
-          />
-          <Text style={styles.privacyText}>Only you and Rohan can see this.</Text>
-        </View>
-
-        {/* Doctor & Hospital Group Card */}
-        <View style={styles.cardContainer}>
-          {/* Doctor */}
-          <TouchableOpacity
-            activeOpacity={0.7}
-            onPress={onDoctorPress}
-            style={styles.cardRow}
-            accessibilityRole="button"
-            accessibilityLabel={`Doctor: ${data.doctor}`}
-          >
-            <View style={styles.iconBox}>
-              <Feather name="user" size={17} color="#8E9BAE" />
-            </View>
-            <View style={styles.textContainer}>
-              <Text style={styles.label}>Doctor</Text>
-              <Text style={styles.valueText}>{data.doctor}</Text>
-            </View>
-            <Feather name="chevron-right" size={18} color="#64748B" />
-          </TouchableOpacity>
-
-          <View style={styles.divider} />
-
-          {/* Clinic Location */}
-          <TouchableOpacity
-            activeOpacity={0.7}
-            onPress={onClinicPress}
-            style={styles.cardRow}
-            accessibilityRole="button"
-            accessibilityLabel={`Clinic location: ${data.clinicLocation}`}
-          >
-            <View style={styles.iconBox}>
-              <Feather name="map-pin" size={17} color="#8E9BAE" />
-            </View>
-            <View style={styles.textContainer}>
-              <Text style={styles.label}>Clinic location</Text>
-              <Text style={styles.valueText}>{data.clinicLocation}</Text>
-            </View>
-            <Feather name="chevron-right" size={18} color="#64748B" />
-          </TouchableOpacity>
-
-          <View style={styles.divider} />
-
-          {/* Hospital */}
-          <TouchableOpacity
-            activeOpacity={0.7}
-            onPress={onHospitalPress}
-            style={styles.cardRow}
-            accessibilityRole="button"
-            accessibilityLabel={`Hospital: ${data.hospital}`}
-          >
-            <View style={styles.iconBox}>
-              <Feather name="plus-square" size={17} color="#8E9BAE" />
-            </View>
-            <View style={styles.textContainer}>
-              <Text style={styles.label}>Hospital</Text>
-              <Text style={styles.valueText}>{data.hospital}</Text>
-            </View>
-            <Feather name="chevron-right" size={18} color="#64748B" />
-          </TouchableOpacity>
-        </View>
-
-        {/* Allergies, Conditions & Medications Card */}
-        <View style={styles.detailsCard}>
-          {/* Allergies */}
-          <Text style={styles.fieldSectionLabel}>Allergies</Text>
-          <View style={styles.chipsRow}>
-            {data.allergies.map((allergy) => (
-              <View key={allergy} style={styles.allergyChip}>
-                <Text style={styles.allergyChipText}>{allergy}</Text>
-              </View>
-            ))}
-            <TouchableOpacity
-              activeOpacity={0.7}
-              onPress={onAddAllergy}
-              style={styles.addAllergyButton}
-              accessibilityRole="button"
-              accessibilityLabel="Add allergy"
-            >
-              <Text style={styles.addAllergyText}>+ Add</Text>
-            </TouchableOpacity>
-          </View>
-
-          {/* Conditions */}
-          <Text style={[styles.fieldSectionLabel, { marginTop: 16 }]}>
-            Conditions
-          </Text>
-          <Text style={styles.fieldValueBold}>{data.conditions}</Text>
-
-          {/* Medications */}
-          <Text style={[styles.fieldSectionLabel, { marginTop: 16 }]}>
-            Medications
-          </Text>
-          <Text style={styles.fieldValueBold}>{data.medications}</Text>
-        </View>
-
-        {/* Checkups & Eyesight Card */}
-        <View style={styles.cardContainer}>
-          {/* Checkups */}
-          <TouchableOpacity
-            activeOpacity={0.7}
-            onPress={onCheckupsPress}
-            style={styles.cardRow}
-            accessibilityRole="button"
-            accessibilityLabel={`Checkups: ${data.checkups}`}
-          >
-            <View style={styles.iconBox}>
-              <Feather name="calendar" size={17} color="#8E9BAE" />
-            </View>
-            <View style={styles.textContainer}>
-              <Text style={styles.label}>Checkups</Text>
-              <Text style={styles.valueText}>{data.checkups}</Text>
-            </View>
-            <Feather name="chevron-right" size={18} color="#64748B" />
-          </TouchableOpacity>
-
-          <View style={styles.divider} />
-
-          {/* Eyesight */}
-          <TouchableOpacity
-            activeOpacity={0.7}
-            onPress={onEyesightPress}
-            style={styles.cardRow}
-            accessibilityRole="button"
-            accessibilityLabel={`Eyesight: ${data.eyesight}`}
-          >
-            <View style={styles.iconBox}>
-              <Feather name="eye" size={17} color="#8E9BAE" />
-            </View>
-            <View style={styles.textContainer}>
-              <Text style={styles.label}>Eyesight</Text>
-              <Text style={styles.valueText}>{data.eyesight}</Text>
-            </View>
-            <Feather name="chevron-right" size={18} color="#64748B" />
-          </TouchableOpacity>
-        </View>
-      </ScrollView>
-
-      {/* Bottom Save Button */}
-      <View style={styles.bottomBar}>
-        <CommonBtn
-          title="Save"
-          onPress={handleSave}
-          backgroundColor={Colors.primary || '#F0913A'}
-          textColor="#FFFFFF"
-          height={54}
-          borderRadius={27}
-        />
-      </View>
-    </View>
+  return (
+    <HealthProfileInputScreen
+      initialValues={formData}
+      userName={userName}
+      onClose={onBack}
+      onSave={handleInputSave}
+    />
   );
 };
 
 export default HealthProfileScreen;
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: Colors.background,
-  },
-  scrollContainer: {
-    flex: 1,
-  },
-  scrollContent: {
-    paddingBottom: 24,
-  },
-  privacyBanner: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#0F2238',
-    borderRadius: 14,
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.08)',
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-    marginHorizontal: 20,
-    marginTop: 8,
-  },
-  privacyIcon: {
-    marginRight: 10,
-  },
-  privacyText: {
-    color: '#8E9BAE',
-    fontSize: RFValue(12),
-    fontWeight: '400',
-  },
-  cardContainer: {
-    backgroundColor: '#0B1E36',
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.08)',
-    marginHorizontal: 20,
-    marginTop: 14,
-    overflow: 'hidden',
-  },
-  cardRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: 14,
-    paddingHorizontal: 16,
-  },
-  divider: {
-    borderBottomWidth: 1,
-    borderBottomColor: 'rgba(255, 255, 255, 0.06)',
-  },
-  iconBox: {
-    width: 28,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginRight: 12,
-  },
-  textContainer: {
-    flex: 1,
-  },
-  label: {
-    color: '#8E9BAE',
-    fontSize: RFValue(11),
-    marginBottom: 2,
-  },
-  valueText: {
-    color: '#FFFFFF',
-    fontSize: RFValue(13.5),
-    fontWeight: '600',
-  },
-  detailsCard: {
-    backgroundColor: '#0B1E36',
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.08)',
-    marginHorizontal: 20,
-    marginTop: 14,
-    padding: 16,
-  },
-  fieldSectionLabel: {
-    color: '#8E9BAE',
-    fontSize: RFValue(11),
-    fontWeight: '400',
-    marginBottom: 8,
-  },
-  chipsRow: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 8,
-  },
-  allergyChip: {
-    backgroundColor: Colors.primary || '#F0913A',
-    paddingHorizontal: 14,
-    paddingVertical: 7,
-    borderRadius: 16,
-  },
-  allergyChipText: {
-    color: '#071526',
-    fontSize: RFValue(12.5),
-    fontWeight: '700',
-  },
-  addAllergyButton: {
-    backgroundColor: '#0C1E34',
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.15)',
-    paddingHorizontal: 14,
-    paddingVertical: 7,
-    borderRadius: 16,
-  },
-  addAllergyText: {
-    color: '#CBD5E1',
-    fontSize: RFValue(12.5),
-    fontWeight: '500',
-  },
-  fieldValueBold: {
-    color: '#FFFFFF',
-    fontSize: RFValue(14),
-    fontWeight: '600',
-  },
-  bottomBar: {
-    paddingHorizontal: 20,
-    paddingTop: 12,
-    paddingBottom: 8,
-    backgroundColor: Colors.background,
-    borderTopWidth: 1,
-    borderTopColor: 'rgba(255, 255, 255, 0.06)',
-  },
-});
-

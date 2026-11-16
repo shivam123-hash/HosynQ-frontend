@@ -1,12 +1,13 @@
 import React from 'react';
 import ReactTestRenderer from 'react-test-renderer';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
+import { CompleteProfileStep4Screen } from '../src/screens/completeProfileScreens';
 import VaccinationScreen from '../src/screens/completeProfileScreens/innerScreens/VaccinationScreen';
 import AddVaccineScreen from '../src/screens/completeProfileScreens/innerScreens/AddVaccineScreen';
 import ChildGrowthScreen from '../src/screens/completeProfileScreens/innerScreens/ChildGrowthScreen';
 import ChildMilestonesScreen from '../src/screens/completeProfileScreens/innerScreens/ChildMilestonesScreen';
 import WhenToTakeMedicineScreen from '../src/screens/completeProfileScreens/innerScreens/WhenToTakeMedicineScreen';
-import PickTimeModal from '../src/screens/completeProfileScreens/components/PickTimeModal';
+import AppDateTimePicker, { formatDate, formatTime } from '../src/components/AppDateTimePicker';
 
 const safeAreaMetrics = {
   frame: { x: 0, y: 0, width: 390, height: 844 },
@@ -35,28 +36,56 @@ describe('Section 4 & Medicine Flow Screens', () => {
     expect(root.findByProps({ children: '+ Add vaccine record' })).toBeTruthy();
   });
 
-  test('renders AddVaccineScreen (LPS-12) correctly', () => {
+  test('renders AddVaccineScreen (image layout) and flow with CompleteProfileStep4Screen correctly', () => {
     let renderer: ReactTestRenderer.ReactTestRenderer;
     ReactTestRenderer.act(() => {
       renderer = ReactTestRenderer.create(
         <SafeAreaProvider initialMetrics={safeAreaMetrics}>
-          <AddVaccineScreen />
+          <CompleteProfileStep4Screen initialMode="form" />
         </SafeAreaProvider>,
       );
     });
 
     const root = renderer!.root;
-    expect(root.findByProps({ children: 'Add vaccine' })).toBeTruthy();
-    expect(root.findByProps({ children: 'Vaccine name' })).toBeTruthy();
-    expect(root.findByProps({ children: 'Influenza' })).toBeTruthy();
+    // Step 1: Add vaccine record form
+    expect(root.findByProps({ children: 'Add vaccine record' })).toBeTruthy();
+    expect(root.findByProps({ children: 'Aarav · Section 4 of 5' })).toBeTruthy();
+    expect(root.findByProps({ children: 'VACCINE' })).toBeTruthy();
+    expect(root.findByProps({ children: 'Vaccine name *' })).toBeTruthy();
+    expect(root.findByProps({ children: 'Dose *' })).toBeTruthy();
     expect(root.findByProps({ children: 'Yearly dose' })).toBeTruthy();
-    expect(root.findByProps({ children: 'Fri, 20 Oct 2026' })).toBeTruthy();
+    expect(root.findByProps({ children: 'GIVEN' })).toBeTruthy();
+    expect(root.findByProps({ children: 'Date given *' })).toBeTruthy();
+    expect(root.findByProps({ children: '30 Oct 2026' })).toBeTruthy();
+    expect(root.findByProps({ children: 'Given at (optional)' })).toBeTruthy();
+    expect(root.findByProps({ children: 'Batch number (optional)' })).toBeTruthy();
+    expect(root.findByProps({ children: 'Upload certificate' })).toBeTruthy();
+    expect(root.findByProps({ children: 'NEXT DOSE' })).toBeTruthy();
+    expect(root.findByProps({ children: 'Next due' })).toBeTruthy();
     expect(root.findByProps({ children: 'Oct 2027' })).toBeTruthy();
-    expect(root.findByProps({ children: 'Flu_certificate_2026.pdf' })).toBeTruthy();
-    expect(
-      root.findByProps({ children: 'Remind me before the next dose' }),
-    ).toBeTruthy();
-    expect(root.findByProps({ children: 'Save vaccine' })).toBeTruthy();
+    expect(root.findAllByProps({ children: 'Remind me' }).length).toBeGreaterThanOrEqual(1);
+    expect(root.findByProps({ children: 'Before the next dose' })).toBeTruthy();
+    expect(root.findByProps({ children: 'Who gets the reminder' })).toBeTruthy();
+    expect(root.findByProps({ children: 'Save' })).toBeTruthy();
+
+    // Tap Save to switch to Vaccination details screen with tabs
+    const saveBtn = root.findByProps({ title: 'Save' });
+    ReactTestRenderer.act(() => {
+      saveBtn.props.onPress();
+    });
+
+    // Step 2: Vaccination screen with tabs
+    expect(root.findByProps({ children: 'Vaccination' })).toBeTruthy();
+    expect(root.findByProps({ children: '+ Add vaccine record' })).toBeTruthy();
+
+    // Tap "+ Add vaccine record" to switch back to form screen
+    const addVaccineBtn = root.findByProps({ title: '+ Add vaccine record' });
+    ReactTestRenderer.act(() => {
+      addVaccineBtn.props.onPress();
+    });
+
+    // Step 3: Back to Add vaccine record form
+    expect(root.findByProps({ children: 'Add vaccine record' })).toBeTruthy();
   });
 
   test('renders ChildGrowthScreen (LPS-10 Growth)', () => {
@@ -120,29 +149,29 @@ describe('Section 4 & Medicine Flow Screens', () => {
     expect(root.findByProps({ children: 'Save medicine' })).toBeTruthy();
   });
 
-  test('renders PickTimeModal (LPS-11c)', () => {
-    const onClose = jest.fn();
-    const onSetTime = jest.fn();
+  test('renders AppDateTimePicker and formats date and time correctly', () => {
+    const onConfirm = jest.fn();
+    const onCancel = jest.fn();
+
+    const testDate = new Date(2026, 9, 30, 21, 0); // 30 Oct 2026, 9:00 PM
+    expect(formatDate(testDate)).toBe('30 Oct 2026');
+    expect(formatDate(testDate, 'MMM YYYY')).toBe('Oct 2026');
+    expect(formatTime(testDate)).toBe('09:00 PM');
 
     let renderer: ReactTestRenderer.ReactTestRenderer;
     ReactTestRenderer.act(() => {
       renderer = ReactTestRenderer.create(
-        <PickTimeModal
+        <AppDateTimePicker
           visible={true}
-          doseTitle="Dose 2 · Night"
-          onClose={onClose}
-          onSetTime={onSetTime}
+          mode="date"
+          date={testDate}
+          onConfirm={onConfirm}
+          onCancel={onCancel}
         />,
       );
     });
 
-    const root = renderer!.root;
-    expect(root.findByProps({ children: 'Dose 2 · Night' })).toBeTruthy();
-    expect(
-      root.findByProps({ children: 'Pick a time, or tap a meal' }),
-    ).toBeTruthy();
-    expect(root.findByProps({ children: 'After dinner' })).toBeTruthy();
-    expect(root.findByProps({ children: 'Set 9:00 PM' })).toBeTruthy();
+    expect(renderer!).toBeTruthy();
   });
 });
 

@@ -10,73 +10,113 @@ import {
   Switch,
   KeyboardAvoidingView,
   Platform,
+  Alert,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Feather from '@react-native-vector-icons/feather';
-import Ionicons from '@react-native-vector-icons/ionicons';
 import { RFValue } from 'react-native-responsive-fontsize';
 import Colors from '../../../units/Colors';
 import CommonBtn from '../../../components/CommonBtn';
+import {
+  AppDateTimePicker,
+  formatDate,
+  parseDateTimeString,
+} from '../../../components';
+import { PersonalInfoHeader } from '../components';
 
 export interface AddVaccineFormData {
   vaccineName: string;
   dose: string;
-  lastDose: string;
+  dateGiven: string;
+  givenAt?: string;
+  batchNumber?: string;
+  certificateName?: string | null;
   nextDue: string;
-  certificateName?: string;
   remindMe: boolean;
+  remindTiming: string;
+  whoGetsReminder: string;
 }
+
+export const DEFAULT_VACCINE_FORM_DATA: AddVaccineFormData = {
+  vaccineName: 'Influenza',
+  dose: 'Yearly dose',
+  dateGiven: '30 Oct 2026',
+  givenAt: 'Little Steps Clinic',
+  batchNumber: 'FLU26-0931',
+  certificateName: null,
+  nextDue: 'Oct 2027',
+  remindMe: true,
+  remindTiming: '2 weeks before',
+  whoGetsReminder: 'Priya, Rohan',
+};
 
 export interface AddVaccineScreenProps {
   initialData?: Partial<AddVaccineFormData>;
+  childName?: string;
   onClose?: () => void;
   onSave?: (data: AddVaccineFormData) => void;
-  onDosePress?: () => void;
-  onLastDosePress?: () => void;
-  onNextDuePress?: () => void;
-  onRemoveCertificate?: () => void;
+  onUploadCertificate?: () => void;
 }
-
-const QUICK_VACCINES = ['Influenza', 'Typhoid', 'Tdap', 'HPV', 'Hepatitis A'];
 
 const AddVaccineScreen: React.FC<AddVaccineScreenProps> = ({
   initialData,
+  childName = 'Aarav',
   onClose,
   onSave,
-  onDosePress,
-  onLastDosePress,
-  onNextDuePress,
-  onRemoveCertificate,
+  onUploadCertificate,
 }) => {
   const insets = useSafeAreaInsets();
-  const [vaccineName, setVaccineName] = useState<string>(
-    initialData?.vaccineName || 'Influenza',
-  );
-  const [dose, setDose] = useState<string>(
-    initialData?.dose || 'Yearly dose',
-  );
-  const [lastDose, setLastDose] = useState<string>(
-    initialData?.lastDose || 'Fri, 20 Oct 2026',
-  );
-  const [nextDue, setNextDue] = useState<string>(
-    initialData?.nextDue || 'Oct 2027',
-  );
-  const [certificateName, setCertificateName] = useState<string | null>(
-    initialData?.certificateName ?? 'Flu_certificate_2026.pdf',
-  );
-  const [remindMe, setRemindMe] = useState<boolean>(
-    initialData?.remindMe ?? true,
-  );
+
+  const [formData, setFormData] = useState<AddVaccineFormData>({
+    ...DEFAULT_VACCINE_FORM_DATA,
+    ...(initialData || {}),
+  });
+
+  const [pickerConfig, setPickerConfig] = useState<{
+    visible: boolean;
+    target: 'dateGiven' | 'nextDue' | null;
+    title: string;
+    format: 'DD MMM YYYY' | 'MMM YYYY';
+  }>({
+    visible: false,
+    target: null,
+    title: '',
+    format: 'DD MMM YYYY',
+  });
 
   const handleSave = () => {
-    onSave?.({
-      vaccineName,
-      dose,
-      lastDose,
-      nextDue,
-      certificateName: certificateName || undefined,
-      remindMe,
-    });
+    onSave?.(formData);
+  };
+
+  const handleSelectDose = () => {
+    Alert.alert('Select Dose', 'Choose dose type', [
+      { text: 'Dose 1', onPress: () => setFormData((p) => ({ ...p, dose: 'Dose 1' })) },
+      { text: 'Dose 2', onPress: () => setFormData((p) => ({ ...p, dose: 'Dose 2' })) },
+      { text: 'Dose 3', onPress: () => setFormData((p) => ({ ...p, dose: 'Dose 3' })) },
+      { text: 'Booster', onPress: () => setFormData((p) => ({ ...p, dose: 'Booster' })) },
+      { text: 'Yearly dose', onPress: () => setFormData((p) => ({ ...p, dose: 'Yearly dose' })) },
+      { text: 'Not sure', onPress: () => setFormData((p) => ({ ...p, dose: 'Not sure' })) },
+      { text: 'Cancel', style: 'cancel' },
+    ]);
+  };
+
+  const handleSelectRemindTiming = () => {
+    Alert.alert('Remind me', 'Select reminder time', [
+      { text: '1 day before', onPress: () => setFormData((p) => ({ ...p, remindTiming: '1 day before' })) },
+      { text: '1 week before', onPress: () => setFormData((p) => ({ ...p, remindTiming: '1 week before' })) },
+      { text: '2 weeks before', onPress: () => setFormData((p) => ({ ...p, remindTiming: '2 weeks before' })) },
+      { text: '1 month before', onPress: () => setFormData((p) => ({ ...p, remindTiming: '1 month before' })) },
+      { text: 'Cancel', style: 'cancel' },
+    ]);
+  };
+
+  const handleSelectWhoGetsReminder = () => {
+    Alert.alert('Who gets the reminder', 'Select family member', [
+      { text: 'Priya, Rohan', onPress: () => setFormData((p) => ({ ...p, whoGetsReminder: 'Priya, Rohan' })) },
+      { text: 'Priya only', onPress: () => setFormData((p) => ({ ...p, whoGetsReminder: 'Priya only' })) },
+      { text: 'Rohan only', onPress: () => setFormData((p) => ({ ...p, whoGetsReminder: 'Rohan only' })) },
+      { text: 'Cancel', style: 'cancel' },
+    ]);
   };
 
   return (
@@ -89,21 +129,12 @@ const AddVaccineScreen: React.FC<AddVaccineScreenProps> = ({
       <StatusBar barStyle="light-content" />
 
       {/* Header */}
-      <View style={styles.headerContainer}>
-        <TouchableOpacity
-          activeOpacity={0.7}
-          onPress={onClose}
-          style={styles.closeButton}
-          accessibilityRole="button"
-          accessibilityLabel="Close"
-        >
-          <Feather name="x" size={22} color="#FFFFFF" />
-        </TouchableOpacity>
-
-        <Text style={styles.headerTitleText}>Add vaccine</Text>
-
-        <View style={styles.spacer} />
-      </View>
+      <PersonalInfoHeader
+        title="Add vaccine record"
+        subtitle={`${childName} · Section 4 of 5`}
+        onBack={onClose}
+        icon="close"
+      />
 
       <KeyboardAvoidingView
         style={styles.keyboardView}
@@ -115,169 +146,249 @@ const AddVaccineScreen: React.FC<AddVaccineScreenProps> = ({
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
         >
-          {/* Vaccine Name Field (Orange Active Border) */}
+          {/* SECTION 1: VACCINE */}
+          <Text style={styles.sectionHeader}>VACCINE</Text>
+
+          {/* Vaccine name * */}
           <View style={styles.fieldGroup}>
-            <Text style={styles.fieldLabel}>Vaccine name</Text>
-            <View style={[styles.inputBox, styles.inputBoxActive]}>
-              <TextInput
-                style={styles.textInput}
-                value={vaccineName}
-                onChangeText={setVaccineName}
-                placeholder="Enter vaccine name"
-                placeholderTextColor="#64748B"
-                selectionColor="#F0913A"
-              />
+            <Text style={styles.fieldLabel}>Vaccine name *</Text>
+            <View style={styles.searchPickerField}>
+              <View style={styles.searchPickerLeft}>
+                <Feather
+                  name="search"
+                  size={16}
+                  color="#8E9BAE"
+                  style={styles.searchIcon}
+                />
+                <TextInput
+                  style={styles.searchPickerInput}
+                  value={formData.vaccineName}
+                  placeholder="Type to search, or pick from the list"
+                  placeholderTextColor="#60728B"
+                  onChangeText={(text) =>
+                    setFormData((prev) => ({ ...prev, vaccineName: text }))
+                  }
+                />
+              </View>
+              <Feather name="chevron-down" size={18} color="#8E9BAE" />
             </View>
+            <Text style={styles.helperText}>
+              Type to search, or pick from the list
+            </Text>
           </View>
 
-          {/* Quick Vaccine Chips */}
-          <View style={styles.chipsRow}>
-            {QUICK_VACCINES.map((item) => {
-              const isSelected = item === vaccineName;
-              return (
-                <TouchableOpacity
-                  key={item}
-                  activeOpacity={0.7}
-                  onPress={() => setVaccineName(item)}
-                  style={[
-                    styles.chip,
-                    isSelected ? styles.chipSelected : styles.chipUnselected,
-                  ]}
-                >
-                  <Text
-                    style={[
-                      styles.chipText,
-                      isSelected
-                        ? styles.chipTextSelected
-                        : styles.chipTextUnselected,
-                    ]}
-                  >
-                    {item}
-                  </Text>
-                </TouchableOpacity>
-              );
-            })}
+          {/* Dose * */}
+          <View style={styles.fieldGroup}>
+            <Text style={styles.fieldLabel}>Dose *</Text>
+            <TouchableOpacity
+              activeOpacity={0.7}
+              style={styles.pickerField}
+              onPress={handleSelectDose}
+            >
+              <Text style={styles.pickerValueText}>{formData.dose}</Text>
+              <Feather name="chevron-down" size={18} color="#8E9BAE" />
+            </TouchableOpacity>
+            <Text style={styles.helperText}>
+              Dose 1, Dose 2, Dose 3, Booster, Yearly, Not sure
+            </Text>
           </View>
 
-          {/* Details Card: Dose, Last Dose, Next Due */}
-          <View style={styles.cardContainer}>
-            {/* Dose */}
+          {/* SECTION 2: GIVEN */}
+          <Text style={[styles.sectionHeader, styles.sectionHeaderSpaced]}>
+            GIVEN
+          </Text>
+
+          {/* Date given * */}
+          <View style={styles.fieldGroup}>
+            <Text style={styles.fieldLabel}>Date given *</Text>
             <TouchableOpacity
               activeOpacity={0.7}
-              onPress={onDosePress}
-              style={styles.cardRow}
-              accessibilityRole="button"
-              accessibilityLabel={`Dose: ${dose}`}
+              style={styles.datePickerCard}
+              onPress={() =>
+                setPickerConfig({
+                  visible: true,
+                  target: 'dateGiven',
+                  title: 'Date Given',
+                  format: 'DD MMM YYYY',
+                })
+              }
             >
-              <View style={styles.iconBox}>
-                <Ionicons name="eyedrop-outline" size={17} color="#8E9BAE" />
-              </View>
-              <View style={styles.textContainer}>
-                <Text style={styles.rowLabel}>Dose</Text>
-                <Text style={styles.rowValue}>{dose}</Text>
-              </View>
-              <Feather name="chevron-right" size={18} color="#64748B" />
-            </TouchableOpacity>
-
-            <View style={styles.divider} />
-
-            {/* Last dose */}
-            <TouchableOpacity
-              activeOpacity={0.7}
-              onPress={onLastDosePress}
-              style={styles.cardRow}
-              accessibilityRole="button"
-              accessibilityLabel={`Last dose: ${lastDose}`}
-            >
-              <View style={styles.iconBox}>
-                <Feather name="calendar" size={17} color="#8E9BAE" />
-              </View>
-              <View style={styles.textContainer}>
-                <Text style={styles.rowLabel}>Last dose</Text>
-                <Text style={styles.rowValue}>{lastDose}</Text>
-              </View>
-              <Feather name="chevron-right" size={18} color="#64748B" />
-            </TouchableOpacity>
-
-            <View style={styles.divider} />
-
-            {/* Next due */}
-            <TouchableOpacity
-              activeOpacity={0.7}
-              onPress={onNextDuePress}
-              style={styles.cardRow}
-              accessibilityRole="button"
-              accessibilityLabel={`Next due: ${nextDue}`}
-            >
-              <View style={styles.iconBox}>
-                <Feather name="clock" size={17} color="#8E9BAE" />
-              </View>
-              <View style={styles.textContainer}>
-                <Text style={styles.rowLabel}>Next due · suggested</Text>
-                <Text style={styles.rowValue}>{nextDue}</Text>
-              </View>
-              <Feather name="chevron-right" size={18} color="#64748B" />
-            </TouchableOpacity>
-          </View>
-
-          {/* Attached Certificate Card */}
-          {certificateName ? (
-            <View style={styles.certificateCard}>
-              <View style={styles.certIconBox}>
-                <Feather name="file-text" size={17} color="#10B981" />
-              </View>
-              <View style={styles.certInfo}>
-                <Text style={styles.certNameText} numberOfLines={1}>
-                  {certificateName}
-                </Text>
-                <Text style={styles.certSubText}>Certificate · 340 KB</Text>
-              </View>
-              <TouchableOpacity
-                activeOpacity={0.7}
-                onPress={() => {
-                  setCertificateName(null);
-                  onRemoveCertificate?.();
-                }}
-                style={styles.certRemoveButton}
-                accessibilityRole="button"
-                accessibilityLabel="Remove certificate"
-              >
-                <Feather name="x" size={16} color="#8E9BAE" />
-              </TouchableOpacity>
-            </View>
-          ) : null}
-
-          {/* Remind Before Next Dose Switch Card */}
-          <View style={styles.remindCard}>
-            <View style={styles.remindTextContainer}>
-              <Text style={styles.remindTitle}>
-                Remind me before the next dose
+              <Text style={styles.datePickerValueText}>
+                {formData.dateGiven}
               </Text>
-              <Text style={styles.remindSubtitle}>
-                2 weeks before · Priya, Rohan
+              <Feather name="calendar" size={17} color="#8E9BAE" />
+            </TouchableOpacity>
+          </View>
+
+          {/* Given at (optional) */}
+          <View style={styles.fieldGroup}>
+            <Text style={styles.fieldLabel}>Given at (optional)</Text>
+            <TextInput
+              style={styles.textInput}
+              value={formData.givenAt}
+              placeholder="Clinic or hospital name"
+              placeholderTextColor="#60728B"
+              onChangeText={(text) =>
+                setFormData((prev) => ({ ...prev, givenAt: text }))
+              }
+            />
+          </View>
+
+          {/* Batch number (optional) */}
+          <View style={styles.fieldGroup}>
+            <Text style={styles.fieldLabel}>Batch number (optional)</Text>
+            <TextInput
+              style={styles.textInput}
+              value={formData.batchNumber}
+              placeholder="e.g. FLU26-0931"
+              placeholderTextColor="#60728B"
+              onChangeText={(text) =>
+                setFormData((prev) => ({ ...prev, batchNumber: text }))
+              }
+            />
+          </View>
+
+          {/* Upload certificate button */}
+          <TouchableOpacity
+            activeOpacity={0.7}
+            style={styles.attachBtn}
+            onPress={() => {
+              if (onUploadCertificate) {
+                onUploadCertificate();
+              } else {
+                Alert.alert(
+                  'Upload Certificate',
+                  'Select vaccine certificate PDF or image.',
+                );
+              }
+            }}
+          >
+            <Feather name="paperclip" size={17} color="#F0913A" />
+            <Text style={styles.attachBtnText}>Upload certificate</Text>
+          </TouchableOpacity>
+
+          {/* SECTION 3: NEXT DOSE */}
+          <Text style={[styles.sectionHeader, styles.sectionHeaderSpaced]}>
+            NEXT DOSE
+          </Text>
+
+          {/* Next due */}
+          <View style={styles.fieldGroup}>
+            <Text style={styles.fieldLabel}>Next due</Text>
+            <TouchableOpacity
+              activeOpacity={0.7}
+              style={styles.datePickerCard}
+              onPress={() =>
+                setPickerConfig({
+                  visible: true,
+                  target: 'nextDue',
+                  title: 'Next Due Date',
+                  format: 'MMM YYYY',
+                })
+              }
+            >
+              <Text style={styles.datePickerValueText}>{formData.nextDue}</Text>
+              <Feather name="calendar" size={17} color="#8E9BAE" />
+            </TouchableOpacity>
+            <Text style={styles.helperText}>
+              Suggested from the vaccine schedule. You can change it.
+            </Text>
+          </View>
+
+          {/* Remind me Switch Card */}
+          <View style={styles.switchCard}>
+            <View style={styles.switchCardContent}>
+              <Text style={styles.switchCardTitle}>Remind me</Text>
+              <Text style={styles.switchCardSubtitle}>
+                Before the next dose
               </Text>
             </View>
             <Switch
-              value={remindMe}
-              onValueChange={setRemindMe}
-              trackColor={{ false: '#1E293B', true: '#F0913A' }}
+              value={formData.remindMe}
+              onValueChange={(val) =>
+                setFormData((prev) => ({ ...prev, remindMe: val }))
+              }
+              trackColor={{ false: '#223554', true: '#F0913A' }}
               thumbColor="#FFFFFF"
             />
           </View>
+
+          {/* Remind me lead time */}
+          <View style={styles.fieldGroup}>
+            <Text style={styles.fieldLabel}>Remind me</Text>
+            <TouchableOpacity
+              activeOpacity={0.7}
+              style={styles.pickerField}
+              onPress={handleSelectRemindTiming}
+            >
+              <Text style={styles.pickerValueText}>
+                {formData.remindTiming}
+              </Text>
+              <Feather name="chevron-down" size={18} color="#8E9BAE" />
+            </TouchableOpacity>
+            <Text style={styles.helperText}>
+              1 day, 1 week, 2 weeks, 1 month before
+            </Text>
+          </View>
+
+          {/* Who gets the reminder */}
+          <View style={styles.fieldGroup}>
+            <Text style={styles.fieldLabel}>Who gets the reminder</Text>
+            <TouchableOpacity
+              activeOpacity={0.7}
+              style={styles.pickerField}
+              onPress={handleSelectWhoGetsReminder}
+            >
+              <Text style={styles.pickerValueText}>
+                {formData.whoGetsReminder}
+              </Text>
+              <Feather name="chevron-down" size={18} color="#8E9BAE" />
+            </TouchableOpacity>
+          </View>
         </ScrollView>
 
-        {/* Bottom Save Vaccine Button */}
+        {/* Bottom Save Button */}
         <View style={styles.bottomBar}>
           <CommonBtn
-            title="Save vaccine"
+            title="Save"
             onPress={handleSave}
             backgroundColor={Colors.primary || '#F0913A'}
             textColor="#FFFFFF"
-            height={54}
-            borderRadius={27}
+            height={52}
+            borderRadius={26}
           />
         </View>
       </KeyboardAvoidingView>
+
+      {/* Date Picker */}
+      <AppDateTimePicker
+        visible={pickerConfig.visible}
+        mode="date"
+        title={pickerConfig.title}
+        date={parseDateTimeString(
+          pickerConfig.target === 'dateGiven'
+            ? formData.dateGiven
+            : formData.nextDue,
+          'date',
+        )}
+        onConfirm={(selectedDate) => {
+          if (pickerConfig.target === 'dateGiven') {
+            setFormData((prev) => ({
+              ...prev,
+              dateGiven: formatDate(selectedDate, pickerConfig.format),
+            }));
+          } else if (pickerConfig.target === 'nextDue') {
+            setFormData((prev) => ({
+              ...prev,
+              nextDue: formatDate(selectedDate, pickerConfig.format),
+            }));
+          }
+          setPickerConfig((prev) => ({ ...prev, visible: false }));
+        }}
+        onCancel={() =>
+          setPickerConfig((prev) => ({ ...prev, visible: false }))
+        }
+      />
     </View>
   );
 };
@@ -287,34 +398,7 @@ export default AddVaccineScreen;
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: Colors.background,
-  },
-  headerContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 20,
-    paddingVertical: 12,
-  },
-  closeButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: 'rgba(255, 255, 255, 0.06)',
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.12)',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  headerTitleText: {
-    color: '#FFFFFF',
-    fontSize: RFValue(17),
-    fontWeight: '700',
-    textAlign: 'center',
-  },
-  spacer: {
-    width: 40,
-    height: 40,
+    backgroundColor: Colors.background || '#0A111F',
   },
   keyboardView: {
     flex: 1,
@@ -323,178 +407,152 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   scrollContent: {
+    paddingHorizontal: 20,
+    paddingTop: 10,
     paddingBottom: 24,
   },
+  sectionHeader: {
+    color: '#F0913A',
+    fontSize: RFValue(11),
+    fontWeight: '700',
+    letterSpacing: 1.2,
+    textTransform: 'uppercase',
+    marginBottom: 14,
+  },
+  sectionHeaderSpaced: {
+    marginTop: 22,
+  },
   fieldGroup: {
-    marginHorizontal: 20,
-    marginTop: 10,
-    marginBottom: 12,
+    marginBottom: 16,
   },
   fieldLabel: {
     color: '#8E9BAE',
-    fontSize: RFValue(11.5),
-    marginBottom: 6,
-  },
-  inputBox: {
-    height: 52,
-    borderRadius: 14,
-    backgroundColor: '#0B1E36',
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.08)',
-    paddingHorizontal: 16,
-    justifyContent: 'center',
-  },
-  inputBoxActive: {
-    borderColor: '#F0913A',
-    borderWidth: 1.5,
+    fontSize: RFValue(12),
+    fontWeight: '500',
+    marginBottom: 8,
   },
   textInput: {
-    color: '#FFFFFF',
-    fontSize: RFValue(13.5),
-    fontWeight: '500',
-    padding: 0,
-    margin: 0,
-  },
-  chipsRow: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 8,
-    marginHorizontal: 20,
-    marginBottom: 16,
-  },
-  chip: {
-    paddingHorizontal: 15,
-    paddingVertical: 8,
-    borderRadius: 18,
+    backgroundColor: '#12243F',
     borderWidth: 1,
-  },
-  chipUnselected: {
-    backgroundColor: '#0C1E34',
-    borderColor: 'rgba(255, 255, 255, 0.12)',
-  },
-  chipSelected: {
-    backgroundColor: Colors.primary || '#F0913A',
-    borderColor: Colors.primary || '#F0913A',
-  },
-  chipText: {
-    fontSize: RFValue(12),
-  },
-  chipTextUnselected: {
-    color: '#CBD5E1',
-    fontWeight: '500',
-  },
-  chipTextSelected: {
-    color: '#071526',
-    fontWeight: '700',
-  },
-  cardContainer: {
-    backgroundColor: '#0B1E36',
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.08)',
-    marginHorizontal: 20,
-    marginTop: 6,
-    overflow: 'hidden',
-  },
-  cardRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: 14,
-    paddingHorizontal: 16,
-  },
-  divider: {
-    borderBottomWidth: 1,
-    borderBottomColor: 'rgba(255, 255, 255, 0.06)',
-  },
-  iconBox: {
-    width: 28,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginRight: 12,
-  },
-  textContainer: {
-    flex: 1,
-  },
-  rowLabel: {
-    color: '#8E9BAE',
-    fontSize: RFValue(11),
-    marginBottom: 2,
-  },
-  rowValue: {
-    color: '#FFFFFF',
-    fontSize: RFValue(13.5),
-    fontWeight: '600',
-  },
-  certificateCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#0B1E36',
+    borderColor: 'rgba(255, 255, 255, 0.1)',
     borderRadius: 14,
-    borderWidth: 1,
-    borderColor: 'rgba(16, 185, 129, 0.25)',
-    marginHorizontal: 20,
-    marginTop: 14,
-    padding: 14,
-  },
-  certIconBox: {
-    width: 36,
-    height: 36,
-    borderRadius: 10,
-    backgroundColor: 'rgba(16, 185, 129, 0.12)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: 12,
-  },
-  certInfo: {
-    flex: 1,
-  },
-  certNameText: {
+    height: 50,
+    paddingHorizontal: 16,
     color: '#FFFFFF',
-    fontSize: RFValue(13),
-    fontWeight: '600',
+    fontSize: RFValue(13.5),
   },
-  certSubText: {
-    color: '#10B981',
-    fontSize: RFValue(11),
-    marginTop: 2,
-  },
-  certRemoveButton: {
-    padding: 6,
-  },
-  remindCard: {
+  searchPickerField: {
+    backgroundColor: '#12243F',
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.1)',
+    borderRadius: 14,
+    height: 50,
+    paddingHorizontal: 16,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    backgroundColor: '#0B1E36',
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.08)',
-    marginHorizontal: 20,
-    marginTop: 14,
-    paddingVertical: 14,
-    paddingHorizontal: 16,
   },
-  remindTextContainer: {
+  searchPickerLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
     flex: 1,
-    marginRight: 12,
   },
-  remindTitle: {
+  searchIcon: {
+    marginRight: 10,
+  },
+  searchPickerInput: {
+    flex: 1,
     color: '#FFFFFF',
+    fontSize: RFValue(13.5),
+    paddingVertical: 0,
+  },
+  pickerField: {
+    backgroundColor: '#12243F',
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.1)',
+    borderRadius: 14,
+    height: 50,
+    paddingHorizontal: 16,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  pickerValueText: {
+    color: '#FFFFFF',
+    fontSize: RFValue(13.5),
+    fontWeight: '500',
+  },
+  helperText: {
+    color: '#60728B',
+    fontSize: RFValue(11),
+    marginTop: 6,
+    marginLeft: 2,
+  },
+  datePickerCard: {
+    backgroundColor: '#12243F',
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.1)',
+    borderRadius: 14,
+    height: 50,
+    paddingHorizontal: 16,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  datePickerValueText: {
+    color: '#FFFFFF',
+    fontSize: RFValue(13.5),
+  },
+  attachBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    height: 48,
+    borderRadius: 14,
+    borderWidth: 1.2,
+    borderColor: '#F0913A',
+    borderStyle: 'dashed',
+    backgroundColor: 'rgba(240, 145, 58, 0.05)',
+    gap: 8,
+    marginTop: 4,
+    marginBottom: 8,
+  },
+  attachBtnText: {
+    color: '#F0913A',
     fontSize: RFValue(13),
     fontWeight: '600',
   },
-  remindSubtitle: {
+  switchCard: {
+    backgroundColor: '#12243F',
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.1)',
+    padding: 16,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 16,
+  },
+  switchCardContent: {
+    flex: 1,
+    marginRight: 12,
+  },
+  switchCardTitle: {
+    color: '#FFFFFF',
+    fontSize: RFValue(13.5),
+    fontWeight: '600',
+  },
+  switchCardSubtitle: {
     color: '#8E9BAE',
     fontSize: RFValue(11.5),
-    marginTop: 2,
+    marginTop: 3,
   },
   bottomBar: {
     paddingHorizontal: 20,
     paddingTop: 12,
-    paddingBottom: 8,
-    backgroundColor: Colors.background,
+    paddingBottom: 16,
+    backgroundColor: Colors.background || '#0A111F',
     borderTopWidth: 1,
     borderTopColor: 'rgba(255, 255, 255, 0.06)',
   },
 });
-

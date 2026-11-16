@@ -112,7 +112,7 @@ describe('PersonalInfoScreen & Components', () => {
     ).toBeTruthy();
   });
 
-  test('renders entire PersonalInfoScreen and verifies absence of second image collapsed card', () => {
+  test('renders entire PersonalInfoScreen and verifies input screen transitions to details screen on save', () => {
     const onSave = jest.fn();
     const onBack = jest.fn();
 
@@ -128,16 +128,25 @@ describe('PersonalInfoScreen & Components', () => {
     });
 
     const root = renderer!.root;
+    // Step 1: Input fields screen (Image 1) is shown first
     expect(root.findByProps({ children: 'Personal information' })).toBeTruthy();
+    expect(root.findByProps({ children: 'ABOUT YOU' })).toBeTruthy();
+    expect(root.findByProps({ children: 'WHAT BEST DESCRIBES YOU' })).toBeTruthy();
     expect(root.findByProps({ children: 'Save' })).toBeTruthy();
 
-    // Verify the second image collapsed card text "Interior designer · Kaveri Design Studio" is NOT present as a standalone card text
-    const collapsedCardMatches = root.findAll((node) => {
-      return (
-        typeof node.props.children === 'string' &&
-        node.props.children.includes('Interior designer · Kaveri Design Studio')
-      );
+    // Find the Save button on Input screen and press it
+    const saveButton = root.findByProps({ title: 'Save' });
+    ReactTestRenderer.act(() => {
+      saveButton.props.onPress();
     });
-    expect(collapsedCardMatches.length).toBe(0);
+
+    // Step 2: Now details screen (Image 2) is shown with saved details
+    expect(root.findByProps({ children: 'EDUCATION / CAREER' })).toBeTruthy();
+    expect(root.findByProps({ children: 'Working' })).toBeTruthy();
+    expect(
+      root.findByProps({
+        children: 'Interior designer · Kaveri Design Studio',
+      }),
+    ).toBeTruthy();
   });
 });

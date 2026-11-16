@@ -43,6 +43,18 @@ const API_ROUTES = {
   FAMILY_MY_FAMILY: 'family/my-family',
   FAMILY_TRANSFER_OWNERSHIP: 'family/transfer-ownership',
   FAMILY_LIFE_PROFILE: 'family/life-profile',
+  FAMILY_MEMBER_LIFE_PROFILE: (
+    memberId: string,
+    queryParams?: { view?: string; section?: string }
+  ) => {
+    let url = `family/members/${memberId}/life-profile`;
+    if (queryParams?.view) {
+      url += `?view=${queryParams.view}`;
+    } else if (queryParams?.section) {
+      url += `?section=${queryParams.section}`;
+    }
+    return url;
+  },
 };
 
 export default API_ROUTES;

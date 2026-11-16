@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import {
   View,
   StyleSheet,
@@ -10,7 +10,7 @@ import { useNavigation } from '@react-navigation/native';
 import Feather from '@react-native-vector-icons/feather';
 import Ionicons from '@react-native-vector-icons/ionicons';
 import Colors from '../../units/Colors';
-import { useAppSelector } from '../../redux';
+import { useAppDispatch, useAppSelector, fetchLifeProfileSummaryThunk } from '../../redux';
 import {
   LifeProfileHeader,
   LifeProfileUserCard,
@@ -32,6 +32,7 @@ export interface LifeProfileSectionConfig {
 }
 
 export interface MyLifeProfileScreenProps {
+  memberId?: string;
   name?: string;
   role?: string;
   age?: string;
@@ -50,9 +51,9 @@ export interface MyLifeProfileScreenProps {
 const DEFAULT_SECTIONS: LifeProfileSectionConfig[] = [
   {
     id: 'personal',
-    title: 'Personal information &\nEducation / Career',
+    title: 'Personal information\n& Education / Career',
     subtitle: 'Complete · Working',
-    icon: <Feather name="user" size={19} color="#38BDF8" />,
+    icon: <Feather name="user" size={18} color="#38BDF8" />,
     iconBgColor: 'rgba(56, 189, 248, 0.1)',
     iconBorderColor: 'rgba(56, 189, 248, 0.3)',
     badgeText: 'Done',
@@ -62,7 +63,7 @@ const DEFAULT_SECTIONS: LifeProfileSectionConfig[] = [
     id: 'documents',
     title: 'Important documents',
     subtitle: '5 added · US visa expires Mar 2027',
-    icon: <Ionicons name="card-outline" size={19} color="#F43F5E" />,
+    icon: <Ionicons name="card-outline" size={18} color="#F43F5E" />,
     iconBgColor: 'rgba(244, 63, 94, 0.1)',
     iconBorderColor: 'rgba(244, 63, 94, 0.3)',
     badgeText: '1 soon',
@@ -72,7 +73,7 @@ const DEFAULT_SECTIONS: LifeProfileSectionConfig[] = [
     id: 'health',
     title: 'Health profile',
     subtitle: 'Doctor, allergies, checkups',
-    icon: <Feather name="activity" size={19} color="#A855F7" />,
+    icon: <Feather name="activity" size={18} color="#A855F7" />,
     iconBgColor: 'rgba(168, 85, 247, 0.1)',
     iconBorderColor: 'rgba(168, 85, 247, 0.3)',
     badgeText: 'Done',
@@ -82,7 +83,7 @@ const DEFAULT_SECTIONS: LifeProfileSectionConfig[] = [
     id: 'vaccination',
     title: 'Vaccination',
     subtitle: 'Flu shot due 15 Nov',
-    icon: <Ionicons name="eyedrop-outline" size={19} color="#14B8A6" />,
+    icon: <Ionicons name="eyedrop-outline" size={18} color="#14B8A6" />,
     iconBgColor: 'rgba(20, 184, 166, 0.1)',
     iconBorderColor: 'rgba(20, 184, 166, 0.3)',
     badgeText: '1 due',
@@ -92,7 +93,7 @@ const DEFAULT_SECTIONS: LifeProfileSectionConfig[] = [
     id: 'interests',
     title: 'Interests and activities',
     subtitle: 'Not started',
-    icon: <Feather name="star" size={19} color="#F59E0B" />,
+    icon: <Feather name="star" size={18} color="#F59E0B" />,
     iconBgColor: 'rgba(245, 158, 11, 0.1)',
     iconBorderColor: 'rgba(245, 158, 11, 0.3)',
     badgeText: null,
@@ -101,6 +102,7 @@ const DEFAULT_SECTIONS: LifeProfileSectionConfig[] = [
 ];
 
 const MyLifeProfileScreen: React.FC<MyLifeProfileScreenProps> = ({
+  memberId,
   name,
   role,
   age = '38 years',
@@ -116,12 +118,41 @@ const MyLifeProfileScreen: React.FC<MyLifeProfileScreenProps> = ({
   onSectionPress,
 }) => {
   const insets = useSafeAreaInsets();
+  const dispatch = useAppDispatch();
   let navigation: any = null;
   try {
     navigation = useNavigation();
   } catch {
     navigation = null;
   }
+
+  const authUser = useAppSelector((state) => state.auth.user);
+  const baseProfile = useAppSelector((state) => state.baseProfile);
+  const lifeProfileSummary = useAppSelector((state) => state.lifeProfile?.summary);
+
+  // Fallback to logged-in user or active member
+  const resolvedMemberId =
+    memberId ||
+    authUser?.memberId ||
+    authUser?.id ||
+    authUser?._id ||
+    'me';
+
+  // API Call Structure: GET {{BaseURL}}/api/v1/family/members/{{memberId}}/life-profile?view=summary
+  useEffect(() => {
+    if (resolvedMemberId) {
+      dispatch(fetchLifeProfileSummaryThunk({ memberId: resolvedMemberId }));
+    }
+  }, [dispatch, resolvedMemberId]);
+
+  /*
+   * DATA MAPPING (Ready to connect when backend summary response is wired):
+   * const summaryData = lifeProfileSummary?.data || lifeProfileSummary;
+   * const dynamicCompletionPercentage = summaryData?.completionPercentage ?? completionPercentage;
+   * const dynamicCompletedSectionsCount = summaryData?.completedSectionsCount ?? completedSectionsCount;
+   * const dynamicTotalSections = summaryData?.totalSectionsCount ?? totalSectionsCount;
+   * const dynamicNextStepHint = summaryData?.nextStepHint ?? nextStepHint;
+   */
 
   const handleSectionPress = (sectionId: string) => {
     if (onSectionPress) {
@@ -150,9 +181,6 @@ const MyLifeProfileScreen: React.FC<MyLifeProfileScreenProps> = ({
       }
     }
   };
-
-  const authUser = useAppSelector((state) => state.auth.user);
-  const baseProfile = useAppSelector((state) => state.baseProfile);
 
   const displayName =
     name ||

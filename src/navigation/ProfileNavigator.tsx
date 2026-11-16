@@ -9,8 +9,11 @@ import type {
 
 // Complete Profile Screens
 import {
+  MyLifeProfileScreen,
   CompleteProfileStep1Screen,
+  PersonalInfoDetailsScreen,
   CompleteProfileStep2Screen,
+  AddPassportScreen,
   CompleteProfileStep3Screen,
   CompleteProfileStep4Screen,
   CompleteProfileStep5Screen,
@@ -23,22 +26,90 @@ import {
   ChildGrowthScreen,
   ChildMilestonesScreen,
 } from '../screens/completeProfileScreens';
+import LifeProfileIntroScreen from '../screens/familyConnectionCreateScreens/joinFamilayScreens/LifeProfileIntroScreen';
 
 const Stack = createNativeStackNavigator<ProfileStackParamList>();
 
 // --- Screen Wrappers connecting Navigation & Props ---
+
+const LifeProfileIntroWrapper: React.FC<
+  ProfileScreenProps<'LifeProfileIntro'>
+> = ({ navigation, route }) => {
+  const memberId = route.params?.memberId;
+  return (
+    <LifeProfileIntroScreen
+      completedSections={0}
+      totalSections={6}
+      onStartPersonalInformation={() => {
+        navigation.navigate('MyLifeProfile', { memberId });
+      }}
+      onDoThisLater={() => {
+        navigation.navigate('MyLifeProfile', { memberId });
+      }}
+      onSectionPress={(sectionId) => {
+        navigation.navigate('MyLifeProfile', { memberId });
+      }}
+    />
+  );
+};
+
+const MyLifeProfileWrapper: React.FC<ProfileScreenProps<'MyLifeProfile'>> = ({
+  navigation,
+  route,
+}) => {
+  const memberId = route.params?.memberId;
+  return (
+    <MyLifeProfileScreen
+      memberId={memberId}
+      onBack={() => {
+        if (navigation.canGoBack()) {
+          navigation.goBack();
+        } else {
+          navigation.navigate('LifeProfileIntro', { memberId });
+        }
+      }}
+      onSectionPress={(sectionId) => {
+        const stepMap: Record<string, keyof ProfileStackParamList> = {
+          personal: 'Step1',
+          documents: 'Step2',
+          health: 'Step3',
+          vaccination: 'Step4',
+          interests: 'Step5',
+        };
+        const target = stepMap[sectionId];
+        if (target) {
+          navigation.navigate(target as any, { memberId });
+        }
+      }}
+    />
+  );
+};
 
 const Step1Wrapper: React.FC<ProfileScreenProps<'Step1'>> = ({
   navigation,
   route,
 }) => (
   <CompleteProfileStep1Screen
+    memberId={route.params?.memberId}
     initialData={route.params?.initialData}
+    initialMode={route.params?.initialMode}
     onBack={() => navigation.goBack()}
     onContinue={(data) => {
       console.log('Step 1 data:', data);
-      navigation.navigate('Step2');
+      navigation.navigate('MyLifeProfile', { memberId: route.params?.memberId });
     }}
+  />
+);
+
+const PersonalInfoDetailsWrapper: React.FC<
+  ProfileScreenProps<'PersonalInfoDetails'>
+> = ({ navigation, route }) => (
+  <PersonalInfoDetailsScreen
+    memberId={route.params?.memberId}
+    data={route.params?.data}
+    onBack={() => navigation.goBack()}
+    onEditPress={() => navigation.navigate('Step1', { memberId: route.params?.memberId })}
+    onSave={() => navigation.navigate('MyLifeProfile', { memberId: route.params?.memberId })}
   />
 );
 
@@ -47,14 +118,26 @@ const Step2Wrapper: React.FC<ProfileScreenProps<'Step2'>> = ({
   route,
 }) => (
   <CompleteProfileStep2Screen
+    memberId={route.params?.memberId}
     initialData={route.params?.initialData}
     onBack={() => navigation.goBack()}
     onContinue={(data) => {
       console.log('Step 2 data:', data);
-      navigation.navigate('Step3');
+      navigation.navigate('MyLifeProfile', { memberId: route.params?.memberId });
     }}
     onDocumentPress={(documentId) => {
       navigation.navigate('DocumentDetailReminders', { documentId });
+    }}
+  />
+);
+
+const AddPassportWrapper: React.FC<ProfileScreenProps<'AddPassport'>> = ({
+  navigation,
+}) => (
+  <AddPassportScreen
+    onClose={() => navigation.goBack()}
+    onSaveSuccess={(data) => {
+      navigation.navigate('DocumentDetailReminders', { documentId: 'passport' });
     }}
   />
 );
@@ -97,8 +180,10 @@ const WhenToTakeMedicineWrapper: React.FC<
 
 const VaccinationWrapper: React.FC<ProfileScreenProps<'Vaccination'>> = ({
   navigation,
+  route,
 }) => (
   <VaccinationScreen
+    memberId={route.params?.memberId}
     onBack={() => navigation.goBack()}
     onAddVaccineRecord={() => navigation.navigate('AddVaccine')}
     onAddMeasurement={() => navigation.navigate('ChildGrowth')}
@@ -132,11 +217,14 @@ const Step3Wrapper: React.FC<ProfileScreenProps<'Step3'>> = ({
   route,
 }) => (
   <CompleteProfileStep3Screen
+    memberId={route.params?.memberId}
     initialData={route.params?.initialData}
+    initialMode={route.params?.initialMode}
     onBack={() => navigation.goBack()}
+    onAddMedicine={() => navigation.navigate('AddMedicine')}
     onContinue={(data) => {
       console.log('Step 3 data:', data);
-      navigation.navigate('Step4');
+      navigation.navigate('MyLifeProfile', { memberId: route.params?.memberId });
     }}
     onCheckupItemPress={(id) => {
       console.log('Checkup item pressed:', id);
@@ -149,11 +237,12 @@ const Step4Wrapper: React.FC<ProfileScreenProps<'Step4'>> = ({
   route,
 }) => (
   <CompleteProfileStep4Screen
+    memberId={route.params?.memberId}
     initialData={route.params?.initialData}
+    initialMode={route.params?.initialMode}
     onBack={() => navigation.goBack()}
     onContinue={(data) => {
       console.log('Step 4 data:', data);
-      navigation.navigate('Step5');
     }}
     onCheckupItemPress={(id) => {
       console.log('Checkup item pressed:', id);
@@ -163,33 +252,27 @@ const Step4Wrapper: React.FC<ProfileScreenProps<'Step4'>> = ({
 
 const Step5Wrapper: React.FC<ProfileScreenProps<'Step5'>> = ({
   navigation,
+  route,
 }) => {
-  const rootNav = useNavigation<RootNavigationProp>();
-
   return (
     <CompleteProfileStep5Screen
+      memberId={route.params?.memberId}
       onBack={() => navigation.goBack()}
-      onEnterHosynQ={(selectedInterests) => {
-        console.log('Profile completed! Selected interests:', selectedInterests);
-        // Navigates back to Auth or Home
-        rootNav.navigate('Auth', { screen: 'AuthMain' });
-      }}
+      onSave={() => navigation.navigate('MyLifeProfile', { memberId: route.params?.memberId })}
+      onEnterHosynQ={() => navigation.navigate('MyLifeProfile', { memberId: route.params?.memberId })}
     />
   );
 };
 
 const InterestsAndActivitiesWrapper: React.FC<
   ProfileScreenProps<'InterestsAndActivities'>
-> = ({ navigation }) => {
-  const rootNav = useNavigation<RootNavigationProp>();
-
+> = ({ navigation, route }) => {
   return (
     <CompleteProfileStep5Screen
+      memberId={route.params?.memberId}
       onBack={() => navigation.goBack()}
-      onEnterHosynQ={(selectedInterests) => {
-        console.log('Profile completed! Selected interests:', selectedInterests);
-        rootNav.navigate('Auth', { screen: 'AuthMain' });
-      }}
+      onSave={() => navigation.navigate('MyLifeProfile', { memberId: route.params?.memberId })}
+      onEnterHosynQ={() => navigation.navigate('MyLifeProfile', { memberId: route.params?.memberId })}
     />
   );
 };
@@ -199,14 +282,24 @@ const InterestsAndActivitiesWrapper: React.FC<
 const ProfileNavigator: React.FC = () => {
   return (
     <Stack.Navigator
-      initialRouteName="Step1"
+      initialRouteName="MyLifeProfile"
       screenOptions={{
         headerShown: false,
         animation: 'slide_from_right',
       }}
     >
+      <Stack.Screen
+        name="LifeProfileIntro"
+        component={LifeProfileIntroWrapper}
+      />
+      <Stack.Screen name="MyLifeProfile" component={MyLifeProfileWrapper} />
       <Stack.Screen name="Step1" component={Step1Wrapper} />
+      <Stack.Screen
+        name="PersonalInfoDetails"
+        component={PersonalInfoDetailsWrapper}
+      />
       <Stack.Screen name="Step2" component={Step2Wrapper} />
+      <Stack.Screen name="AddPassport" component={AddPassportWrapper} />
       <Stack.Screen
         name="DocumentDetailReminders"
         component={DocumentDetailRemindersWrapper}

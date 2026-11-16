@@ -7,4 +7,7 @@ export * from './authServices';
 export { default as familyServices } from './familyServices';
 export * from './familyServices';
 
+export { default as lifeProfileServices } from './lifeProfileServices';
+export * from './lifeProfileServices';
+
 export * from './googleAuthService';

@@ -705,23 +705,13 @@ const LifeProfileIntroWrapper: React.FC<AuthScreenProps<'LifeProfileIntro'>> = (
       completedSections={0}
       totalSections={6}
       onStartPersonalInformation={() => {
-        rootNav.navigate('Profile', { screen: 'Step1' });
+        rootNav.navigate('Profile', { screen: 'MyLifeProfile' });
       }}
       onDoThisLater={() => {
-        rootNav.navigate('Auth', { screen: 'AuthMain' });
+        rootNav.navigate('Profile', { screen: 'MyLifeProfile' });
       }}
-      onSectionPress={(sectionId) => {
-        if (sectionId === 'interests') {
-          rootNav.navigate('Profile', { screen: 'Step5' });
-        } else if (sectionId === 'vaccination') {
-          rootNav.navigate('Profile', { screen: 'Step4' });
-        } else if (sectionId === 'health') {
-          rootNav.navigate('Profile', { screen: 'Step3' });
-        } else if (sectionId === 'documents') {
-          rootNav.navigate('Profile', { screen: 'Step2' });
-        } else {
-          rootNav.navigate('Profile', { screen: 'Step1' });
-        }
+      onSectionPress={() => {
+        rootNav.navigate('Profile', { screen: 'MyLifeProfile' });
       }}
     />
   );
@@ -785,7 +775,7 @@ const FamilyCreatedWrapper: React.FC<AuthScreenProps<'FamilyCreated'>> = ({
         console.log('Invite shared');
       }}
       onGoHome={() => {
-        rootNav.navigate('Profile', { screen: 'Step1' });
+        navigation.navigate('LifeProfileIntro');
       }}
     />
   );

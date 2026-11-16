@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -12,6 +12,7 @@ import Feather from '@react-native-vector-icons/feather';
 import { RFValue } from 'react-native-responsive-fontsize';
 import Colors from '../../../units/Colors';
 import CommonBtn from '../../../components/CommonBtn';
+import { useAppDispatch, useAppSelector, fetchLifeProfileSectionThunk } from '../../../redux';
 import {
   PersonalInfoHeader,
   VaccinationSegmentedTabs,
@@ -39,6 +40,7 @@ export interface MilestoneItem {
 }
 
 export interface VaccinationScreenProps {
+  memberId?: string;
   initialTab?: VaccinationTab;
   childName?: string;
   onBack?: () => void;
@@ -107,6 +109,7 @@ const DEFAULT_MILESTONES: MilestoneItem[] = [
 ];
 
 const VaccinationScreen: React.FC<VaccinationScreenProps> = ({
+  memberId,
   initialTab = 'vaccines',
   childName = 'Aarav',
   onBack,
@@ -117,7 +120,37 @@ const VaccinationScreen: React.FC<VaccinationScreenProps> = ({
   onMilestonePress,
 }) => {
   const insets = useSafeAreaInsets();
+  const dispatch = useAppDispatch();
   const [activeTab, setActiveTab] = useState<VaccinationTab>(initialTab);
+
+  const authUser = useAppSelector((state) => state.auth?.user || state.emailAuth?.user);
+  const lifeProfileVaccination = useAppSelector((state) => state.lifeProfile?.vaccination);
+
+  const resolvedMemberId =
+    memberId ||
+    authUser?.memberId ||
+    authUser?.id ||
+    authUser?._id ||
+    'me';
+
+  // API Call Structure: GET {{BaseURL}}/api/v1/family/members/{{memberId}}/life-profile?section=vaccination
+  useEffect(() => {
+    if (resolvedMemberId) {
+      dispatch(
+        fetchLifeProfileSectionThunk({
+          memberId: resolvedMemberId,
+          section: 'vaccination',
+        })
+      );
+    }
+  }, [dispatch, resolvedMemberId]);
+
+  /*
+   * DATA MAPPING (Ready to connect when vaccination data is available):
+   * const vaccinationData = lifeProfileVaccination?.data || lifeProfileVaccination;
+   * // const dynamicVaccines = vaccinationData?.vaccines ?? DEFAULT_VACCINES;
+   * // const dynamicMilestones = vaccinationData?.milestones ?? DEFAULT_MILESTONES;
+   */
 
   return (
     <View
