@@ -12,6 +12,11 @@ import Colors from '../../../units/Colors';
 import CommonBtn from '../../../components/CommonBtn';
 import CommonInput from '../../../components/CommonInput';
 import KeyboardAvoidingWrapper from '../../../components/KeyboardAvoidingWrapper';
+import { useAppDispatch, useAppSelector } from '../../../redux';
+import {
+  requestJoinFamilyThunk,
+  clearJoinError,
+} from '../../../redux/features/family/familySlice';
 import {
   FamilyHeader,
   IdNotFoundErrorCard,
@@ -19,11 +24,18 @@ import {
   InviteLinkInfoCard,
 } from '../components';
 
+export interface JoinFamilyRequestResult {
+  familyId: string;
+  familyName: string;
+  familyCode: string;
+  status: string;
+}
+
 export interface JoinFamilyIdScreenProps {
   initialFamilyId?: string;
   initialShowError?: boolean;
   onBack?: () => void;
-  onSendJoinRequest?: (familyId: string) => void;
+  onSendJoinRequest?: (result: JoinFamilyRequestResult) => void;
   onScanQrCode?: () => void;
 }
 
@@ -35,20 +47,49 @@ const JoinFamilyIdScreen: React.FC<JoinFamilyIdScreenProps> = ({
   onScanQrCode,
 }) => {
   const insets = useSafeAreaInsets();
+  const dispatch = useAppDispatch();
+  const { joinLoading, joinError } = useAppSelector((state) => state.family);
+
   const [familyId, setFamilyId] = useState(initialFamilyId);
   const [showError, setShowError] = useState(initialShowError);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
-  const handleSendRequest = () => {
-    const cleaned = familyId.trim().toUpperCase();
+  const handleSendRequest = async () => {
+    const cleanedCode = familyId.trim().toUpperCase().replace(/\s+/g, '');
 
     // If ID is completely empty, trigger error state
-    if (!cleaned) {
+    if (!cleanedCode) {
       setShowError(true);
+      setErrorMessage('Please enter a valid Family ID');
       return;
     }
 
-    // Pass ID to caller / navigation
-    onSendJoinRequest?.(cleaned);
+    setShowError(false);
+    setErrorMessage(null);
+    dispatch(clearJoinError());
+
+    try {
+      console.log('[JoinFamilyIdScreen] Sending join request for:', cleanedCode);
+      const res = await dispatch(
+        requestJoinFamilyThunk({ familyCode: cleanedCode })
+      ).unwrap();
+
+      console.log('[JoinFamilyIdScreen] Join request response:', res);
+      onSendJoinRequest?.({
+        familyId: res.familyId,
+        familyName: res.familyName,
+        familyCode: res.familyCode,
+        status: res.status,
+      });
+    } catch (err: any) {
+      console.log('[JoinFamilyIdScreen] Join request failed:', err);
+      setShowError(true);
+      const msg =
+        typeof err === 'string'
+          ? err
+          : "We couldn't find that Family ID. Check the code with your family.";
+      setErrorMessage(msg);
+    }
   };
 
   return (
@@ -89,6 +130,8 @@ const JoinFamilyIdScreen: React.FC<JoinFamilyIdScreenProps> = ({
               onChangeText={(text) => {
                 setFamilyId(text);
                 if (showError) setShowError(false);
+                if (errorMessage) setErrorMessage(null);
+                if (joinError) dispatch(clearJoinError());
               }}
               placeholder="HSQ- 4821"
               activeBorderColor={showError ? '#EF4444' : Colors.primary}
@@ -108,7 +151,11 @@ const JoinFamilyIdScreen: React.FC<JoinFamilyIdScreenProps> = ({
             {showError && (
               <IdNotFoundErrorCard
                 title="We couldn't find that Family ID"
-                message="Check the 4 digits with your family, or ask them to send the invite again."
+                message={
+                  errorMessage ||
+                  joinError ||
+                  'Check the 4 digits with your family, or ask them to send the invite again.'
+                }
               />
             )}
           </View>
@@ -132,6 +179,8 @@ const JoinFamilyIdScreen: React.FC<JoinFamilyIdScreenProps> = ({
           <CommonBtn
             title="Send join request"
             onPress={handleSendRequest}
+            loading={joinLoading}
+            disabled={joinLoading}
             backgroundColor={Colors.primary}
             textColor="#FFFFFF"
             height={56}
@@ -162,51 +211,49 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
   },
   headingSection: {
-    alignItems: 'center',
-    marginBottom: 26,
+    marginTop: 8,
+    marginBottom: 28,
   },
   title: {
-    fontSize: RFValue(22),
+    fontSize: RFValue(24),
     fontWeight: '700',
     color: '#FFFFFF',
-    textAlign: 'center',
+    lineHeight: RFValue(32),
+    marginBottom: 8,
   },
   subtitle: {
     fontSize: RFValue(13.5),
     color: Colors.textSecondary,
-    textAlign: 'center',
-    marginTop: 8,
-    lineHeight: RFValue(19),
-    paddingHorizontal: 20,
+    lineHeight: RFValue(20),
   },
   inputWrapper: {
-    marginBottom: 6,
+    marginBottom: 24,
   },
   helperText: {
     color: Colors.textSecondary,
-    fontSize: RFValue(12),
+    fontSize: RFValue(11.5),
     marginTop: 8,
-    marginLeft: 4,
+    paddingHorizontal: 4,
   },
   orDividerContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginVertical: 14,
+    marginVertical: 18,
   },
   dividerLine: {
     flex: 1,
     height: 1,
-    backgroundColor: 'rgba(255, 255, 255, 0.08)',
+    backgroundColor: 'rgba(255, 255, 255, 0.1)',
   },
   orText: {
     color: Colors.textSecondary,
     fontSize: RFValue(11),
-    fontWeight: '600',
+    fontWeight: '700',
     letterSpacing: 1.5,
     marginHorizontal: 16,
   },
   bottomSection: {
-    marginTop: 20,
+    width: '100%',
+    paddingTop: 16,
   },
 });
-

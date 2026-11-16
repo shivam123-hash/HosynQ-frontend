@@ -17,6 +17,9 @@ import CommonBtn from '../../components/CommonBtn';
 import CommonInput from '../../components/CommonInput';
 import CommonDropdown from '../../components/CommonDropdown';
 import KeyboardAvoidingWrapper from '../../components/KeyboardAvoidingWrapper';
+import { useAppDispatch, useAppSelector } from '../../redux';
+import { createFamilyThunk, clearFamilyError } from '../../redux/features/family/familySlice';
+import { mapFamilyTypeToBackend } from '../../services/familyServices';
 import {
   FamilyHeader,
   FamilyMemberItem,
@@ -36,6 +39,8 @@ export interface CreateFamilyData {
   familyName: string;
   familyType: string;
   members: FamilyMember[];
+  familyCode?: string;
+  family?: any;
 }
 
 export interface CreateFamilyScreenProps {
@@ -59,6 +64,9 @@ const CreateFamilyScreen: React.FC<CreateFamilyScreenProps> = ({
   onCreateFamily,
 }) => {
   const insets = useSafeAreaInsets();
+  const dispatch = useAppDispatch();
+  const { loading, error } = useAppSelector((state) => state.family);
+  const [localError, setLocalError] = useState<string | null>(null);
 
   const [familyName, setFamilyName] = useState(
     initialData?.familyName || 'The Sharma Family'
@@ -111,12 +119,36 @@ const CreateFamilyScreen: React.FC<CreateFamilyScreenProps> = ({
     setIsModalVisible(false);
   };
 
-  const handleSubmit = () => {
-    onCreateFamily?.({
-      familyName: familyName.trim() || 'The Sharma Family',
-      familyType,
-      members,
-    });
+  const handleSubmit = async () => {
+    const trimmedName = familyName.trim();
+    if (trimmedName.length < 2) {
+      setLocalError('Family name must be at least 2 characters');
+      return;
+    }
+
+    setLocalError(null);
+    dispatch(clearFamilyError());
+
+    try {
+      const backendFamilyType = mapFamilyTypeToBackend(familyType);
+      const res = await dispatch(
+        createFamilyThunk({
+          name: trimmedName,
+          familyType: backendFamilyType,
+          expectedMemberCount: 5,
+        })
+      ).unwrap();
+
+      onCreateFamily?.({
+        familyName: res.family?.name || trimmedName,
+        familyType: res.family?.familyType || familyType,
+        members,
+        familyCode: res.family?.familyCode,
+        family: res.family,
+      });
+    } catch (err) {
+      console.log('[CreateFamilyScreen] Failed to create family:', err);
+    }
   };
 
   return (
@@ -155,7 +187,13 @@ const CreateFamilyScreen: React.FC<CreateFamilyScreenProps> = ({
             <CommonInput
               label="Family name"
               value={familyName}
-              onChangeText={setFamilyName}
+              onChangeText={(text) => {
+                setFamilyName(text);
+                if (localError || error) {
+                  setLocalError(null);
+                  dispatch(clearFamilyError());
+                }
+              }}
               placeholder="The Sharma Family"
               containerStyle={styles.inputSpacing}
               activeBorderColor={Colors.primary}
@@ -166,7 +204,13 @@ const CreateFamilyScreen: React.FC<CreateFamilyScreenProps> = ({
               label="Family type"
               value={familyType}
               options={FAMILY_TYPE_OPTIONS}
-              onSelect={setFamilyType}
+              onSelect={(val) => {
+                setFamilyType(val);
+                if (localError || error) {
+                  setLocalError(null);
+                  dispatch(clearFamilyError());
+                }
+              }}
               placeholder="Select family type"
               containerStyle={styles.inputSpacing}
             />
@@ -209,9 +253,23 @@ const CreateFamilyScreen: React.FC<CreateFamilyScreenProps> = ({
 
         {/* Bottom Button */}
         <View style={styles.bottomSection}>
+          {localError || error ? (
+            <View style={styles.errorContainer}>
+              <Feather
+                name="alert-circle"
+                size={14}
+                color="#EF4444"
+                style={styles.errorIcon}
+              />
+              <Text style={styles.errorText}>{localError || error}</Text>
+            </View>
+          ) : null}
+
           <CommonBtn
             title="Create Family"
             onPress={handleSubmit}
+            loading={loading}
+            disabled={loading}
             backgroundColor={Colors.primary}
             textColor="#FFFFFF"
             height={56}
@@ -425,5 +483,21 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     fontSize: RFValue(14),
     fontWeight: '700',
+  },
+  errorContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    alignSelf: 'center',
+    marginBottom: 10,
+    paddingHorizontal: 8,
+  },
+  errorIcon: {
+    marginRight: 6,
+  },
+  errorText: {
+    color: '#EF4444',
+    fontSize: RFValue(12),
+    fontWeight: '500',
+    textAlign: 'center',
   },
 });

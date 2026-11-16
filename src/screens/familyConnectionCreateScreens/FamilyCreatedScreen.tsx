@@ -12,6 +12,7 @@ import Feather from '@react-native-vector-icons/feather';
 import { RFValue } from 'react-native-responsive-fontsize';
 import Colors from '../../units/Colors';
 import CommonBtn from '../../components/CommonBtn';
+import { useAppSelector } from '../../redux';
 import {
   FamilyHeader,
   SuccessCheckmarkCircle,
@@ -37,6 +38,16 @@ const FamilyCreatedScreen: React.FC<FamilyCreatedScreenProps> = ({
   onGoHome,
 }) => {
   const insets = useSafeAreaInsets();
+  const authUser = useAppSelector((state) => state.auth.user);
+  const baseProfile = useAppSelector((state) => state.baseProfile);
+
+  const currentInviterName =
+    inviterName !== 'Priya'
+      ? inviterName
+      : baseProfile?.fullName?.split(' ')[0] ||
+        authUser?.name?.split(' ')[0] ||
+        'Priya';
+
   const [isInviteSheetVisible, setIsInviteSheetVisible] = useState(false);
 
   const handleOpenInviteSheet = () => {
@@ -122,7 +133,7 @@ const FamilyCreatedScreen: React.FC<FamilyCreatedScreenProps> = ({
         onClose={handleCloseInviteSheet}
         familyName={familyName}
         familyId={familyId}
-        inviterName={inviterName}
+        inviterName={currentInviterName}
         onShareLink={onShareInvite}
       />
     </View>

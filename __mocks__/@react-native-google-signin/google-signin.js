@@ -1,0 +1,40 @@
+const GoogleSignin = {
+  configure: jest.fn(),
+  hasPlayServices: jest.fn(() => Promise.resolve(true)),
+  signIn: jest.fn(() =>
+    Promise.resolve({
+      data: {
+        idToken: 'mock-id-token',
+        user: {
+          id: 'mock-google-id',
+          name: 'Priya Sharma',
+          email: 'priya.sharma@example.com',
+          photo: null,
+          familyName: 'Sharma',
+          givenName: 'Priya',
+        },
+      },
+    }),
+  ),
+  signOut: jest.fn(() => Promise.resolve()),
+  revokeAccess: jest.fn(() => Promise.resolve()),
+  isSignedIn: jest.fn(() => Promise.resolve(false)),
+  getCurrentUser: jest.fn(() => Promise.resolve(null)),
+  clearCachedAccessToken: jest.fn(() => Promise.resolve()),
+  getTokens: jest.fn(() =>
+    Promise.resolve({ idToken: 'mock-id-token', accessToken: 'mock-access-token' }),
+  ),
+};
+
+const statusCodes = {
+  SIGN_IN_CANCELLED: 'SIGN_IN_CANCELLED',
+  IN_PROGRESS: 'IN_PROGRESS',
+  PLAY_SERVICES_NOT_AVAILABLE: 'PLAY_SERVICES_NOT_AVAILABLE',
+  SIGN_IN_REQUIRED: 'SIGN_IN_REQUIRED',
+};
+
+module.exports = {
+  GoogleSignin,
+  statusCodes,
+};
+

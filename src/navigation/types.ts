@@ -34,8 +34,21 @@ export type AuthStackParamList = {
   };
   TooManyAttempts: { mobileNumber: string };
   Email: undefined;
-  CheckEmail: { email: string };
+  CheckEmail: {
+    email: string;
+    verificationId?: string;
+    devVerifyUrl?: string;
+    devToken?: string;
+    resendCooldownSeconds?: number;
+  };
   AddMobileNumber: { email?: string; defaultPhoneNumber?: string } | undefined;
+  AttachPhoneOtp: {
+    phoneNumber: string;
+    verificationId: string;
+    devOtp?: string;
+    resendCooldownSeconds?: number;
+    email?: string;
+  };
   BasicProfile: { initialData?: Partial<BasicProfileData> } | undefined;
   DeviceSecurity: { initialOption?: SecurityOptionType } | undefined;
   NotificationPermission: undefined;
@@ -49,6 +62,7 @@ export type AuthStackParamList = {
     inviterName?: string;
     memberCount?: string;
     sentTime?: string;
+    inviteToken?: string;
   } | undefined;
   WaitingForApproval: {
     familyId?: string;
@@ -71,11 +85,24 @@ export type AuthStackParamList = {
 
 // Profile Stack Param List (CompleteProfileScreens)
 export type ProfileStackParamList = {
-  Step1: { initialData?: Partial<Step1FormData> } | undefined;
-  Step2: { initialData?: Partial<Step2FormData> } | undefined;
-  Step3: { initialData?: Partial<Step3FormData> } | undefined;
-  Step4: { initialData?: Partial<Step4FormData> } | undefined;
-  Step5: undefined;
+  LifeProfileIntro: { memberId?: string } | undefined;
+  MyLifeProfile: { memberId?: string } | undefined;
+  Step1: { initialData?: Partial<Step1FormData>; initialMode?: 'input' | 'details'; memberId?: string } | undefined;
+  PersonalInfoDetails: { data?: any; memberId?: string } | undefined;
+  Step2: { initialData?: Partial<Step2FormData>; memberId?: string } | undefined;
+  AddPassport: undefined;
+  Step3: { initialData?: Partial<Step3FormData>; initialMode?: 'input' | 'details'; memberId?: string } | undefined;
+  Step4: { initialData?: Partial<Step4FormData>; initialMode?: 'form' | 'details'; memberId?: string } | undefined;
+  Step5: { memberId?: string } | undefined;
+  DocumentDetailReminders: { documentId?: string } | undefined;
+  SeniorMedicineSchedule: undefined;
+  AddMedicine: undefined;
+  WhenToTakeMedicine: undefined;
+  Vaccination: { memberId?: string } | undefined;
+  AddVaccine: undefined;
+  ChildGrowth: undefined;
+  ChildMilestones: undefined;
+  InterestsAndActivities: { memberId?: string } | undefined;
 };
 
 // Root Stack Param List

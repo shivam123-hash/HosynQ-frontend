@@ -1,0 +1,47 @@
+{
+  "project_info": {
+    "project_number": "187094340142",
+    "project_id": "hosynq-dev",
+    "storage_bucket": "hosynq-dev.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:187094340142:android:01d7da23577bbb843445bf",
+        "android_client_info": {
+          "package_name": "com.hosynq"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "187094340142-qf9e1cvlmqk914tg37n4vaaa9lp20rgp.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.hosynq",
+            "certificate_hash": "5e8f16062ea3cd2c4a0d547876baa6f38cabf625"
+          }
+        },
+        {
+          "client_id": "187094340142-j8g0cqbrj1dfel4bqfo7mvlnt91e2gkk.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBH_egFleh9O0-OIZEZRDz8yR56ATulYkc"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "187094340142-j8g0cqbrj1dfel4bqfo7mvlnt91e2gkk.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

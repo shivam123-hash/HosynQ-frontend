@@ -5,9 +5,11 @@ import { NavigationContainer } from '@react-navigation/native';
 import { Provider } from 'react-redux';
 import RootNavigator from './src/navigation/RootNavigator';
 import { store, loadInitialState } from './src/redux';
+import { configureGoogleSignIn } from './src/services';
 
 export default function App() {
   useEffect(() => {
+    configureGoogleSignIn();
     store.dispatch(loadInitialState());
   }, []);
 
@@ -16,7 +18,10 @@ export default function App() {
       <SafeAreaProvider>
         <StatusBar barStyle="light-content" />
         <NavigationContainer>
-          <RootNavigator initialRouteName="Home" />
+          <RootNavigator
+            initialRouteName="Auth"
+            authInitialRouteName="Onboarding"
+          />
         </NavigationContainer>
       </SafeAreaProvider>
     </Provider>

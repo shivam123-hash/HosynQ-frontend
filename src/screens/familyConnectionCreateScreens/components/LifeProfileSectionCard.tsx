@@ -73,10 +73,10 @@ const styles = StyleSheet.create({
   iconBadge: {
     width: 38,
     height: 38,
-    borderRadius: 12,
-    backgroundColor: 'rgba(255, 255, 255, 0.04)',
+    borderRadius: 19,
+    backgroundColor: 'rgba(240, 150, 60, 0.08)',
     borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.08)',
+    borderColor: 'rgba(240, 150, 60, 0.2)',
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 14,
