@@ -9,7 +9,6 @@ import {
   Platform,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import Feather from '@react-native-vector-icons/feather';
 import type { FamilyMemberItem, MemberRole } from './MembersModal';
 
 export interface ChangeRoleModalProps {
@@ -114,35 +113,28 @@ export const ChangeRoleModal: React.FC<ChangeRoleModalProps> = ({
 
             // Exact color tokens extracted from Figma design
             let titleColor = '#FFFFFF';
-            let descColor = '#8997AB';
-            let radioBorderColor = '#4A5870';
-            let rowBgColor = 'transparent';
+            let descColor = '#8A9BAE';
+            let radioBorderColor = '#3B4D66';
 
             if (isSelected) {
-              rowBgColor = '#1A2B47';
               titleColor = '#FFFFFF';
-              descColor = '#8997AB';
+              descColor = '#8A9BAE';
               radioBorderColor = '#F0923A';
             } else if (isDisabled) {
-              rowBgColor = 'transparent';
-              titleColor = '#88919F';
-              descColor = '#4E5F76';
-              radioBorderColor = '#2E3E58';
+              titleColor = '#5A6B82';
+              descColor = '#405066';
+              radioBorderColor = '#27374D';
             } else {
               // Unselected & enabled (e.g. Adult)
-              rowBgColor = 'transparent';
               titleColor = '#FFFFFF';
-              descColor = '#8997AB';
-              radioBorderColor = '#4A5870';
+              descColor = '#8A9BAE';
+              radioBorderColor = '#3B4D66';
             }
 
             return (
               <React.Fragment key={option.role}>
                 <TouchableOpacity
-                  style={[
-                    styles.roleRow,
-                    { backgroundColor: rowBgColor },
-                  ]}
+                  style={styles.roleRow}
                   onPress={() => {
                     if (option.role === 'Owner' && onTransferOwnershipPress) {
                       onClose();
@@ -172,7 +164,10 @@ export const ChangeRoleModal: React.FC<ChangeRoleModalProps> = ({
                   <View
                     style={[
                       styles.radioCircle,
-                      { borderColor: radioBorderColor },
+                      {
+                        borderColor: radioBorderColor,
+                        borderWidth: isSelected ? 2.5 : 2,
+                      },
                     ]}
                   >
                     {isSelected && <View style={styles.radioDot} />}
@@ -195,25 +190,6 @@ export const ChangeRoleModal: React.FC<ChangeRoleModalProps> = ({
         >
           <Text style={styles.saveButtonText}>Save role</Text>
         </TouchableOpacity>
-
-        {/* Optional Remove Member Option (if not Owner) */}
-        {member && member.role !== 'Owner' && onRemoveMember && (
-          <TouchableOpacity
-            style={styles.removeMemberButton}
-            onPress={() => {
-              onClose();
-              onRemoveMember(member);
-            }}
-            activeOpacity={0.75}
-            accessibilityRole="button"
-            accessibilityLabel={`Remove ${memberName} from family`}
-          >
-            <Feather name="trash-2" size={15} color="#F06A6D" />
-            <Text style={styles.removeMemberButtonText}>
-              {`Remove ${memberName} from family`}
-            </Text>
-          </TouchableOpacity>
-        )}
       </View>
     </View>
   );
@@ -242,13 +218,13 @@ const styles = StyleSheet.create({
   },
   backdrop: {
     ...StyleSheet.absoluteFill,
-    backgroundColor: 'rgba(5, 12, 22, 0.65)',
+    backgroundColor: 'rgba(5, 12, 22, 0.70)',
   },
   sheetContainer: {
-    backgroundColor: '#122440',
+    backgroundColor: '#11223B',
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
-    paddingTop: 10,
+    paddingTop: 12,
     paddingHorizontal: 20,
     ...Platform.select({
       ios: {
@@ -263,32 +239,32 @@ const styles = StyleSheet.create({
     }),
   },
   handle: {
-    width: 38,
+    width: 44,
     height: 4,
     borderRadius: 2,
-    backgroundColor: '#3A4555',
+    backgroundColor: '#38495F',
     alignSelf: 'center',
-    marginBottom: 18,
+    marginBottom: 20,
   },
   title: {
-    fontSize: 20,
+    fontSize: 22,
     fontWeight: '700',
     color: '#FFFFFF',
-    marginBottom: 16,
+    marginBottom: 18,
     letterSpacing: -0.2,
   },
   rolesCard: {
-    backgroundColor: '#122440',
+    backgroundColor: '#0F1E34',
     borderRadius: 16,
     borderWidth: 1,
-    borderColor: '#1F3352',
+    borderColor: '#1D304A',
     overflow: 'hidden',
   },
   roleRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingVertical: 16,
+    paddingVertical: 18,
     paddingHorizontal: 16,
   },
   roleInfo: {
@@ -303,53 +279,39 @@ const styles = StyleSheet.create({
   roleDescription: {
     fontSize: 13.5,
     marginTop: 4,
-    lineHeight: 19,
+    lineHeight: 18,
   },
   radioCircle: {
     width: 24,
     height: 24,
     borderRadius: 12,
-    borderWidth: 2,
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: 'transparent',
   },
   radioDot: {
-    width: 10.5,
-    height: 10.5,
-    borderRadius: 5.5,
+    width: 10,
+    height: 10,
+    borderRadius: 5,
     backgroundColor: '#F0923A',
   },
   divider: {
     height: 1,
-    backgroundColor: '#1F3352',
+    backgroundColor: '#1A2A40',
     width: '100%',
   },
   saveButton: {
-    height: 54,
-    borderRadius: 27,
+    height: 52,
+    borderRadius: 26,
     backgroundColor: '#F0923A',
     alignItems: 'center',
     justifyContent: 'center',
-    marginTop: 20,
+    marginTop: 22,
   },
   saveButtonText: {
     fontSize: 16,
     fontWeight: '600',
     color: '#FFFFFF',
-  },
-  removeMemberButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 8,
-    marginTop: 14,
-    paddingVertical: 6,
-  },
-  removeMemberButtonText: {
-    fontSize: 14,
-    fontWeight: '500',
-    color: '#F06A6D',
   },
 });
 

@@ -88,6 +88,14 @@ export const MembersScreen: React.FC<MembersScreenProps> = ({
       visible={true}
       isScreen={true}
       onClose={handleBack}
+      onSelectMember={(member) => {
+        if (navigation && typeof navigation.navigate === 'function') {
+          navigation.navigate('MemberProfile', {
+            memberId: member.id,
+            memberName: member.name,
+          });
+        }
+      }}
       onReviewJoinRequests={handleReviewJoinRequests}
       onInviteSomeone={handleInviteSomeone}
       onAddChildProfile={handleAddChildProfile}

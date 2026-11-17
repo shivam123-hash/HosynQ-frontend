@@ -146,6 +146,32 @@ export type RootStackParamList = {
   TransferOwnership: undefined;
   DeleteFamily: undefined;
   Staff: undefined;
+  MemberProfile: { memberId?: string; memberName?: string; isHealthConsentGranted?: boolean } | undefined;
+  SensitiveDataConsent: { memberId?: string; memberName?: string } | undefined;
+  MemberPersonalInfo: { memberId?: string; memberName?: string } | undefined;
+  MemberEducation: { memberId?: string; memberName?: string; isAdult?: boolean } | undefined;
+  MemberImportantDocuments: { memberId?: string; memberName?: string } | undefined;
+  MemberHealthProfile: { memberId?: string; memberName?: string } | undefined;
+  MemberVaccination: { memberId?: string; memberName?: string } | undefined;
+  MemberInterestsActivities: { memberId?: string; memberName?: string } | undefined;
+  MemberProfileComplete: { memberId?: string; memberName?: string } | undefined;
+  FamilyVault: undefined;
+  VaultDocuments: undefined;
+  VaultInsurance: undefined;
+  VaultWarranties: undefined;
+  VaultHomeAssets: undefined;
+  VaultImportantContacts: undefined;
+  VaultItemDetail: { item?: any } | undefined;
+  MyProfile: undefined;
+  NotificationPreferences: undefined;
+  PrivacyConsent: undefined;
+  ConsentLedger: undefined;
+  PrivacyNotice: undefined;
+  DataRequests: undefined;
+  RequestStatus: { requestId?: string } | undefined;
+  Security: undefined;
+  DevicesSessions: undefined;
+  UnlockMethod: undefined;
 };
 
 // Navigation Prop Types

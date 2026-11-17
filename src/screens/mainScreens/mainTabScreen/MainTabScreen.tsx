@@ -26,9 +26,11 @@ import {
   ReminderItem,
   ToastConfig,
 } from '../addFlow';
+import { SideMenuModal } from '../menuScreens';
 
 export interface MainTabScreenProps {
   initialTab?: NavigationTab;
+  navigation?: any;
   onProfilePress?: () => void;
   onNotificationsPress?: () => void;
   onExplorePress?: () => void;
@@ -38,6 +40,7 @@ export interface MainTabScreenProps {
 
 const MainTabScreen: React.FC<MainTabScreenProps> = ({
   initialTab = 'home',
+  navigation,
   onProfilePress,
   onNotificationsPress,
   onExplorePress,
@@ -45,6 +48,7 @@ const MainTabScreen: React.FC<MainTabScreenProps> = ({
   onOpenNeedsAttention,
 }) => {
   const [activeTab, setActiveTab] = useState<NavigationTab>(initialTab);
+  const [sideMenuVisible, setSideMenuVisible] = useState(false);
   const [addSheetVisible, setAddSheetVisible] = useState(false);
   const [createTaskModalVisible, setCreateTaskModalVisible] = useState(false);
   const [createEventModalVisible, setCreateEventModalVisible] = useState(false);
@@ -90,6 +94,8 @@ const MainTabScreen: React.FC<MainTabScreenProps> = ({
     }
   }, [initialTab]);
 
+  const handleOpenMenu = onExplorePress || (() => setSideMenuVisible(true));
+
   return (
     <View style={styles.container}>
       <StatusBar barStyle="light-content" />
@@ -101,7 +107,7 @@ const MainTabScreen: React.FC<MainTabScreenProps> = ({
             showBottomNavBar={false}
             onProfilePress={onProfilePress}
             onNotificationsPress={onNotificationsPress}
-            onExplorePress={onExplorePress}
+            onExplorePress={handleOpenMenu}
             onOpenBrief={onOpenBrief}
             onOpenNeedsAttention={onOpenNeedsAttention}
             onAllTasksPress={() => setActiveTab('tasks')}
@@ -118,7 +124,7 @@ const MainTabScreen: React.FC<MainTabScreenProps> = ({
             showBottomNavBar={false}
             onProfilePress={onProfilePress}
             onNotificationsPress={onNotificationsPress}
-            onExplorePress={onExplorePress}
+            onExplorePress={handleOpenMenu}
             onTabChange={setActiveTab}
             onOpenCalendar={() => setActiveTab('calendar')}
             onOpenChat={() => setActiveTab('chat')}
@@ -129,7 +135,7 @@ const MainTabScreen: React.FC<MainTabScreenProps> = ({
           <CalendarScreen
             onProfilePress={onProfilePress}
             onNotificationsPress={onNotificationsPress}
-            onExplorePress={onExplorePress}
+            onExplorePress={handleOpenMenu}
             onOpenChat={() => setActiveTab('chat')}
           />
         )}
@@ -138,7 +144,7 @@ const MainTabScreen: React.FC<MainTabScreenProps> = ({
           <ChatsScreen
             onProfilePress={onProfilePress}
             onNotificationsPress={onNotificationsPress}
-            onExplorePress={onExplorePress}
+            onExplorePress={handleOpenMenu}
             onOpenVault={() => setVaultModalVisible(true)}
           />
         )}
@@ -299,6 +305,25 @@ const MainTabScreen: React.FC<MainTabScreenProps> = ({
       <FamilyVaultModal
         visible={vaultModalVisible}
         onClose={() => setVaultModalVisible(false)}
+      />
+
+      {/* Side Menu Drawer (MNU-01) */}
+      <SideMenuModal
+        visible={sideMenuVisible}
+        onClose={() => setSideMenuVisible(false)}
+        userName="Priya Sharma"
+        familyRole="Owner"
+        familyName="The Sharma Family"
+        onSelectMyProfile={() => navigation.navigate('MyProfile')}
+        onSelectNotifications={() => navigation.navigate('NotificationPreferences')}
+        onSelectPrivacyConsent={() => navigation.navigate('PrivacyConsent')}
+        onSelectSecurity={() => navigation.navigate('Security')}
+        onSelectSubscription={() => showToast('HosynQ Premium active (9 days left)')}
+        onSelectAccount={() => showToast('Account settings')}
+        onSelectHelpSupport={() => showToast('Help & support coming soon')}
+        onSelectPolicies={() => navigation.navigate('PrivacyNotice')}
+        onSelectAbout={() => showToast('HosynQ version 1.0.0')}
+        onLogout={() => showToast('Logged out successfully', 'info')}
       />
     </View>
   );

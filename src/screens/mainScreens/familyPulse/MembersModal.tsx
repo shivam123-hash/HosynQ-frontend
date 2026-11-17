@@ -329,8 +329,11 @@ export const MembersModal: React.FC<MembersModalProps> = ({
                   !isLast && styles.memberRowBorder,
                 ]}
                 onPress={() => {
-                  onSelectMember?.(member);
-                  setSelectedMemberForRole(member);
+                  if (onSelectMember) {
+                    onSelectMember(member);
+                  } else {
+                    setSelectedMemberForRole(member);
+                  }
                 }}
                 activeOpacity={0.75}
                 accessibilityRole="button"
@@ -357,11 +360,17 @@ export const MembersModal: React.FC<MembersModalProps> = ({
                 </View>
 
                 {/* Role Badge */}
-                <View style={[styles.roleBadgeBase, badgeStyle.container]}>
+                <TouchableOpacity
+                  style={[styles.roleBadgeBase, badgeStyle.container]}
+                  onPress={() => setSelectedMemberForRole(member)}
+                  activeOpacity={0.7}
+                  accessibilityRole="button"
+                  accessibilityLabel={`Change ${member.name}’s role, currently ${member.role}`}
+                >
                   <Text style={[styles.roleBadgeTextBase, badgeStyle.text]}>
                     {member.role}
                   </Text>
-                </View>
+                </TouchableOpacity>
 
                 {/* Chevron Right */}
                 <Feather
@@ -474,7 +483,6 @@ export const MembersModal: React.FC<MembersModalProps> = ({
         visible={!!selectedMemberForRole}
         member={selectedMemberForRole}
         onClose={() => setSelectedMemberForRole(null)}
-        onRemoveMember={handlePromptRemoveMember}
         onTransferOwnershipPress={onOpenTransferOwnership}
         onSaveRole={(memberId, newRole) => {
           setMembers((prev) =>
