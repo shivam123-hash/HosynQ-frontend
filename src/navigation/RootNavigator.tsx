@@ -48,6 +48,29 @@ import {
   SecurityScreen,
   DevicesSessionsScreen,
   UnlockMethodScreen,
+  SubscriptionScreen,
+  PlansTrialScreen,
+  StartFreeTrialScreen,
+  TrialNotAvailableModal,
+  PaymentGatewayModal,
+  UpgradeDowngradeScreen,
+  CancelSubscriptionScreen,
+  CancellationConfirmedScreen,
+  RenewalGracePeriodScreen,
+  BackOnFreeScreen,
+  ReactivatePlanScreen,
+  InvoicesHistoryScreen,
+  InvoiceDetailScreen,
+  PaymentSuccessScreen,
+  PaymentFailedScreen,
+  AccountScreen,
+  DeleteAccountScreen,
+  ConfirmDeletionScreen,
+  AccountDeletedScreen,
+  HelpSupportScreen,
+  ContactSupportScreen,
+  PoliciesScreen,
+  AboutUsScreen,
 } from '../screens/mainScreens/menuScreens';
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
@@ -582,6 +605,208 @@ const RootNavigator: React.FC<RootNavigatorProps> = ({
           <UnlockMethodScreen
             onBack={() => props.navigation.goBack()}
             onSave={() => props.navigation.goBack()}
+          />
+        )}
+      </Stack.Screen>
+      <Stack.Screen name="Subscription">
+        {(props) => (
+          <SubscriptionScreen
+            onBack={() => props.navigation.goBack()}
+            onChangePlan={() => props.navigation.navigate('UpgradeDowngrade')}
+            onPaymentMethod={() => props.navigation.navigate('PlansTrial')}
+            onInvoicesHistory={() => props.navigation.navigate('InvoicesHistory')}
+            onCancelSubscription={() => props.navigation.navigate('CancelSubscription')}
+          />
+        )}
+      </Stack.Screen>
+      <Stack.Screen name="PlansTrial">
+        {(props) => (
+          <PlansTrialScreen
+            onBack={() => props.navigation.goBack()}
+            onStartFreeTrial={() => props.navigation.navigate('StartFreeTrial')}
+          />
+        )}
+      </Stack.Screen>
+      <Stack.Screen name="StartFreeTrial">
+        {(props) => (
+          <StartFreeTrialScreen
+            onBack={() => props.navigation.goBack()}
+            onStartTrial={() => props.navigation.navigate('PaymentSuccess')}
+            onNotNow={() => props.navigation.goBack()}
+          />
+        )}
+      </Stack.Screen>
+      <Stack.Screen name="TrialNotAvailable">
+        {(props) => (
+          <TrialNotAvailableModal
+            onBack={() => props.navigation.goBack()}
+            onSeePlans={() => props.navigation.navigate('PlansTrial')}
+            onStayOnFree={() => props.navigation.navigate('MainTab')}
+          />
+        )}
+      </Stack.Screen>
+      <Stack.Screen name="PaymentGateway">
+        {(props) => (
+          <PaymentGatewayModal
+            visible={true}
+            onClose={() => props.navigation.goBack()}
+            onSelectMethod={() => props.navigation.navigate('PaymentSuccess')}
+          />
+        )}
+      </Stack.Screen>
+      <Stack.Screen name="UpgradeDowngrade">
+        {(props) => (
+          <UpgradeDowngradeScreen
+            onBack={() => props.navigation.goBack()}
+            onConfirmPlanChange={(plan) => {
+              if (plan === 'free') {
+                props.navigation.navigate('BackOnFree');
+              } else {
+                props.navigation.navigate('Subscription');
+              }
+            }}
+          />
+        )}
+      </Stack.Screen>
+      <Stack.Screen name="CancelSubscription">
+        {(props) => (
+          <CancelSubscriptionScreen
+            onBack={() => props.navigation.goBack()}
+            onConfirmCancel={() => props.navigation.navigate('CancellationConfirmed')}
+            onKeepPremium={() => props.navigation.goBack()}
+          />
+        )}
+      </Stack.Screen>
+      <Stack.Screen name="CancellationConfirmed">
+        {(props) => (
+          <CancellationConfirmedScreen
+            onDone={() => props.navigation.navigate('MainTab')}
+            onReactivate={() => props.navigation.navigate('ReactivatePlan')}
+          />
+        )}
+      </Stack.Screen>
+      <Stack.Screen name="RenewalGracePeriod">
+        {(props) => (
+          <RenewalGracePeriodScreen
+            onBack={() => props.navigation.goBack()}
+            onRetryPayment={() => props.navigation.navigate('PaymentSuccess')}
+            onChangePaymentMethod={() => props.navigation.navigate('PlansTrial')}
+          />
+        )}
+      </Stack.Screen>
+      <Stack.Screen name="BackOnFree">
+        {(props) => (
+          <BackOnFreeScreen
+            onBack={() => props.navigation.goBack()}
+            onReactivate={() => props.navigation.navigate('ReactivatePlan')}
+          />
+        )}
+      </Stack.Screen>
+      <Stack.Screen name="ReactivatePlan">
+        {(props) => (
+          <ReactivatePlanScreen
+            onBack={() => props.navigation.goBack()}
+            onReactivate={() => props.navigation.navigate('PaymentSuccess')}
+          />
+        )}
+      </Stack.Screen>
+      <Stack.Screen name="InvoicesHistory">
+        {(props) => (
+          <InvoicesHistoryScreen
+            onBack={() => props.navigation.goBack()}
+            onSelectInvoice={(invoiceId) =>
+              props.navigation.navigate('InvoiceDetail', { invoiceId })
+            }
+          />
+        )}
+      </Stack.Screen>
+      <Stack.Screen name="InvoiceDetail">
+        {(props) => (
+          <InvoiceDetailScreen
+            onBack={() => props.navigation.goBack()}
+          />
+        )}
+      </Stack.Screen>
+      <Stack.Screen name="PaymentSuccess">
+        {(props) => (
+          <PaymentSuccessScreen
+            onDone={() => props.navigation.navigate('Subscription')}
+            onViewReceipt={() => props.navigation.navigate('InvoiceDetail')}
+          />
+        )}
+      </Stack.Screen>
+      <Stack.Screen name="PaymentFailed">
+        {(props) => (
+          <PaymentFailedScreen
+            reason={props.route.params?.reason}
+            onTryAgain={() => props.navigation.navigate('PaymentGateway')}
+            onUseAnotherMethod={() => props.navigation.navigate('PaymentGateway')}
+            onNotNow={() => props.navigation.goBack()}
+          />
+        )}
+      </Stack.Screen>
+      <Stack.Screen name="Account">
+        {(props) => (
+          <AccountScreen
+            onBack={() => props.navigation.goBack()}
+            onDeleteAccount={() => props.navigation.navigate('DeleteAccount')}
+            onLogout={() => props.navigation.navigate('Auth')}
+          />
+        )}
+      </Stack.Screen>
+      <Stack.Screen name="DeleteAccount">
+        {(props) => (
+          <DeleteAccountScreen
+            onBack={() => props.navigation.goBack()}
+            onContinue={() => props.navigation.navigate('ConfirmDeletion')}
+            onKeepAccount={() => props.navigation.goBack()}
+          />
+        )}
+      </Stack.Screen>
+      <Stack.Screen name="ConfirmDeletion">
+        {(props) => (
+          <ConfirmDeletionScreen
+            onBack={() => props.navigation.goBack()}
+            onConfirmDelete={() => props.navigation.navigate('AccountDeleted')}
+          />
+        )}
+      </Stack.Screen>
+      <Stack.Screen name="AccountDeleted">
+        {(props) => (
+          <AccountDeletedScreen
+            onBackToWelcome={() => props.navigation.navigate('Auth')}
+          />
+        )}
+      </Stack.Screen>
+      <Stack.Screen name="HelpSupport">
+        {(props) => (
+          <HelpSupportScreen
+            onBack={() => props.navigation.goBack()}
+            onContactSupport={() => props.navigation.navigate('ContactSupport')}
+          />
+        )}
+      </Stack.Screen>
+      <Stack.Screen name="ContactSupport">
+        {(props) => (
+          <ContactSupportScreen
+            onClose={() => props.navigation.goBack()}
+            onSubmit={() => props.navigation.goBack()}
+          />
+        )}
+      </Stack.Screen>
+      <Stack.Screen name="Policies">
+        {(props) => (
+          <PoliciesScreen
+            onBack={() => props.navigation.goBack()}
+            onContactSupport={() => props.navigation.navigate('ContactSupport')}
+          />
+        )}
+      </Stack.Screen>
+      <Stack.Screen name="AboutUs">
+        {(props) => (
+          <AboutUsScreen
+            onBack={() => props.navigation.goBack()}
+            onWriteToUs={() => props.navigation.navigate('ContactSupport')}
           />
         )}
       </Stack.Screen>

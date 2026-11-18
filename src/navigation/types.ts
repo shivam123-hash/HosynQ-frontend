@@ -172,6 +172,29 @@ export type RootStackParamList = {
   Security: undefined;
   DevicesSessions: undefined;
   UnlockMethod: undefined;
+  Subscription: undefined;
+  PlansTrial: undefined;
+  StartFreeTrial: undefined;
+  TrialNotAvailable: undefined;
+  PaymentGateway: { planId?: string } | undefined;
+  PaymentSuccess: { planName?: string } | undefined;
+  PaymentFailed: { reason?: string } | undefined;
+  UpgradeDowngrade: undefined;
+  CancelSubscription: undefined;
+  CancellationConfirmed: undefined;
+  RenewalGracePeriod: undefined;
+  BackOnFree: undefined;
+  ReactivatePlan: undefined;
+  InvoicesHistory: undefined;
+  InvoiceDetail: { invoiceId?: string } | undefined;
+  Account: undefined;
+  DeleteAccount: undefined;
+  ConfirmDeletion: undefined;
+  AccountDeleted: undefined;
+  HelpSupport: undefined;
+  ContactSupport: undefined;
+  Policies: undefined;
+  AboutUs: undefined;
 };
 
 // Navigation Prop Types

@@ -26,7 +26,7 @@ import {
   ReminderItem,
   ToastConfig,
 } from '../addFlow';
-import { SideMenuModal } from '../menuScreens';
+import { SideMenuModal, LogoutConfirmationModal } from '../menuScreens';
 
 export interface MainTabScreenProps {
   initialTab?: NavigationTab;
@@ -49,6 +49,7 @@ const MainTabScreen: React.FC<MainTabScreenProps> = ({
 }) => {
   const [activeTab, setActiveTab] = useState<NavigationTab>(initialTab);
   const [sideMenuVisible, setSideMenuVisible] = useState(false);
+  const [showLogoutModal, setShowLogoutModal] = useState(false);
   const [addSheetVisible, setAddSheetVisible] = useState(false);
   const [createTaskModalVisible, setCreateTaskModalVisible] = useState(false);
   const [createEventModalVisible, setCreateEventModalVisible] = useState(false);
@@ -318,12 +319,20 @@ const MainTabScreen: React.FC<MainTabScreenProps> = ({
         onSelectNotifications={() => navigation.navigate('NotificationPreferences')}
         onSelectPrivacyConsent={() => navigation.navigate('PrivacyConsent')}
         onSelectSecurity={() => navigation.navigate('Security')}
-        onSelectSubscription={() => showToast('HosynQ Premium active (9 days left)')}
-        onSelectAccount={() => showToast('Account settings')}
-        onSelectHelpSupport={() => showToast('Help & support coming soon')}
-        onSelectPolicies={() => navigation.navigate('PrivacyNotice')}
-        onSelectAbout={() => showToast('HosynQ version 1.0.0')}
-        onLogout={() => showToast('Logged out successfully', 'info')}
+        onSelectSubscription={() => navigation.navigate('Subscription')}
+        onSelectAccount={() => navigation.navigate('Account')}
+        onSelectHelpSupport={() => navigation.navigate('HelpSupport')}
+        onSelectPolicies={() => navigation.navigate('Policies')}
+        onSelectAbout={() => navigation.navigate('AboutUs')}
+        onLogout={() => setShowLogoutModal(true)}
+      />
+      <LogoutConfirmationModal
+        visible={showLogoutModal}
+        onClose={() => setShowLogoutModal(false)}
+        onConfirmLogout={() => {
+          setShowLogoutModal(false);
+          navigation.navigate('Auth');
+        }}
       />
     </View>
   );
