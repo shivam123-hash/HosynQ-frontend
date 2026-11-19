@@ -19,6 +19,7 @@ export interface ChatsScreenProps {
   onProfilePress?: () => void;
   onNotificationsPress?: () => void;
   onExplorePress?: () => void;
+  onCompassPress?: () => void;
   onOpenVault?: () => void;
 }
 
@@ -69,6 +70,7 @@ export const ChatsScreen: React.FC<ChatsScreenProps> = ({
   onProfilePress,
   onNotificationsPress,
   onExplorePress,
+  onCompassPress,
   onOpenVault,
 }) => {
   const insets = useSafeAreaInsets();
@@ -95,6 +97,7 @@ export const ChatsScreen: React.FC<ChatsScreenProps> = ({
         onAvatarPress={onProfilePress}
         onExplorePress={onExplorePress}
         onNotificationsPress={onNotificationsPress}
+        onCompassPress={onCompassPress}
       />
 
       <ScrollView

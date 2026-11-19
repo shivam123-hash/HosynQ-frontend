@@ -43,6 +43,9 @@ export type { CommentsModalProps } from './CommentsModal';
 export { default as ReassignModal } from './ReassignModal';
 export type { ReassignModalProps } from './ReassignModal';
 
+export { default as DeleteTaskModal } from './DeleteTaskModal';
+export type { DeleteTaskModalProps } from './DeleteTaskModal';
+
 export { default as AssigneesAndViewersModal } from './AssigneesAndViewersModal';
 export type {
   AssigneesAndViewersModalProps,

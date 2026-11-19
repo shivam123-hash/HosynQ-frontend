@@ -221,7 +221,7 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(5, 12, 22, 0.70)',
   },
   sheetContainer: {
-    backgroundColor: '#11223B',
+    backgroundColor: '#122440',
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
     paddingTop: 12,

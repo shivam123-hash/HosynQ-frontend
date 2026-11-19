@@ -56,6 +56,7 @@ export interface TasksScreenProps {
   onProfilePress?: () => void;
   onExplorePress?: () => void;
   onNotificationsPress?: () => void;
+  onCompassPress?: () => void;
   onTabChange?: (tab: NavigationTab) => void;
   onOpenCalendar?: () => void;
   onOpenChat?: () => void;
@@ -70,6 +71,7 @@ const TasksScreen: React.FC<TasksScreenProps> = ({
   onProfilePress,
   onExplorePress,
   onNotificationsPress,
+  onCompassPress,
   onTabChange,
   onOpenCalendar,
   onOpenChat,
@@ -410,6 +412,7 @@ const TasksScreen: React.FC<TasksScreenProps> = ({
         onProfilePress={onProfilePress}
         onExplorePress={onExplorePress}
         onNotificationsPress={onNotificationsPress}
+        onCompassPress={onCompassPress}
         onFilterPress={() => setFilterModalVisible(true)}
         isFilterActive={isFilterActive}
         searchQuery={searchQuery}

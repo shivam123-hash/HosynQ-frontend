@@ -9,6 +9,7 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Feather from '@react-native-vector-icons/feather';
+import Colors from '../../../units/Colors';
 
 export interface AboutUsScreenProps {
   onBack?: () => void;
@@ -89,7 +90,7 @@ export const AboutUsScreen: React.FC<AboutUsScreenProps> = ({
             <View style={styles.logoRow}>
               {/* Logo Box */}
               <View style={styles.logoBox}>
-                <Feather name="home" size={26} color="#0B1A2F" />
+                <Feather name="home" size={26} color={Colors.background} />
               </View>
 
               {/* Brand Title */}
@@ -124,7 +125,7 @@ export const AboutUsScreen: React.FC<AboutUsScreenProps> = ({
                 >
                   <View style={styles.rowLeft}>
                     <View style={styles.iconBox}>
-                      <Feather name={item.icon as any} size={18} color="#F0913A" />
+                      <Feather name={item.icon as any} size={18} color={Colors.primary} />
                     </View>
                     <Text style={styles.rowTitle}>{item.title}</Text>
                   </View>
@@ -145,7 +146,7 @@ export const AboutUsScreen: React.FC<AboutUsScreenProps> = ({
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#0B1A2F',
+    backgroundColor: Colors.background,
   },
   innerContent: {
     flex: 1,
@@ -162,9 +163,9 @@ const styles = StyleSheet.create({
     width: 44,
     height: 44,
     borderRadius: 22,
-    backgroundColor: '#0B1A2F',
+    backgroundColor: Colors.background,
     borderWidth: 1.5,
-    borderColor: '#3A4556',
+    borderColor: Colors.handleMuted,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -175,7 +176,7 @@ const styles = StyleSheet.create({
   topBarTitle: {
     fontSize: 20,
     fontWeight: '700',
-    color: '#FFFFFF',
+    color: Colors.white,
     letterSpacing: -0.3,
   },
   scrollView: {
@@ -196,7 +197,7 @@ const styles = StyleSheet.create({
     width: 50,
     height: 50,
     borderRadius: 14,
-    backgroundColor: '#F0913A',
+    backgroundColor: Colors.primary,
     alignItems: 'center',
     justifyContent: 'center',
     marginRight: 12,
@@ -208,19 +209,19 @@ const styles = StyleSheet.create({
   brandTitleHosyn: {
     fontSize: 32,
     fontWeight: '800',
-    color: '#FFFFFF',
+    color: Colors.white,
     letterSpacing: -0.5,
   },
   brandTitleQ: {
     fontSize: 32,
     fontWeight: '800',
-    color: '#F0913A',
+    color: Colors.primary,
     letterSpacing: -0.5,
   },
   brandSubtitle: {
     fontSize: 15,
     fontWeight: '500',
-    color: '#8A97AB',
+    color: Colors.textSecondaryMuted,
     marginTop: 8,
   },
   versionText: {
@@ -230,17 +231,17 @@ const styles = StyleSheet.create({
   },
   missionText: {
     fontSize: 14,
-    color: '#8A97AB',
+    color: Colors.textSecondaryMuted,
     textAlign: 'center',
     lineHeight: 21,
     marginTop: 14,
     maxWidth: 320,
   },
   card: {
-    backgroundColor: '#122440',
+    backgroundColor: Colors.cardBackground,
     borderRadius: 16,
     borderWidth: 1,
-    borderColor: '#1F3352',
+    borderColor: Colors.borderBold,
     overflow: 'hidden',
     marginTop: 20,
   },
@@ -261,7 +262,7 @@ const styles = StyleSheet.create({
     height: 40,
     borderRadius: 12,
     borderWidth: 1.5,
-    borderColor: '#F0913A',
+    borderColor: Colors.primary,
     backgroundColor: 'transparent',
     alignItems: 'center',
     justifyContent: 'center',
@@ -270,11 +271,11 @@ const styles = StyleSheet.create({
   rowTitle: {
     fontSize: 15,
     fontWeight: '600',
-    color: '#FFFFFF',
+    color: Colors.white,
   },
   divider: {
     height: 1,
-    backgroundColor: '#1F3352',
+    backgroundColor: Colors.borderBold,
   },
   copyrightText: {
     fontSize: 13,

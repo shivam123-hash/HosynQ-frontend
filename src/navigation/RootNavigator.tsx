@@ -140,6 +140,15 @@ const RootNavigator: React.FC<RootNavigatorProps> = ({
           <NeedsAttentionScreen
             initialFilter={props.route.params?.initialFilter}
             onBack={() => props.navigation.goBack()}
+            onItemPress={(item) => {
+              if (item.category === 'renewals') {
+                props.navigation.navigate('VaultDocuments');
+              } else if (item.category === 'important_dates') {
+                props.navigation.navigate('Home', { initialTab: 'calendar' });
+              } else {
+                props.navigation.navigate('Tasks');
+              }
+            }}
           />
         )}
       </Stack.Screen>
@@ -149,6 +158,24 @@ const RootNavigator: React.FC<RootNavigatorProps> = ({
             isEmpty={props.route.params?.isEmpty}
             initialFilter={props.route.params?.initialFilter}
             onBack={() => props.navigation.goBack()}
+            onItemPress={(item) => {
+              if (item.category === 'tasks') {
+                props.navigation.navigate('Tasks');
+              } else if (item.category === 'renewals') {
+                props.navigation.navigate('VaultDocuments');
+              } else if (item.category === 'brief') {
+                props.navigation.navigate('YourBrief');
+              } else if (
+                item.category === 'family' &&
+                item.title.toLowerCase().includes('join')
+              ) {
+                props.navigation.navigate('JoinRequests');
+              } else if (item.category === 'family') {
+                props.navigation.navigate('Members');
+              } else {
+                props.navigation.navigate('Home');
+              }
+            }}
           />
         )}
       </Stack.Screen>
@@ -472,7 +499,7 @@ const RootNavigator: React.FC<RootNavigatorProps> = ({
               else if (cat === 'contacts') props.navigation.navigate('VaultImportantContacts');
               else props.navigation.navigate('VaultDocuments');
             }}
-            onSelectItem={() => props.navigation.navigate('VaultItemDetail')}
+            onSelectItem={(item) => props.navigation.navigate('VaultItemDetail', { item })}
             onAddToVault={() => props.navigation.navigate('VaultDocuments')}
           />
         )}
@@ -481,8 +508,8 @@ const RootNavigator: React.FC<RootNavigatorProps> = ({
         {(props) => (
           <DocumentsRenewalsScreen
             onBack={() => props.navigation.goBack()}
-            onRenew={() => props.navigation.navigate('VaultItemDetail')}
-            onSelectDocument={() => props.navigation.navigate('VaultItemDetail')}
+            onRenew={(item) => props.navigation.navigate('VaultItemDetail', { item })}
+            onSelectDocument={(item) => props.navigation.navigate('VaultItemDetail', { item })}
           />
         )}
       </Stack.Screen>
@@ -490,8 +517,8 @@ const RootNavigator: React.FC<RootNavigatorProps> = ({
         {(props) => (
           <InsuranceVaultScreen
             onBack={() => props.navigation.goBack()}
-            onSelectPolicy={() => props.navigation.navigate('VaultItemDetail')}
-            onRenewPolicy={() => props.navigation.navigate('VaultItemDetail')}
+            onSelectPolicy={(item) => props.navigation.navigate('VaultItemDetail', { item })}
+            onRenewPolicy={(item) => props.navigation.navigate('VaultItemDetail', { item })}
           />
         )}
       </Stack.Screen>
@@ -499,6 +526,8 @@ const RootNavigator: React.FC<RootNavigatorProps> = ({
         {(props) => (
           <WarrantiesBillsScreen
             onBack={() => props.navigation.goBack()}
+            onSelectBill={(item) => props.navigation.navigate('VaultItemDetail', { item })}
+            onSelectWarranty={(item) => props.navigation.navigate('VaultItemDetail', { item })}
           />
         )}
       </Stack.Screen>
@@ -506,6 +535,7 @@ const RootNavigator: React.FC<RootNavigatorProps> = ({
         {(props) => (
           <HomeAssetsScreen
             onBack={() => props.navigation.goBack()}
+            onSelectAsset={(item) => props.navigation.navigate('VaultItemDetail', { item })}
           />
         )}
       </Stack.Screen>
@@ -513,12 +543,14 @@ const RootNavigator: React.FC<RootNavigatorProps> = ({
         {(props) => (
           <ImportantContactsScreen
             onBack={() => props.navigation.goBack()}
+            onSelectContact={(item) => props.navigation.navigate('VaultItemDetail', { item })}
           />
         )}
       </Stack.Screen>
       <Stack.Screen name="VaultItemDetail">
         {(props) => (
           <VaultItemDetailScreen
+            {...props}
             onBack={() => props.navigation.goBack()}
           />
         )}

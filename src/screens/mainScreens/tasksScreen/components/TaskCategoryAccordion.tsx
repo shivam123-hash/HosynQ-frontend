@@ -54,7 +54,7 @@ const TaskCategoryAccordion: React.FC<TaskCategoryAccordionProps> = ({
           <Feather
             name={isExpanded ? 'chevron-up' : 'chevron-down'}
             size={18}
-            color="#CAD4DF"
+            color="#8A97AB"
           />
         </View>
       </TouchableOpacity>
@@ -116,10 +116,10 @@ export default TaskCategoryAccordion;
 
 const styles = StyleSheet.create({
   card: {
-    backgroundColor: '#122440',
+    backgroundColor: 'transparent',
     borderRadius: 20,
-    borderWidth: 1,
-    borderColor: '#1F3352',
+    borderWidth: 1.5,
+    borderColor: '#3A4556',
     marginHorizontal: 20,
     marginBottom: 16,
     overflow: 'hidden',
@@ -137,31 +137,33 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   categorySquare: {
-    width: 14,
-    height: 14,
-    borderRadius: 4,
+    width: 12,
+    height: 12,
+    borderRadius: 3.5,
   },
   categoryTitle: {
     fontSize: 16,
     fontWeight: '700',
-    color: '#CAD4DF',
+    color: '#FFFFFF',
   },
   headerRight: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 10,
+    gap: 12,
   },
   countBadge: {
-    width: 24,
-    height: 24,
-    borderRadius: 12,
-    backgroundColor: '#1A2D47',
+    width: 26,
+    height: 26,
+    borderRadius: 13,
+    backgroundColor: 'transparent',
+    borderWidth: 1.5,
+    borderColor: '#344458',
     justifyContent: 'center',
     alignItems: 'center',
   },
   countText: {
-    fontSize: 12,
-    fontWeight: '700',
+    fontSize: 13,
+    fontWeight: '600',
     color: '#CAD4DF',
   },
   itemsList: {

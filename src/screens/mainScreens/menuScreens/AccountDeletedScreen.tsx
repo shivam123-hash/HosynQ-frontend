@@ -8,6 +8,7 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Feather from '@react-native-vector-icons/feather';
+import Colors from '../../../units/Colors';
 
 export interface AccountDeletedScreenProps {
   onBackToWelcome?: () => void;
@@ -31,7 +32,7 @@ export const AccountDeletedScreen: React.FC<AccountDeletedScreenProps> = ({
         <View style={styles.outerCircle}>
           <View style={styles.middleCircle}>
             <View style={styles.innerCircle}>
-              <Feather name="check" size={18} color="#F0913A" />
+              <Feather name="check" size={18} color={Colors.primary} />
             </View>
           </View>
         </View>
@@ -70,7 +71,7 @@ export const AccountDeletedScreen: React.FC<AccountDeletedScreenProps> = ({
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#0B1A2F',
+    backgroundColor: Colors.background,
     justifyContent: 'space-between',
   },
   centerContent: {
@@ -85,7 +86,7 @@ const styles = StyleSheet.create({
     height: 132,
     borderRadius: 66,
     borderWidth: 1,
-    borderColor: '#1F3352',
+    borderColor: Colors.borderBold,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -94,8 +95,8 @@ const styles = StyleSheet.create({
     height: 96,
     borderRadius: 48,
     borderWidth: 1.5,
-    borderColor: '#3A4556',
-    backgroundColor: '#122440',
+    borderColor: Colors.handleMuted,
+    backgroundColor: Colors.cardBackground,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -104,21 +105,21 @@ const styles = StyleSheet.create({
     height: 36,
     borderRadius: 18,
     borderWidth: 2,
-    borderColor: '#F0913A',
+    borderColor: Colors.primary,
     alignItems: 'center',
     justifyContent: 'center',
   },
   title: {
     fontSize: 26,
     fontWeight: '700',
-    color: '#FFFFFF',
+    color: Colors.white,
     textAlign: 'center',
     marginTop: 36,
     letterSpacing: -0.4,
   },
   subtitle: {
     fontSize: 15,
-    color: '#8A97AB',
+    color: Colors.textSecondaryMuted,
     textAlign: 'center',
     lineHeight: 22,
     marginTop: 12,
@@ -128,19 +129,19 @@ const styles = StyleSheet.create({
     paddingHorizontal: 24,
     paddingTop: 16,
     borderTopWidth: 1,
-    borderTopColor: '#1F3352',
-    backgroundColor: '#0B1A2F',
+    borderTopColor: Colors.borderBold,
+    backgroundColor: Colors.background,
   },
   welcomeButton: {
     height: 54,
     borderRadius: 27,
-    backgroundColor: '#F0913A',
+    backgroundColor: Colors.primary,
     alignItems: 'center',
     justifyContent: 'center',
   },
   welcomeButtonText: {
     fontSize: 16,
     fontWeight: '700',
-    color: '#FFFFFF',
+    color: Colors.white,
   },
 });

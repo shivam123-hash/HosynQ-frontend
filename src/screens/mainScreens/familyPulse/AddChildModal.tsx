@@ -53,7 +53,7 @@ export const AddChildModal: React.FC<AddChildModalProps> = ({
     useState<ChildRelationship>('Daughter');
   const [canSignIn, setCanSignIn] = useState(false);
 
-  const [isNameFocused, setIsNameFocused] = useState(false);
+  const [isNameFocused, setIsNameFocused] = useState(true);
   const [isDobFocused, setIsDobFocused] = useState(false);
 
   const handleAddChild = () => {
@@ -316,7 +316,7 @@ const styles = StyleSheet.create({
     borderRadius: 22,
     borderWidth: 1,
     borderColor: '#3A4556',
-    backgroundColor: 'transparent',
+    backgroundColor: '#122440',
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -384,7 +384,7 @@ const styles = StyleSheet.create({
   inputWrapper: {
     height: 54,
     borderRadius: 27,
-    backgroundColor: '#11223A',
+    backgroundColor: '#122440',
     borderWidth: 1,
     borderColor: '#1F3352',
     paddingHorizontal: 18,

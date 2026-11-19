@@ -65,10 +65,10 @@ const styles = StyleSheet.create({
   pillTrack: {
     flexDirection: 'row',
     height: 48,
-    backgroundColor: '#122440',
+    backgroundColor: 'transparent',
     borderRadius: 24,
     padding: 4,
-    borderWidth: 1,
+    borderWidth: 1.5,
     borderColor: '#1F3352',
   },
   tabButton: {
@@ -89,8 +89,8 @@ const styles = StyleSheet.create({
     color: '#0B1A2F',
   },
   inactiveText: {
-    fontWeight: '500',
-    color: '#8A97AB',
+    fontWeight: '600',
+    color: '#CAD4DF',
   },
 });
 

@@ -208,7 +208,10 @@ const ListDetailModal: React.FC<ListDetailModalProps> = ({
 
         <ScrollView
           showsVerticalScrollIndicator={false}
-          contentContainerStyle={styles.scrollContent}
+          contentContainerStyle={[
+            styles.scrollContent,
+            isAllDone && { paddingBottom: 100 + insets.bottom },
+          ]}
         >
           {/* Category Pill */}
           <View style={[styles.categoryPill, { borderColor: config.color }]}>
@@ -286,12 +289,15 @@ const ListDetailModal: React.FC<ListDetailModalProps> = ({
           {isAllDone && (
             <View style={styles.celebrationCard}>
               <View style={styles.celebrationCircle}>
-                <Feather name="check" size={28} color="#2DD4BF" />
+                <Feather name="check" size={26} color="#6FDAA6" />
               </View>
               <Text style={styles.celebrationTitle}>Everything’s bought</Text>
               <Text style={styles.celebrationSubtitle}>
-                All {totalCount} items are ticked off. Keep the list for next time,
-                or clear it.
+                All {totalCount} items are ticked off. Keep the list for{' '}
+                {list.title.toLowerCase().includes('diwali')
+                  ? 'next Diwali'
+                  : 'next time'}
+                , or clear it.
               </Text>
             </View>
           )}
@@ -342,14 +348,18 @@ const ListDetailModal: React.FC<ListDetailModalProps> = ({
                       </TouchableOpacity>
 
                       {/* Title & Quantity */}
-                      <View style={styles.itemTextCol}>
+                      <TouchableOpacity
+                        style={styles.itemTextCol}
+                        onPress={() => setSelectedItemForAssign(item)}
+                        activeOpacity={0.7}
+                      >
                         <Text style={styles.itemTitle}>{item.title}</Text>
                         {Boolean(item.quantity) && (
                           <Text style={styles.itemSubtitle}>
                             {item.quantity}
                           </Text>
                         )}
-                      </View>
+                      </TouchableOpacity>
 
                       {/* Assignee Avatar or "+" Icon */}
                       <TouchableOpacity
@@ -390,21 +400,23 @@ const ListDetailModal: React.FC<ListDetailModalProps> = ({
           {/* Completed Items Section */}
           {doneCount > 0 && (
             <View style={styles.doneSection}>
-              <View style={styles.doneSectionHeaderRow}>
-                <Text style={styles.sectionHeader}>DONE · {doneCount}</Text>
-                <TouchableOpacity
-                  onPress={() => setShowDoneItems((prev) => !prev)}
-                  activeOpacity={0.7}
-                >
-                  <Text style={styles.showAllText}>
-                    {showDoneItems ? 'Hide' : 'Show all'}
-                  </Text>
-                </TouchableOpacity>
-              </View>
+              {!isAllDone && (
+                <View style={styles.doneSectionHeaderRow}>
+                  <Text style={styles.sectionHeader}>DONE · {doneCount}</Text>
+                  <TouchableOpacity
+                    onPress={() => setShowDoneItems((prev) => !prev)}
+                    activeOpacity={0.7}
+                  >
+                    <Text style={styles.showAllText}>
+                      {showDoneItems ? 'Hide' : 'Show all'}
+                    </Text>
+                  </TouchableOpacity>
+                </View>
+              )}
 
               {(showDoneItems || isAllDone) && (
                 <View style={styles.itemsCard}>
-                  {doneItems.map((item, idx) => (
+                  {(isAllDone && !showDoneItems ? doneItems.slice(0, 4) : doneItems).map((item, idx) => (
                     <View
                       key={item.id}
                       style={[
@@ -424,7 +436,11 @@ const ListDetailModal: React.FC<ListDetailModalProps> = ({
                         </View>
                       </TouchableOpacity>
 
-                      <View style={styles.itemTextCol}>
+                      <TouchableOpacity
+                        style={styles.itemTextCol}
+                        onPress={() => setSelectedItemForAssign(item)}
+                        activeOpacity={0.7}
+                      >
                         <Text style={[styles.itemTitle, styles.completedTitle]}>
                           {item.title}
                         </Text>
@@ -433,7 +449,7 @@ const ListDetailModal: React.FC<ListDetailModalProps> = ({
                             {item.quantity}
                           </Text>
                         )}
-                      </View>
+                      </TouchableOpacity>
 
                       {item.assignedTo && (
                         <View
@@ -454,36 +470,60 @@ const ListDetailModal: React.FC<ListDetailModalProps> = ({
                   ))}
                 </View>
               )}
+
+              {isAllDone && doneCount > 4 && (
+                <TouchableOpacity
+                  style={styles.moreDoneBtn}
+                  onPress={() => setShowDoneItems((prev) => !prev)}
+                  activeOpacity={0.7}
+                  accessibilityRole="button"
+                  accessibilityLabel={showDoneItems ? 'Show less' : `+ ${doneCount - 4} more done`}
+                >
+                  <Text style={styles.moreDoneText}>
+                    {showDoneItems ? 'Show less' : `+ ${doneCount - 4} more done`}
+                  </Text>
+                </TouchableOpacity>
+              )}
             </View>
           )}
 
-          {/* Bottom Action buttons on All Done (LST-09) */}
-          {isAllDone && (
-            <View style={styles.allDoneBottomRow}>
-              <TouchableOpacity
-                style={styles.clearListBtn}
-                onPress={() => handleClearDoneItems(list.id)}
-                activeOpacity={0.8}
-              >
-                <Text style={styles.clearListText}>Clear list</Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                style={styles.archiveListBtn}
-                onPress={() => handleArchiveList(list.id)}
-                activeOpacity={0.8}
-              >
-                <Feather
-                  name="archive"
-                  size={18}
-                  color="#FFFFFF"
-                  style={styles.archiveBtnIcon}
-                />
-                <Text style={styles.archiveListText}>Archive list</Text>
-              </TouchableOpacity>
-            </View>
-          )}
         </ScrollView>
+
+        {/* Bottom Action buttons on All Done (LST-09) */}
+        {isAllDone && (
+          <View
+            style={[
+              styles.allDoneBottomBar,
+              { paddingBottom: Math.max(insets.bottom, 16) },
+            ]}
+          >
+            <TouchableOpacity
+              style={styles.clearListBtn}
+              onPress={() => handleClearDoneItems(list.id)}
+              activeOpacity={0.8}
+              accessibilityRole="button"
+              accessibilityLabel="Clear list"
+            >
+              <Text style={styles.clearListText}>Clear list</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.archiveListBtn}
+              onPress={() => handleArchiveList(list.id)}
+              activeOpacity={0.8}
+              accessibilityRole="button"
+              accessibilityLabel="Archive list"
+            >
+              <Feather
+                name="archive"
+                size={18}
+                color="#FFFFFF"
+                style={styles.archiveBtnIcon}
+              />
+              <Text style={styles.archiveListText}>Archive list</Text>
+            </TouchableOpacity>
+          </View>
+        )}
 
         {/* Sub-modals */}
         <AddListItemsModal
@@ -539,9 +579,9 @@ const styles = StyleSheet.create({
     width: 44,
     height: 44,
     borderRadius: 22,
-    backgroundColor: '#122440',
-    borderWidth: 1,
-    borderColor: '#1F3352',
+    backgroundColor: 'transparent',
+    borderWidth: 1.5,
+    borderColor: '#3A4556',
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -556,7 +596,7 @@ const styles = StyleSheet.create({
     alignSelf: 'flex-start',
     paddingHorizontal: 12,
     paddingVertical: 6,
-    borderRadius: 16,
+    borderRadius: 8,
     borderWidth: 1.5,
     marginBottom: 10,
   },
@@ -624,7 +664,7 @@ const styles = StyleSheet.create({
     borderRadius: 3,
   },
   progressFillGreen: {
-    backgroundColor: '#2DD4BF',
+    backgroundColor: '#6FDAA6',
   },
   progressFillOrange: {
     backgroundColor: '#F0913A',
@@ -635,11 +675,13 @@ const styles = StyleSheet.create({
     color: '#CAD4DF',
   },
   celebrationCard: {
-    backgroundColor: 'rgba(45, 212, 191, 0.08)',
-    borderRadius: 20,
+    backgroundColor: '#0F2329',
+    borderRadius: 24,
     borderWidth: 1.5,
-    borderColor: '#2DD4BF',
-    padding: 24,
+    borderColor: '#2F6B52',
+    paddingTop: 22,
+    paddingHorizontal: 18,
+    paddingBottom: 18,
     alignItems: 'center',
     marginBottom: 24,
   },
@@ -648,21 +690,21 @@ const styles = StyleSheet.create({
     height: 56,
     borderRadius: 28,
     borderWidth: 2,
-    borderColor: '#2DD4BF',
+    borderColor: '#6FDAA6',
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 14,
+    marginBottom: 12,
   },
   celebrationTitle: {
     fontSize: 18,
     fontWeight: '700',
-    color: '#2DD4BF',
+    color: '#6FDAA6',
     marginBottom: 8,
     textAlign: 'center',
   },
   celebrationSubtitle: {
-    fontSize: 13,
-    color: '#8A97AB',
+    fontSize: 14,
+    color: '#CBD2D9',
     textAlign: 'center',
     lineHeight: 20,
     maxWidth: 280,
@@ -698,10 +740,10 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   itemsCard: {
-    backgroundColor: '#122440',
+    backgroundColor: 'transparent',
     borderRadius: 20,
-    borderWidth: 1,
-    borderColor: '#1F3352',
+    borderWidth: 1.5,
+    borderColor: '#3A4556',
     overflow: 'hidden',
   },
   itemRow: {
@@ -789,23 +831,41 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: '#F0913A',
   },
-  allDoneBottomRow: {
+  moreDoneBtn: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 14,
+  },
+  moreDoneText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#8A97AB',
+  },
+  allDoneBottomBar: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    backgroundColor: '#0B1A2F',
+    borderTopWidth: 1,
+    borderTopColor: '#1F3352',
     flexDirection: 'row',
     gap: 12,
-    marginTop: 8,
+    paddingHorizontal: 20,
+    paddingTop: 14,
   },
   clearListBtn: {
     flex: 1,
     height: 52,
     borderRadius: 26,
-    backgroundColor: '#122440',
-    borderWidth: 1,
-    borderColor: '#1F3352',
+    backgroundColor: 'transparent',
+    borderWidth: 1.5,
+    borderColor: '#3A4556',
     justifyContent: 'center',
     alignItems: 'center',
   },
   clearListText: {
-    fontSize: 15,
+    fontSize: 16,
     fontWeight: '700',
     color: '#FFFFFF',
   },
@@ -822,7 +882,7 @@ const styles = StyleSheet.create({
     marginRight: 8,
   },
   archiveListText: {
-    fontSize: 15,
+    fontSize: 16,
     fontWeight: '700',
     color: '#FFFFFF',
   },

@@ -55,13 +55,6 @@ const MEMBERS: AssigneeChoice[] = [
     initial: 'A',
     avatarBg: '#831843',
   },
-  {
-    id: 'aarav',
-    name: 'Aarav',
-    roleSubtitle: '0 items',
-    initial: 'Aa',
-    avatarBg: '#78350F',
-  },
 ];
 
 const AssignListItemModal: React.FC<AssignListItemModalProps> = ({
@@ -154,6 +147,7 @@ const AssignListItemModal: React.FC<AssignListItemModalProps> = ({
                     style={[
                       styles.memberRow,
                       idx > 0 && styles.memberRowDivider,
+                      isSelected && styles.memberRowSelected,
                     ]}
                     onPress={() => {
                       setSelectedId(member.id);
@@ -243,7 +237,7 @@ const styles = StyleSheet.create({
     bottom: 0,
   },
   sheetContainer: {
-    backgroundColor: '#0B1A2F',
+    backgroundColor: '#122440',
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
     borderTopWidth: 1,
@@ -253,51 +247,55 @@ const styles = StyleSheet.create({
     maxHeight: '90%',
   },
   handle: {
-    width: 40,
+    width: 38,
     height: 4,
     borderRadius: 2,
     backgroundColor: '#3A4556',
     alignSelf: 'center',
-    marginBottom: 16,
+    marginBottom: 14,
   },
   title: {
-    fontSize: 22,
+    fontSize: 20,
     fontWeight: '700',
-    color: '#CAD4DF',
+    color: '#FFFFFF',
     textAlign: 'center',
     marginBottom: 4,
   },
   subtitle: {
     fontSize: 14,
+    fontWeight: '400',
     color: '#8A97AB',
     textAlign: 'center',
-    marginBottom: 20,
+    marginBottom: 16,
   },
   scrollContent: {
-    paddingBottom: 16,
+    paddingBottom: 0,
   },
   membersCard: {
-    backgroundColor: '#122440',
+    backgroundColor: 'transparent',
     borderRadius: 20,
-    borderWidth: 1,
-    borderColor: '#1F3352',
-    marginBottom: 20,
+    borderWidth: 1.5,
+    borderColor: '#3A4556',
+    marginBottom: 14,
     overflow: 'hidden',
   },
   memberRow: {
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 16,
-    paddingVertical: 14,
+    paddingVertical: 12,
+  },
+  memberRowSelected: {
+    backgroundColor: '#1A2B47',
   },
   memberRowDivider: {
     borderTopWidth: 1,
-    borderColor: '#1A2C46',
+    borderTopColor: '#1F3352',
   },
   avatarCircle: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+    width: 38,
+    height: 38,
+    borderRadius: 19,
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 14,
@@ -311,13 +309,13 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   memberName: {
-    fontSize: 16,
+    fontSize: 15,
     fontWeight: '700',
     color: '#FFFFFF',
     marginBottom: 2,
   },
   memberSub: {
-    fontSize: 12,
+    fontSize: 13,
     color: '#8A97AB',
   },
   radioOuter: {
@@ -328,6 +326,7 @@ const styles = StyleSheet.create({
     borderColor: '#3A4556',
     justifyContent: 'center',
     alignItems: 'center',
+    backgroundColor: 'transparent',
   },
   radioOuterSelected: {
     borderColor: '#F0913A',
@@ -342,13 +341,14 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingVertical: 10,
-    marginBottom: 12,
+    paddingHorizontal: 4,
+    paddingVertical: 2,
+    marginBottom: 16,
   },
   switchLabel: {
     fontSize: 15,
     fontWeight: '600',
-    color: '#CAD4DF',
+    color: '#FFFFFF',
   },
   giveBtn: {
     height: 52,
@@ -356,7 +356,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#F0913A',
     justifyContent: 'center',
     alignItems: 'center',
-    marginTop: 8,
+    marginTop: 0,
   },
   giveBtnText: {
     fontSize: 16,

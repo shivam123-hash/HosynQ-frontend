@@ -739,7 +739,7 @@ const styles = StyleSheet.create({
     ...StyleSheet.absoluteFill,
   },
   pickerSheet: {
-    backgroundColor: Colors.background,
+    backgroundColor: '#122440',
     borderTopLeftRadius: 28,
     borderTopRightRadius: 28,
     paddingTop: 12,

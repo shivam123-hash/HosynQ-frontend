@@ -7,11 +7,19 @@ export type AddChildScreenProps = Partial<
   NativeStackScreenProps<RootStackParamList, 'AddChild'>
 > & {
   onBack?: () => void;
+  onAddChild?: (childData: {
+    name: string;
+    dob: string;
+    relationship: 'Daughter' | 'Son' | 'Grandchild' | 'Other';
+    selectedColor: string;
+    canSignIn: boolean;
+  }) => void;
 };
 
 export const AddChildScreen: React.FC<AddChildScreenProps> = ({
   navigation,
   onBack,
+  onAddChild,
 }) => {
   const handleBack = () => {
     if (onBack) {
@@ -28,6 +36,12 @@ export const AddChildScreen: React.FC<AddChildScreenProps> = ({
       visible={true}
       isScreen={true}
       onClose={handleBack}
+      onAddChild={(childData) => {
+        if (onAddChild) {
+          onAddChild(childData);
+        }
+        handleBack();
+      }}
     />
   );
 };

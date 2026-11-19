@@ -151,7 +151,7 @@ const FamilyPulseSection: React.FC<FamilyPulseSectionProps> = ({
             <>
               {/* Suggestion Text with Sparkle */}
               <View style={styles.suggestionContentRow}>
-                <Feather name="star" size={16} color="#F0913A" style={styles.sparkleIcon} />
+                <Text style={styles.sparkleIcon}>✦</Text>
                 <Text style={styles.suggestionText}>{suggestion.text}</Text>
               </View>
 
@@ -223,7 +223,7 @@ const styles = StyleSheet.create({
   card: {
     backgroundColor: '#122440',
     borderRadius: 20,
-    borderWidth: 1,
+    borderWidth: 1.5,
     borderColor: '#1F3352',
     padding: 16,
     gap: 16,
@@ -238,8 +238,8 @@ const styles = StyleSheet.create({
     fontFamily: 'Roboto',
     fontSize: 18,
     lineHeight: 24,
-    fontWeight: '600',
-    color: '#CAD4DF',
+    fontWeight: '700',
+    color: '#FFFFFF',
   },
   openBtn: {
     height: 32,
@@ -331,7 +331,8 @@ const styles = StyleSheet.create({
     flex: 1,
     borderRadius: 16,
     borderWidth: 1.5,
-    borderColor: '#2A3E5E',
+    borderColor: '#1F3352',
+    backgroundColor: 'transparent',
     paddingVertical: 10,
     paddingHorizontal: 14,
     gap: 3,
@@ -351,13 +352,14 @@ const styles = StyleSheet.create({
     fontSize: 14,
     lineHeight: 18,
     fontWeight: '600',
-    color: '#CAD4DF',
+    color: '#FFFFFF',
   },
   birthdayBanner: {
     flexDirection: 'row',
     alignItems: 'center',
     borderWidth: 1.5,
     borderColor: '#5A4128',
+    backgroundColor: 'transparent',
     borderRadius: 16,
     paddingVertical: 10,
     paddingHorizontal: 14,
@@ -375,8 +377,8 @@ const styles = StyleSheet.create({
   suggestionCard: {
     backgroundColor: '#0B1A2F',
     borderRadius: 18,
-    borderWidth: 1,
-    borderColor: '#2A3E5E',
+    borderWidth: 1.5,
+    borderColor: '#1F3352',
     padding: 16,
     gap: 14,
   },
@@ -385,7 +387,10 @@ const styles = StyleSheet.create({
     gap: 10,
   },
   sparkleIcon: {
-    marginTop: 2,
+    color: '#F0913A',
+    fontSize: 16,
+    lineHeight: 20,
+    marginTop: 1,
   },
   suggestionText: {
     flex: 1,
@@ -420,6 +425,7 @@ const styles = StyleSheet.create({
     height: 38,
     borderWidth: 1.5,
     borderColor: '#3A4556',
+    backgroundColor: 'transparent',
     borderRadius: 20,
     paddingHorizontal: 16,
     justifyContent: 'center',

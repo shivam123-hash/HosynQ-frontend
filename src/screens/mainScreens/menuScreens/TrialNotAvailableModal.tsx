@@ -9,6 +9,7 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Feather from '@react-native-vector-icons/feather';
+import Colors from '../../../units/Colors';
 
 export interface TrialNotAvailableModalProps {
   onBack?: () => void;
@@ -21,7 +22,7 @@ export interface TrialNotAvailableModalProps {
 
 const CrownIcon: React.FC<{ size?: number; color?: string }> = ({
   size = 18,
-  color = '#F0923A',
+  color = Colors.primary,
 }) => {
   const s = size / 18;
   const stroke = Math.max(1.4, 1.5 * s);
@@ -163,7 +164,7 @@ export const TrialNotAvailableModal: React.FC<TrialNotAvailableModalProps> = ({
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#0B1A2F',
+    backgroundColor: Colors.background,
   },
   topBar: {
     flexDirection: 'row',
@@ -185,7 +186,7 @@ const styles = StyleSheet.create({
   topBarTitle: {
     fontSize: 18,
     fontWeight: '700',
-    color: '#FFFFFF',
+    color: Colors.white,
   },
   topBarRightPlaceholder: {
     width: 44,
@@ -209,7 +210,7 @@ const styles = StyleSheet.create({
     height: 130,
     borderRadius: 65,
     borderWidth: 1,
-    borderColor: '#1F3352',
+    borderColor: Colors.borderBold,
     backgroundColor: 'transparent',
     alignItems: 'center',
     justifyContent: 'center',
@@ -219,8 +220,8 @@ const styles = StyleSheet.create({
     height: 94,
     borderRadius: 47,
     borderWidth: 1.5,
-    borderColor: '#3A4556',
-    backgroundColor: '#122440',
+    borderColor: Colors.handleMuted,
+    backgroundColor: Colors.cardBackground,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -229,7 +230,7 @@ const styles = StyleSheet.create({
     height: 32,
     borderRadius: 16,
     borderWidth: 2.5,
-    borderColor: '#F0923A',
+    borderColor: Colors.primary,
     backgroundColor: 'transparent',
     alignItems: 'center',
     justifyContent: 'center',
@@ -239,35 +240,35 @@ const styles = StyleSheet.create({
     width: 2.5,
     height: 11,
     borderRadius: 1.25,
-    backgroundColor: '#F0923A',
+    backgroundColor: Colors.primary,
     marginBottom: 2.5,
   },
   exclamationDot: {
     width: 2.5,
     height: 2.5,
     borderRadius: 1.25,
-    backgroundColor: '#F0923A',
+    backgroundColor: Colors.primary,
   },
   title: {
     fontSize: 26,
     fontWeight: '700',
-    color: '#FFFFFF',
+    color: Colors.white,
     textAlign: 'center',
     lineHeight: 34,
     marginBottom: 10,
   },
   subtitle: {
     fontSize: 14,
-    color: '#8A97AB',
+    color: Colors.textSecondaryMuted,
     textAlign: 'center',
     lineHeight: 20,
     marginBottom: 28,
   },
   planCard: {
-    backgroundColor: '#122440',
+    backgroundColor: Colors.cardBackground,
     borderRadius: 20,
     borderWidth: 1,
-    borderColor: '#1F3352',
+    borderColor: Colors.borderBold,
     padding: 16,
     flexDirection: 'row',
     alignItems: 'center',
@@ -278,7 +279,7 @@ const styles = StyleSheet.create({
     height: 44,
     borderRadius: 12,
     borderWidth: 1.5,
-    borderColor: '#F0923A',
+    borderColor: Colors.primary,
     backgroundColor: 'transparent',
     alignItems: 'center',
     justifyContent: 'center',
@@ -290,24 +291,24 @@ const styles = StyleSheet.create({
   planCardTitle: {
     fontSize: 16,
     fontWeight: '700',
-    color: '#FFFFFF',
+    color: Colors.white,
     marginBottom: 3,
   },
   planCardSubtitle: {
     fontSize: 13,
-    color: '#8A97AB',
+    color: Colors.textSecondaryMuted,
   },
   bottomSection: {
     paddingHorizontal: 20,
     paddingTop: 14,
     borderTopWidth: 1,
     borderTopColor: '#1A293E',
-    backgroundColor: '#0B1A2F',
+    backgroundColor: Colors.background,
   },
   primaryBtn: {
     height: 54,
     borderRadius: 27,
-    backgroundColor: '#F0923A',
+    backgroundColor: Colors.primary,
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: 12,
@@ -315,7 +316,7 @@ const styles = StyleSheet.create({
   primaryBtnText: {
     fontSize: 16,
     fontWeight: '700',
-    color: '#FFFFFF',
+    color: Colors.white,
   },
   secondaryBtn: {
     alignItems: 'center',
@@ -325,6 +326,6 @@ const styles = StyleSheet.create({
   secondaryBtnText: {
     fontSize: 15,
     fontWeight: '600',
-    color: '#F0923A',
+    color: Colors.primary,
   },
 });

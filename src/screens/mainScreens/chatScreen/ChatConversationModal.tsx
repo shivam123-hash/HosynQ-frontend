@@ -19,6 +19,7 @@ import { ShareItemModal } from './ShareItemModal';
 import { QuickMessagesModal } from './QuickMessagesModal';
 import { SmartReactionsModal } from './SmartReactionsModal';
 import { ImageViewerModal } from './ImageViewerModal';
+import AppOptionsMenu from '../common/AppOptionsMenu';
 
 export interface ChatConversationModalProps {
   visible: boolean;
@@ -119,6 +120,13 @@ export const ChatConversationModal: React.FC<ChatConversationModalProps> = ({
   const [selectedMessageForReactions, setSelectedMessageForReactions] =
     useState<ChatMessage | null>(null);
   const [showImageViewer, setShowImageViewer] = useState(false);
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
+
+  React.useEffect(() => {
+    if (!visible) {
+      setIsMenuOpen(false);
+    }
+  }, [visible]);
 
   const handleSendMessage = (textToSend?: string) => {
     const text = (textToSend || inputText).trim();
@@ -212,27 +220,34 @@ export const ChatConversationModal: React.FC<ChatConversationModalProps> = ({
               activeOpacity={0.7}
               accessibilityRole="button"
               accessibilityLabel="Options"
-              onPress={() => {
-                Alert.alert(
-                  'Chat Options',
-                  'Select action',
-                  [
-                    {
-                      text: 'Toggle Offline / Online',
-                      onPress: () => setIsOffline((prev) => !prev),
-                    },
-                    {
-                      text: 'Clear Chat',
-                      onPress: () => setMessages([]),
-                    },
-                    { text: 'Cancel', style: 'cancel' },
-                  ]
-                );
-              }}
+              onPress={() => setIsMenuOpen((prev) => !prev)}
             >
               <Feather name="more-horizontal" size={20} color={Colors.white} />
             </TouchableOpacity>
           </View>
+
+          {/* Dropdown Options Menu */}
+          <AppOptionsMenu
+            visible={isMenuOpen}
+            onClose={() => setIsMenuOpen(false)}
+            topOffset={insets.top + 58}
+            items={[
+              {
+                id: 'toggle-offline',
+                label: isOffline ? 'Switch to Online' : 'Switch to Offline',
+                iconName: isOffline ? 'wifi' : 'wifi-off',
+                onPress: () => setIsOffline((prev) => !prev),
+                showDividerAfter: true,
+              },
+              {
+                id: 'clear-chat',
+                label: 'Clear Chat',
+                iconName: 'trash-2',
+                destructive: true,
+                onPress: () => setMessages([]),
+              },
+            ]}
+          />
 
           {/* Offline Banner (CHT-09) */}
           {isOffline && (

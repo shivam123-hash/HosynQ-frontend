@@ -54,7 +54,7 @@ export const CalendarHeader: React.FC<CalendarHeaderProps> = ({
           accessibilityRole="button"
           accessibilityLabel="Search events"
         >
-          <Feather name="search" size={20} color="#CAD4DF" />
+          <Feather name="search" size={20} color="#FFFFFF" />
         </TouchableOpacity>
 
         {/* Filter with active dot */}
@@ -68,11 +68,26 @@ export const CalendarHeader: React.FC<CalendarHeaderProps> = ({
           accessibilityRole="button"
           accessibilityLabel="Filter calendar"
         >
-          <Feather
-            name="sliders"
-            size={19}
-            color={hasActiveFilters ? '#F0913A' : '#CAD4DF'}
-          />
+          <View style={styles.filterIconContainer}>
+            <View
+              style={[
+                styles.filterLineTop,
+                hasActiveFilters && styles.filterLineActive,
+              ]}
+            />
+            <View
+              style={[
+                styles.filterLineMiddle,
+                hasActiveFilters && styles.filterLineActive,
+              ]}
+            />
+            <View
+              style={[
+                styles.filterLineBottom,
+                hasActiveFilters && styles.filterLineActive,
+              ]}
+            />
+          </View>
           {hasActiveFilters && <View style={styles.activeDot} />}
         </TouchableOpacity>
       </View>
@@ -102,18 +117,44 @@ const styles = StyleSheet.create({
     gap: 10,
   },
   iconBtn: {
-    width: 42,
-    height: 42,
-    borderRadius: 21,
-    backgroundColor: '#122440',
-    borderWidth: 1,
-    borderColor: '#1F3352',
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: 'transparent',
+    borderWidth: 1.5,
+    borderColor: '#3A4556',
     justifyContent: 'center',
     alignItems: 'center',
     position: 'relative',
   },
   iconBtnActive: {
     borderColor: '#F0913A',
+  },
+  filterIconContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 3.5,
+  },
+  filterLineTop: {
+    width: 16,
+    height: 2,
+    borderRadius: 1,
+    backgroundColor: '#FFFFFF',
+  },
+  filterLineMiddle: {
+    width: 11,
+    height: 2,
+    borderRadius: 1,
+    backgroundColor: '#FFFFFF',
+  },
+  filterLineBottom: {
+    width: 6,
+    height: 2,
+    borderRadius: 1,
+    backgroundColor: '#FFFFFF',
+  },
+  filterLineActive: {
+    backgroundColor: '#F0913A',
   },
   activeDot: {
     position: 'absolute',

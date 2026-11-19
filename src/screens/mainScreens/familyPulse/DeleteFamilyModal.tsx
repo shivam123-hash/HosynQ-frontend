@@ -8,6 +8,8 @@ import {
   ScrollView,
   StatusBar,
   Alert,
+  Modal,
+  Platform,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Feather from '@react-native-vector-icons/feather';
@@ -103,6 +105,8 @@ const MiniCrownIcon: React.FC<{ size?: number; color?: string }> = ({
 };
 
 export const DeleteFamilyModal: React.FC<DeleteFamilyModalProps> = ({
+  visible = true,
+  isScreen = false,
   familyName = 'The Sharma Family',
   memberCount = 5,
   onClose,
@@ -146,8 +150,13 @@ export const DeleteFamilyModal: React.FC<DeleteFamilyModalProps> = ({
     );
   };
 
-  return (
-    <View style={[styles.container, { paddingTop: insets.top }]}>
+  const topPadding = Math.max(
+    insets.top,
+    Platform.OS === 'android' ? (StatusBar.currentHeight || 24) : 44
+  );
+
+  const mainContent = (
+    <View style={[styles.container, { paddingTop: topPadding }]}>
       <StatusBar barStyle="light-content" />
 
       {/* Header */}
@@ -275,6 +284,21 @@ export const DeleteFamilyModal: React.FC<DeleteFamilyModalProps> = ({
         </TouchableOpacity>
       </View>
     </View>
+  );
+
+  if (isScreen) {
+    return mainContent;
+  }
+
+  return (
+    <Modal
+      visible={visible}
+      animationType="slide"
+      transparent={false}
+      onRequestClose={onClose}
+    >
+      {mainContent}
+    </Modal>
   );
 };
 

@@ -17,6 +17,7 @@ export interface DayViewProps {
   onSelectEvent: (event: CalendarEvent) => void;
   onToggleTask: (taskId: string) => void;
   onAddEvent: () => void;
+  onSelectTask?: (task: CalendarTaskDue) => void;
 }
 
 const WEEK_DAYS = [
@@ -47,6 +48,7 @@ export const DayView: React.FC<DayViewProps> = ({
   onSelectEvent,
   onToggleTask,
   onAddEvent,
+  onSelectTask,
 }) => {
   // Filter events for selected day
   const dayEvents = events.filter((e) => e.date === selectedDate);
@@ -246,7 +248,12 @@ export const DayView: React.FC<DayViewProps> = ({
                   </View>
                 </TouchableOpacity>
 
-                <View style={styles.taskTextCol}>
+                <TouchableOpacity
+                  style={styles.taskTextCol}
+                  onPress={() => onSelectTask?.(t)}
+                  activeOpacity={onSelectTask ? 0.7 : 1}
+                  disabled={!onSelectTask}
+                >
                   <Text
                     style={[
                       styles.taskTitle,
@@ -265,7 +272,7 @@ export const DayView: React.FC<DayViewProps> = ({
                       ? `${t.overdueText || 'Overdue by 2 days'} · ${t.assignee}`
                       : `Today · ${t.assignee}`}
                   </Text>
-                </View>
+                </TouchableOpacity>
 
                 {/* Priority Red Dot */}
                 <View style={styles.priorityDot} />

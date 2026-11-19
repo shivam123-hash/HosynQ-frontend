@@ -228,7 +228,7 @@ const ListOptionsModal: React.FC<ListOptionsModalProps> = ({
                 accessibilityLabel="Delete list"
               >
                 <View style={styles.actionIconBox}>
-                  <Feather name="trash-2" size={20} color="#EF4444" />
+                  <Feather name="trash-2" size={20} color="#F06A6A" />
                 </View>
                 <View style={styles.actionTextCol}>
                   <Text style={[styles.actionTitle, styles.destructiveText]}>
@@ -272,7 +272,7 @@ const styles = StyleSheet.create({
     bottom: 0,
   },
   sheetContainer: {
-    backgroundColor: '#0B1A2F',
+    backgroundColor: '#122440',
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
     borderTopWidth: 1,
@@ -306,7 +306,7 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   inputContainer: {
-    backgroundColor: '#122440',
+    backgroundColor: 'transparent',
     borderRadius: 24,
     borderWidth: 1.5,
     borderColor: '#F0913A',
@@ -321,10 +321,10 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
   },
   actionsCard: {
-    backgroundColor: '#122440',
+    backgroundColor: 'transparent',
     borderRadius: 20,
-    borderWidth: 1,
-    borderColor: '#1F3352',
+    borderWidth: 1.5,
+    borderColor: '#3A4556',
     overflow: 'hidden',
     marginBottom: 12,
   },
@@ -335,7 +335,7 @@ const styles = StyleSheet.create({
   },
   rowDivider: {
     borderTopWidth: 1,
-    borderColor: '#1A2C46',
+    borderTopColor: '#1F3352',
   },
   actionIconBox: {
     width: 40,
@@ -355,11 +355,11 @@ const styles = StyleSheet.create({
     marginBottom: 2,
   },
   actionSub: {
-    fontSize: 12,
+    fontSize: 13,
     color: '#8A97AB',
   },
   destructiveText: {
-    color: '#EF4444',
+    color: '#F06A6A',
   },
   saveBtn: {
     height: 52,

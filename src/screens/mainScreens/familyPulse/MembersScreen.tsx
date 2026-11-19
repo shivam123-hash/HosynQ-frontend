@@ -51,37 +51,57 @@ export const MembersScreen: React.FC<MembersScreenProps> = ({
     }
   };
 
-  const handleAddChildProfile = () => {
-    if (onAddChildProfile) {
-      onAddChildProfile();
-    } else if (navigation && typeof navigation.navigate === 'function') {
-      navigation.navigate('AddChild');
-    }
-  };
+  const canNavigateAddChild = Boolean(
+    onAddChildProfile || (navigation && typeof navigation.navigate === 'function')
+  );
+  const handleAddChildProfile = canNavigateAddChild
+    ? () => {
+        if (onAddChildProfile) {
+          onAddChildProfile();
+        } else if (navigation && typeof navigation.navigate === 'function') {
+          navigation.navigate('AddChild');
+        }
+      }
+    : undefined;
 
-  const handleTransferOwnership = () => {
-    if (onNavigateTransferOwnership) {
-      onNavigateTransferOwnership();
-    } else if (navigation && typeof navigation.navigate === 'function') {
-      navigation.navigate('TransferOwnership');
-    }
-  };
+  const canNavigateTransferOwnership = Boolean(
+    onNavigateTransferOwnership || (navigation && typeof navigation.navigate === 'function')
+  );
+  const handleTransferOwnership = canNavigateTransferOwnership
+    ? () => {
+        if (onNavigateTransferOwnership) {
+          onNavigateTransferOwnership();
+        } else if (navigation && typeof navigation.navigate === 'function') {
+          navigation.navigate('TransferOwnership');
+        }
+      }
+    : undefined;
 
-  const handleDeleteFamily = () => {
-    if (onNavigateDeleteFamily) {
-      onNavigateDeleteFamily();
-    } else if (navigation && typeof navigation.navigate === 'function') {
-      navigation.navigate('DeleteFamily');
-    }
-  };
+  const canNavigateDeleteFamily = Boolean(
+    onNavigateDeleteFamily || (navigation && typeof navigation.navigate === 'function')
+  );
+  const handleDeleteFamily = canNavigateDeleteFamily
+    ? () => {
+        if (onNavigateDeleteFamily) {
+          onNavigateDeleteFamily();
+        } else if (navigation && typeof navigation.navigate === 'function') {
+          navigation.navigate('DeleteFamily');
+        }
+      }
+    : undefined;
 
-  const handleStaff = () => {
-    if (onNavigateStaff) {
-      onNavigateStaff();
-    } else if (navigation && typeof navigation.navigate === 'function') {
-      navigation.navigate('Staff');
-    }
-  };
+  const canNavigateStaff = Boolean(
+    onNavigateStaff || (navigation && typeof navigation.navigate === 'function')
+  );
+  const handleStaff = canNavigateStaff
+    ? () => {
+        if (onNavigateStaff) {
+          onNavigateStaff();
+        } else if (navigation && typeof navigation.navigate === 'function') {
+          navigation.navigate('Staff');
+        }
+      }
+    : undefined;
 
   return (
     <MembersModal

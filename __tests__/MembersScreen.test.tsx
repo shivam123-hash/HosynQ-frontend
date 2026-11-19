@@ -192,6 +192,98 @@ describe('MEM-01 · Members Screen', () => {
     expect(onAddChildProfile).toHaveBeenCalled();
   });
 
+  it('opens AddChildModal internally when tapping Add a child profile without external callback', async () => {
+    const renderer = await renderWithProvider(
+      <MembersModal
+        visible={true}
+        onClose={jest.fn()}
+      />
+    );
+
+    const addChildBtn = renderer.root.findAllByType(TouchableOpacity).find(
+      (b) => b.props.accessibilityLabel === 'Add a child profile'
+    );
+    expect(addChildBtn).toBeDefined();
+
+    await ReactTestRenderer.act(async () => {
+      addChildBtn?.props.onPress();
+    });
+
+    const addChildModal = renderer.root.findAllByType(AddChildModal).find(
+      (m) => m.props.visible === true
+    );
+    expect(addChildModal).toBeDefined();
+  });
+
+  it('opens Leave Family confirmation dialog when tapping Leave family', async () => {
+    const renderer = await renderWithProvider(
+      <MembersModal
+        visible={true}
+        onClose={jest.fn()}
+      />
+    );
+
+    const leaveBtn = renderer.root.findAllByType(TouchableOpacity).find(
+      (b) => b.props.accessibilityLabel === 'Leave family'
+    );
+    expect(leaveBtn).toBeDefined();
+
+    await ReactTestRenderer.act(async () => {
+      leaveBtn?.props.onPress();
+    });
+
+    const actionModal = renderer.root.findAllByType(FamilyActionConfirmationModal).find(
+      (m) => m.props.visible === true && m.props.type === 'leave_family'
+    );
+    expect(actionModal).toBeDefined();
+  });
+
+  it('opens DeleteFamilyModal when tapping Delete family', async () => {
+    const renderer = await renderWithProvider(
+      <MembersModal
+        visible={true}
+        onClose={jest.fn()}
+      />
+    );
+
+    const deleteBtn = renderer.root.findAllByType(TouchableOpacity).find(
+      (b) => b.props.accessibilityLabel === 'Delete family'
+    );
+    expect(deleteBtn).toBeDefined();
+
+    await ReactTestRenderer.act(async () => {
+      deleteBtn?.props.onPress();
+    });
+
+    const deleteModal = renderer.root.findAllByType(DeleteFamilyModal).find(
+      (m) => m.props.visible === true
+    );
+    expect(deleteModal).toBeDefined();
+  });
+
+  it('opens StaffModal when tapping Staff section', async () => {
+    const renderer = await renderWithProvider(
+      <MembersModal
+        visible={true}
+        onClose={jest.fn()}
+      />
+    );
+
+    const staffBtn = renderer.root.findAllByType(TouchableOpacity).find(
+      (b) => b.props.accessibilityLabel === 'Staff, Drivers and house help'
+    );
+    expect(staffBtn).toBeDefined();
+
+    await ReactTestRenderer.act(async () => {
+      staffBtn?.props.onPress();
+    });
+
+    const staffModal = renderer.root.findAllByType(StaffModal).find(
+      (m) => m.props.visible === true
+    );
+    expect(staffModal).toBeDefined();
+  });
+
   it('can be opened from FamilyHubModal when tapping Members card', async () => {
     const onOpenMembers = jest.fn();
 

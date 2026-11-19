@@ -20,6 +20,10 @@ import {
   FamilyActionConfirmationModal,
   type FamilyActionModalType,
 } from './FamilyActionConfirmationModal';
+import { AddChildModal } from './AddChildModal';
+import { DeleteFamilyModal } from './DeleteFamilyModal';
+import { TransferOwnershipModal } from './TransferOwnershipModal';
+import { StaffModal } from './StaffModal';
 
 export type MemberRole = 'Owner' | 'Admin' | 'Adult' | 'Child';
 
@@ -109,6 +113,10 @@ export const MembersModal: React.FC<MembersModalProps> = ({
   const [copiedNotification, setCopiedNotification] = useState(false);
   const [showJoinRequestsModal, setShowJoinRequestsModal] = useState(false);
   const [showInviteModal, setShowInviteModal] = useState(false);
+  const [showAddChildModal, setShowAddChildModal] = useState(false);
+  const [showDeleteFamilyModal, setShowDeleteFamilyModal] = useState(false);
+  const [showTransferOwnershipModal, setShowTransferOwnershipModal] = useState(false);
+  const [showStaffModal, setShowStaffModal] = useState(false);
   const [actionModal, setActionModal] = useState<{
     visible: boolean;
     type: FamilyActionModalType;
@@ -128,11 +136,43 @@ export const MembersModal: React.FC<MembersModalProps> = ({
     }
   };
 
+  const handleOpenAddChild = () => {
+    if (onAddChildProfile) {
+      onAddChildProfile();
+    } else {
+      setShowAddChildModal(true);
+    }
+  };
+
   const handleOpenJoinRequests = () => {
     if (onReviewJoinRequests) {
       onReviewJoinRequests();
     } else {
       setShowJoinRequestsModal(true);
+    }
+  };
+
+  const handleOpenDeleteFamily = () => {
+    if (onOpenDeleteFamily) {
+      onOpenDeleteFamily();
+    } else {
+      setShowDeleteFamilyModal(true);
+    }
+  };
+
+  const handleOpenTransferOwnership = () => {
+    if (onOpenTransferOwnership) {
+      onOpenTransferOwnership();
+    } else {
+      setShowTransferOwnershipModal(true);
+    }
+  };
+
+  const handleOpenStaff = () => {
+    if (onOpenStaff) {
+      onOpenStaff();
+    } else {
+      setShowStaffModal(true);
     }
   };
 
@@ -145,37 +185,32 @@ export const MembersModal: React.FC<MembersModalProps> = ({
   };
 
   const handlePromptLeaveFamily = () => {
-    const currentUser = members.find((m) => m.id === 'priya');
-    if (currentUser?.role === 'Owner') {
-      setActionModal({
-        visible: true,
-        type: 'transfer_owner_required',
-      });
-    } else {
-      setActionModal({
-        visible: true,
-        type: 'leave_family',
-      });
-    }
+    setActionModal({
+      visible: true,
+      type: 'leave_family',
+    });
   };
 
   const handleConfirmAction = () => {
     if (actionModal.type === 'remove_member' && actionModal.member) {
       const removedId = actionModal.member.id;
       setMembers((prev) => prev.filter((m) => m.id !== removedId));
+      setActionModal((prev) => ({ ...prev, visible: false }));
     } else if (actionModal.type === 'leave_family') {
+      const currentUser = members.find((m) => m.id === 'priya');
+      if (currentUser?.role === 'Owner') {
+        setActionModal({
+          visible: true,
+          type: 'transfer_owner_required',
+        });
+        return;
+      }
+      setActionModal((prev) => ({ ...prev, visible: false }));
       onClose();
     } else if (actionModal.type === 'transfer_owner_required') {
-      if (onOpenTransferOwnership) {
-        onOpenTransferOwnership();
-      } else {
-        const nextAdult = members.find((m) => m.role === 'Admin' || m.role === 'Adult');
-        if (nextAdult) {
-          setSelectedMemberForRole(nextAdult);
-        }
-      }
+      setActionModal((prev) => ({ ...prev, visible: false }));
+      handleOpenTransferOwnership();
     }
-    setActionModal((prev) => ({ ...prev, visible: false }));
   };
 
   React.useEffect(() => {
@@ -387,7 +422,7 @@ export const MembersModal: React.FC<MembersModalProps> = ({
         {/* Staff Entry Card */}
         <TouchableOpacity
           style={styles.staffEntryCard}
-          onPress={onOpenStaff}
+          onPress={handleOpenStaff}
           activeOpacity={0.75}
           accessibilityRole="button"
           accessibilityLabel="Staff, Drivers and house help"
@@ -422,7 +457,7 @@ export const MembersModal: React.FC<MembersModalProps> = ({
 
           <TouchableOpacity
             style={styles.footerActionButton}
-            onPress={onOpenDeleteFamily}
+            onPress={handleOpenDeleteFamily}
             activeOpacity={0.7}
             accessibilityRole="button"
             accessibilityLabel="Delete family"
@@ -456,7 +491,7 @@ export const MembersModal: React.FC<MembersModalProps> = ({
         {/* Add a Child Profile Button */}
         <TouchableOpacity
           style={styles.secondaryAddChildButton}
-          onPress={onAddChildProfile}
+          onPress={handleOpenAddChild}
           activeOpacity={0.75}
           accessibilityRole="button"
           accessibilityLabel="Add a child profile"
@@ -479,17 +514,65 @@ export const MembersModal: React.FC<MembersModalProps> = ({
         onClose={() => setShowInviteModal(false)}
       />
 
+      <AddChildModal
+        visible={showAddChildModal}
+        onClose={() => setShowAddChildModal(false)}
+        onAddChild={(childData) => {
+          const newChild: FamilyMemberItem = {
+            id: childData.name.toLowerCase().replace(/\s+/g, '-'),
+            name: childData.name,
+            relation: `${childData.relationship} · 4`,
+            role: 'Child',
+            initials: childData.name.slice(0, 2),
+            avatarBg: childData.selectedColor,
+          };
+          setMembers((prev) => [...prev, newChild]);
+          setShowAddChildModal(false);
+        }}
+      />
+
       <ChangeRoleModal
         visible={!!selectedMemberForRole}
         member={selectedMemberForRole}
         onClose={() => setSelectedMemberForRole(null)}
-        onTransferOwnershipPress={onOpenTransferOwnership}
+        onTransferOwnershipPress={handleOpenTransferOwnership}
         onSaveRole={(memberId, newRole) => {
           setMembers((prev) =>
             prev.map((m) => (m.id === memberId ? { ...m, role: newRole } : m))
           );
           setSelectedMemberForRole(null);
         }}
+      />
+
+      <DeleteFamilyModal
+        visible={showDeleteFamilyModal}
+        onClose={() => setShowDeleteFamilyModal(false)}
+        onDeleteFamily={() => {
+          setShowDeleteFamilyModal(false);
+          onClose();
+        }}
+      />
+
+      <TransferOwnershipModal
+        visible={showTransferOwnershipModal}
+        onClose={() => setShowTransferOwnershipModal(false)}
+        onTransferComplete={(newOwnerId) => {
+          setMembers((prev) =>
+            prev.map((m) =>
+              m.id === newOwnerId
+                ? { ...m, role: 'Owner' }
+                : m.id === 'priya'
+                ? { ...m, role: 'Adult' }
+                : m
+            )
+          );
+          setShowTransferOwnershipModal(false);
+        }}
+      />
+
+      <StaffModal
+        visible={showStaffModal}
+        onClose={() => setShowStaffModal(false)}
       />
 
       <FamilyActionConfirmationModal

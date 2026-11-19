@@ -12,6 +12,9 @@ import {
   CategoryPriorityModal,
   EditRepeatingConfirmModal,
   DiscardChangesModal,
+  ReassignModal,
+  DeleteTaskModal,
+  CreateTaskModal,
 } from '../src/screens/mainScreens/tasksScreen/components';
 import { INITIAL_TASKS } from '../src/screens/mainScreens/tasksScreen/mockData';
 
@@ -298,6 +301,126 @@ describe('TasksScreen', () => {
     expect(texts).toContain('Discard this task?');
     expect(texts).toContain('Keep editing');
     expect(texts).toContain('Discard');
+  });
+
+  it('opens DiscardChangesModal when closing CreateTaskModal with half-filled info', async () => {
+    const onClose = jest.fn();
+    const onCreateTask = jest.fn();
+
+    const renderer = await renderWithProvider(
+      <CreateTaskModal
+        visible={true}
+        initialTitle="Book train tickets to Jaipur"
+        onClose={onClose}
+        onCreateTask={onCreateTask}
+      />
+    );
+
+    const closeBtn = renderer.root.findByProps({
+      accessibilityLabel: 'Close create task',
+    });
+    await ReactTestRenderer.act(() => {
+      closeBtn.props.onPress();
+    });
+
+    expect(onClose).not.toHaveBeenCalled();
+
+    const textNodes = renderer.root.findAllByType(Text);
+    const texts = textNodes.map((n) => n.props.children).flat();
+    expect(texts).toContain('Discard this task?');
+    expect(texts).toContain('Keep editing');
+    expect(texts).toContain('Discard');
+  });
+
+  it('renders ReassignModal correctly matching Figma design', async () => {
+    const onSelectAssignee = jest.fn();
+    const onClose = jest.fn();
+
+    const renderer = await renderWithProvider(
+      <ReassignModal
+        visible={true}
+        taskTitle="Pay electricity bill"
+        currentAssignee="Priya"
+        onClose={onClose}
+        onSelectAssignee={onSelectAssignee}
+      />
+    );
+    const textNodes = renderer.root.findAllByType(Text);
+    const texts = textNodes.map((n) => n.props.children).flat();
+
+    expect(texts).toContain('Reassign task');
+    expect(texts).toContain('Pay electricity bill');
+    expect(texts).toContain('Priya (you)');
+    expect(texts).toContain('Assigned now · 5 tasks this week');
+    expect(texts).toContain('Rohan');
+    expect(texts).toContain('4 tasks this week');
+    expect(texts).toContain('Dadi');
+    expect(texts).toContain('1 task this week');
+    expect(texts).toContain('Anaya');
+    expect(texts).toContain('Child · 1 task this week');
+    expect(texts).toContain('Aarav');
+    expect(texts).toContain('Child · 1 task this week');
+    expect(texts).toContain('Let Rohan know');
+    expect(texts).toContain('Reassign to Rohan');
+    expect(texts).toContain('Cancel');
+  });
+
+  it('renders DeleteTaskModal correctly matching Figma design', async () => {
+    const onConfirmDelete = jest.fn();
+    const onClose = jest.fn();
+
+    const renderer = await renderWithProvider(
+      <DeleteTaskModal
+        visible={true}
+        taskTitle="Pay electricity bill"
+        isRepeating={true}
+        repeatText="monthly"
+        onClose={onClose}
+        onConfirmDelete={onConfirmDelete}
+      />
+    );
+    const textNodes = renderer.root.findAllByType(Text);
+    const texts = textNodes.map((n) => n.props.children).flat();
+
+    expect(texts).toContain('Delete this task?');
+    expect(texts).toContain(
+      '“Pay electricity bill” and its comments will be removed for everyone. Future monthly reminders stop too.'
+    );
+    expect(texts).toContain('Delete task');
+    expect(texts).toContain('Cancel');
+  });
+
+  it('opens ReassignModal when tapping Reassign in TaskDetailModal', async () => {
+    const task = INITIAL_TASKS.find((t) => t.id === 'tsk-4')!; // Pay electricity bill
+    const onReassign = jest.fn();
+    const renderer = await renderWithProvider(
+      <TaskDetailModal
+        visible={true}
+        task={task}
+        onClose={jest.fn()}
+        onToggleComplete={jest.fn()}
+        onReassign={onReassign}
+      />
+    );
+
+    // Find and tap "Reassign" button
+    const { TouchableOpacity } = require('react-native');
+    const reassignBtn = renderer.root
+      .findAllByType(TouchableOpacity)
+      .find((t: any) => t.props.accessibilityLabel === 'Reassign task');
+    expect(reassignBtn).toBeTruthy();
+
+    await ReactTestRenderer.act(() => {
+      reassignBtn?.props.onPress();
+    });
+
+    const textNodes = renderer.root.findAllByType(Text);
+    const texts = textNodes.map((n) => n.props.children).flat();
+
+    expect(texts).toContain('Reassign task');
+    expect(texts).toContain('Pay electricity bill');
+    expect(texts).toContain('Priya (you)');
+    expect(texts).toContain('Let Rohan know');
   });
 });
 

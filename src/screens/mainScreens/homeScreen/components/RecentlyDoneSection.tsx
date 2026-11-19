@@ -6,11 +6,13 @@ import { RecentlyDoneItem } from '../types';
 export interface RecentlyDoneSectionProps {
   items: RecentlyDoneItem[];
   onReopen?: (id: string) => void;
+  onItemPress?: (item: RecentlyDoneItem) => void;
 }
 
 const RecentlyDoneSection: React.FC<RecentlyDoneSectionProps> = ({
   items,
   onReopen,
+  onItemPress,
 }) => {
   if (!items || items.length === 0) return null;
 
@@ -28,14 +30,19 @@ const RecentlyDoneSection: React.FC<RecentlyDoneSectionProps> = ({
               </View>
 
               {/* Text Info */}
-              <View style={styles.textCol}>
+              <TouchableOpacity
+                style={styles.textCol}
+                onPress={() => onItemPress?.(item)}
+                activeOpacity={onItemPress ? 0.7 : 1}
+                disabled={!onItemPress}
+              >
                 <Text style={styles.itemTitle} numberOfLines={1}>
                   {item.title}
                 </Text>
                 <Text style={styles.itemMeta}>
                   {item.completedBy} · {item.timeAgo}
                 </Text>
-              </View>
+              </TouchableOpacity>
 
               {/* Reopen Action */}
               <TouchableOpacity

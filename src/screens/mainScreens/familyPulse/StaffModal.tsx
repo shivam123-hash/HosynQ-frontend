@@ -8,6 +8,8 @@ import {
   ScrollView,
   StatusBar,
   Alert,
+  Modal,
+  Platform,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Feather from '@react-native-vector-icons/feather';
@@ -75,6 +77,8 @@ const DEFAULT_STAFF: StaffMember[] = [
 ];
 
 export const StaffModal: React.FC<StaffModalProps> = ({
+  visible = true,
+  isScreen = false,
   onClose,
   onAddStaff,
 }) => {
@@ -115,8 +119,13 @@ export const StaffModal: React.FC<StaffModalProps> = ({
     }
   };
 
-  return (
-    <View style={[styles.container, { paddingTop: insets.top }]}>
+  const topPadding = Math.max(
+    insets.top,
+    Platform.OS === 'android' ? (StatusBar.currentHeight || 24) : 44
+  );
+
+  const mainContent = (
+    <View style={[styles.container, { paddingTop: topPadding }]}>
       <StatusBar barStyle="light-content" />
 
       {/* Header */}
@@ -306,6 +315,21 @@ export const StaffModal: React.FC<StaffModalProps> = ({
         </TouchableOpacity>
       </View>
     </View>
+  );
+
+  if (isScreen) {
+    return mainContent;
+  }
+
+  return (
+    <Modal
+      visible={visible}
+      animationType="slide"
+      transparent={false}
+      onRequestClose={onClose}
+    >
+      {mainContent}
+    </Modal>
   );
 };
 

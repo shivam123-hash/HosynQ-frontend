@@ -13,6 +13,7 @@ export interface TasksHeaderProps {
   onProfilePress?: () => void;
   onExplorePress?: () => void;
   onNotificationsPress?: () => void;
+  onCompassPress?: () => void;
   onFilterPress?: () => void;
   isFilterActive?: boolean;
   searchQuery?: string;
@@ -25,6 +26,7 @@ const TasksHeader: React.FC<TasksHeaderProps> = ({
   onProfilePress,
   onExplorePress,
   onNotificationsPress,
+  onCompassPress,
   onFilterPress,
   isFilterActive = false,
   searchQuery = '',
@@ -39,6 +41,7 @@ const TasksHeader: React.FC<TasksHeaderProps> = ({
         onAvatarPress={onProfilePress}
         onExplorePress={onExplorePress}
         onNotificationsPress={onNotificationsPress}
+        onCompassPress={onCompassPress}
       />
 
       {/* Screen Title & Action Buttons Row */}
@@ -59,7 +62,7 @@ const TasksHeader: React.FC<TasksHeaderProps> = ({
             <Feather
               name="search"
               size={18}
-              color={isSearchVisible ? '#F0913A' : '#CAD4DF'}
+              color={isSearchVisible ? '#F0913A' : '#FFFFFF'}
             />
           </TouchableOpacity>
 
@@ -73,11 +76,26 @@ const TasksHeader: React.FC<TasksHeaderProps> = ({
               isFilterActive && styles.circleButtonActive,
             ]}
           >
-            <Feather
-              name="sliders"
-              size={18}
-              color={isFilterActive ? '#F0913A' : '#CAD4DF'}
-            />
+            <View style={styles.filterIconContainer}>
+              <View
+                style={[
+                  styles.filterLineTop,
+                  isFilterActive && styles.filterLineActive,
+                ]}
+              />
+              <View
+                style={[
+                  styles.filterLineMiddle,
+                  isFilterActive && styles.filterLineActive,
+                ]}
+              />
+              <View
+                style={[
+                  styles.filterLineBottom,
+                  isFilterActive && styles.filterLineActive,
+                ]}
+              />
+            </View>
             {isFilterActive && <View style={styles.filterDot} />}
           </TouchableOpacity>
         </View>
@@ -125,7 +143,7 @@ const styles = StyleSheet.create({
   screenTitle: {
     fontSize: 30,
     fontWeight: '700',
-    color: '#CAD4DF',
+    color: '#FFFFFF',
     letterSpacing: -0.5,
   },
   titleButtons: {
@@ -137,7 +155,7 @@ const styles = StyleSheet.create({
     width: 42,
     height: 42,
     borderRadius: 21,
-    backgroundColor: '#122440',
+    backgroundColor: 'transparent',
     borderWidth: 1.5,
     borderColor: '#1F3352',
     justifyContent: 'center',
@@ -145,6 +163,32 @@ const styles = StyleSheet.create({
   },
   circleButtonActive: {
     borderColor: '#F0913A',
+  },
+  filterIconContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 3.5,
+  },
+  filterLineTop: {
+    width: 16,
+    height: 2,
+    borderRadius: 1,
+    backgroundColor: '#FFFFFF',
+  },
+  filterLineMiddle: {
+    width: 11,
+    height: 2,
+    borderRadius: 1,
+    backgroundColor: '#FFFFFF',
+  },
+  filterLineBottom: {
+    width: 6,
+    height: 2,
+    borderRadius: 1,
+    backgroundColor: '#FFFFFF',
+  },
+  filterLineActive: {
+    backgroundColor: '#F0913A',
   },
   filterDot: {
     position: 'absolute',

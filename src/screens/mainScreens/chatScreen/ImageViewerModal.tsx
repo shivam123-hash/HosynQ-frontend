@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
   View,
   Text,
@@ -11,6 +11,7 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Feather from '@react-native-vector-icons/feather';
 import Colors from '../../../units/Colors';
+import AppOptionsMenu from '../common/AppOptionsMenu';
 
 export interface ImageViewerModalProps {
   visible: boolean;
@@ -32,6 +33,13 @@ export const ImageViewerModal: React.FC<ImageViewerModalProps> = ({
   onReply,
 }) => {
   const insets = useSafeAreaInsets();
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
+
+  React.useEffect(() => {
+    if (!visible) {
+      setIsMenuOpen(false);
+    }
+  }, [visible]);
 
   const handleShare = async () => {
     try {
@@ -74,6 +82,7 @@ export const ImageViewerModal: React.FC<ImageViewerModalProps> = ({
 
           <TouchableOpacity
             style={styles.circleBtn}
+            onPress={() => setIsMenuOpen((prev) => !prev)}
             activeOpacity={0.7}
             accessibilityRole="button"
             accessibilityLabel="More options"
@@ -81,6 +90,30 @@ export const ImageViewerModal: React.FC<ImageViewerModalProps> = ({
             <Feather name="more-horizontal" size={20} color={Colors.white} />
           </TouchableOpacity>
         </View>
+
+        {/* Dropdown Options Menu */}
+        <AppOptionsMenu
+          visible={isMenuOpen}
+          onClose={() => setIsMenuOpen(false)}
+          topOffset={insets.top + 58}
+          items={[
+            {
+              id: 'share',
+              label: 'Share Image',
+              iconName: 'share-2',
+              onPress: handleShare,
+            },
+            {
+              id: 'save-vault',
+              label: 'Save to Vault',
+              iconName: 'shield',
+              onPress: () => {
+                if (onSaveToVault) onSaveToVault();
+                else Alert.alert('Vault', 'Saved image to Family Vault');
+              },
+            },
+          ]}
+        />
 
         {/* Center Image / Illustration Preview */}
         <View style={styles.imageStage}>

@@ -11,6 +11,7 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Feather from '@react-native-vector-icons/feather';
+import Colors from '../../../units/Colors';
 
 export interface ContactSupportScreenProps {
   onClose?: () => void;
@@ -148,8 +149,8 @@ export const ContactSupportScreen: React.FC<ContactSupportScreenProps> = ({
             <Switch
               value={includeDeviceInfo}
               onValueChange={setIncludeDeviceInfo}
-              trackColor={{ false: '#1F3352', true: '#F0913A' }}
-              thumbColor="#FFFFFF"
+              trackColor={{ false: Colors.borderBold, true: Colors.primary }}
+              thumbColor={Colors.white}
             />
           </View>
         </ScrollView>
@@ -189,7 +190,7 @@ export const ContactSupportScreen: React.FC<ContactSupportScreenProps> = ({
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#0B1A2F',
+    backgroundColor: Colors.background,
   },
   innerContent: {
     flex: 1,
@@ -206,9 +207,9 @@ const styles = StyleSheet.create({
     width: 44,
     height: 44,
     borderRadius: 22,
-    backgroundColor: '#0B1A2F',
+    backgroundColor: Colors.background,
     borderWidth: 1.5,
-    borderColor: '#3A4556',
+    borderColor: Colors.handleMuted,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -219,7 +220,7 @@ const styles = StyleSheet.create({
   topBarTitle: {
     fontSize: 20,
     fontWeight: '700',
-    color: '#FFFFFF',
+    color: Colors.white,
     letterSpacing: -0.3,
   },
   scrollView: {
@@ -232,7 +233,7 @@ const styles = StyleSheet.create({
   sectionLabel: {
     fontSize: 12,
     fontWeight: '700',
-    color: '#8A97AB',
+    color: Colors.textSecondaryMuted,
     letterSpacing: 1.2,
     marginBottom: 12,
   },
@@ -249,28 +250,28 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   chipActive: {
-    backgroundColor: '#F0913A',
+    backgroundColor: Colors.primary,
   },
   chipInactive: {
-    backgroundColor: 'transparent',
-    borderWidth: 1.5,
-    borderColor: '#3A4556',
+    backgroundColor: '#132235',
+    borderWidth: 1,
+    borderColor: '#22354A',
   },
   chipText: {
     fontSize: 14,
   },
   chipTextActive: {
-    color: '#0B1A2F',
+    color: '#0A111E',
     fontWeight: '700',
   },
   chipTextInactive: {
-    color: '#C9D1DC',
-    fontWeight: '600',
+    color: '#CAD4DF',
+    fontWeight: '500',
   },
   inputLabel: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#FFFFFF',
+    color: Colors.white,
     marginTop: 18,
     marginBottom: 10,
   },
@@ -278,10 +279,10 @@ const styles = StyleSheet.create({
     height: 120,
     borderRadius: 16,
     borderWidth: 1.5,
-    borderColor: '#F0913A',
-    backgroundColor: '#122440',
+    borderColor: Colors.primary,
+    backgroundColor: Colors.cardBackground,
     padding: 16,
-    color: '#FFFFFF',
+    color: Colors.white,
     fontSize: 15,
     lineHeight: 22,
   },
@@ -295,12 +296,12 @@ const styles = StyleSheet.create({
   sectionLabelInline: {
     fontSize: 12,
     fontWeight: '700',
-    color: '#8A97AB',
+    color: Colors.textSecondaryMuted,
     letterSpacing: 1.2,
   },
   optionalText: {
     fontSize: 13,
-    color: '#8A97AB',
+    color: Colors.textSecondaryMuted,
   },
   screenshotsRow: {
     flexDirection: 'row',
@@ -310,9 +311,9 @@ const styles = StyleSheet.create({
     width: 64,
     height: 96,
     borderRadius: 12,
-    backgroundColor: '#122440',
+    backgroundColor: Colors.cardBackground,
     borderWidth: 1,
-    borderColor: '#1F3352',
+    borderColor: Colors.borderBold,
     marginRight: 12,
   },
   addScreenshotBox: {
@@ -320,17 +321,17 @@ const styles = StyleSheet.create({
     height: 96,
     borderRadius: 12,
     borderWidth: 1.5,
-    borderColor: '#3A4556',
+    borderColor: Colors.handleMuted,
     borderStyle: 'dashed',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#122440',
+    backgroundColor: Colors.cardBackground,
   },
   deviceInfoCard: {
-    backgroundColor: '#122440',
+    backgroundColor: Colors.cardBackground,
     borderRadius: 16,
     borderWidth: 1,
-    borderColor: '#1F3352',
+    borderColor: Colors.borderBold,
     padding: 16,
     marginTop: 20,
     flexDirection: 'row',
@@ -344,30 +345,30 @@ const styles = StyleSheet.create({
   deviceInfoTitle: {
     fontSize: 15,
     fontWeight: '700',
-    color: '#FFFFFF',
+    color: Colors.white,
   },
   deviceInfoSubtitle: {
     fontSize: 13,
-    color: '#8A97AB',
+    color: Colors.textSecondaryMuted,
     marginTop: 4,
   },
   bottomContainer: {
     paddingHorizontal: 24,
     paddingTop: 14,
     borderTopWidth: 1,
-    borderTopColor: '#1F3352',
-    backgroundColor: '#0B1A2F',
+    borderTopColor: Colors.borderBold,
+    backgroundColor: Colors.background,
   },
   replyNotice: {
     fontSize: 13,
-    color: '#8A97AB',
+    color: Colors.textSecondaryMuted,
     textAlign: 'center',
     marginBottom: 12,
   },
   sendButton: {
     height: 54,
     borderRadius: 27,
-    backgroundColor: '#F0913A',
+    backgroundColor: Colors.primary,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
@@ -378,6 +379,6 @@ const styles = StyleSheet.create({
   sendButtonText: {
     fontSize: 16,
     fontWeight: '700',
-    color: '#FFFFFF',
+    color: Colors.white,
   },
 });

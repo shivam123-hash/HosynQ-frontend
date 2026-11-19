@@ -29,6 +29,7 @@ export interface CreateEventModalProps {
   onClose: () => void;
   onSaveEvent: (eventData: Partial<CalendarEvent>) => void;
   onDeleteEvent?: (eventId: string) => void;
+  asModal?: boolean;
 }
 
 export const CreateEventModal: React.FC<CreateEventModalProps> = ({
@@ -38,6 +39,7 @@ export const CreateEventModal: React.FC<CreateEventModalProps> = ({
   onClose,
   onSaveEvent,
   onDeleteEvent,
+  asModal = true,
 }) => {
   const insets = useSafeAreaInsets();
   const isEditing = Boolean(eventToEdit);
@@ -175,19 +177,16 @@ export const CreateEventModal: React.FC<CreateEventModalProps> = ({
     invitedMemberIds.includes(m.id)
   );
 
-  return (
-    <Modal
-      visible={visible}
-      transparent
-      animationType="slide"
-      onRequestClose={onClose}
+  if (!visible) return null;
+
+  const modalContent = (
+    <View
+      style={[
+        styles.container,
+        !asModal && styles.embeddedContainer,
+        { paddingTop: insets.top, paddingBottom: insets.bottom },
+      ]}
     >
-      <View
-        style={[
-          styles.container,
-          { paddingTop: insets.top, paddingBottom: insets.bottom },
-        ]}
-      >
         {/* Header (CAL-09 / CAL-10) */}
         <View style={styles.header}>
           <TouchableOpacity
@@ -525,6 +524,20 @@ export const CreateEventModal: React.FC<CreateEventModalProps> = ({
           asModal={false}
         />
       </View>
+  );
+
+  if (!asModal) {
+    return modalContent;
+  }
+
+  return (
+    <Modal
+      visible={visible}
+      transparent
+      animationType="slide"
+      onRequestClose={onClose}
+    >
+      {modalContent}
     </Modal>
   );
 };
@@ -535,6 +548,10 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#0B1A2F',
+  },
+  embeddedContainer: {
+    ...StyleSheet.absoluteFill,
+    zIndex: 500,
   },
   header: {
     height: 56,

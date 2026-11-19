@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
   View,
   Text,
@@ -6,12 +6,16 @@ import {
   StyleSheet,
   ScrollView,
   StatusBar,
+  Alert,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Feather from '@react-native-vector-icons/feather';
 import { CarIcon, IdCardIcon, ReceiptIcon } from './VaultIcons';
+import AppOptionsMenu from '../common/AppOptionsMenu';
 
 export interface VaultItemDetailScreenProps {
+  item?: any;
+  route?: any;
   onBack?: () => void;
   onMenu?: () => void;
   onViewDocument?: () => void;
@@ -22,6 +26,8 @@ export interface VaultItemDetailScreenProps {
 }
 
 export const VaultItemDetailScreen: React.FC<VaultItemDetailScreenProps> = ({
+  item,
+  route,
   onBack,
   onMenu,
   onViewDocument,
@@ -31,6 +37,16 @@ export const VaultItemDetailScreen: React.FC<VaultItemDetailScreenProps> = ({
   onOpenPermissions,
 }) => {
   const insets = useSafeAreaInsets();
+  const displayTitle = item?.title || route?.params?.item?.title || 'Car insurance';
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
+
+  const handleMenuPress = () => {
+    if (onMenu) {
+      onMenu();
+    } else {
+      setIsMenuOpen((prev) => !prev);
+    }
+  };
 
   return (
     <View style={[styles.container, { paddingTop: insets.top + 8 }]}>
@@ -48,10 +64,10 @@ export const VaultItemDetailScreen: React.FC<VaultItemDetailScreenProps> = ({
           <Feather name="chevron-left" size={22} color="#FFFFFF" />
         </TouchableOpacity>
 
-        <Text style={styles.headerTitle}>Car insurance</Text>
+        <Text style={styles.headerTitle}>{displayTitle}</Text>
 
         <TouchableOpacity
-          onPress={onMenu}
+          onPress={handleMenuPress}
           activeOpacity={0.7}
           style={styles.circleBtn}
           accessibilityRole="button"
@@ -60,6 +76,72 @@ export const VaultItemDetailScreen: React.FC<VaultItemDetailScreenProps> = ({
           <Feather name="more-horizontal" size={20} color="#FFFFFF" />
         </TouchableOpacity>
       </View>
+
+      {/* Dropdown Options Menu */}
+      <AppOptionsMenu
+        visible={isMenuOpen}
+        onClose={() => setIsMenuOpen(false)}
+        topOffset={insets.top + 60}
+        items={[
+          {
+            id: 'share',
+            label: 'Share Document',
+            iconName: 'share-2',
+            onPress: () => {
+              if (onShare) onShare();
+              else Alert.alert('Share', `Sharing ${displayTitle}`);
+            },
+          },
+          {
+            id: 'view',
+            label: 'View Document',
+            iconName: 'file-text',
+            onPress: () => {
+              if (onViewDocument) onViewDocument();
+              else Alert.alert('View', `Opening document for ${displayTitle}`);
+            },
+          },
+          {
+            id: 'reminders',
+            label: 'Reminders',
+            iconName: 'bell',
+            onPress: () => {
+              if (onOpenReminders) onOpenReminders();
+              else Alert.alert('Reminders', `Opening reminders for ${displayTitle}`);
+            },
+          },
+          {
+            id: 'permissions',
+            label: 'Permissions',
+            iconName: 'lock',
+            onPress: () => {
+              if (onOpenPermissions) onOpenPermissions();
+              else Alert.alert('Permissions', `Managing permissions for ${displayTitle}`);
+            },
+            showDividerAfter: true,
+          },
+          {
+            id: 'delete',
+            label: 'Delete Document',
+            iconName: 'trash-2',
+            destructive: true,
+            onPress: () => {
+              Alert.alert(
+                'Delete document?',
+                `Are you sure you want to delete ${displayTitle}?`,
+                [
+                  { text: 'Keep', style: 'cancel' },
+                  {
+                    text: 'Delete',
+                    style: 'destructive',
+                    onPress: onBack,
+                  },
+                ]
+              );
+            },
+          },
+        ]}
+      />
 
       <ScrollView
         style={{ flex: 1 }}

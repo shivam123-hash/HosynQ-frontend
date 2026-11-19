@@ -7,6 +7,7 @@ import {
   Modal,
   ScrollView,
   StatusBar,
+  Alert,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Feather from '@react-native-vector-icons/feather';
@@ -16,6 +17,7 @@ import FindCommonDatesModal from './FindCommonDatesModal';
 import TripDetailsModal from './TripDetailsModal';
 import TripBookingsModal from './TripBookingsModal';
 import TripPackingModal from './TripPackingModal';
+import AppOptionsMenu from '../../../common/AppOptionsMenu';
 
 export type TripScreenName = 'overview' | 'dates' | 'details' | 'bookings' | 'packing';
 
@@ -46,6 +48,13 @@ export const TripPlannerModal: React.FC<TripPlannerModalProps> = ({
   const [currentScreen, setCurrentScreen] = useState<TripScreenName>(
     initialScreen || (tripData.step1Done ? 'overview' : 'dates')
   );
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
+
+  useEffect(() => {
+    if (!visible) {
+      setIsMenuOpen(false);
+    }
+  }, [visible]);
 
   useEffect(() => {
     if (visible) {
@@ -269,7 +278,7 @@ export const TripPlannerModal: React.FC<TripPlannerModalProps> = ({
 
           <TouchableOpacity
             style={styles.circleBtn}
-            onPress={() => {}}
+            onPress={() => setIsMenuOpen((prev) => !prev)}
             activeOpacity={0.7}
             accessibilityRole="button"
             accessibilityLabel="Trip options"
@@ -277,6 +286,50 @@ export const TripPlannerModal: React.FC<TripPlannerModalProps> = ({
             <Feather name="more-horizontal" size={22} color="#FFFFFF" />
           </TouchableOpacity>
         </View>
+
+        {/* Dropdown Options Menu */}
+        <AppOptionsMenu
+          visible={isMenuOpen}
+          onClose={() => setIsMenuOpen(false)}
+          topOffset={insets.top + 58}
+          items={[
+            {
+              id: 'edit-trip',
+              label: 'Edit Trip Details',
+              iconName: 'edit-2',
+              onPress: () => setCurrentScreen('details'),
+            },
+            {
+              id: 'find-dates',
+              label: 'Find Common Dates',
+              iconName: 'calendar',
+              onPress: () => setCurrentScreen('dates'),
+            },
+            {
+              id: 'packing-list',
+              label: 'Packing List',
+              iconName: 'briefcase',
+              onPress: () => setCurrentScreen('packing'),
+              showDividerAfter: true,
+            },
+            {
+              id: 'delete-trip',
+              label: 'Delete Trip',
+              iconName: 'trash-2',
+              destructive: true,
+              onPress: () => {
+                Alert.alert(
+                  'Delete trip?',
+                  `Are you sure you want to delete ${tripData.destination}?`,
+                  [
+                    { text: 'Keep', style: 'cancel' },
+                    { text: 'Delete', style: 'destructive', onPress: onClose },
+                  ]
+                );
+              },
+            },
+          ]}
+        />
 
         <ScrollView
           showsVerticalScrollIndicator={false}
@@ -524,9 +577,9 @@ const styles = StyleSheet.create({
     width: 44,
     height: 44,
     borderRadius: 22,
-    backgroundColor: '#122440',
-    borderWidth: 1,
-    borderColor: '#1F3352',
+    backgroundColor: 'transparent',
+    borderWidth: 1.5,
+    borderColor: '#3A4556',
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -728,7 +781,8 @@ const styles = StyleSheet.create({
   doneBadge: {
     borderWidth: 1,
     borderColor: '#2DD4BF',
-    borderRadius: 12,
+    borderRadius: 14,
+    backgroundColor: 'transparent',
     paddingHorizontal: 12,
     paddingVertical: 4,
   },
@@ -740,7 +794,8 @@ const styles = StyleSheet.create({
   orangeBadge: {
     borderWidth: 1,
     borderColor: '#F0913A',
-    borderRadius: 12,
+    borderRadius: 14,
+    backgroundColor: 'transparent',
     paddingHorizontal: 10,
     paddingVertical: 4,
   },
@@ -751,7 +806,7 @@ const styles = StyleSheet.create({
   },
   startedBadge: {
     backgroundColor: '#1A2C46',
-    borderRadius: 12,
+    borderRadius: 14,
     paddingHorizontal: 12,
     paddingVertical: 4,
   },
@@ -774,7 +829,7 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     padding: 16,
     marginTop: 20,
-    backgroundColor: 'rgba(240, 145, 58, 0.05)',
+    backgroundColor: 'transparent',
   },
   sparkleIcon: {
     marginRight: 10,

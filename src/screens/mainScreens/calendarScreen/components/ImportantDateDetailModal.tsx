@@ -11,6 +11,7 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Feather from '@react-native-vector-icons/feather';
 import { ImportantDateItem } from '../types';
+import AppOptionsMenu from '../../common/AppOptionsMenu';
 
 export interface ImportantDateDetailModalProps {
   visible: boolean;
@@ -34,12 +35,19 @@ export const ImportantDateDetailModal: React.FC<ImportantDateDetailModalProps> =
   const [cachedItem, setCachedItem] = useState<ImportantDateItem | null>(
     itemProp
   );
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
 
   React.useEffect(() => {
     if (itemProp) {
       setCachedItem(itemProp);
     }
   }, [itemProp]);
+
+  React.useEffect(() => {
+    if (!visible) {
+      setIsMenuOpen(false);
+    }
+  }, [visible]);
 
   const item = itemProp || cachedItem;
 
@@ -81,9 +89,7 @@ export const ImportantDateDetailModal: React.FC<ImportantDateDetailModalProps> =
 
           <TouchableOpacity
             style={styles.circleBtn}
-            onPress={() => {
-              Alert.alert('Options', 'Important date options');
-            }}
+            onPress={() => setIsMenuOpen((prev) => !prev)}
             activeOpacity={0.7}
             accessibilityRole="button"
             accessibilityLabel="More options"
@@ -91,6 +97,48 @@ export const ImportantDateDetailModal: React.FC<ImportantDateDetailModalProps> =
             <Feather name="more-horizontal" size={20} color="#CAD4DF" />
           </TouchableOpacity>
         </View>
+
+        {/* Dropdown Options Menu */}
+        <AppOptionsMenu
+          visible={isMenuOpen}
+          onClose={() => setIsMenuOpen(false)}
+          topOffset={insets.top + 58}
+          items={[
+            {
+              id: 'edit',
+              label: 'Edit Date',
+              iconName: 'edit-2',
+              onPress: () => onEditDate?.(item),
+            },
+            {
+              id: 'add-task',
+              label: 'Add Task',
+              iconName: 'check-square',
+              onPress: () => onAddTask?.(item),
+              showDividerAfter: true,
+            },
+            {
+              id: 'delete',
+              label: 'Delete Date',
+              iconName: 'trash-2',
+              destructive: true,
+              onPress: () => {
+                Alert.alert(
+                  'Delete date?',
+                  `Are you sure you want to delete ${item.title}?`,
+                  [
+                    { text: 'Keep', style: 'cancel' },
+                    {
+                      text: 'Delete',
+                      style: 'destructive',
+                      onPress: onClose,
+                    },
+                  ]
+                );
+              },
+            },
+          ]}
+        />
 
         <ScrollView
           showsVerticalScrollIndicator={false}
@@ -370,7 +418,7 @@ const styles = StyleSheet.create({
     alignSelf: 'flex-start',
     borderWidth: 1.5,
     borderColor: '#F0913A',
-    borderRadius: 16,
+    borderRadius: 8,
     paddingHorizontal: 12,
     paddingVertical: 5,
     marginBottom: 12,

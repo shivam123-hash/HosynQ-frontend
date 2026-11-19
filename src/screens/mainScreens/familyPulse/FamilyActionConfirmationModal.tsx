@@ -1,14 +1,8 @@
 import React from 'react';
-import {
-  View,
-  Text,
-  TouchableOpacity,
-  StyleSheet,
-  Modal,
-  TouchableWithoutFeedback,
-  Platform,
-} from 'react-native';
+import { View, StyleSheet } from 'react-native';
 import Feather from '@react-native-vector-icons/feather';
+import AppDialog from '../../../components/AppDialog';
+import Colors from '../../../units/Colors';
 
 export type FamilyActionModalType =
   | 'remove_member'
@@ -153,11 +147,11 @@ export const FamilyActionConfirmationModal: React.FC<
         computedDescription ||
         `${memberName} will lose access to shared tasks, calendar, chat and Family Vault. Things ${pronoun} added will stay.`;
       computedPrimaryText = computedPrimaryText || `Remove ${memberName}`;
-      computedPrimaryColor = computedPrimaryColor || '#F06A6D';
+      computedPrimaryColor = computedPrimaryColor || Colors.dangerCoral;
       computedSecondaryText = computedSecondaryText || 'Cancel';
       iconRingColor = 'rgba(240, 106, 109, 0.4)';
       iconBgColor = 'rgba(240, 106, 109, 0.08)';
-      iconComponent = <Feather name="trash-2" size={22} color="#F06A6D" />;
+      iconComponent = <Feather name="trash-2" size={22} color={Colors.dangerCoral} />;
       break;
 
     case 'leave_family':
@@ -166,11 +160,11 @@ export const FamilyActionConfirmationModal: React.FC<
         computedDescription ||
         'You’ll lose access to shared tasks, calendar, chat and Family Vault. Your own Life Profile goes with you.';
       computedPrimaryText = computedPrimaryText || 'Leave family';
-      computedPrimaryColor = computedPrimaryColor || '#F06A6D';
+      computedPrimaryColor = computedPrimaryColor || Colors.dangerCoral;
       computedSecondaryText = computedSecondaryText || 'Stay';
       iconRingColor = 'rgba(240, 106, 109, 0.4)';
       iconBgColor = 'rgba(240, 106, 109, 0.08)';
-      iconComponent = <Feather name="log-out" size={22} color="#F06A6D" />;
+      iconComponent = <Feather name="log-out" size={22} color={Colors.dangerCoral} />;
       break;
 
     case 'transfer_owner_required':
@@ -179,11 +173,11 @@ export const FamilyActionConfirmationModal: React.FC<
         computedDescription ||
         `You’re the Owner of ${familyName}. Transfer ownership to another adult before you leave.`;
       computedPrimaryText = computedPrimaryText || 'Transfer ownership';
-      computedPrimaryColor = computedPrimaryColor || '#EE933A';
+      computedPrimaryColor = computedPrimaryColor || Colors.primary;
       computedSecondaryText = computedSecondaryText || 'Cancel';
       iconRingColor = 'rgba(238, 147, 58, 0.4)';
       iconBgColor = 'rgba(238, 147, 58, 0.08)';
-      iconComponent = <CrownIcon size={22} color="#EE933A" />;
+      iconComponent = <CrownIcon size={22} color={Colors.primary} />;
       break;
 
     case 'custom':
@@ -191,9 +185,9 @@ export const FamilyActionConfirmationModal: React.FC<
       computedTitle = computedTitle || 'Are you sure?';
       computedDescription = computedDescription || '';
       computedPrimaryText = computedPrimaryText || 'Confirm';
-      computedPrimaryColor = computedPrimaryColor || '#F06A6D';
+      computedPrimaryColor = computedPrimaryColor || Colors.dangerCoral;
       computedSecondaryText = computedSecondaryText || 'Cancel';
-      iconComponent = <Feather name="alert-circle" size={22} color="#F06A6D" />;
+      iconComponent = <Feather name="alert-circle" size={22} color={Colors.dangerCoral} />;
       break;
   }
 
@@ -211,113 +205,42 @@ export const FamilyActionConfirmationModal: React.FC<
     onClose();
   };
 
-  const modalContent = (
-    <View style={styles.overlay}>
-      <TouchableWithoutFeedback onPress={onClose} accessibilityRole="button" accessibilityLabel="Dismiss modal">
-        <View style={styles.backdrop} />
-      </TouchableWithoutFeedback>
-
-      <View style={styles.cardContainer}>
-        {/* Top Icon Badge */}
-        <View
-          style={[
-            styles.iconBadge,
-            {
-              borderColor: iconRingColor,
-              backgroundColor: iconBgColor,
-            },
-          ]}
-        >
-          {iconComponent}
-        </View>
-
-        {/* Modal Title */}
-        <Text style={styles.title}>{computedTitle}</Text>
-
-        {/* Modal Description */}
-        <Text style={styles.description}>{computedDescription}</Text>
-
-        {/* Primary Action Button */}
-        <TouchableOpacity
-          style={[
-            styles.primaryButton,
-            { backgroundColor: computedPrimaryColor },
-          ]}
-          onPress={handleConfirm}
-          activeOpacity={0.85}
-          accessibilityRole="button"
-          accessibilityLabel={computedPrimaryText}
-        >
-          <Text style={styles.primaryButtonText}>{computedPrimaryText}</Text>
-        </TouchableOpacity>
-
-        {/* Secondary Action Button / Cancel / Stay */}
-        <TouchableOpacity
-          style={styles.secondaryButton}
-          onPress={handleSecondary}
-          activeOpacity={0.7}
-          accessibilityRole="button"
-          accessibilityLabel={computedSecondaryText}
-        >
-          <Text style={styles.secondaryButtonText}>
-            {computedSecondaryText}
-          </Text>
-        </TouchableOpacity>
-      </View>
+  const customIcon = (
+    <View
+      style={[
+        styles.iconBadge,
+        {
+          borderColor: iconRingColor,
+          backgroundColor: iconBgColor,
+        },
+      ]}
+    >
+      {iconComponent}
     </View>
   );
 
-  if (isScreen) {
-    return modalContent;
-  }
-
   return (
-    <Modal
+    <AppDialog
       visible={visible}
-      transparent
-      animationType="fade"
-      onRequestClose={onClose}
-      statusBarTranslucent
-    >
-      {modalContent}
-    </Modal>
+      type="custom"
+      customIcon={customIcon}
+      title={computedTitle}
+      description={computedDescription}
+      primaryButtonText={computedPrimaryText}
+      primaryButtonColor={computedPrimaryColor}
+      primaryButtonAccessibilityLabel={computedPrimaryText}
+      onPrimaryPress={handleConfirm}
+      secondaryButtonText={computedSecondaryText}
+      secondaryButtonColor="#8A9BAE"
+      secondaryButtonAccessibilityLabel={computedSecondaryText}
+      onSecondaryPress={handleSecondary}
+      onClose={onClose}
+      asModal={!isScreen}
+    />
   );
 };
 
 const styles = StyleSheet.create({
-  overlay: {
-    flex: 1,
-    backgroundColor: 'rgba(5, 12, 22, 0.72)',
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: 24,
-  },
-  backdrop: {
-    ...StyleSheet.absoluteFill,
-  },
-  cardContainer: {
-    width: '100%',
-    maxWidth: 340,
-    backgroundColor: '#122440',
-    borderRadius: 24,
-    borderWidth: 1,
-    borderColor: '#1F3352',
-    paddingTop: 28,
-    paddingBottom: 20,
-    paddingHorizontal: 22,
-    alignItems: 'center',
-    ...Platform.select({
-      ios: {
-        shadowColor: '#000000',
-        shadowOffset: { width: 0, height: 8 },
-        shadowOpacity: 0.4,
-        shadowRadius: 16,
-      },
-      android: {
-        elevation: 20,
-      },
-    }),
-  },
   iconBadge: {
     width: 52,
     height: 52,
@@ -326,46 +249,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: 16,
-  },
-  title: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: '#FFFFFF',
-    textAlign: 'center',
-    marginBottom: 8,
-    letterSpacing: -0.2,
-  },
-  description: {
-    fontSize: 13.5,
-    lineHeight: 20,
-    color: '#8A9BAE',
-    textAlign: 'center',
-    marginBottom: 24,
-    paddingHorizontal: 4,
-  },
-  primaryButton: {
-    width: '100%',
-    height: 48,
-    borderRadius: 24,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  primaryButtonText: {
-    fontSize: 15,
-    fontWeight: '600',
-    color: '#FFFFFF',
-  },
-  secondaryButton: {
-    marginTop: 14,
-    paddingVertical: 8,
-    paddingHorizontal: 20,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  secondaryButtonText: {
-    fontSize: 14.5,
-    fontWeight: '500',
-    color: '#8A9BAE',
   },
 });
 

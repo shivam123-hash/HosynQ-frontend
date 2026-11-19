@@ -28,6 +28,14 @@ const REMINDER_OPTIONS = [
   { id: 'custom', title: 'Custom time' },
 ];
 
+const normalizeReminder = (str: string) =>
+  (str || '').toLowerCase().replace(/['’]/g, "'").trim();
+
+const isReminderSelected = (title: string, selectedList: string[]) => {
+  const normTitle = normalizeReminder(title);
+  return selectedList.some((item) => normalizeReminder(item) === normTitle);
+};
+
 const RemindersModal: React.FC<RemindersModalProps> = ({
   visible,
   initialReminders = ['1 hour before'],
@@ -46,8 +54,10 @@ const RemindersModal: React.FC<RemindersModalProps> = ({
 
   const toggleItem = (title: string) => {
     setSelectedItems((prev) => {
-      if (prev.includes(title)) {
-        return prev.filter((t) => t !== title);
+      const normTitle = normalizeReminder(title);
+      const exists = prev.some((t) => normalizeReminder(t) === normTitle);
+      if (exists) {
+        return prev.filter((t) => normalizeReminder(t) !== normTitle);
       }
       return [...prev, title];
     });
@@ -93,13 +103,17 @@ const RemindersModal: React.FC<RemindersModalProps> = ({
             {/* Checkbox Options Card */}
             <View style={styles.optionsCard}>
               {REMINDER_OPTIONS.map((item, index) => {
-                const isSelected = selectedItems.includes(item.title);
+                const isSelected = isReminderSelected(item.title, selectedItems);
                 const isLast = index === REMINDER_OPTIONS.length - 1;
 
                 return (
                   <TouchableOpacity
                     key={item.id}
-                    style={[styles.optionRow, !isLast && styles.rowDivider]}
+                    style={[
+                      styles.optionRow,
+                      isSelected && styles.optionRowSelected,
+                      !isLast && styles.rowDivider,
+                    ]}
                     onPress={() => toggleItem(item.title)}
                     activeOpacity={0.7}
                   >
@@ -165,7 +179,7 @@ const styles = StyleSheet.create({
     bottom: 0,
   },
   sheetContainer: {
-    backgroundColor: '#0B1A2F',
+    backgroundColor: '#122440',
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
     borderTopWidth: 1,
@@ -199,10 +213,10 @@ const styles = StyleSheet.create({
     paddingBottom: 16,
   },
   optionsCard: {
-    backgroundColor: '#122440',
+    backgroundColor: 'transparent',
     borderRadius: 20,
-    borderWidth: 1,
-    borderColor: '#1F3352',
+    borderWidth: 1.5,
+    borderColor: '#3A4556',
     overflow: 'hidden',
     marginBottom: 20,
   },
@@ -212,6 +226,10 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingVertical: 14,
     paddingHorizontal: 16,
+    backgroundColor: 'transparent',
+  },
+  optionRowSelected: {
+    backgroundColor: '#1A2B47',
   },
   rowDivider: {
     borderBottomWidth: 1,

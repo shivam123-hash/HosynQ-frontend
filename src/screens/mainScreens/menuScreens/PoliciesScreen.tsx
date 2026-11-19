@@ -10,6 +10,7 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Feather from '@react-native-vector-icons/feather';
 import Ionicons from '@react-native-vector-icons/ionicons';
+import Colors from '../../../units/Colors';
 
 export interface PoliciesScreenProps {
   onBack?: () => void;
@@ -99,7 +100,7 @@ export const PoliciesScreen: React.FC<PoliciesScreenProps> = ({
                       <Ionicons
                         name="document-text-outline"
                         size={20}
-                        color="#3A4556"
+                        color={Colors.handleMuted}
                       />
                     </View>
                     <View style={styles.textColumn}>
@@ -133,7 +134,7 @@ export const PoliciesScreen: React.FC<PoliciesScreenProps> = ({
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#0B1A2F',
+    backgroundColor: Colors.background,
   },
   innerContent: {
     flex: 1,
@@ -150,9 +151,9 @@ const styles = StyleSheet.create({
     width: 44,
     height: 44,
     borderRadius: 22,
-    backgroundColor: '#0B1A2F',
+    backgroundColor: Colors.background,
     borderWidth: 1.5,
-    borderColor: '#3A4556',
+    borderColor: Colors.handleMuted,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -163,7 +164,7 @@ const styles = StyleSheet.create({
   topBarTitle: {
     fontSize: 20,
     fontWeight: '700',
-    color: '#FFFFFF',
+    color: Colors.white,
     letterSpacing: -0.3,
   },
   scrollView: {
@@ -173,10 +174,10 @@ const styles = StyleSheet.create({
     paddingTop: 10,
   },
   card: {
-    backgroundColor: '#122440',
+    backgroundColor: Colors.cardBackground,
     borderRadius: 16,
     borderWidth: 1,
-    borderColor: '#1F3352',
+    borderColor: Colors.borderBold,
     overflow: 'hidden',
   },
   row: {
@@ -196,7 +197,7 @@ const styles = StyleSheet.create({
     height: 40,
     borderRadius: 12,
     borderWidth: 1.5,
-    borderColor: '#3A4556',
+    borderColor: Colors.handleMuted,
     backgroundColor: 'transparent',
     alignItems: 'center',
     justifyContent: 'center',
@@ -209,20 +210,20 @@ const styles = StyleSheet.create({
   rowTitle: {
     fontSize: 15,
     fontWeight: '700',
-    color: '#FFFFFF',
+    color: Colors.white,
   },
   rowSubtitle: {
     fontSize: 13,
-    color: '#8A97AB',
+    color: Colors.textSecondaryMuted,
     marginTop: 2,
   },
   divider: {
     height: 1,
-    backgroundColor: '#1F3352',
+    backgroundColor: Colors.borderBold,
   },
   footerText: {
     fontSize: 13,
-    color: '#8A97AB',
+    color: Colors.textSecondaryMuted,
     textAlign: 'center',
     marginTop: 24,
     paddingHorizontal: 20,

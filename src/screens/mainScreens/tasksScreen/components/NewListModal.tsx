@@ -240,7 +240,7 @@ const styles = StyleSheet.create({
     bottom: 0,
   },
   sheetContainer: {
-    backgroundColor: '#0B1A2F',
+    backgroundColor: '#122440',
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
     borderTopWidth: 1,
@@ -282,10 +282,10 @@ const styles = StyleSheet.create({
   },
   typeCard: {
     width: (SCREEN_WIDTH - 50) / 2,
-    backgroundColor: '#122440',
+    backgroundColor: 'transparent',
     borderRadius: 16,
     borderWidth: 1.5,
-    borderColor: '#1F3352',
+    borderColor: '#3A4556',
     paddingHorizontal: 12,
     paddingVertical: 12,
     flexDirection: 'row',
@@ -327,7 +327,7 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   inputContainer: {
-    backgroundColor: '#122440',
+    backgroundColor: 'transparent',
     borderRadius: 26,
     borderWidth: 1.5,
     borderColor: '#F0913A',

@@ -10,6 +10,7 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Feather from '@react-native-vector-icons/feather';
+import Colors from '../../../units/Colors';
 
 export interface HelpSupportScreenProps {
   onBack?: () => void;
@@ -241,7 +242,7 @@ export const HelpSupportScreen: React.FC<HelpSupportScreenProps> = ({
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#0B1A2F',
+    backgroundColor: Colors.background,
   },
   innerContent: {
     flex: 1,
@@ -258,9 +259,9 @@ const styles = StyleSheet.create({
     width: 44,
     height: 44,
     borderRadius: 22,
-    backgroundColor: '#0B1A2F',
+    backgroundColor: Colors.background,
     borderWidth: 1.5,
-    borderColor: '#3A4556',
+    borderColor: Colors.handleMuted,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -271,7 +272,7 @@ const styles = StyleSheet.create({
   topBarTitle: {
     fontSize: 20,
     fontWeight: '700',
-    color: '#FFFFFF',
+    color: Colors.white,
     letterSpacing: -0.3,
   },
   scrollView: {
@@ -283,9 +284,9 @@ const styles = StyleSheet.create({
   searchBar: {
     height: 50,
     borderRadius: 25,
-    backgroundColor: '#122440',
+    backgroundColor: Colors.cardBackground,
     borderWidth: 1.5,
-    borderColor: '#3A4556',
+    borderColor: Colors.handleMuted,
     paddingHorizontal: 18,
     flexDirection: 'row',
     alignItems: 'center',
@@ -296,27 +297,27 @@ const styles = StyleSheet.create({
   searchInput: {
     flex: 1,
     height: '100%',
-    color: '#FFFFFF',
+    color: Colors.white,
     fontSize: 15,
   },
   sectionLabel: {
     fontSize: 12,
     fontWeight: '700',
-    color: '#8A97AB',
+    color: Colors.textSecondaryMuted,
     letterSpacing: 1.2,
     marginTop: 24,
     marginBottom: 10,
   },
   card: {
-    backgroundColor: '#122440',
+    backgroundColor: Colors.cardBackground,
     borderRadius: 16,
     borderWidth: 1,
-    borderColor: '#1F3352',
+    borderColor: Colors.borderBold,
     overflow: 'hidden',
   },
   divider: {
     height: 1,
-    backgroundColor: '#1F3352',
+    backgroundColor: Colors.borderBold,
   },
   faqRow: {
     flexDirection: 'row',
@@ -328,7 +329,7 @@ const styles = StyleSheet.create({
   faqText: {
     fontSize: 15,
     fontWeight: '600',
-    color: '#FFFFFF',
+    color: Colors.white,
     flex: 1,
     paddingRight: 12,
   },
@@ -357,7 +358,7 @@ const styles = StyleSheet.create({
   browseTitle: {
     fontSize: 15,
     fontWeight: '600',
-    color: '#FFFFFF',
+    color: Colors.white,
   },
   contactCard: {
     marginTop: 16,
@@ -378,11 +379,11 @@ const styles = StyleSheet.create({
   contactTitle: {
     fontSize: 15,
     fontWeight: '700',
-    color: '#FFFFFF',
+    color: Colors.white,
   },
   contactSubtitle: {
     fontSize: 13,
-    color: '#8A97AB',
+    color: Colors.textSecondaryMuted,
     marginTop: 2,
   },
 });

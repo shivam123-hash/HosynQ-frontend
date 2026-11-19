@@ -192,5 +192,33 @@ describe('MainTabScreen - Unified Navigation Bar', () => {
       );
     expect(texts).toContain('Create task');
   });
+
+  it('opens side menu drawer when tapping top bar avatar', async () => {
+    const renderer = await renderWithProvider(<MainTabScreen initialTab="home" />);
+
+    // Find avatar button in AppTopBar
+    const avatarButton = renderer.root
+      .findAllByType(TouchableOpacity)
+      .find((t) => t.props.accessibilityLabel === 'Open menu');
+    expect(avatarButton).toBeTruthy();
+
+    await ReactTestRenderer.act(() => {
+      avatarButton?.props.onPress();
+    });
+
+    const texts = renderer.root
+      .findAllByType(Text)
+      .map((n) =>
+        Array.isArray(n.props.children)
+          ? n.props.children.join('')
+          : n.props.children
+      );
+
+    // Verify SideMenuModal opened
+    expect(texts).toContain('Priya Sharma');
+    expect(texts).toContain('Owner · The Sharma Family');
+    expect(texts).toContain('Help and support');
+    expect(texts).toContain('Policies');
+  });
 });
 

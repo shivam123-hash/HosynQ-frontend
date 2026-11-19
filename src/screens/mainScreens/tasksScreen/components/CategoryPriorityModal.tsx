@@ -178,7 +178,7 @@ const styles = StyleSheet.create({
     bottom: 0,
   },
   sheetContainer: {
-    backgroundColor: '#0B1A2F',
+    backgroundColor: '#122440',
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
     borderTopWidth: 1,
@@ -219,10 +219,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     height: 38,
     paddingHorizontal: 14,
-    borderRadius: 19,
+    borderRadius: 8,
     borderWidth: 1.5,
-    borderColor: '#1F3352',
-    backgroundColor: '#122440',
+    borderColor: '#3A4556',
+    backgroundColor: 'transparent',
     gap: 8,
   },
   categoryChipSelected: {
@@ -250,16 +250,18 @@ const styles = StyleSheet.create({
   },
   priorityCard: {
     flex: 1,
-    backgroundColor: '#122440',
+    backgroundColor: 'transparent',
     borderRadius: 18,
     borderWidth: 1.5,
-    borderColor: '#1F3352',
+    borderColor: '#3A4556',
     paddingVertical: 16,
     paddingHorizontal: 12,
     alignItems: 'center',
   },
   priorityCardSelected: {
     borderColor: '#F0913A',
+    backgroundColor: 'transparent',
+    borderWidth: 2,
   },
   priorityDot: {
     width: 10,
@@ -270,7 +272,7 @@ const styles = StyleSheet.create({
   priorityTitle: {
     fontSize: 16,
     fontWeight: '700',
-    color: '#CAD4DF',
+    color: '#FFFFFF',
     marginBottom: 4,
   },
   prioritySubtitle: {

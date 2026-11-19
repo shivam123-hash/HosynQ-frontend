@@ -138,7 +138,7 @@ const AddListItemsModal: React.FC<AddListItemsModalProps> = ({
                 value={quantity}
                 onChangeText={setQuantity}
                 placeholder="2 boxes"
-                placeholderTextColor="#8A97AB"
+                placeholderTextColor="#CAD4DF"
                 selectionColor="#F0913A"
               />
             </View>
@@ -244,9 +244,9 @@ const styles = StyleSheet.create({
     width: 44,
     height: 44,
     borderRadius: 22,
-    backgroundColor: '#122440',
-    borderWidth: 1,
-    borderColor: '#1F3352',
+    backgroundColor: 'transparent',
+    borderWidth: 1.5,
+    borderColor: '#3A4556',
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -266,7 +266,7 @@ const styles = StyleSheet.create({
   inputPill: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#0F2038',
+    backgroundColor: 'transparent',
     borderRadius: 28,
     borderWidth: 1.5,
     borderColor: '#F0913A',
@@ -301,14 +301,14 @@ const styles = StyleSheet.create({
     color: '#CAD4DF',
   },
   quantityPill: {
-    height: 42,
-    paddingHorizontal: 16,
-    borderRadius: 21,
-    backgroundColor: '#122440',
-    borderWidth: 1,
-    borderColor: '#1F3352',
+    height: 38,
+    paddingHorizontal: 14,
+    borderRadius: 8,
+    backgroundColor: 'transparent',
+    borderWidth: 1.5,
+    borderColor: '#3A4556',
     justifyContent: 'center',
-    minWidth: 110,
+    minWidth: 100,
   },
   quantityInput: {
     fontSize: 14,
@@ -334,10 +334,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     height: 38,
     paddingHorizontal: 14,
-    borderRadius: 19,
-    backgroundColor: '#122440',
-    borderWidth: 1,
-    borderColor: '#1F3352',
+    borderRadius: 8,
+    backgroundColor: 'transparent',
+    borderWidth: 1.5,
+    borderColor: '#3A4556',
   },
   plusIcon: {
     marginRight: 6,
@@ -351,20 +351,21 @@ const styles = StyleSheet.create({
     marginBottom: 24,
   },
   addedCard: {
-    backgroundColor: '#122440',
+    backgroundColor: 'transparent',
     borderRadius: 20,
-    borderWidth: 1,
-    borderColor: '#1F3352',
+    borderWidth: 1.5,
+    borderColor: '#3A4556',
     overflow: 'hidden',
   },
   addedItemRow: {
     flexDirection: 'row',
     alignItems: 'center',
     padding: 16,
+    backgroundColor: 'transparent',
   },
   addedItemDivider: {
     borderTopWidth: 1,
-    borderColor: '#1A2C46',
+    borderTopColor: '#3A4556',
   },
   addedCheckCircle: {
     width: 24,
@@ -372,6 +373,7 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     borderWidth: 1.5,
     borderColor: '#2DD4BF',
+    backgroundColor: 'transparent',
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 14,
