@@ -28,6 +28,13 @@ import {
 } from '../addFlow';
 import { SideMenuModal, LogoutConfirmationModal } from '../menuScreens';
 import { CompassModal } from '../compassScreen';
+import {
+  useAppDispatch,
+  logout,
+  resetFamilyState,
+  resetLifeProfileState,
+} from '../../../redux';
+import { clearUserData } from '../../../units/asyncStorageManager';
 
 export interface MainTabScreenProps {
   initialTab?: NavigationTab;
@@ -48,6 +55,7 @@ const MainTabScreen: React.FC<MainTabScreenProps> = ({
   onOpenBrief,
   onOpenNeedsAttention,
 }) => {
+  const dispatch = useAppDispatch();
   const [activeTab, setActiveTab] = useState<NavigationTab>(initialTab);
   const [sideMenuVisible, setSideMenuVisible] = useState(false);
   const [showLogoutModal, setShowLogoutModal] = useState(false);
@@ -344,9 +352,22 @@ const MainTabScreen: React.FC<MainTabScreenProps> = ({
       <LogoutConfirmationModal
         visible={showLogoutModal}
         onClose={() => setShowLogoutModal(false)}
-        onConfirmLogout={() => {
+        onConfirmLogout={async () => {
           setShowLogoutModal(false);
-          navigation?.navigate('Auth');
+          try {
+            await dispatch(logout());
+            await clearUserData();
+            dispatch(resetFamilyState());
+            dispatch(resetLifeProfileState());
+          } catch (err) {
+            console.log('[MainTabScreen] Logout error:', err);
+          }
+          if (navigation) {
+            navigation.reset({
+              index: 0,
+              routes: [{ name: 'Auth', params: { screen: 'Onboarding' } }],
+            });
+          }
         }}
       />
 

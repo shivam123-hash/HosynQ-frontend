@@ -68,6 +68,7 @@ const MyLifeProfileWrapper: React.FC<ProfileScreenProps<'MyLifeProfile'>> = ({
   navigation,
   route,
 }) => {
+  const rootNav = useNavigation<RootNavigationProp>();
   const familyState = useAppSelector((state) => (state as any).family);
   const authUser = useAppSelector((state) => (state as any).auth?.user);
   const lifeProfileFull = useAppSelector((state) => state.lifeProfile?.full);
@@ -87,7 +88,12 @@ const MyLifeProfileWrapper: React.FC<ProfileScreenProps<'MyLifeProfile'>> = ({
       onBack={() => {
         if (navigation.canGoBack()) {
           navigation.goBack();
+        } else {
+          rootNav.navigate('Home');
         }
+      }}
+      onGoToDashboard={() => {
+        rootNav.navigate('Home');
       }}
       onSectionPress={(sectionId) => {
         const stepMap: Record<string, keyof ProfileStackParamList> = {

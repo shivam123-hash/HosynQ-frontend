@@ -60,6 +60,7 @@ export interface MyLifeProfileScreenProps {
   onBack?: () => void;
   onEdit?: () => void;
   onSectionPress?: (sectionId: string) => void;
+  onGoToDashboard?: () => void;
 }
 
 const DEFAULT_SECTIONS: LifeProfileSectionConfig[] = [
@@ -130,6 +131,7 @@ const MyLifeProfileScreen: React.FC<MyLifeProfileScreenProps> = ({
   onBack,
   onEdit,
   onSectionPress,
+  onGoToDashboard,
 }) => {
   const insets = useSafeAreaInsets();
   const dispatch = useAppDispatch();
@@ -477,6 +479,18 @@ const MyLifeProfileScreen: React.FC<MyLifeProfileScreenProps> = ({
     );
   };
 
+  const handleGoToDashboard = () => {
+    if (onGoToDashboard) {
+      onGoToDashboard();
+    } else if (navigation) {
+      try {
+        navigation.navigate('Home');
+      } catch {
+        navigation.getParent?.()?.navigate('Home');
+      }
+    }
+  };
+
   return (
     <View
       style={[
@@ -535,6 +549,16 @@ const MyLifeProfileScreen: React.FC<MyLifeProfileScreenProps> = ({
         {/* Privacy Notice Card */}
         <LifeProfilePrivacyCard />
 
+        {/* Continue to Dashboard Button */}
+        <TouchableOpacity
+          activeOpacity={0.8}
+          style={styles.dashboardButton}
+          onPress={handleGoToDashboard}
+        >
+          <Text style={styles.dashboardButtonText}>Continue to Dashboard</Text>
+          <Feather name="arrow-right" size={18} color="#FFFFFF" />
+        </TouchableOpacity>
+
         {/* Logout Button */}
         <TouchableOpacity
           activeOpacity={0.7}
@@ -568,6 +592,27 @@ const styles = StyleSheet.create({
     marginHorizontal: 20,
     marginTop: 18,
     overflow: 'hidden',
+  },
+  dashboardButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#F0913A',
+    borderRadius: 16,
+    height: 52,
+    marginHorizontal: 20,
+    marginTop: 20,
+    gap: 8,
+    shadowColor: '#F0913A',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 4,
+  },
+  dashboardButtonText: {
+    color: '#FFFFFF',
+    fontSize: RFValue(14),
+    fontWeight: '700',
   },
   logoutButton: {
     flexDirection: 'row',

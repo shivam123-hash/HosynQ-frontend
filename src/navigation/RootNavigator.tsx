@@ -192,6 +192,7 @@ const RootNavigator: React.FC<RootNavigatorProps> = ({
         {(props) => (
           <MainTabScreen
             initialTab="tasks"
+            navigation={props.navigation}
             onProfilePress={() =>
               props.navigation.navigate('MyProfile')
             }
@@ -682,7 +683,7 @@ const RootNavigator: React.FC<RootNavigatorProps> = ({
           <TrialNotAvailableModal
             onBack={() => props.navigation.goBack()}
             onSeePlans={() => props.navigation.navigate('PlansTrial')}
-            onStayOnFree={() => props.navigation.navigate('MainTab')}
+            onStayOnFree={() => props.navigation.navigate('Home')}
           />
         )}
       </Stack.Screen>
@@ -721,7 +722,7 @@ const RootNavigator: React.FC<RootNavigatorProps> = ({
       <Stack.Screen name="CancellationConfirmed">
         {(props) => (
           <CancellationConfirmedScreen
-            onDone={() => props.navigation.navigate('MainTab')}
+            onDone={() => props.navigation.navigate('Home')}
             onReactivate={() => props.navigation.navigate('ReactivatePlan')}
           />
         )}

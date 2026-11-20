@@ -97,10 +97,10 @@ function AppContent() {
               meData?.nextStep === 'HOME'
             ) {
               console.log(
-                '[AppBootstrap] User in family. Navigating directly to MyLifeProfile!'
+                '[AppBootstrap] User in family. Navigating directly to Home/Dashboard!'
               );
               setInitialTarget({
-                root: 'Profile',
+                root: 'Home',
                 memberId: resolvedMemberId || undefined,
               });
               setIsCheckingAuth(false);
@@ -128,10 +128,10 @@ function AppContent() {
               await clearUserData();
             } else if (storedMemberId) {
               console.log(
-                '[AppBootstrap] Network unavailable. Offline fallback to MyLifeProfile.'
+                '[AppBootstrap] Network unavailable. Offline fallback to Home.'
               );
               setInitialTarget({
-                root: 'Profile',
+                root: 'Home',
                 memberId: storedMemberId,
               });
               setIsCheckingAuth(false);
@@ -175,15 +175,7 @@ function AppContent() {
 export default function App() {
   return (
     <Provider store={store}>
-      <SafeAreaProvider>
-        <StatusBar barStyle="light-content" />
-        <NavigationContainer>
-          <RootNavigator
-            initialRouteName="Home"
-            authInitialRouteName="Onboarding"
-          />
-        </NavigationContainer>
-      </SafeAreaProvider>
+      <AppContent />
     </Provider>
   );
 }
