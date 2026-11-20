@@ -20,32 +20,44 @@ import {
   formatDate,
   parseDateTimeString,
 } from '../../../components';
-import { PersonalInfoHeader } from '../components';
+import {
+  PersonalInfoHeader,
+  DocumentPhotoUploadField,
+  formatIsoToDisplayDate,
+} from '../components';
 
 export interface PanFormData {
   panNumber: string;
   fullName: string;
   dob: string;
   frontImageAdded: boolean;
+  scanId?: string;
 }
 
 export interface AddPanScreenProps {
   initialData?: Partial<PanFormData>;
   userName?: string;
+  memberId?: string;
+  documentId?: string;
+  isSaving?: boolean;
   onClose?: () => void;
-  onSave?: (data: PanFormData) => void;
+  onSave?: (data: PanFormData, documentId?: string) => void;
 }
 
 export const DEFAULT_PAN_DATA: PanFormData = {
-  panNumber: 'ABCDE123F',
-  fullName: 'Priya Sharma',
-  dob: '8 Aug 1988',
+  panNumber: '',
+  fullName: '',
+  dob: '',
   frontImageAdded: false,
+  scanId: '',
 };
 
 const AddPanScreen: React.FC<AddPanScreenProps> = ({
   initialData,
   userName = 'Priya',
+  memberId,
+  documentId,
+  isSaving = false,
   onClose,
   onSave,
 }) => {
@@ -56,16 +68,59 @@ const AddPanScreen: React.FC<AddPanScreenProps> = ({
     ...initialData,
   });
 
+  React.useEffect(() => {
+    if (initialData) {
+      setFormData((prev) => ({
+        ...prev,
+        ...initialData,
+      }));
+    }
+  }, [initialData]);
+
   const [isDatePickerVisible, setIsDatePickerVisible] = useState(false);
 
-  // Validation: Indian PAN is 10 chars (5 letters, 4 digits, 1 letter)
-  const isPanValid = /^[A-Z]{5}[0-9]{4}[A-Z]{1}$/.test(
-    formData.panNumber.trim().toUpperCase(),
-  );
+  const cleanPan = (val?: string): string => {
+    if (!val) return '';
+    return val.replace(/[^A-Za-z0-9]/g, '').trim().toUpperCase();
+  };
+
+  // Validation: Indian PAN is 10 chars, where 4th char is holder type:
+  // P (Person), C (Company), H (HUF), F (Firm), A (AOP), T (Trust), B (BOI), L (Local Auth), J (Juridical), G (Govt)
+  const PAN_PATTERN = /^[A-Z]{3}[PCHFATBLJG][A-Z][0-9]{4}[A-Z]$/;
+  const sanitizedPan = cleanPan(formData.panNumber);
+  const isPanValid = PAN_PATTERN.test(sanitizedPan);
+
+  const getPanValidationError = (): string | null => {
+    if (!sanitizedPan) return null;
+    if (sanitizedPan.length < 10) {
+      return `PAN has 10 characters, like ABCPE1234F (${sanitizedPan.length}/10 entered).`;
+    }
+    if (sanitizedPan.length === 10) {
+      const fourthChar = sanitizedPan.charAt(3);
+      if (!/[PCHFATBLJG]/.test(fourthChar)) {
+        return `4th character '${fourthChar}' is invalid. For individuals it must be 'P' (like ABCPE1234F).`;
+      }
+      return 'PAN format is invalid. Must be 5 letters, 4 digits, 1 letter.';
+    }
+    return 'PAN must be exactly 10 characters.';
+  };
 
   const handleSave = () => {
+    const finalPan = cleanPan(formData.panNumber);
+    console.log('[AddPanScreen] handleSave pressed:', {
+      rawPan: formData.panNumber,
+      sanitizedPan: finalPan,
+      isPanValid,
+      documentId,
+    });
     if (isPanValid) {
-      onSave?.(formData);
+      onSave?.(
+        {
+          ...formData,
+          panNumber: finalPan,
+        },
+        documentId
+      );
     }
   };
 
@@ -80,7 +135,7 @@ const AddPanScreen: React.FC<AddPanScreenProps> = ({
 
       {/* Header with Circular ( X ) Close Button */}
       <PersonalInfoHeader
-        title="Add PAN"
+        title={documentId ? 'Edit PAN' : 'Add PAN'}
         subtitle={`For ${userName} · Optional`}
         onBack={onClose}
         icon="close"
@@ -96,37 +151,41 @@ const AddPanScreen: React.FC<AddPanScreenProps> = ({
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
         >
-          {/* Top Add Front Photo Card */}
-          <TouchableOpacity
-            activeOpacity={0.7}
-            onPress={() =>
+          {/* Top Field: Upload & Scan Document Photo */}
+          <DocumentPhotoUploadField
+            documentType="PAN"
+            documentTitle="PAN Card"
+            memberId={memberId}
+            scanId={formData.scanId}
+            hasFrontImage={formData.frontImageAdded}
+            onScanSuccess={(scanned, newScanId) => {
+              const rawNumber = scanned.number || scanned.panNumber;
+              const extractedPan = cleanPan(rawNumber);
+              console.log('[AddPanScreen] onScanSuccess received:', {
+                rawNumber,
+                extractedPan,
+                newScanId,
+                scannedName: scanned.nameOnDocument || scanned.fullName,
+                scannedDob: scanned.dateOfBirth,
+              });
               setFormData((prev) => ({
                 ...prev,
-                frontImageAdded: !prev.frontImageAdded,
-              }))
-            }
-            style={[
-              styles.photoCard,
-              formData.frontImageAdded
-                ? styles.photoCardSuccess
-                : styles.photoCardEmpty,
-            ]}
-          >
-            {formData.frontImageAdded ? (
-              <>
-                <View style={styles.checkCircle}>
-                  <Feather name="check" size={14} color="#10B981" />
-                </View>
-                <Text style={styles.photoTitle}>Front added</Text>
-                <Text style={styles.photoSubtitle}>Tap to replace</Text>
-              </>
-            ) : (
-              <>
-                <Feather name="camera" size={20} color="#F0913A" />
-                <Text style={styles.photoTitle}>Add front</Text>
-              </>
-            )}
-          </TouchableOpacity>
+                scanId: newScanId || scanned.scanId || prev.scanId,
+                panNumber: extractedPan || prev.panNumber,
+                fullName: scanned.nameOnDocument || scanned.fullName || prev.fullName,
+                dob: scanned.dateOfBirth
+                  ? formatIsoToDisplayDate(scanned.dateOfBirth)
+                  : prev.dob,
+                frontImageAdded: true,
+              }));
+            }}
+            onPhotosChange={(front) => {
+              setFormData((prev) => ({
+                ...prev,
+                frontImageAdded: Boolean(front),
+              }));
+            }}
+          />
 
           {/* PAN */}
           <View style={styles.fieldGroup}>
@@ -134,22 +193,25 @@ const AddPanScreen: React.FC<AddPanScreenProps> = ({
             <TextInput
               style={[
                 styles.inputBox,
-                !isPanValid && formData.panNumber.length > 0
+                !isPanValid && sanitizedPan.length > 0
                   ? styles.inputError
                   : null,
               ]}
               value={formData.panNumber}
               onChangeText={(t) =>
-                setFormData((prev) => ({ ...prev, panNumber: t.toUpperCase() }))
+                setFormData((prev) => ({
+                  ...prev,
+                  panNumber: cleanPan(t).slice(0, 10),
+                }))
               }
-              placeholder="e.g. ABCDE1234F"
+              placeholder="e.g. ABCPE1234F"
               placeholderTextColor="#64748B"
               autoCapitalize="characters"
               maxLength={10}
             />
-            {!isPanValid && formData.panNumber.length > 0 ? (
+            {!isPanValid && sanitizedPan.length > 0 ? (
               <Text style={styles.errorText}>
-                PAN has 10 characters, like ABCDE1234F.
+                {getPanValidationError()}
               </Text>
             ) : null}
           </View>
@@ -189,9 +251,10 @@ const AddPanScreen: React.FC<AddPanScreenProps> = ({
             <Text style={styles.fixPanNote}>Fix the PAN to save.</Text>
           ) : null}
           <CommonBtn
-            title="Save PAN"
+            title={documentId ? 'Update PAN' : 'Save PAN'}
             onPress={handleSave}
-            disabled={!isPanValid}
+            loading={isSaving}
+            disabled={!isPanValid || isSaving}
             backgroundColor={
               isPanValid ? Colors.primary || '#F0913A' : '#5C381E'
             }

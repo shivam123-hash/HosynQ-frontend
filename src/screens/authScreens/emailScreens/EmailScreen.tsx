@@ -136,7 +136,7 @@ const EmailScreen: React.FC<EmailScreenProps> = ({
       </View>
 
       <KeyboardAvoidingWrapper contentContainerStyle={styles.scrollContent}>
-        {/* Illustration from ImagePath (cuate.png) */}
+        {/* Illustration from ImagePath (cuate.webp) */}
         <View style={styles.illustrationWrapper}>
           <Image
             source={ImagePath.cuate}

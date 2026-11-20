@@ -13,11 +13,13 @@ const Stack = createNativeStackNavigator<RootStackParamList>();
 export interface RootNavigatorProps {
   initialRouteName?: keyof RootStackParamList;
   authInitialRouteName?: keyof AuthStackParamList;
+  initialMemberId?: string;
 }
 
 const RootNavigator: React.FC<RootNavigatorProps> = ({
   initialRouteName = 'Home',
   authInitialRouteName = 'Onboarding',
+  initialMemberId,
 }) => {
   return (
     <Stack.Navigator
@@ -31,7 +33,14 @@ const RootNavigator: React.FC<RootNavigatorProps> = ({
           <AuthNavigator {...props} initialRouteName={authInitialRouteName} />
         )}
       </Stack.Screen>
-      <Stack.Screen name="Profile" component={ProfileNavigator} />
+      <Stack.Screen name="Profile">
+        {(props) => (
+          <ProfileNavigator
+            {...props}
+            initialMemberId={initialMemberId}
+          />
+        )}
+      </Stack.Screen>
       <Stack.Screen name="Home">
         {(props) => (
           <MainTabScreen

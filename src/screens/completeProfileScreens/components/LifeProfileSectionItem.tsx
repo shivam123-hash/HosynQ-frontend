@@ -4,7 +4,7 @@ import Feather from '@react-native-vector-icons/feather';
 import { RFValue } from 'react-native-responsive-fontsize';
 import Colors from '../../../units/Colors';
 
-export type SectionBadgeType = 'done' | 'due' | 'soon' | 'none';
+export type SectionBadgeType = 'done' | 'due' | 'soon' | 'pending' | 'none';
 
 export interface LifeProfileSectionItemProps {
   id: string;
@@ -31,6 +31,8 @@ const LifeProfileSectionItem: React.FC<LifeProfileSectionItemProps> = ({
   showDivider = true,
 }) => {
   const isDone = badgeType === 'done' || badgeText?.toLowerCase() === 'done';
+  const isPending =
+    badgeType === 'pending' || badgeText?.toLowerCase().includes('pending');
   const isWarning =
     badgeType === 'due' ||
     badgeType === 'soon' ||
@@ -70,6 +72,7 @@ const LifeProfileSectionItem: React.FC<LifeProfileSectionItemProps> = ({
               styles.badgePill,
               isDone && styles.badgePillDone,
               isWarning && styles.badgePillWarning,
+              isPending && styles.badgePillPending,
             ]}
           >
             <Text
@@ -77,6 +80,7 @@ const LifeProfileSectionItem: React.FC<LifeProfileSectionItemProps> = ({
                 styles.badgeText,
                 isDone && styles.badgeTextDone,
                 isWarning && styles.badgeTextWarning,
+                isPending && styles.badgeTextPending,
               ]}
             >
               {badgeText}
@@ -148,6 +152,10 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(240, 145, 58, 0.12)',
     borderColor: 'rgba(240, 145, 58, 0.6)',
   },
+  badgePillPending: {
+    backgroundColor: 'rgba(148, 163, 184, 0.12)',
+    borderColor: 'rgba(148, 163, 184, 0.4)',
+  },
   badgeText: {
     fontSize: RFValue(10),
     fontWeight: '600',
@@ -157,6 +165,9 @@ const styles = StyleSheet.create({
   },
   badgeTextWarning: {
     color: '#F0913A',
+  },
+  badgeTextPending: {
+    color: '#94A3B8',
   },
   chevronIcon: {
     marginLeft: 1,

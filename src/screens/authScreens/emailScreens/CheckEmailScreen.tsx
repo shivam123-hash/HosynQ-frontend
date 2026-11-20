@@ -16,12 +16,16 @@ import { RFValue } from 'react-native-responsive-fontsize';
 import { useNavigation } from '@react-navigation/native';
 import Colors from '../../../units/Colors';
 import CommonBtn from '../../../components/CommonBtn';
-import { useAppDispatch, useAppSelector } from '../../../redux';
+import { useAppDispatch, useAppSelector, loadInitialState } from '../../../redux';
 import {
   pollEmailStatus,
   sendEmailLink,
   simulateDevEmailClick,
 } from '../../../redux/features/emailFlow/authSlice';
+import { fetchLifeProfileFullThunk } from '../../../redux/features/lifeProfile/lifeProfileSlice';
+import { getMyFamilyThunk } from '../../../redux/features/family/familySlice';
+import { authServices } from '../../../services';
+import { saveMyMemberId } from '../../../units/asyncStorageManager';
 import { getDeviceInfo } from '../../../units/deviceInfo';
 import type {
   AuthNavigationProp,
@@ -112,18 +116,76 @@ const CheckEmailScreen: React.FC<CheckEmailScreenProps> = ({
           if (onVerified) {
             onVerified(res);
           } else {
-            // Automatic navigation to next screen:
+            // Check if user is an existing registered member (already in family / home ready)
+            try {
+              const meData = await authServices.getProfile();
+              const isExistingUser =
+                meData?.inFamily ||
+                meData?.nextStep === 'HOME' ||
+                res?.inFamily ||
+                res?.nextStep === 'HOME' ||
+                Boolean(meData?.lifeProfile?.memberId);
+
+              if (isExistingUser) {
+                console.log(
+                  '[CheckEmailScreen] Existing user detected. Resolving memberId & pre-fetching life profile...'
+                );
+                const resolvedMemberId =
+                  meData?.lifeProfile?.memberId ||
+                  meData?.memberId ||
+                  res?.user?.memberId ||
+                  null;
+
+                if (resolvedMemberId) {
+                  await saveMyMemberId(resolvedMemberId);
+                  try {
+                    await dispatch(
+                      fetchLifeProfileFullThunk({ memberId: resolvedMemberId })
+                    ).unwrap();
+                  } catch (fetchErr) {
+                    console.log(
+                      '[CheckEmailScreen] Error pre-fetching life profile:',
+                      fetchErr
+                    );
+                  }
+                  try {
+                    await dispatch(getMyFamilyThunk()).unwrap();
+                  } catch (famErr) {
+                    console.log(
+                      '[CheckEmailScreen] Error pre-fetching family:',
+                      famErr
+                    );
+                  }
+                }
+
+                dispatch(loadInitialState());
+
+                console.log(
+                  '[CheckEmailScreen] Navigating directly to MyLifeProfile with memberId:',
+                  resolvedMemberId
+                );
+                rootNav.navigate('Profile', {
+                  screen: 'MyLifeProfile',
+                  params: { memberId: resolvedMemberId || undefined },
+                });
+                return;
+              }
+            } catch (authMeErr) {
+              console.log(
+                '[CheckEmailScreen] Error verifying existing user status via /auth/me:',
+                authMeErr
+              );
+            }
+
+            // First-time user onboarding flow:
             if (res.needsPhone) {
-              console.log('[CheckEmailScreen] Navigating to AddMobileNumber');
+              console.log('[CheckEmailScreen] First-time user: Navigating to AddMobileNumber');
               navigation.replace('AddMobileNumber', { email });
-            } else if (res.nextStep === 'HOME') {
-              console.log('[CheckEmailScreen] Navigating to Profile / Home');
-              rootNav.navigate('Profile', { screen: 'Step1' });
             } else if (res.nextStep === 'CREATE_OR_JOIN_FAMILY') {
-              console.log('[CheckEmailScreen] Navigating to SetUpFamily');
+              console.log('[CheckEmailScreen] First-time user: Navigating to SetUpFamily');
               navigation.replace('SetUpFamily');
             } else {
-              console.log('[CheckEmailScreen] Navigating to BasicProfile');
+              console.log('[CheckEmailScreen] First-time user: Navigating to BasicProfile');
               navigation.replace('BasicProfile');
             }
           }

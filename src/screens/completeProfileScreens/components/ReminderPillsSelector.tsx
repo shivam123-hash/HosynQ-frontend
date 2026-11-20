@@ -8,6 +8,7 @@ export interface ReminderPillsSelectorProps {
   options?: string[];
   selectedOptions?: string[];
   onToggleOption?: (option: string) => void;
+  disabled?: boolean;
 }
 
 const DEFAULT_OPTIONS = ['6 months', '3 months', '1 month', '1 week'];
@@ -17,6 +18,7 @@ const ReminderPillsSelector: React.FC<ReminderPillsSelectorProps> = ({
   options = DEFAULT_OPTIONS,
   selectedOptions = ['6 months', '1 month'],
   onToggleOption,
+  disabled = false,
 }) => {
   return (
     <View style={styles.container}>
@@ -30,8 +32,13 @@ const ReminderPillsSelector: React.FC<ReminderPillsSelectorProps> = ({
           return (
             <TouchableOpacity
               key={option}
-              activeOpacity={0.7}
-              onPress={() => onToggleOption?.(option)}
+              activeOpacity={disabled ? 1 : 0.7}
+              disabled={disabled}
+              onPress={() => {
+                if (!disabled && onToggleOption) {
+                  onToggleOption(option);
+                }
+              }}
               style={[
                 styles.chip,
                 isSelected ? styles.chipSelected : styles.chipUnselected,

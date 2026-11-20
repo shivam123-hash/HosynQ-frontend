@@ -18,6 +18,7 @@ import {
   PersonalInfoInputFormData,
   DEFAULT_PERSONAL_INPUT_DATA,
 } from './PersonalInfoInputScreen';
+import { mapBackendToPersonalForm } from './personalInfoUtils';
 
 export interface PersonalInfoDetailsScreenProps {
   memberId?: string;
@@ -39,18 +40,23 @@ const PersonalInfoDetailsScreen: React.FC<PersonalInfoDetailsScreenProps> = ({
   const insets = useSafeAreaInsets();
   const dispatch = useAppDispatch();
   const authUser = useAppSelector((state) => state.auth?.user || state.emailAuth?.user);
+  const familyState = useAppSelector((state) => (state as any).family);
+  const lifeProfileState = useAppSelector((state) => state.lifeProfile);
   const lifeProfilePersonal = useAppSelector((state) => state.lifeProfile?.personal);
 
   const resolvedMemberId =
     memberId ||
+    familyState?.myMemberId ||
+    familyState?.family?.myMemberId ||
     authUser?.memberId ||
+    authUser?.myMemberId ||
     authUser?.id ||
     authUser?._id ||
     'me';
 
   // API Call Structure: GET {{BaseURL}}/api/v1/family/members/{{memberId}}/life-profile?section=personal
   useEffect(() => {
-    if (resolvedMemberId) {
+    if (resolvedMemberId && resolvedMemberId !== 'me') {
       dispatch(
         fetchLifeProfileSectionThunk({
           memberId: resolvedMemberId,
@@ -60,25 +66,28 @@ const PersonalInfoDetailsScreen: React.FC<PersonalInfoDetailsScreenProps> = ({
     }
   }, [dispatch, resolvedMemberId]);
 
-  /*
-   * DATA MAPPING (Ready to connect when backend personal section response is wired):
-   * const personalSectionData = lifeProfilePersonal?.data || lifeProfilePersonal;
-   * // e.g. fullName = personalSectionData?.fullName ?? finalData.fullName
-   * // nickname = personalSectionData?.nickname ?? finalData.nickname
-   * // email = personalSectionData?.email ?? finalData.email
-   * // familyRole = personalSectionData?.familyRole ?? finalData.familyRole
-   * // gender = personalSectionData?.gender ?? finalData.gender
-   * // birthDate = personalSectionData?.birthDate ?? finalData.birthDate
-   * // bloodGroup = personalSectionData?.bloodGroup ?? finalData.bloodGroup
-   * // height = personalSectionData?.height ?? finalData.height
-   * // weight = personalSectionData?.weight ?? finalData.weight
-   * // career = personalSectionData?.career ?? finalData.career
-   */
+  const backendPersonal =
+    lifeProfileState?.full?.data?.personal ||
+    (lifeProfileState?.personal as any)?.data?.personal ||
+    (lifeProfileState?.personal as any)?.personal ||
+    lifeProfileState?.personal;
 
-  const finalData: PersonalInfoInputFormData = {
-    ...DEFAULT_PERSONAL_INPUT_DATA,
-    ...data,
-  };
+  const finalData: PersonalInfoInputFormData = React.useMemo(() => {
+    if (data && Object.keys(data).length > 0) {
+      return {
+        ...DEFAULT_PERSONAL_INPUT_DATA,
+        ...data,
+      };
+    }
+    if (backendPersonal && Object.keys(backendPersonal).length > 0) {
+      return mapBackendToPersonalForm(backendPersonal, {
+        fullName: authUser?.name || authUser?.fullName || '',
+        email: authUser?.email || '',
+        familyRole: authUser?.familyRole || '',
+      });
+    }
+    return DEFAULT_PERSONAL_INPUT_DATA;
+  }, [data, backendPersonal, authUser]);
 
   const firstName =
     finalData.fullName.trim().split(' ')[0] || userName || 'Priya';
@@ -90,14 +99,56 @@ const PersonalInfoDetailsScreen: React.FC<PersonalInfoDetailsScreenProps> = ({
     email: finalData.email,
     familyRole: finalData.familyRole,
     gender: finalData.gender,
-    birthDate: `${finalData.birthDate} · ${finalData.age.replace('old', '').trim()}`,
+    birthDate: [
+      finalData.birthDate,
+      finalData.age ? finalData.age.replace('old', '').trim() : '',
+    ]
+      .filter(Boolean)
+      .join(' · '),
     bloodGroup: finalData.bloodGroup,
-    heightWeight: `${finalData.height} cm · ${finalData.weight} kg`,
+    heightWeight: [
+      finalData.height ? `${finalData.height} cm` : '',
+      finalData.weight ? `${finalData.weight} kg` : '',
+    ]
+      .filter(Boolean)
+      .join(' · '),
   };
 
-  const careerSubtitle = [finalData.designation, finalData.companyName]
-    .filter(Boolean)
-    .join(' · ');
+  let careerSubtitle = '';
+  switch (finalData.status) {
+    case 'Student':
+      careerSubtitle = [finalData.classGrade, finalData.schoolName]
+        .filter(Boolean)
+        .join(' · ');
+      break;
+    case 'College':
+      careerSubtitle = [finalData.course, finalData.collegeName]
+        .filter(Boolean)
+        .join(' · ');
+      break;
+    case 'Business owner':
+      careerSubtitle = [
+        finalData.businessRole || 'Owner',
+        finalData.businessName,
+      ]
+        .filter(Boolean)
+        .join(' · ');
+      break;
+    case 'Homemaker':
+      careerSubtitle = finalData.regularCommitments || 'Homemaker';
+      break;
+    case 'Retired':
+      careerSubtitle = [finalData.lastRole, finalData.organisation]
+        .filter(Boolean)
+        .join(' · ');
+      break;
+    case 'Working':
+    default:
+      careerSubtitle = [finalData.designation, finalData.companyName]
+        .filter(Boolean)
+        .join(' · ');
+      break;
+  }
 
   return (
     <View

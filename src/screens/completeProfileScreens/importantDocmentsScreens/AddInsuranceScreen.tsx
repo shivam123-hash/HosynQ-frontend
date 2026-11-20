@@ -21,7 +21,11 @@ import {
   formatDate,
   parseDateTimeString,
 } from '../../../components';
-import { PersonalInfoHeader } from '../components';
+import {
+  PersonalInfoHeader,
+  DocumentPhotoUploadField,
+  formatIsoToDisplayDate,
+} from '../components';
 
 export interface InsuranceFormData {
   type: string;
@@ -33,24 +37,32 @@ export interface InsuranceFormData {
   renewalDate: string;
   saveInFamilyVault: boolean;
   remindRenewal: boolean;
+  frontImageAdded?: boolean;
+  scanId?: string;
 }
 
 export interface AddInsuranceScreenProps {
   initialData?: Partial<InsuranceFormData>;
+  userName?: string;
+  memberId?: string;
+  documentId?: string;
+  isSaving?: boolean;
   onClose?: () => void;
-  onSave?: (data: InsuranceFormData) => void;
+  onSave?: (data: InsuranceFormData, documentId?: string) => void;
 }
 
 export const DEFAULT_INSURANCE_DATA: InsuranceFormData = {
   type: 'Health',
-  insurer: 'Star Health',
-  planName: 'Family Floater',
-  policyNumber: '•••• 5521',
-  sumInsured: '₹10,00,000',
-  premiumPerYear: '₹24,600',
-  renewalDate: '12 Mar 2027',
+  insurer: '',
+  planName: '',
+  policyNumber: '',
+  sumInsured: '',
+  premiumPerYear: '',
+  renewalDate: '',
   saveInFamilyVault: true,
   remindRenewal: true,
+  frontImageAdded: false,
+  scanId: '',
 };
 
 const INSURANCE_TYPES = ['Health', 'Life', 'Motor', 'Home', 'Travel'];
@@ -65,6 +77,10 @@ const FAMILY_MEMBERS = [
 
 const AddInsuranceScreen: React.FC<AddInsuranceScreenProps> = ({
   initialData,
+  userName = 'Priya',
+  memberId,
+  documentId,
+  isSaving = false,
   onClose,
   onSave,
 }) => {
@@ -75,12 +91,31 @@ const AddInsuranceScreen: React.FC<AddInsuranceScreenProps> = ({
     ...initialData,
   });
 
+  React.useEffect(() => {
+    if (initialData) {
+      setFormData((prev) => ({
+        ...prev,
+        ...initialData,
+      }));
+    }
+  }, [initialData]);
+
   const [isDatePickerVisible, setIsDatePickerVisible] = useState(false);
 
   const [showPolicy, setShowPolicy] = useState(false);
 
+  const isFormValid = Boolean(
+    formData.insurer?.trim() &&
+    formData.planName?.trim() &&
+    formData.policyNumber?.trim() &&
+    formData.sumInsured?.trim() &&
+    formData.renewalDate?.trim()
+  );
+
   const handleSave = () => {
-    onSave?.(formData);
+    if (isFormValid && onSave) {
+      onSave(formData, documentId);
+    }
   };
 
   return (
@@ -94,7 +129,7 @@ const AddInsuranceScreen: React.FC<AddInsuranceScreenProps> = ({
 
       {/* Header with Circular ( X ) Close Button */}
       <PersonalInfoHeader
-        title="Add insurance"
+        title={documentId ? 'Edit insurance' : 'Add insurance'}
         subtitle="For the family"
         onBack={onClose}
         icon="close"
@@ -110,6 +145,36 @@ const AddInsuranceScreen: React.FC<AddInsuranceScreenProps> = ({
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
         >
+          {/* Top Field: Upload & Scan Document Photo */}
+          <DocumentPhotoUploadField
+            documentType="INSURANCE"
+            documentTitle="Insurance"
+            memberId={memberId}
+            scanId={formData.scanId}
+            hasFrontImage={formData.frontImageAdded}
+            onScanSuccess={(scanned, newScanId) => {
+              setFormData((prev) => ({
+                ...prev,
+                scanId: newScanId || scanned.scanId || prev.scanId,
+                policyNumber: scanned.number
+                  ? scanned.number.toUpperCase()
+                  : prev.policyNumber,
+                insurer: scanned.insurer || prev.insurer,
+                planName: scanned.planName || prev.planName,
+                renewalDate: scanned.expiresOn
+                  ? formatIsoToDisplayDate(scanned.expiresOn)
+                  : prev.renewalDate,
+                frontImageAdded: true,
+              }));
+            }}
+            onPhotosChange={(front) => {
+              setFormData((prev) => ({
+                ...prev,
+                frontImageAdded: Boolean(front),
+              }));
+            }}
+          />
+
           {/* TYPE */}
           <View style={styles.fieldGroup}>
             <Text style={styles.sectionHeader}>TYPE</Text>
@@ -332,10 +397,14 @@ const AddInsuranceScreen: React.FC<AddInsuranceScreenProps> = ({
         {/* Bottom Save Insurance Button */}
         <View style={styles.bottomBar}>
           <CommonBtn
-            title="Save insurance"
+            title={documentId ? 'Update insurance' : 'Save insurance'}
             onPress={handleSave}
-            backgroundColor={Colors.primary || '#F0913A'}
-            textColor="#FFFFFF"
+            loading={isSaving}
+            disabled={!isFormValid || isSaving}
+            backgroundColor={
+              isFormValid ? Colors.primary || '#F0913A' : '#5C381E'
+            }
+            textColor={isFormValid ? '#FFFFFF' : '#8E9BAE'}
             height={52}
             borderRadius={26}
           />

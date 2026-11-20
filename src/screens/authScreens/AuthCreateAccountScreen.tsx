@@ -22,6 +22,7 @@ interface AuthCreateAccountScreenProps {
   onContinueApple?: () => void;
   onUseEmail?: () => void;
   isGoogleLoading?: boolean;
+  isAppleLoading?: boolean;
 }
 
 const AuthCreateAccountScreen: React.FC<AuthCreateAccountScreenProps> = ({
@@ -31,6 +32,7 @@ const AuthCreateAccountScreen: React.FC<AuthCreateAccountScreenProps> = ({
   onContinueApple,
   onUseEmail,
   isGoogleLoading = false,
+  isAppleLoading = false,
 }) => {
   const insets = useSafeAreaInsets();
 
@@ -98,6 +100,7 @@ const AuthCreateAccountScreen: React.FC<AuthCreateAccountScreenProps> = ({
           <CommonBtn
             title="Continue with Apple"
             onPress={onContinueApple}
+            loading={isAppleLoading}
             backgroundColor={Colors.background}
             borderColor={Colors.border}
             textColor="#FFFFFF"

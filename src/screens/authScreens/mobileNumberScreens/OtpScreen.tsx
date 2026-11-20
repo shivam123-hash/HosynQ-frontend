@@ -123,7 +123,7 @@ const OtpScreen: React.FC<OtpScreenProps> = ({
       </View>
 
       <KeyboardAvoidingWrapper contentContainerStyle={styles.scrollContent}>
-        {/* Top Verification Illustration (cuateSecand.png) */}
+        {/* Top Verification Illustration (cuateSecand.webp) */}
           <View style={styles.illustrationWrapper}>
             <Image
               source={ImagePath.cuateSecand}

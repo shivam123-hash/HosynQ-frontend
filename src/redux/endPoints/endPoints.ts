@@ -1,16 +1,36 @@
-import { Platform } from 'react-native';
+import { Platform, NativeModules } from 'react-native';
 
-// Local development host configuration:
-// - iOS Simulator accesses localhost: http://localhost:5000/api/v1
-// - Real Android Device accesses via Mac's Wi-Fi IP: http://192.168.1.8:5000/api/v1
-// - (Or if using USB cable with `adb reverse tcp:5000 tcp:5000`, localhost:5000 can be used)
-const DEV_MACHINE_IP = '192.168.1.8';
+/**
+ * Local development host configuration:
+ * Current Mac Wi-Fi IP: 192.168.29.41
+ * (Find by running `ifconfig | grep "inet 192"` in Mac terminal)
+ */
+export const DEV_MACHINE_IP = '192.168.29.41';
 
-export const API_BASE_URL = Platform.select({
-  android: `http://${DEV_MACHINE_IP}:5000/api/v1`,
-  ios: 'http://localhost:5000/api/v1',
-  default: `http://${DEV_MACHINE_IP}:5000/api/v1`,
-});
+/**
+ * Automatically extracts the development host IP:
+ * 1. Checks NativeModules.SourceCode.scriptURL (Metro packager IP)
+ *    If Metro is accessed from 192.168.29.41, this dynamically resolves it!
+ * 2. Falls back to DEV_MACHINE_IP (192.168.29.41) so real devices never call
+ *    "localhost" (which points to the mobile device itself and causes Network Error).
+ */
+export const resolveDevHost = (): string => {
+  try {
+    const scriptURL: string | undefined = NativeModules?.SourceCode?.scriptURL;
+    if (scriptURL) {
+      const match = scriptURL.match(/^https?:\/\/([^:/]+)/i);
+      const host = match?.[1];
+      if (host && host !== 'localhost' && host !== '127.0.0.1') {
+        return host;
+      }
+    }
+  } catch (e) {
+    // fallback below
+  }
+  return DEV_MACHINE_IP;
+};
+
+export const API_BASE_URL = `http://${resolveDevHost()}:5000/api/v1`;
 
 const API_ROUTES = {
   // Auth & Session Endpoints
@@ -43,18 +63,47 @@ const API_ROUTES = {
   FAMILY_MY_FAMILY: 'family/my-family',
   FAMILY_TRANSFER_OWNERSHIP: 'family/transfer-ownership',
   FAMILY_LIFE_PROFILE: 'family/life-profile',
+  FAMILY_DOCUMENT_DELETE: (documentId: string) => `family/documents/${documentId}`,
   FAMILY_MEMBER_LIFE_PROFILE: (
     memberId: string,
-    queryParams?: { view?: string; section?: string }
+    queryParams?: {
+      view?: string;
+      section?: string;
+      documentId?: string;
+      tab?: string;
+      vaccineId?: string;
+    }
   ) => {
     let url = `family/members/${memberId}/life-profile`;
+    const params: string[] = [];
     if (queryParams?.view) {
-      url += `?view=${queryParams.view}`;
-    } else if (queryParams?.section) {
-      url += `?section=${queryParams.section}`;
+      params.push(`view=${queryParams.view}`);
+    }
+    if (queryParams?.section) {
+      params.push(`section=${queryParams.section}`);
+    }
+    if (queryParams?.documentId) {
+      params.push(`documentId=${queryParams.documentId}`);
+    }
+    if (queryParams?.tab) {
+      params.push(`tab=${queryParams.tab}`);
+    }
+    if (queryParams?.vaccineId) {
+      params.push(`vaccineId=${queryParams.vaccineId}`);
+    }
+    if (params.length > 0) {
+      url += `?${params.join('&')}`;
     }
     return url;
   },
+  FAMILY_MEMBER_SCAN_DOCUMENT: (memberId: string) =>
+    `family/members/${memberId}/documents/scan`,
+  FAMILY_MEMBER_MEDICINES: (memberId: string) =>
+    `family/members/${memberId}/medicines`,
+  FAMILY_MEDICINE_BY_ID: (medicineId: string) =>
+    `family/medicines/${medicineId}`,
+  FAMILY_VACCINE_BY_ID: (vaccineId: string) =>
+    `family/vaccines/${vaccineId}`,
 };
 
 export default API_ROUTES;

@@ -9,13 +9,23 @@ import {
   TextInput,
   KeyboardAvoidingView,
   Platform,
+  Alert,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Feather from '@react-native-vector-icons/feather';
 import { RFValue } from 'react-native-responsive-fontsize';
 import Colors from '../../../units/Colors';
 import CommonBtn from '../../../components/CommonBtn';
-import { useAppDispatch, useAppSelector, fetchLifeProfileSectionThunk } from '../../../redux';
+import AppConfirmationModal from '../../../components/AppConfirmationModal';
+import {
+  useAppDispatch,
+  useAppSelector,
+  fetchLifeProfileSectionThunk,
+  updateLifeProfileSectionThunk,
+  fetchLifeProfileFullThunk,
+} from '../../../redux';
+import { getMyMemberId } from '../../../units/asyncStorageManager';
+import { extractInterestsList } from './InterestsDetailsScreen';
 import {
   PersonalInfoHeader,
   InterestCategoryGroup,
@@ -34,7 +44,7 @@ export interface InterestsAndActivitiesScreenProps {
   onEnterHosynQ?: (selectedInterests: string[]) => void;
 }
 
-const CATEGORIES: InterestCategoryData[] = [
+export const CATEGORIES: InterestCategoryData[] = [
   {
     title: 'SPORTS',
     items: ['Yoga', 'Badminton', 'Walking', 'Swimming'],
@@ -86,39 +96,85 @@ const InterestsAndActivitiesScreen: React.FC<
 }) => {
   const insets = useSafeAreaInsets();
   const dispatch = useAppDispatch();
-  const [selectedInterests, setSelectedInterests] =
-    useState<string[]>(DEFAULT_SELECTED);
+  const [selectedInterests, setSelectedInterests] = useState<string[]>([]);
   const [customItems, setCustomItems] = useState<string[]>([]);
   const [isAddingCustom, setIsAddingCustom] = useState<boolean>(false);
   const [customInputText, setCustomInputText] = useState<string>('');
+  const [isSaving, setIsSaving] = useState<boolean>(false);
+  const [errorModalVisible, setErrorModalVisible] = useState<boolean>(false);
+  const [errorMessage, setErrorMessage] = useState<string>('');
 
   const authUser = useAppSelector((state) => state.auth?.user || state.emailAuth?.user);
+  const familyState = useAppSelector((state) => (state as any).family);
   const lifeProfileInterests = useAppSelector((state) => state.lifeProfile?.interests);
+  const fullProfile = useAppSelector((state) => state.lifeProfile?.full);
 
   const resolvedMemberId =
     memberId ||
+    fullProfile?.member?.memberId ||
+    fullProfile?.data?.member?.memberId ||
+    (authUser as any)?.lifeProfile?.memberId ||
+    familyState?.myMemberId ||
+    familyState?.family?.myMemberId ||
     authUser?.memberId ||
+    authUser?.myMemberId ||
     authUser?.id ||
     authUser?._id ||
     'me';
 
-  // API Call Structure: GET {{BaseURL}}/api/v1/family/members/{{memberId}}/life-profile?section=interests
+  const resolvedUserName =
+    (userName && userName !== 'Priya' ? userName : undefined) ||
+    authUser?.name ||
+    authUser?.fullName ||
+    fullProfile?.member?.fullName ||
+    fullProfile?.data?.member?.fullName ||
+    userName ||
+    'Priya';
+
+  // API Call Structure: GET {{BaseURL}}/api/v1/family/members/{{memberId}}/life-profile?view=full&section=interests
   useEffect(() => {
-    if (resolvedMemberId) {
-      dispatch(
-        fetchLifeProfileSectionThunk({
-          memberId: resolvedMemberId,
-          section: 'interests',
-        })
-      );
-    }
+    const fetchExisting = async () => {
+      let targetId = resolvedMemberId;
+      if (!targetId || targetId === 'me') {
+        const stored = await getMyMemberId();
+        if (stored) targetId = stored;
+      }
+      if (targetId && targetId !== 'me') {
+        dispatch(
+          fetchLifeProfileSectionThunk({
+            memberId: targetId,
+            section: 'interests',
+            view: 'full',
+          })
+        );
+        dispatch(
+          fetchLifeProfileSectionThunk({
+            memberId: targetId,
+            section: 'interests',
+          })
+        );
+      }
+    };
+    fetchExisting();
   }, [dispatch, resolvedMemberId]);
 
-  /*
-   * DATA MAPPING (Ready to connect when interests data is available):
-   * const interestsData = lifeProfileInterests?.data || lifeProfileInterests;
-   * // const dynamicInterests = interestsData?.interests ?? DEFAULT_SELECTED;
-   */
+  // Sync incoming backend interests data into selectedInterests
+  useEffect(() => {
+    const rawInterests = extractInterestsList(lifeProfileInterests);
+    const fromFull = extractInterestsList(fullProfile);
+    const existing = rawInterests.length > 0 ? rawInterests : fromFull;
+
+    if (Array.isArray(existing) && existing.length > 0) {
+      setSelectedInterests(existing);
+      const standardItems = new Set(CATEGORIES.flatMap((c) => c.items));
+      const customs = existing.filter(
+        (item) => typeof item === 'string' && !standardItems.has(item),
+      );
+      if (customs.length > 0) {
+        setCustomItems((prev) => Array.from(new Set([...prev, ...customs])));
+      }
+    }
+  }, [lifeProfileInterests, fullProfile]);
 
   const toggleInterest = (item: string) => {
     setSelectedInterests((prev) =>
@@ -136,12 +192,67 @@ const InterestsAndActivitiesScreen: React.FC<
     }
   };
 
-  const handleSave = () => {
-    if (onSave) {
-      onSave(selectedInterests);
+  const handleSave = async () => {
+    setIsSaving(true);
+    let targetMemberId = resolvedMemberId;
+    if (!targetMemberId || targetMemberId === 'me') {
+      const stored = await getMyMemberId();
+      if (stored) targetMemberId = stored;
     }
-    if (onEnterHosynQ) {
-      onEnterHosynQ(selectedInterests);
+
+    const payload = {
+      interests: {
+        interests: selectedInterests,
+      },
+    };
+
+    console.log('====================================');
+    console.log('[Interests] Submitting PATCH /life-profile with interests:');
+    console.log(`[Interests] Target MemberId: ${targetMemberId}`);
+    console.log(JSON.stringify(payload, null, 2));
+    console.log('====================================');
+
+    try {
+      if (targetMemberId && targetMemberId !== 'me') {
+        await dispatch(
+          updateLifeProfileSectionThunk({
+            memberId: targetMemberId,
+            payload,
+          }),
+        ).unwrap();
+
+        try {
+          await Promise.allSettled([
+            dispatch(
+              fetchLifeProfileSectionThunk({
+                memberId: targetMemberId,
+                section: 'interests',
+                view: 'full',
+              }),
+            ),
+            dispatch(
+              fetchLifeProfileSectionThunk({
+                memberId: targetMemberId,
+                section: 'interests',
+              }),
+            ),
+            dispatch(fetchLifeProfileFullThunk({ memberId: targetMemberId })),
+          ]);
+        } catch (refetchErr) {
+          console.warn('[Interests] Refetch warning:', refetchErr);
+        }
+      }
+
+      onSave?.(selectedInterests);
+      onEnterHosynQ?.(selectedInterests);
+    } catch (err: any) {
+      console.error('[Interests] Save failed:', err);
+      setErrorMessage(
+        err?.message || 'Could not save interests. Please try again.',
+      );
+      setErrorModalVisible(true);
+    } finally {
+      setIsSaving(false);
     }
   };
 
@@ -157,7 +268,7 @@ const InterestsAndActivitiesScreen: React.FC<
       {/* Header */}
       <PersonalInfoHeader
         title="Interests and activities"
-        subtitle={`${userName} · Section 5 of 5`}
+        subtitle={`${resolvedUserName} · Section 5 of 5`}
         onBack={onBack}
       />
 
@@ -251,6 +362,8 @@ const InterestsAndActivitiesScreen: React.FC<
           <CommonBtn
             title="Save"
             onPress={handleSave}
+            disabled={isSaving}
+            loading={isSaving}
             backgroundColor={Colors.primary || '#F0913A'}
             textColor="#FFFFFF"
             height={54}
@@ -258,6 +371,19 @@ const InterestsAndActivitiesScreen: React.FC<
           />
         </View>
       </KeyboardAvoidingView>
+
+      <AppConfirmationModal
+        visible={errorModalVisible}
+        title="Save Failed"
+        message={errorMessage}
+        confirmText="OK"
+        cancelText=""
+        isDestructive={false}
+        confirmColor="#F0913A"
+        iconName="alert-circle"
+        onConfirm={() => setErrorModalVisible(false)}
+        onCancel={() => setErrorModalVisible(false)}
+      />
     </View>
   );
 };

@@ -6,6 +6,7 @@ import {
   ScrollView,
   StyleSheet,
   StatusBar,
+  Alert,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Feather from '@react-native-vector-icons/feather';
@@ -17,26 +18,98 @@ export interface DrivingLicenceDetailScreenProps {
   userName?: string;
   licenceNumber?: string;
   expiryDate?: string;
+  rawExpiryDate?: string | Date;
   issuingRTO?: string;
   onBack?: () => void;
   onOptionsPress?: () => void;
+  onDeletePress?: () => void;
+  onEditPress?: () => void;
   onRenewPress?: () => void;
   onRemindUserPress?: () => void;
 }
+
+const parseDate = (d?: string | Date): Date | null => {
+  if (!d) return null;
+  if (d instanceof Date) return isNaN(d.getTime()) ? null : d;
+  if (typeof d === 'string') {
+    const isoMatch = d.match(/^(\d{4})[-/.](\d{1,2})[-/.](\d{1,2})/);
+    if (isoMatch) {
+      const year = parseInt(isoMatch[1], 10);
+      const month = parseInt(isoMatch[2], 10) - 1;
+      const day = parseInt(isoMatch[3], 10);
+      return new Date(year, month, day);
+    }
+    const parts = d.trim().split(/\s+/);
+    if (parts.length >= 3) {
+      const day = parseInt(parts[0], 10);
+      const monthNames = [
+        'jan', 'feb', 'mar', 'apr', 'may', 'jun',
+        'jul', 'aug', 'sep', 'oct', 'nov', 'dec',
+      ];
+      const month = monthNames.indexOf(parts[1].toLowerCase().slice(0, 3));
+      const year = parseInt(parts[2], 10);
+      if (!isNaN(day) && month !== -1 && !isNaN(year)) {
+        return new Date(year, month, day);
+      }
+    }
+    const fallback = new Date(d);
+    if (!isNaN(fallback.getTime())) return fallback;
+  }
+  return null;
+};
 
 const DrivingLicenceDetailScreen: React.FC<
   DrivingLicenceDetailScreenProps
 > = ({
   userName = 'Rohan',
-  licenceNumber = '•••• •••• 0456',
-  expiryDate = '2 Nov 2026 · Expired',
+  licenceNumber = '•••• •••• ----',
+  expiryDate = '—',
+  rawExpiryDate,
   issuingRTO = 'Gurugram',
   onBack,
   onOptionsPress,
+  onDeletePress,
+  onEditPress,
   onRenewPress,
   onRemindUserPress,
 }) => {
   const insets = useSafeAreaInsets();
+
+  const expiry = parseDate(rawExpiryDate || expiryDate);
+  const now = new Date();
+  const isExpired = expiry ? expiry.getTime() < now.getTime() : false;
+  const diffDays = expiry
+    ? Math.max(1, Math.floor((now.getTime() - expiry.getTime()) / (1000 * 60 * 60 * 24)))
+    : 0;
+
+  const handleOptionsPress = () => {
+    if (onOptionsPress) {
+      onOptionsPress();
+      return;
+    }
+    if (onDeletePress) {
+      Alert.alert(
+        'Driving Licence Options',
+        'Select an action for this driving licence',
+        [
+          { text: 'Cancel', style: 'cancel' },
+          {
+            text: 'Delete Driving Licence',
+            style: 'destructive',
+            onPress: onDeletePress,
+          },
+        ]
+      );
+    }
+  };
+
+  const handleActionPress = () => {
+    if (onEditPress) {
+      onEditPress();
+    } else if (onRenewPress) {
+      onRenewPress();
+    }
+  };
 
   return (
     <View
@@ -64,7 +137,7 @@ const DrivingLicenceDetailScreen: React.FC<
 
         <TouchableOpacity
           activeOpacity={0.7}
-          onPress={onOptionsPress}
+          onPress={handleOptionsPress}
           style={styles.headerButton}
         >
           <Feather name="more-horizontal" size={20} color="#FFFFFF" />
@@ -76,27 +149,31 @@ const DrivingLicenceDetailScreen: React.FC<
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
       >
-        {/* Warning / Expired Alert Banner */}
-        <View style={styles.alertBanner}>
-          <View style={styles.alertIconBox}>
-            <Feather name="alert-circle" size={18} color="#EF4444" />
-          </View>
-          <View style={styles.alertTextContainer}>
-            <View style={styles.alertTitleRow}>
-              <Text style={styles.alertTitle}>Expired 10 days ago</Text>
-              <TouchableOpacity
-                activeOpacity={0.7}
-                onPress={onRenewPress}
-                style={styles.renewAction}
-              >
-                <Text style={styles.renewActionText}>Renew</Text>
-              </TouchableOpacity>
+        {/* Warning / Expired Alert Banner (Only shown if document is actually expired) */}
+        {isExpired ? (
+          <View style={styles.alertBanner}>
+            <View style={styles.alertIconBox}>
+              <Feather name="alert-circle" size={18} color="#EF4444" />
             </View>
-            <Text style={styles.alertSubtitle}>
-              It expired on Mon, 2 Nov 2026. Driving with it isn't allowed.
-            </Text>
+            <View style={styles.alertTextContainer}>
+              <View style={styles.alertTitleRow}>
+                <Text style={styles.alertTitle}>
+                  {diffDays > 0 ? `Expired ${diffDays} days ago` : 'Expired'}
+                </Text>
+                <TouchableOpacity
+                  activeOpacity={0.7}
+                  onPress={handleActionPress}
+                  style={styles.renewAction}
+                >
+                  <Text style={styles.renewActionText}>Renew</Text>
+                </TouchableOpacity>
+              </View>
+              <Text style={styles.alertSubtitle}>
+                It expired on {expiryDate}. Driving with it isn't allowed.
+              </Text>
+            </View>
           </View>
-        </View>
+        ) : null}
 
         {/* Card 1: Details Card */}
         <View style={styles.detailsCard}>
@@ -114,14 +191,23 @@ const DrivingLicenceDetailScreen: React.FC<
 
           <View style={styles.divider} />
 
-          {/* Row 2: Valid till (highlighted in amber/orange) */}
+          {/* Row 2: Valid till */}
           <View style={styles.detailRow}>
             <View style={styles.detailIconBox}>
-              <Feather name="clock" size={17} color="#F59E0B" />
+              <Feather
+                name="clock"
+                size={17}
+                color={isExpired ? '#EF4444' : '#8E9BAE'}
+              />
             </View>
             <View style={styles.detailTextContainer}>
               <Text style={styles.detailLabel}>Valid till</Text>
-              <Text style={[styles.detailValue, { color: '#F59E0B' }]}>
+              <Text
+                style={[
+                  styles.detailValue,
+                  { color: isExpired ? '#EF4444' : '#FFFFFF' },
+                ]}
+              >
                 {expiryDate}
               </Text>
             </View>
@@ -141,51 +227,68 @@ const DrivingLicenceDetailScreen: React.FC<
           </View>
         </View>
 
-        {/* Card 2: Task Action Card */}
-        <TouchableOpacity
-          activeOpacity={0.7}
-          onPress={onRenewPress}
-          style={styles.taskCard}
-        >
-          <View style={styles.taskIconBox}>
-            <Feather name="check-square" size={18} color="#EF4444" />
-          </View>
-          <View style={styles.taskTextContainer}>
-            <View style={styles.taskTitleRow}>
-              <Text style={styles.taskTitle}>Renew driving licence</Text>
-              <View style={styles.overdueBadge}>
-                <Text style={styles.overdueBadgeText}>Overdue</Text>
-              </View>
+        {/* Card 2: Task Action Card (Only shown if overdue) */}
+        {isExpired ? (
+          <TouchableOpacity
+            activeOpacity={0.7}
+            onPress={handleActionPress}
+            style={styles.taskCard}
+          >
+            <View style={styles.taskIconBox}>
+              <Feather name="check-square" size={18} color="#EF4444" />
             </View>
-            <Text style={styles.taskSubtitle}>Created 2 Aug · {userName}</Text>
-          </View>
-          <Feather name="chevron-right" size={18} color="#64748B" />
-        </TouchableOpacity>
+            <View style={styles.taskTextContainer}>
+              <View style={styles.taskTitleRow}>
+                <Text style={styles.taskTitle}>Renew driving licence</Text>
+                <View style={styles.overdueBadge}>
+                  <Text style={styles.overdueBadgeText}>Overdue</Text>
+                </View>
+              </View>
+              <Text style={styles.taskSubtitle}>
+                Expired on {expiryDate} · {userName}
+              </Text>
+            </View>
+            <Feather name="chevron-right" size={18} color="#64748B" />
+          </TouchableOpacity>
+        ) : null}
       </ScrollView>
 
       {/* Bottom Actions */}
       <View style={styles.bottomBar}>
-        <Text style={styles.renewedHelper}>
-          Renewed? Add the new expiry date and file.
-        </Text>
+        {isExpired ? (
+          <>
+            <Text style={styles.renewedHelper}>
+              Renewed? Add the new expiry date and file.
+            </Text>
 
-        <CommonBtn
-          title="I've renewed it"
-          onPress={onRenewPress}
-          backgroundColor={Colors.primary || '#F0913A'}
-          textColor="#FFFFFF"
-          height={52}
-          borderRadius={26}
-        />
+            <CommonBtn
+              title="I've renewed it"
+              onPress={handleActionPress}
+              backgroundColor={Colors.primary || '#F0913A'}
+              textColor="#FFFFFF"
+              height={52}
+              borderRadius={26}
+            />
 
-        <TouchableOpacity
-          activeOpacity={0.7}
-          onPress={onRemindUserPress}
-          style={styles.remindButton}
-        >
-          <Feather name="bell" size={17} color="#F0913A" />
-          <Text style={styles.remindButtonText}>Remind {userName}</Text>
-        </TouchableOpacity>
+            <TouchableOpacity
+              activeOpacity={0.7}
+              onPress={onRemindUserPress}
+              style={styles.remindButton}
+            >
+              <Feather name="bell" size={17} color="#F0913A" />
+              <Text style={styles.remindButtonText}>Remind {userName}</Text>
+            </TouchableOpacity>
+          </>
+        ) : (
+          <CommonBtn
+            title="Edit"
+            onPress={handleActionPress}
+            backgroundColor={Colors.primary || '#F0913A'}
+            textColor="#FFFFFF"
+            height={52}
+            borderRadius={26}
+          />
+        )}
       </View>
     </View>
   );

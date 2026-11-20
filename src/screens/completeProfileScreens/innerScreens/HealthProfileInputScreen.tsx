@@ -67,32 +67,29 @@ export interface HealthProfileFormValues {
 
 export const DEFAULT_HEALTH_FORM_VALUES: HealthProfileFormValues = {
   doctor: {
-    doctorName: 'Dr. Anjali Rao',
-    speciality: 'General physician',
+    doctorName: '',
+    speciality: '',
     phoneCode: '+91',
-    phoneNumber: '98765 01234',
-    clinicName: 'Rao Clinic',
-    clinicLocation: 'Sector 47, Gurugram',
+    phoneNumber: '',
+    clinicName: '',
+    clinicLocation: '',
   },
   hospital: {
-    preferredHospital: 'CityCare Hospital, Sector 38',
+    preferredHospital: '',
   },
-  allergies: [
-    { id: '1', label: 'Penicillin · Severe' },
-    { id: '2', label: 'Dust · Mild' },
-  ],
-  conditions: [{ id: '1', label: 'Migraine · since 2015' }],
-  medications: [{ id: '1', label: 'Vitamin D · weekly' }],
+  allergies: [],
+  conditions: [],
+  medications: [],
   checkups: {
-    lastCheckup: '12 Mar 2026',
-    nextCheckup: 'Mar 2027',
+    lastCheckup: '',
+    nextCheckup: '',
     repeatEvery: '1 year',
   },
   eyesight: {
-    wears: 'Glasses',
-    rightEyePower: '-1.25',
-    leftEyePower: '-1.00',
-    lastEyeTest: '14 Jan 2026',
+    wears: 'Neither',
+    rightEyePower: '',
+    leftEyePower: '',
+    lastEyeTest: '',
     attachedReport: null,
   },
 };
@@ -276,7 +273,7 @@ const HealthProfileInputScreen: React.FC<HealthProfileInputScreenProps> = ({
             <TextInput
               style={styles.textInput}
               value={form.doctor.doctorName}
-              placeholder="Doctor's name"
+              placeholder="Dr. Anjali Rao"
               placeholderTextColor="#60728B"
               onChangeText={(text) =>
                 setForm((prev) => ({
@@ -349,7 +346,7 @@ const HealthProfileInputScreen: React.FC<HealthProfileInputScreenProps> = ({
               <TextInput
                 style={styles.phoneTextInput}
                 value={form.doctor.phoneNumber}
-                placeholder="Phone number"
+                placeholder="98765 01234"
                 placeholderTextColor="#60728B"
                 keyboardType="phone-pad"
                 onChangeText={(text) =>
@@ -368,7 +365,7 @@ const HealthProfileInputScreen: React.FC<HealthProfileInputScreenProps> = ({
             <TextInput
               style={styles.textInput}
               value={form.doctor.clinicName}
-              placeholder="Clinic name"
+              placeholder="Rao Clinic"
               placeholderTextColor="#60728B"
               onChangeText={(text) =>
                 setForm((prev) => ({

@@ -52,5 +52,11 @@ export * from './VaccineItemRow';
 export { default as GrowthLineChart } from './GrowthLineChart';
 export * from './GrowthLineChart';
 
+export { default as TabTransitionView } from './TabTransitionView';
+export * from './TabTransitionView';
+
 export { default as InterestCategoryGroup } from './InterestCategoryGroup';
 export * from './InterestCategoryGroup';
+
+export { default as DocumentPhotoUploadField } from './DocumentPhotoUploadField';
+export * from './DocumentPhotoUploadField';

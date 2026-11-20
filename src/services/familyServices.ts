@@ -1,5 +1,6 @@
 import apiClient from './apiClient';
 import API_ROUTES from '../redux/endPoints/endPoints';
+import { saveMyMemberId } from '../units/asyncStorageManager';
 
 export interface CreateFamilyPayload {
   name: string;
@@ -15,6 +16,7 @@ export interface FamilyData {
   expectedMemberCount?: number;
   memberCount: number;
   myRole: string;
+  myMemberId?: string;
   createdAt: string;
 }
 
@@ -22,6 +24,7 @@ export interface CreateFamilyResponse {
   success: boolean;
   message: string;
   family: FamilyData;
+  myMemberId?: string;
 }
 
 export interface FamilyInvitationData {
@@ -120,6 +123,12 @@ const familyServices = {
         API_ROUTES.FAMILY_CREATE,
         payload
       );
+      const myMemberId =
+        (response.data as any)?.family?.myMemberId ||
+        (response.data as any)?.myMemberId;
+      if (myMemberId) {
+        await saveMyMemberId(myMemberId);
+      }
       return response.data;
     } catch (error) {
       throw error;

@@ -27,6 +27,8 @@ export interface FamilyCreatedScreenProps {
   onBack?: () => void;
   onShareInvite?: () => void;
   onGoHome?: () => void;
+  onGoToProfileComplete?: () => void;
+  goToProfileText?: string;
 }
 
 const FamilyCreatedScreen: React.FC<FamilyCreatedScreenProps> = ({
@@ -36,6 +38,8 @@ const FamilyCreatedScreen: React.FC<FamilyCreatedScreenProps> = ({
   onBack,
   onShareInvite,
   onGoHome,
+  onGoToProfileComplete,
+  goToProfileText = 'Go to profile complete',
 }) => {
   const insets = useSafeAreaInsets();
   const authUser = useAppSelector((state) => state.auth.user);
@@ -119,10 +123,12 @@ const FamilyCreatedScreen: React.FC<FamilyCreatedScreenProps> = ({
 
           <TouchableOpacity
             activeOpacity={0.7}
-            onPress={onGoHome}
+            onPress={onGoToProfileComplete || onGoHome}
             style={styles.goHomeButton}
+            accessibilityRole="button"
+            accessibilityLabel={goToProfileText}
           >
-            <Text style={styles.goHomeText}>Go to Home</Text>
+            <Text style={styles.goHomeText}>{goToProfileText}</Text>
           </TouchableOpacity>
         </View>
       </ScrollView>

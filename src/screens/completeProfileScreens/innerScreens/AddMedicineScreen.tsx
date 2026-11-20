@@ -9,12 +9,16 @@ import {
   TextInput,
   KeyboardAvoidingView,
   Platform,
+  Alert,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Feather from '@react-native-vector-icons/feather';
 import { RFValue } from 'react-native-responsive-fontsize';
 import Colors from '../../../units/Colors';
 import CommonBtn from '../../../components/CommonBtn';
+import { useAppDispatch } from '../../../redux';
+import { createMedicineThunk } from '../../../redux/features/medicine/medicineSlice';
+import { getMyMemberId } from '../../../units/asyncStorageManager';
 
 export interface AddMedicineFormData {
   name: string;
@@ -23,9 +27,11 @@ export interface AddMedicineFormData {
   doseCount: number;
   strength?: string;
   timing: string;
+  medicineId?: string;
 }
 
 export interface AddMedicineScreenProps {
+  memberId?: string;
   initialData?: Partial<AddMedicineFormData>;
   onClose?: () => void;
   onScanPrescription?: () => void;
@@ -36,28 +42,27 @@ const MEDICINE_TYPES = ['Tablet', 'Capsule', 'Syrup', 'Drops', 'Other'];
 const TIMING_OPTIONS = ['Before food', 'After food', 'With food', 'Any time'];
 
 const AddMedicineScreen: React.FC<AddMedicineScreenProps> = ({
+  memberId,
   initialData,
   onClose,
   onScanPrescription,
   onNext,
 }) => {
+  const dispatch = useAppDispatch();
   const insets = useSafeAreaInsets();
-  const [name, setName] = useState<string>(initialData?.name || 'BP tablet');
-  const [purpose, setPurpose] = useState<string>(
-    initialData?.purpose || 'Blood pressure',
-  );
+  const [name, setName] = useState<string>(initialData?.name || '');
+  const [purpose, setPurpose] = useState<string>(initialData?.purpose || '');
   const [selectedType, setSelectedType] = useState<string>(
     initialData?.type || 'Tablet',
   );
   const [doseCount, setDoseCount] = useState<number>(
     initialData?.doseCount || 1,
   );
-  const [strength, setStrength] = useState<string>(
-    initialData?.strength || '5 mg',
-  );
+  const [strength, setStrength] = useState<string>(initialData?.strength || '');
   const [selectedTiming, setSelectedTiming] = useState<string>(
     initialData?.timing || 'After food',
   );
+  const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
 
   const handleIncrement = () => {
     setDoseCount((prev) => prev + 1);
@@ -69,15 +74,91 @@ const AddMedicineScreen: React.FC<AddMedicineScreenProps> = ({
     }
   };
 
-  const handleNext = () => {
-    onNext?.({
-      name,
-      purpose,
-      type: selectedType,
-      doseCount,
-      strength,
-      timing: selectedTiming,
-    });
+  const handleNext = async () => {
+    if (!name.trim()) {
+      Alert.alert('Required', 'Please enter a medicine name.');
+      return;
+    }
+
+    let targetMemberId = memberId;
+    if (!targetMemberId || targetMemberId === 'me') {
+      const stored = await getMyMemberId();
+      if (stored) {
+        targetMemberId = stored;
+      }
+    }
+
+    const payload = {
+      name: name.trim(),
+      purpose: purpose?.trim() || undefined,
+      type: selectedType.toUpperCase(),
+      doseAmount: doseCount,
+      doseUnit: selectedType.toLowerCase(),
+      strength: strength?.trim() || undefined,
+      foodTiming: selectedTiming.toUpperCase().replace(/\s+/g, '_'),
+    };
+
+    setIsSubmitting(true);
+    let createdMedicineId: string | undefined;
+
+    try {
+      if (targetMemberId) {
+        console.log('====================================');
+        console.log('[AddMedicine] Submitting POST /medicines:');
+        console.log(`[AddMedicine] Target MemberId: ${targetMemberId}`);
+        console.log(JSON.stringify(payload, null, 2));
+        console.log('====================================');
+
+        const response: any = await dispatch(
+          createMedicineThunk({ memberId: targetMemberId, payload }),
+        ).unwrap();
+
+        console.log('====================================');
+        console.log('[AddMedicine] Medicine Created Successfully:');
+        console.log(JSON.stringify(response, null, 2));
+        console.log('====================================');
+
+        createdMedicineId =
+          response?.medicine?.id ||
+          response?.data?.medicine?.id ||
+          response?.data?.id ||
+          response?.id;
+      }
+
+      onNext?.({
+        name,
+        purpose,
+        type: selectedType,
+        doseCount,
+        strength,
+        timing: selectedTiming,
+        medicineId: createdMedicineId,
+      });
+    } catch (err: any) {
+      console.warn('[AddMedicine] Error creating medicine:', err);
+      const errMsg =
+        err?.message ||
+        (Array.isArray(err?.message) ? err.message.join(', ') : null) ||
+        'Failed to add medicine. Proceeding to set times.';
+      Alert.alert('Notice', errMsg, [
+        {
+          text: 'Continue',
+          onPress: () => {
+            onNext?.({
+              name,
+              purpose,
+              type: selectedType,
+              doseCount,
+              strength,
+              timing: selectedTiming,
+              medicineId: createdMedicineId,
+            });
+          },
+        },
+      ]);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -283,7 +364,8 @@ const AddMedicineScreen: React.FC<AddMedicineScreenProps> = ({
         {/* Bottom Button */}
         <View style={styles.bottomBar}>
           <CommonBtn
-            title="Next: set times"
+            title={isSubmitting ? 'Saving...' : 'Next: set times'}
+            disabled={isSubmitting}
             onPress={handleNext}
             backgroundColor={Colors.primary || '#F0913A'}
             textColor="#FFFFFF"

@@ -22,6 +22,7 @@ import WhenToTakeMedicineScreen, {
   WhenToTakeMedicineData,
 } from './innerScreens/WhenToTakeMedicineScreen';
 import InterestsAndActivitiesScreen from './innerScreens/InterestsAndActivitiesScreen';
+import InterestsDetailsScreen from './innerScreens/InterestsDetailsScreen';
 
 export { default as MyLifeProfileScreen } from './MyLifeProfileScreen';
 export * from './MyLifeProfileScreen';
@@ -72,6 +73,7 @@ export interface CompleteProfileStep3ScreenProps {
   onContinue?: (data: Step3FormData) => void;
   onCheckupItemPress?: (id: string) => void;
   onAddMedicine?: () => void;
+  onMedicinePress?: (medicineId: string) => void;
 }
 
 export interface CompleteProfileStep4ScreenProps {
@@ -82,10 +84,15 @@ export interface CompleteProfileStep4ScreenProps {
   onBack?: () => void;
   onContinue?: (data: Step4FormData) => void;
   onCheckupItemPress?: (id: string) => void;
+  onAddMeasurement?: () => void;
+  onAddMilestone?: () => void;
+  onAddVaccineRecord?: () => void;
+  onVaccinePress?: (vaccine: any) => void;
 }
 
 export interface CompleteProfileStep5ScreenProps {
   memberId?: string;
+  initialMode?: 'form' | 'details';
   onBack?: () => void;
   onEnterHosynQ?: (selectedInterests: string[]) => void;
   onSave?: (selectedInterests: string[]) => void;
@@ -136,6 +143,7 @@ export const CompleteProfileStep3Screen: React.FC<CompleteProfileStep3ScreenProp
   onBack,
   onContinue,
   onAddMedicine,
+  onMedicinePress,
 }) =>
   React.createElement(HealthProfileScreen, {
     memberId,
@@ -143,6 +151,7 @@ export const CompleteProfileStep3Screen: React.FC<CompleteProfileStep3ScreenProp
     initialMode,
     onBack,
     onAddMedicine,
+    onMedicinePress,
     onSave: (data: any) => {
       if (onContinue) {
         onContinue(data);
@@ -153,10 +162,14 @@ export const CompleteProfileStep3Screen: React.FC<CompleteProfileStep3ScreenProp
 export const CompleteProfileStep4Screen: React.FC<CompleteProfileStep4ScreenProps> = ({
   memberId,
   initialData,
-  initialMode = 'form',
+  initialMode = 'details',
   childName = 'Aarav',
   onBack,
   onContinue,
+  onAddMeasurement,
+  onAddMilestone,
+  onAddVaccineRecord,
+  onVaccinePress,
 }) => {
   const [currentMode, setCurrentMode] = React.useState<'form' | 'details'>(
     initialMode,
@@ -167,9 +180,12 @@ export const CompleteProfileStep4Screen: React.FC<CompleteProfileStep4ScreenProp
       memberId,
       childName,
       onBack,
-      onAddVaccineRecord: () => {
+      onAddVaccineRecord: onAddVaccineRecord || (() => {
         setCurrentMode('form');
-      },
+      }),
+      onAddMeasurement,
+      onAddMilestone,
+      onVaccinePress,
     });
   }
 
@@ -188,19 +204,37 @@ export const CompleteProfileStep4Screen: React.FC<CompleteProfileStep4ScreenProp
 
 export const CompleteProfileStep5Screen: React.FC<CompleteProfileStep5ScreenProps> = ({
   memberId,
+  initialMode = 'details',
   onBack,
   onEnterHosynQ,
   onSave,
-}) =>
-  React.createElement(InterestsAndActivitiesScreen, {
+}) => {
+  const [currentMode, setCurrentMode] = React.useState<'form' | 'details'>(
+    initialMode,
+  );
+  const [latestInterests, setLatestInterests] = React.useState<
+    string[] | undefined
+  >();
+
+  if (currentMode === 'details') {
+    return React.createElement(InterestsDetailsScreen, {
+      memberId,
+      interests: latestInterests,
+      onBack,
+      onEditPress: () => setCurrentMode('form'),
+    });
+  }
+
+  return React.createElement(InterestsAndActivitiesScreen, {
     memberId,
-    onBack,
+    onBack: () => setCurrentMode('details'),
     onEnterHosynQ,
     onSave: (interests: string[]) => {
+      setLatestInterests(interests);
+      setCurrentMode('details');
       if (onSave) {
         onSave(interests);
-      } else if (onEnterHosynQ) {
-        onEnterHosynQ(interests);
       }
     },
   });
+};

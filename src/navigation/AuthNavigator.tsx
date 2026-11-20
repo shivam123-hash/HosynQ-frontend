@@ -18,8 +18,10 @@ import {
   verifyAttachedPhone,
   clearPhoneError,
 } from '../redux/features/emailFlow/authSlice';
+import { fetchLifeProfileFullThunk } from '../redux/features/lifeProfile/lifeProfileSlice';
 import { getDeviceInfo } from '../units/deviceInfo';
-import { signInWithGoogle } from '../services';
+import { signInWithGoogle, signInWithApple, authServices } from '../services';
+import { saveMyMemberId } from '../units/asyncStorageManager';
 // Onboarding Screens
 import OnboardingScreen from '../screens/onBordingScreens/OnboardingScreen';
 // Auth Screens
@@ -68,6 +70,7 @@ const AuthMainWrapper: React.FC<AuthScreenProps<'AuthMain'>> = ({
   navigation,
 }) => {
   const [googleLoading, setGoogleLoading] = React.useState(false);
+  const [appleLoading, setAppleLoading] = React.useState(false);
 
   const handleGoogleSignIn = async () => {
     try {
@@ -81,7 +84,11 @@ const AuthMainWrapper: React.FC<AuthScreenProps<'AuthMain'>> = ({
             {
               text: 'OK',
               onPress: () => {
-                navigation.replace('BasicProfile');
+                navigation.replace('BasicProfile', {
+                  initialData: {
+                    fullName: res.user?.name || undefined,
+                  },
+                });
               },
             },
           ],
@@ -102,6 +109,43 @@ const AuthMainWrapper: React.FC<AuthScreenProps<'AuthMain'>> = ({
     }
   };
 
+  const handleAppleSignIn = async () => {
+    try {
+      setAppleLoading(true);
+      const res = await signInWithApple();
+      if (res.success && res.user) {
+        Alert.alert(
+          'Apple Sign-In Successful',
+          `Logged in with Apple\nName: ${res.user.name || 'Apple User'}\nEmail: ${res.user.email || 'Private Relay'}`,
+          [
+            {
+              text: 'OK',
+              onPress: () => {
+                navigation.replace('BasicProfile', {
+                  initialData: {
+                    fullName: res.user?.name || undefined,
+                  },
+                });
+              },
+            },
+          ],
+        );
+      } else if (!res.cancelled) {
+        Alert.alert(
+          'Apple Sign-In Error',
+          res.error || 'Failed to sign in with Apple',
+        );
+      }
+    } catch (err: any) {
+      Alert.alert(
+        'Apple Sign-In Error',
+        err?.message || 'Something went wrong',
+      );
+    } finally {
+      setAppleLoading(false);
+    }
+  };
+
   return (
     <AuthCreateAccountScreen
       onBack={() => {
@@ -112,7 +156,9 @@ const AuthMainWrapper: React.FC<AuthScreenProps<'AuthMain'>> = ({
       onContinueMobile={() => navigation.navigate('MobileNumber')}
       onUseEmail={() => navigation.navigate('Email')}
       onContinueGoogle={handleGoogleSignIn}
+      onContinueApple={handleAppleSignIn}
       isGoogleLoading={googleLoading}
+      isAppleLoading={appleLoading}
     />
   );
 };
@@ -212,7 +258,30 @@ const OtpWrapper: React.FC<AuthScreenProps<'Otp'>> = ({
 
       // Navigate using replace so OTP screen is removed from backstack
       if (res.nextStep === 'HOME') {
-        rootNav.navigate('Home');
+        try {
+          const meData = await authServices.getProfile();
+          const resolvedMemberId =
+            meData?.lifeProfile?.memberId ||
+            meData?.memberId ||
+            (res as any)?.user?.memberId ||
+            null;
+          if (resolvedMemberId) {
+            await saveMyMemberId(resolvedMemberId);
+            try {
+              await dispatch(
+                fetchLifeProfileFullThunk({ memberId: resolvedMemberId })
+              ).unwrap();
+            } catch (fetchErr) {
+              console.log('[OtpScreen] Error prefetching profile:', fetchErr);
+            }
+          }
+          rootNav.navigate('Profile', {
+            screen: 'MyLifeProfile',
+            params: { memberId: resolvedMemberId || undefined },
+          });
+        } catch {
+          rootNav.navigate('Home');
+        }
       } else if (res.nextStep === 'CREATE_OR_JOIN_FAMILY') {
         navigation.replace('SetUpFamily');
       } else if (res.nextStep === 'WAITING_FOR_APPROVAL') {
@@ -329,41 +398,73 @@ const CheckEmailWrapper: React.FC<AuthScreenProps<'CheckEmail'>> = ({
 const AddMobileNumberWrapper: React.FC<AuthScreenProps<'AddMobileNumber'>> = ({
   navigation,
   route,
-}) => (
-  <AddMobileNumberScreen
-    email={route.params?.email}
-    defaultPhoneNumber={route.params?.defaultPhoneNumber}
-    onBack={() => {
-      if (navigation.canGoBack()) {
-        navigation.goBack();
-      } else {
-        navigation.navigate('CheckEmail', {
-          email: route.params?.email || 'team@gmail.com',
+}) => {
+  const rootNav = useNavigation<RootNavigationProp>();
+  const dispatch = useAppDispatch();
+
+  return (
+    <AddMobileNumberScreen
+      email={route.params?.email}
+      defaultPhoneNumber={route.params?.defaultPhoneNumber}
+      onBack={() => {
+        if (navigation.canGoBack()) {
+          navigation.goBack();
+        } else {
+          navigation.navigate('CheckEmail', {
+            email: route.params?.email || 'team@gmail.com',
+          });
+        }
+      }}
+      onSendCode={(res) => {
+        console.log('[AddMobileNumberWrapper] Code sent, navigating to AttachPhoneOtp:', res);
+        navigation.navigate('AttachPhoneOtp', {
+          phoneNumber: res?.phoneNumber || '',
+          verificationId: res?.verificationId || '',
+          devOtp: res?.otp,
+          resendCooldownSeconds: res?.resendCooldownSeconds || 60,
+          email: route.params?.email,
         });
-      }
-    }}
-    onSendCode={(res) => {
-      console.log('[AddMobileNumberWrapper] Code sent, navigating to AttachPhoneOtp:', res);
-      navigation.navigate('AttachPhoneOtp', {
-        phoneNumber: res?.phoneNumber || '',
-        verificationId: res?.verificationId || '',
-        devOtp: res?.otp,
-        resendCooldownSeconds: res?.resendCooldownSeconds || 60,
-        email: route.params?.email,
-      });
-    }}
-    onSkip={() => {
-      console.log('[AddMobileNumberWrapper] Skipping phone attach, going to BasicProfile');
-      navigation.replace('BasicProfile');
-    }}
-    onContinueWithGoogle={() => navigation.replace('AuthMain')}
-  />
-);
+      }}
+      onSkip={async () => {
+        try {
+          const meData = await authServices.getProfile();
+          if (
+            meData?.inFamily ||
+            meData?.nextStep === 'HOME' ||
+            Boolean(meData?.lifeProfile?.memberId)
+          ) {
+            const resolvedMemberId =
+              meData?.lifeProfile?.memberId || meData?.memberId || null;
+            if (resolvedMemberId) {
+              await saveMyMemberId(resolvedMemberId);
+              try {
+                await dispatch(
+                  fetchLifeProfileFullThunk({ memberId: resolvedMemberId })
+                ).unwrap();
+              } catch (e) {}
+            }
+            rootNav.navigate('Profile', {
+              screen: 'MyLifeProfile',
+              params: { memberId: resolvedMemberId || undefined },
+            });
+            return;
+          }
+        } catch (e) {
+          console.log('[AddMobileNumberWrapper] Skip check error:', e);
+        }
+        console.log('[AddMobileNumberWrapper] Skipping phone attach, going to BasicProfile');
+        navigation.replace('BasicProfile');
+      }}
+      onContinueWithGoogle={() => navigation.replace('AuthMain')}
+    />
+  );
+};
 
 const AttachPhoneOtpWrapper: React.FC<AuthScreenProps<'AttachPhoneOtp'>> = ({
   navigation,
   route,
 }) => {
+  const rootNav = useNavigation<RootNavigationProp>();
   const dispatch = useAppDispatch();
   const {
     phoneLoading,
@@ -403,7 +504,34 @@ const AttachPhoneOtpWrapper: React.FC<AuthScreenProps<'AttachPhoneOtp'>> = ({
       ).unwrap();
 
       console.log('[AttachPhoneOtp] Phone attached verified:', res);
-      // Navigate to BasicProfile as requested
+      try {
+        const meData = await authServices.getProfile();
+        if (
+          meData?.inFamily ||
+          meData?.nextStep === 'HOME' ||
+          Boolean(meData?.lifeProfile?.memberId)
+        ) {
+          const resolvedMemberId =
+            meData?.lifeProfile?.memberId || meData?.memberId || null;
+          if (resolvedMemberId) {
+            await saveMyMemberId(resolvedMemberId);
+            try {
+              await dispatch(
+                fetchLifeProfileFullThunk({ memberId: resolvedMemberId })
+              ).unwrap();
+            } catch (e) {}
+          }
+          rootNav.navigate('Profile', {
+            screen: 'MyLifeProfile',
+            params: { memberId: resolvedMemberId || undefined },
+          });
+          return;
+        }
+      } catch (e) {
+        console.log('[AttachPhoneOtp] Profile fetch error:', e);
+      }
+
+      // Navigate to BasicProfile for new users
       navigation.replace('BasicProfile');
     } catch (err: any) {
       console.log('[AttachPhoneOtp] verify error:', err);
@@ -675,43 +803,76 @@ const RequestRejectedWrapper: React.FC<AuthScreenProps<'RequestRejected'>> = ({
 const WelcomeFamilyWrapper: React.FC<AuthScreenProps<'WelcomeFamily'>> = ({
   navigation,
   route,
-}) => (
-  <WelcomeFamilyScreen
-    familyName={route.params?.familyName || 'The Sharma Family'}
-    approverName={route.params?.approverName || 'Priya'}
-    userInitial={route.params?.userInitial || 'R'}
-    roleTitle={route.params?.roleTitle || 'Adult member'}
-    buttonText="Next"
-    onBack={() => {
-      if (navigation.canGoBack()) {
-        navigation.goBack();
-      } else {
-        navigation.navigate('SetUpFamily');
-      }
-    }}
-    onContinue={() => {
-      navigation.navigate('LifeProfileIntro');
-    }}
-  />
-);
+}) => {
+  const familyState = useAppSelector((state) => state.family);
+  const authUser = useAppSelector((state) => state.auth?.user);
+  const memberId =
+    familyState.myMemberId ||
+    familyState.family?.myMemberId ||
+    authUser?.memberId;
+
+  return (
+    <WelcomeFamilyScreen
+      familyName={route.params?.familyName || 'The Sharma Family'}
+      approverName={route.params?.approverName || 'Priya'}
+      userInitial={route.params?.userInitial || 'R'}
+      roleTitle={route.params?.roleTitle || 'Adult member'}
+      buttonText="Next"
+      onBack={() => {
+        if (navigation.canGoBack()) {
+          navigation.goBack();
+        } else {
+          navigation.navigate('SetUpFamily');
+        }
+      }}
+      onContinue={() => {
+        navigation.navigate('LifeProfileIntro', { memberId });
+      }}
+    />
+  );
+};
 
 const LifeProfileIntroWrapper: React.FC<AuthScreenProps<'LifeProfileIntro'>> = ({
   navigation: _navigation,
+  route,
 }) => {
   const rootNav = useNavigation<RootNavigationProp>();
+  const familyState = useAppSelector((state) => state.family);
+  const authUser = useAppSelector((state) => state.auth?.user);
+  const memberId =
+    route.params?.memberId ||
+    familyState.myMemberId ||
+    familyState.family?.myMemberId ||
+    authUser?.memberId;
 
   return (
     <LifeProfileIntroScreen
       completedSections={0}
       totalSections={6}
       onStartPersonalInformation={() => {
-        rootNav.navigate('Profile', { screen: 'MyLifeProfile' });
+        rootNav.navigate('Profile', {
+          screen: 'Step1',
+          params: { memberId, initialMode: 'input' },
+        });
       }}
       onDoThisLater={() => {
-        rootNav.navigate('Profile', { screen: 'MyLifeProfile' });
+        rootNav.navigate('Profile', {
+          screen: 'MyLifeProfile',
+          params: { memberId },
+        });
       }}
-      onSectionPress={() => {
-        rootNav.navigate('Profile', { screen: 'MyLifeProfile' });
+      onSectionPress={(sectionId) => {
+        if (sectionId === 'personal') {
+          rootNav.navigate('Profile', {
+            screen: 'Step1',
+            params: { memberId, initialMode: 'input' },
+          });
+        } else {
+          rootNav.navigate('Profile', {
+            screen: 'MyLifeProfile',
+            params: { memberId },
+          });
+        }
       }}
     />
   );
@@ -734,9 +895,14 @@ const CreateFamilyWrapper: React.FC<AuthScreenProps<'CreateFamily'>> = ({
     }}
     onCreateFamily={(data) => {
       console.log('Family created:', data);
+      const memberId =
+        data.memberId ||
+        data.family?.myMemberId ||
+        data.family?.members?.[0]?.id;
       navigation.navigate('FamilyCreated', {
         familyName: data.familyName,
         familyId: data.familyCode || 'HSQ-4821',
+        memberId,
       });
     }}
   />
@@ -760,6 +926,11 @@ const FamilyCreatedWrapper: React.FC<AuthScreenProps<'FamilyCreated'>> = ({
     familyState.family?.familyCode ||
     'HSQ-4821';
 
+  const memberId =
+    route.params?.memberId ||
+    familyState.myMemberId ||
+    familyState.family?.myMemberId;
+
   return (
     <FamilyCreatedScreen
       familyName={displayFamilyName}
@@ -774,8 +945,11 @@ const FamilyCreatedWrapper: React.FC<AuthScreenProps<'FamilyCreated'>> = ({
       onShareInvite={() => {
         console.log('Invite shared');
       }}
+      onGoToProfileComplete={() => {
+        navigation.navigate('LifeProfileIntro', { memberId });
+      }}
       onGoHome={() => {
-        navigation.navigate('LifeProfileIntro');
+        navigation.navigate('LifeProfileIntro', { memberId });
       }}
     />
   );

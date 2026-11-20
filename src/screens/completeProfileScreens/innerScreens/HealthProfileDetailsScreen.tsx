@@ -15,6 +15,7 @@ import { RFValue } from 'react-native-responsive-fontsize';
 import Colors from '../../../units/Colors';
 import CommonBtn from '../../../components/CommonBtn';
 import { PersonalInfoHeader } from '../components';
+import { useAppSelector } from '../../../redux';
 import {
   HealthProfileFormValues,
   DEFAULT_HEALTH_FORM_VALUES,
@@ -22,6 +23,7 @@ import {
 
 export interface MedicineSlotItem {
   id: string;
+  medicineId?: string;
   name: string;
   dosage: string;
   status: 'taken' | 'due';
@@ -33,65 +35,14 @@ export interface MedicineTimeGroup {
   items: MedicineSlotItem[];
 }
 
-export const DEFAULT_MEDICINE_SCHEDULE: MedicineTimeGroup[] = [
-  {
-    timeLabel: 'MORNING · 8:00 AM',
-    items: [
-      {
-        id: '1',
-        name: 'BP tablet',
-        dosage: '1 tablet · after breakfast',
-        status: 'taken',
-        icon: 'pill',
-      },
-      {
-        id: '2',
-        name: 'Calcium',
-        dosage: '1 tablet',
-        status: 'taken',
-        icon: 'pill',
-      },
-    ],
-  },
-  {
-    timeLabel: 'AFTERNOON · 2:00 PM',
-    items: [
-      {
-        id: '3',
-        name: 'Sugar tablet',
-        dosage: '1 tablet · after lunch',
-        status: 'taken',
-        icon: 'pill',
-      },
-    ],
-  },
-  {
-    timeLabel: 'NIGHT · 9:00 PM',
-    items: [
-      {
-        id: '4',
-        name: 'BP tablet',
-        dosage: '1 tablet · after dinner',
-        status: 'due',
-        icon: 'pill',
-      },
-      {
-        id: '5',
-        name: 'Eye drops',
-        dosage: '2 drops in each eye',
-        status: 'due',
-        icon: 'drops',
-      },
-    ],
-  },
-];
-
 export interface HealthProfileDetailsScreenProps {
   data?: HealthProfileFormValues;
   userName?: string;
+  memberId?: string;
   onBack?: () => void;
   onEditPress?: () => void;
   onAddMedicine?: () => void;
+  onMedicinePress?: (medicineId: string) => void;
   onReorderPress?: () => void;
   onDoctorPress?: () => void;
   onClinicPress?: () => void;
@@ -100,12 +51,25 @@ export interface HealthProfileDetailsScreenProps {
   onEyesightPress?: () => void;
 }
 
+const format12Hour = (time24?: string): string => {
+  if (!time24) return '8:00 AM';
+  const match = time24.match(/^(\d{1,2}):(\d{2})$/);
+  if (!match) return time24;
+  let h = parseInt(match[1], 10);
+  const m = match[2];
+  const ampm = h >= 12 ? 'PM' : 'AM';
+  h = h % 12 || 12;
+  return `${h}:${m} ${ampm}`;
+};
+
 const HealthProfileDetailsScreen: React.FC<HealthProfileDetailsScreenProps> = ({
   data = DEFAULT_HEALTH_FORM_VALUES,
   userName = 'Priya',
+  memberId,
   onBack,
   onEditPress,
   onAddMedicine,
+  onMedicinePress,
   onReorderPress,
   onDoctorPress,
   onClinicPress,
@@ -114,11 +78,68 @@ const HealthProfileDetailsScreen: React.FC<HealthProfileDetailsScreenProps> = ({
   onEyesightPress,
 }) => {
   const insets = useSafeAreaInsets();
+  const medicines = useAppSelector((state) => state.medicine?.medicines || []);
 
-  const [schedule, setSchedule] = useState<MedicineTimeGroup[]>(
-    DEFAULT_MEDICINE_SCHEDULE,
-  );
+  const [schedule, setSchedule] = useState<MedicineTimeGroup[]>([]);
   const [missedDoseAlert, setMissedDoseAlert] = useState(true);
+
+  // Sync redux medicines to time slots
+  React.useEffect(() => {
+    if (!medicines || medicines.length === 0) {
+      setSchedule([]);
+      return;
+    }
+
+    const groupMap = new Map<string, MedicineSlotItem[]>();
+
+    medicines.forEach((med: any) => {
+      const doses = med.doses || [];
+      if (doses.length === 0) {
+        const key = 'MORNING · 8:00 AM';
+        if (!groupMap.has(key)) groupMap.set(key, []);
+        groupMap.get(key)!.push({
+          id: med.id,
+          medicineId: med.id,
+          name: med.name,
+          dosage: `${med.doseAmount || 1} ${med.doseUnit || 'tablet'}${
+            med.purpose ? ` · ${med.purpose}` : ''
+          }`,
+          status: 'due',
+          icon: med.type?.toLowerCase() === 'drops' ? 'drops' : 'pill',
+        });
+      } else {
+        doses.forEach((dose: any, idx: number) => {
+          const timeStr = format12Hour(dose.timeOfDay);
+          const label = (
+            dose.label ||
+            (dose.timeOfDay >= '18:00'
+              ? 'NIGHT'
+              : dose.timeOfDay >= '12:00'
+              ? 'AFTERNOON'
+              : 'MORNING')
+          ).toUpperCase();
+          const key = `${label} · ${timeStr}`;
+          if (!groupMap.has(key)) groupMap.set(key, []);
+          groupMap.get(key)!.push({
+            id: `${med.id}-${dose.id || idx}`,
+            medicineId: med.id,
+            name: med.name,
+            dosage: `${med.doseAmount || 1} ${med.doseUnit || 'tablet'}${
+              dose.foodNote ? ` · ${dose.foodNote}` : ''
+            }`,
+            status: 'due',
+            icon: med.type?.toLowerCase() === 'drops' ? 'drops' : 'pill',
+          });
+        });
+      }
+    });
+
+    const groups: MedicineTimeGroup[] = [];
+    groupMap.forEach((items, timeLabel) => {
+      groups.push({ timeLabel, items });
+    });
+    setSchedule(groups);
+  }, [medicines]);
 
   // Toggle medicine taken/due status
   const handleToggleMedicineStatus = (itemId: string) => {
@@ -198,7 +219,11 @@ const HealthProfileDetailsScreen: React.FC<HealthProfileDetailsScreenProps> = ({
             <View style={styles.rowContent}>
               <Text style={styles.rowLabel}>Doctor</Text>
               <Text style={styles.rowValue} numberOfLines={1}>
-                {`${data.doctor.doctorName} · ${data.doctor.speciality}`}
+                {data.doctor.doctorName
+                  ? `${data.doctor.doctorName}${
+                      data.doctor.speciality ? ` · ${data.doctor.speciality}` : ''
+                    }`
+                  : 'Not specified'}
               </Text>
             </View>
             <Feather name="chevron-right" size={18} color="#8E9BAE" />
@@ -218,7 +243,13 @@ const HealthProfileDetailsScreen: React.FC<HealthProfileDetailsScreenProps> = ({
             <View style={styles.rowContent}>
               <Text style={styles.rowLabel}>Clinic location</Text>
               <Text style={styles.rowValue} numberOfLines={1}>
-                {`${data.doctor.clinicName}, ${data.doctor.clinicLocation.split(',')[0]}`}
+                {data.doctor.clinicName || data.doctor.clinicLocation
+                  ? `${data.doctor.clinicName || ''}${
+                      data.doctor.clinicLocation
+                        ? `, ${data.doctor.clinicLocation.split(',')[0]}`
+                        : ''
+                    }`
+                  : 'Not specified'}
               </Text>
             </View>
             <Feather name="chevron-right" size={18} color="#8E9BAE" />
@@ -238,7 +269,7 @@ const HealthProfileDetailsScreen: React.FC<HealthProfileDetailsScreenProps> = ({
             <View style={styles.rowContent}>
               <Text style={styles.rowLabel}>Hospital</Text>
               <Text style={styles.rowValue} numberOfLines={1}>
-                {data.hospital.preferredHospital}
+                {data.hospital.preferredHospital || 'Not specified'}
               </Text>
             </View>
             <Feather name="chevron-right" size={18} color="#8E9BAE" />
@@ -251,14 +282,18 @@ const HealthProfileDetailsScreen: React.FC<HealthProfileDetailsScreenProps> = ({
           <View style={styles.allergySection}>
             <Text style={styles.sectionSmallLabel}>Allergies</Text>
             <View style={styles.allergyPillsRow}>
-              {data.allergies.map((allergy) => {
-                const cleanName = allergy.label.split('·')[0].trim();
-                return (
-                  <View key={allergy.id} style={styles.solidPill}>
-                    <Text style={styles.solidPillText}>{cleanName}</Text>
-                  </View>
-                );
-              })}
+              {data.allergies.length > 0 ? (
+                data.allergies.map((allergy) => {
+                  const cleanName = allergy.label.split('·')[0].trim();
+                  return (
+                    <View key={allergy.id} style={styles.solidPill}>
+                      <Text style={styles.solidPillText}>{cleanName}</Text>
+                    </View>
+                  );
+                })
+              ) : (
+                <Text style={[styles.boldDetailText, { marginRight: 8 }]}>None recorded</Text>
+              )}
               <TouchableOpacity
                 activeOpacity={0.7}
                 style={styles.addPillBtn}
@@ -273,7 +308,7 @@ const HealthProfileDetailsScreen: React.FC<HealthProfileDetailsScreenProps> = ({
           <View style={styles.conditionSection}>
             <Text style={styles.sectionSmallLabel}>Conditions</Text>
             <Text style={styles.boldDetailText}>
-              {data.conditions[0]?.label.split('·')[0].trim() || 'Migraine'}
+              {data.conditions[0]?.label.split('·')[0].trim() || 'None recorded'}
             </Text>
           </View>
 
@@ -285,7 +320,7 @@ const HealthProfileDetailsScreen: React.FC<HealthProfileDetailsScreenProps> = ({
                 ? data.medications[0].label
                     .replace('weekly', 'once a week')
                     .replace('daily', 'once a day')
-                : 'Vitamin D · once a week'}
+                : 'None recorded'}
             </Text>
           </View>
         </View>
@@ -304,7 +339,11 @@ const HealthProfileDetailsScreen: React.FC<HealthProfileDetailsScreenProps> = ({
             <View style={styles.rowContent}>
               <Text style={styles.rowLabel}>Checkups</Text>
               <Text style={styles.rowValue} numberOfLines={1}>
-                {`Last ${data.checkups.lastCheckup} · Next ${data.checkups.nextCheckup}`}
+                {data.checkups.lastCheckup || data.checkups.nextCheckup
+                  ? `Last ${data.checkups.lastCheckup || '—'} · Next ${
+                      data.checkups.nextCheckup || '—'
+                    }`
+                  : 'Not scheduled'}
               </Text>
             </View>
             <Feather name="chevron-right" size={18} color="#8E9BAE" />
@@ -324,102 +363,115 @@ const HealthProfileDetailsScreen: React.FC<HealthProfileDetailsScreenProps> = ({
             <View style={styles.rowContent}>
               <Text style={styles.rowLabel}>Eyesight</Text>
               <Text style={styles.rowValue} numberOfLines={1}>
-                {`Right ${data.eyesight.rightEyePower}, Left ${data.eyesight.leftEyePower} · ${data.eyesight.wears}`}
+                {data.eyesight.wears !== 'Neither' ||
+                data.eyesight.rightEyePower ||
+                data.eyesight.leftEyePower
+                  ? `Right ${data.eyesight.rightEyePower || '—'}, Left ${
+                      data.eyesight.leftEyePower || '—'
+                    } · ${data.eyesight.wears}`
+                  : 'Normal vision'}
               </Text>
             </View>
             <Feather name="chevron-right" size={18} color="#8E9BAE" />
           </TouchableOpacity>
         </View>
 
-        {/* MEDICINE REFILL BANNER (from Image 3) */}
-        <View style={styles.refillBanner}>
-          <View style={styles.refillLeftRow}>
-            <Feather
-              name="paperclip"
-              size={16}
-              color="#F0913A"
-              style={styles.refillIcon}
-            />
-            <Text style={styles.refillText}>
-              BP tablets run out on Sunday
-            </Text>
-          </View>
-          <TouchableOpacity
-            activeOpacity={0.7}
-            onPress={() => {
-              if (onReorderPress) {
-                onReorderPress();
-              } else {
-                Alert.alert('Reorder', 'BP tablets reorder requested.');
-              }
-            }}
-          >
-            <Text style={styles.reorderText}>Reorder</Text>
-          </TouchableOpacity>
-        </View>
-
         {/* SCHEDULE SECTION: TODAY */}
         <View style={styles.scheduleHeaderRow}>
           <Text style={styles.scheduleSectionTitle}>TODAY</Text>
-          <Text style={styles.scheduleStatusCount}>
-            {`${takenCount} of ${totalItems} taken`}
-          </Text>
+          {totalItems > 0 ? (
+            <Text style={styles.scheduleStatusCount}>
+              {`${takenCount} of ${totalItems} taken`}
+            </Text>
+          ) : null}
         </View>
 
-        {/* TIME SLOTS CARDS */}
-        {schedule.map((group, index) => (
-          <View key={index} style={styles.scheduleCard}>
-            <Text style={styles.timeSlotLabel}>{group.timeLabel}</Text>
-            {group.items.map((item, itemIdx) => (
-              <View
-                key={item.id}
-                style={[
-                  styles.scheduleItemRow,
-                  itemIdx > 0 && styles.scheduleItemDivider,
-                ]}
-              >
-                <View style={styles.scheduleItemLeft}>
-                  <View style={styles.medicineIconBox}>
-                    <Feather
-                      name={item.icon === 'drops' ? 'droplet' : 'paperclip'}
-                      size={16}
-                      color="#2ED573"
-                    />
-                  </View>
-                  <View style={styles.medicineItemContent}>
-                    <Text style={styles.medicineNameText}>{item.name}</Text>
-                    <Text style={styles.medicineDosageText}>
-                      {item.dosage}
-                    </Text>
-                  </View>
-                </View>
-
-                {/* Status Badge Toggle */}
-                <TouchableOpacity
-                  activeOpacity={0.7}
-                  onPress={() => handleToggleMedicineStatus(item.id)}
+        {/* TIME SLOTS CARDS OR CLEAN EMPTY STATE */}
+        {schedule.length > 0 ? (
+          schedule.map((group, index) => (
+            <View key={index} style={styles.scheduleCard}>
+              <Text style={styles.timeSlotLabel}>{group.timeLabel}</Text>
+              {group.items.map((item, itemIdx) => (
+                <View
+                  key={item.id}
                   style={[
-                    styles.statusBadge,
-                    item.status === 'taken'
-                      ? styles.statusBadgeTaken
-                      : styles.statusBadgeDue,
+                    styles.scheduleItemRow,
+                    itemIdx > 0 && styles.scheduleItemDivider,
                   ]}
                 >
-                  <Text
-                    style={[
-                      styles.statusBadgeText,
-                      item.status === 'taken'
-                        ? styles.statusBadgeTextTaken
-                        : styles.statusBadgeTextDue,
-                    ]}
+                  <TouchableOpacity
+                    activeOpacity={0.7}
+                    onPress={() => onMedicinePress?.(item.medicineId || item.id)}
+                    style={styles.scheduleItemLeft}
                   >
-                    {item.status === 'taken' ? '✓ Taken' : 'Due'}
-                  </Text>
-                </TouchableOpacity>
-              </View>
-            ))}
+                    <View style={styles.medicineIconBox}>
+                      <Feather
+                        name={item.icon === 'drops' ? 'droplet' : 'paperclip'}
+                        size={16}
+                        color="#2ED573"
+                      />
+                    </View>
+                    <View style={styles.medicineItemContent}>
+                      <Text style={styles.medicineNameText}>{item.name}</Text>
+                      <Text style={styles.medicineDosageText}>
+                        {item.dosage}
+                      </Text>
+                    </View>
+                  </TouchableOpacity>
+
+                  <View style={styles.scheduleItemRight}>
+                    {/* Status Badge Toggle */}
+                    <TouchableOpacity
+                      activeOpacity={0.7}
+                      onPress={() => handleToggleMedicineStatus(item.id)}
+                      style={[
+                        styles.statusBadge,
+                        item.status === 'taken'
+                          ? styles.statusBadgeTaken
+                          : styles.statusBadgeDue,
+                      ]}
+                    >
+                      <Text
+                        style={[
+                          styles.statusBadgeText,
+                          item.status === 'taken'
+                            ? styles.statusBadgeTextTaken
+                            : styles.statusBadgeTextDue,
+                        ]}
+                      >
+                        {item.status === 'taken' ? '✓ Taken' : 'Due'}
+                      </Text>
+                    </TouchableOpacity>
+
+                    {/* Arrow after Due badge */}
+                    <TouchableOpacity
+                      activeOpacity={0.7}
+                      onPress={() => onMedicinePress?.(item.medicineId || item.id)}
+                      style={styles.scheduleArrowBox}
+                      hitSlop={{ top: 10, bottom: 10, left: 6, right: 10 }}
+                    >
+                      <Feather
+                        name="chevron-right"
+                        size={16}
+                        color="#64748B"
+                      />
+                    </TouchableOpacity>
+                  </View>
+                </View>
+              ))}
+            </View>
+          ))
+        ) : (
+          <View style={styles.emptyMedicineCard}>
+            <View style={styles.emptyMedicineIconBox}>
+              <Feather name="calendar" size={22} color="#F0913A" />
+            </View>
+            <Text style={styles.emptyMedicineTitle}>No medicines added yet</Text>
+            <Text style={styles.emptyMedicineSubtitle}>
+              Tap "+ Add medicine" below to add regular medications and set reminder times.
+            </Text>
           </View>
-        ))}
+        )}
 
         {/* MISSED DOSE ALERT CARD */}
         <View style={styles.missedDoseCard}>
@@ -587,38 +639,6 @@ const styles = StyleSheet.create({
     fontSize: RFValue(13.5),
     fontWeight: '600',
   },
-  refillBanner: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    backgroundColor: '#1A1D2B',
-    borderRadius: 14,
-    borderWidth: 1,
-    borderColor: 'rgba(240, 145, 58, 0.35)',
-    paddingHorizontal: 16,
-    paddingVertical: 14,
-    marginBottom: 20,
-    marginTop: 4,
-  },
-  refillLeftRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    flex: 1,
-  },
-  refillIcon: {
-    marginRight: 10,
-  },
-  refillText: {
-    color: '#F0913A',
-    fontSize: RFValue(12.5),
-    fontWeight: '600',
-  },
-  reorderText: {
-    color: '#FFA756',
-    fontSize: RFValue(12.5),
-    fontWeight: '700',
-    marginLeft: 10,
-  },
   scheduleHeaderRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -669,6 +689,17 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     flex: 1,
+    marginRight: 10,
+  },
+  scheduleItemRight: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  scheduleArrowBox: {
+    paddingLeft: 8,
+    paddingVertical: 4,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   medicineIconBox: {
     width: 36,
@@ -743,6 +774,37 @@ const styles = StyleSheet.create({
     fontSize: RFValue(11.5),
     marginTop: 4,
     lineHeight: 16,
+  },
+  emptyMedicineCard: {
+    backgroundColor: '#0B1E36',
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.08)',
+    padding: 24,
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  emptyMedicineIconBox: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: 'rgba(240, 145, 58, 0.12)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  emptyMedicineTitle: {
+    color: '#FFFFFF',
+    fontSize: RFValue(14),
+    fontWeight: '700',
+    marginBottom: 6,
+    textAlign: 'center',
+  },
+  emptyMedicineSubtitle: {
+    color: '#8E9BAE',
+    fontSize: RFValue(12),
+    lineHeight: 18,
+    textAlign: 'center',
   },
   bottomBar: {
     paddingHorizontal: 20,

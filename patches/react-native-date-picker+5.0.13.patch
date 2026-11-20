@@ -64,3 +64,16 @@ index da42873..f7247b8 100644
  #import "DatePicker.h"
  #import "RNDatePicker.h"
  
+diff --git a/node_modules/react-native-date-picker/android/build.gradle b/node_modules/react-native-date-picker/android/build.gradle
+index 921471d..b102ef7 100644
+--- a/node_modules/react-native-date-picker/android/build.gradle
++++ b/node_modules/react-native-date-picker/android/build.gradle
+@@ -51,7 +51,7 @@
+     buildTypes {
+         release {
+             minifyEnabled false
+-            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
++            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+         }
+     }
+ } 

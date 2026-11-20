@@ -9,18 +9,29 @@ import {
   StatusBar,
   Platform,
   KeyboardAvoidingView,
+  Switch,
+  Modal,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Feather from '@react-native-vector-icons/feather';
 import { RFValue } from 'react-native-responsive-fontsize';
 import Colors from '../../../units/Colors';
 import CommonBtn from '../../../components/CommonBtn';
+import { useAppDispatch, useAppSelector, getMyFamilyThunk } from '../../../redux';
 import {
   AppDateTimePicker,
   formatDate,
   parseDateTimeString,
 } from '../../../components';
-import { PersonalInfoHeader } from '../components';
+import {
+  PersonalInfoHeader,
+  DocumentPhotoUploadField,
+  formatIsoToDisplayDate,
+} from '../components';
+import {
+  normalizeVisaType,
+  normalizeVisaEntries,
+} from './documentPayloadUtils';
 
 export interface VisaFormData {
   country: string;
@@ -31,27 +42,42 @@ export interface VisaFormData {
   validUntil: string;
   entries: 'Single' | 'Multiple';
   reminders: string[];
+  assignees: string;
+  remindMemberIds?: string[];
+  autoRenewal: boolean;
   frontImageAdded: boolean;
+  scanId?: string;
+  frontImageUri?: string;
+  fileUrl?: string;
 }
 
 export interface AddVisaScreenProps {
   initialData?: Partial<VisaFormData>;
   userName?: string;
+  memberId?: string;
+  documentId?: string;
+  isSaving?: boolean;
   onClose?: () => void;
-  onSave?: (data: VisaFormData) => void;
+  onSave?: (data: VisaFormData, documentId?: string) => void;
   onSelectPassport?: () => void;
 }
 
 export const DEFAULT_VISA_DATA: VisaFormData = {
-  country: 'United States',
-  visaType: 'Tourist or business',
-  visaNumber: 'H1234567',
-  linkedPassport: 'Passport ending 4567',
-  validFrom: '4 Mar 2017',
-  validUntil: '3 Mar 2027',
+  country: '',
+  visaType: '',
+  visaNumber: '',
+  linkedPassport: '',
+  validFrom: '',
+  validUntil: '',
   entries: 'Multiple',
   reminders: ['6 months', '1 month'],
-  frontImageAdded: true,
+  assignees: '',
+  remindMemberIds: [],
+  autoRenewal: true,
+  frontImageAdded: false,
+  scanId: '',
+  frontImageUri: '',
+  fileUrl: '',
 };
 
 const VISA_TYPES = ['Tourist or business', 'Student', 'Work', 'Other'];
@@ -60,6 +86,9 @@ const REMINDER_OPTIONS = ['6 months', '3 months', '1 month', '1 week'];
 const AddVisaScreen: React.FC<AddVisaScreenProps> = ({
   initialData,
   userName = 'Priya',
+  memberId,
+  documentId,
+  isSaving = false,
   onClose,
   onSave,
   onSelectPassport,
@@ -69,7 +98,107 @@ const AddVisaScreen: React.FC<AddVisaScreenProps> = ({
   const [formData, setFormData] = useState<VisaFormData>({
     ...DEFAULT_VISA_DATA,
     ...initialData,
+    visaType: initialData?.visaType
+      ? normalizeVisaType(initialData.visaType)
+      : DEFAULT_VISA_DATA.visaType,
+    entries: initialData?.entries
+      ? normalizeVisaEntries(initialData.entries)
+      : DEFAULT_VISA_DATA.entries,
   });
+
+  React.useEffect(() => {
+    if (initialData) {
+      setFormData((prev) => ({
+        ...prev,
+        ...initialData,
+        visaType: initialData.visaType
+          ? normalizeVisaType(initialData.visaType)
+          : prev.visaType,
+        entries: initialData.entries
+          ? normalizeVisaEntries(initialData.entries)
+          : prev.entries,
+      }));
+    }
+  }, [initialData]);
+
+  const dispatch = useAppDispatch();
+  const familyState = useAppSelector((state: any) => state.family);
+  const myFamilyData = familyState?.myFamilyData;
+  const rawMembers: any[] =
+    myFamilyData?.family?.members ||
+    familyState?.family?.members ||
+    [];
+
+  const familyMembers = rawMembers;
+
+  const [showMembersModal, setShowMembersModal] = useState(false);
+  const [selectedMemberIds, setSelectedMemberIds] = useState<string[]>(
+    formData.remindMemberIds && Array.isArray(formData.remindMemberIds)
+      ? formData.remindMemberIds
+      : []
+  );
+
+  React.useEffect(() => {
+    dispatch(getMyFamilyThunk());
+  }, [dispatch]);
+
+  React.useEffect(() => {
+    if (formData.remindMemberIds && Array.isArray(formData.remindMemberIds)) {
+      setSelectedMemberIds(formData.remindMemberIds);
+    }
+  }, [formData.remindMemberIds]);
+
+  React.useEffect(() => {
+    if (
+      familyMembers.length > 0 &&
+      (!formData.remindMemberIds || formData.remindMemberIds.length === 0)
+    ) {
+      const currentMember =
+        familyMembers.find((m: any) => (m.memberId || m.id) === memberId) ||
+        familyMembers[0];
+      const validId = currentMember ? currentMember.memberId || currentMember.id : null;
+      const validName = currentMember ? currentMember.fullName || currentMember.name : '';
+
+      if (validId) {
+        setFormData((prev) => ({
+          ...prev,
+          remindMemberIds: [validId],
+          assignees: prev.assignees || validName,
+        }));
+        setSelectedMemberIds([validId]);
+      }
+    }
+  }, [familyMembers, memberId]);
+
+  const toggleMemberSelection = (id: string) => {
+    setSelectedMemberIds((prev) =>
+      prev.includes(id)
+        ? prev.filter((item) => item !== id)
+        : [...prev, id]
+    );
+  };
+
+  const handleApplyMembers = () => {
+    const selected = familyMembers.filter((m: any) =>
+      selectedMemberIds.includes(m.memberId || m.id)
+    );
+    const names = selected.map((m: any) => m.fullName || m.name).join(', ');
+    setFormData((prev) => ({
+      ...prev,
+      remindMemberIds: selectedMemberIds,
+      assignees: names,
+    }));
+    setShowMembersModal(false);
+  };
+
+  const selectedMembersList = familyMembers.filter((m: any) =>
+    (formData.remindMemberIds || []).includes(m.memberId || m.id)
+  );
+
+  const firstMemberName =
+    selectedMembersList[0]?.fullName ||
+    selectedMembersList[0]?.name ||
+    '';
 
   const [pickerConfig, setPickerConfig] = useState<{
     visible: boolean;
@@ -91,8 +220,18 @@ const AddVisaScreen: React.FC<AddVisaScreenProps> = ({
     });
   };
 
+  const isFormValid = Boolean(
+    formData.country?.trim() &&
+    formData.visaType?.trim() &&
+    formData.visaNumber?.trim() &&
+    formData.validFrom?.trim() &&
+    formData.validUntil?.trim()
+  );
+
   const handleSave = () => {
-    onSave?.(formData);
+    if (isFormValid && onSave) {
+      onSave(formData, documentId);
+    }
   };
 
   return (
@@ -106,7 +245,7 @@ const AddVisaScreen: React.FC<AddVisaScreenProps> = ({
 
       {/* Header with Circular ( X ) Close Button */}
       <PersonalInfoHeader
-        title="Add visa"
+        title={documentId ? 'Edit visa' : 'Add visa'}
         subtitle={`For ${userName}`}
         onBack={onClose}
         icon="close"
@@ -122,38 +261,57 @@ const AddVisaScreen: React.FC<AddVisaScreenProps> = ({
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
         >
-          {/* Top Front Photo Upload Card */}
-          <TouchableOpacity
-            activeOpacity={0.7}
-            onPress={() =>
+          {/* Top Field: Upload & Scan Document Photo */}
+          <DocumentPhotoUploadField
+            documentType="VISA"
+            documentTitle="Visa"
+            memberId={memberId}
+            scanId={formData.scanId}
+            hasFrontImage={formData.frontImageAdded}
+            onScanSuccess={(scanned, newScanId) => {
+              const rawIssued =
+                scanned.issuedOn ||
+                scanned.validFrom ||
+                scanned.issueDate ||
+                scanned.dateOfIssue;
+              const rawExpiry =
+                scanned.expiresOn ||
+                scanned.validUntil ||
+                scanned.expiryDate ||
+                scanned.dateOfExpiry;
+
               setFormData((prev) => ({
                 ...prev,
-                frontImageAdded: !prev.frontImageAdded,
-              }))
-            }
-            style={[
-              styles.photoCard,
-              formData.frontImageAdded
-                ? styles.photoCardSuccess
-                : styles.photoCardEmpty,
-            ]}
-          >
-            {formData.frontImageAdded ? (
-              <>
-                <View style={styles.checkCircle}>
-                  <Feather name="check" size={14} color="#10B981" />
-                </View>
-                <Text style={styles.photoTitle}>Front added</Text>
-                <Text style={styles.photoSubtitle}>Tap to replace</Text>
-              </>
-            ) : (
-              <>
-                <Feather name="camera" size={20} color="#F0913A" />
-                <Text style={styles.photoTitle}>Add front</Text>
-                <Text style={styles.photoSubtitle}>Tap to upload</Text>
-              </>
-            )}
-          </TouchableOpacity>
+                scanId: newScanId || scanned.scanId || prev.scanId,
+                visaNumber: (
+                  scanned.number ||
+                  scanned.visaNumber ||
+                  prev.visaNumber
+                ).toUpperCase(),
+                country: scanned.country || prev.country,
+                validFrom: rawIssued
+                  ? formatIsoToDisplayDate(rawIssued)
+                  : prev.validFrom,
+                validUntil: rawExpiry
+                  ? formatIsoToDisplayDate(rawExpiry)
+                  : prev.validUntil,
+                visaType: scanned.visaType
+                  ? normalizeVisaType(scanned.visaType)
+                  : prev.visaType,
+                entries:
+                  scanned.visaEntries || scanned.entries
+                    ? normalizeVisaEntries(scanned.visaEntries || scanned.entries)
+                    : prev.entries,
+                frontImageAdded: true,
+              }));
+            }}
+            onPhotosChange={(front) => {
+              setFormData((prev) => ({
+                ...prev,
+                frontImageAdded: Boolean(front),
+              }));
+            }}
+          />
 
           {/* Country */}
           <View style={styles.fieldGroup}>
@@ -169,7 +327,7 @@ const AddVisaScreen: React.FC<AddVisaScreenProps> = ({
             <Text style={styles.sectionHeader}>VISA TYPE</Text>
             <View style={styles.pillsRow}>
               {VISA_TYPES.slice(0, 3).map((vt) => {
-                const isSelected = formData.visaType === vt;
+                const isSelected = normalizeVisaType(formData.visaType) === vt;
                 return (
                   <TouchableOpacity
                     key={vt}
@@ -196,7 +354,7 @@ const AddVisaScreen: React.FC<AddVisaScreenProps> = ({
             </View>
             <View style={[styles.pillsRow, { marginTop: 8 }]}>
               {VISA_TYPES.slice(3).map((vt) => {
-                const isSelected = formData.visaType === vt;
+                const isSelected = normalizeVisaType(formData.visaType) === vt;
                 return (
                   <TouchableOpacity
                     key={vt}
@@ -308,13 +466,15 @@ const AddVisaScreen: React.FC<AddVisaScreenProps> = ({
                 }
                 style={[
                   styles.entrySegment,
-                  formData.entries === 'Single' && styles.entrySegmentSelected,
+                  normalizeVisaEntries(formData.entries) === 'Single' &&
+                    styles.entrySegmentSelected,
                 ]}
               >
                 <Text
                   style={[
                     styles.entryText,
-                    formData.entries === 'Single' && styles.entryTextSelected,
+                    normalizeVisaEntries(formData.entries) === 'Single' &&
+                      styles.entryTextSelected,
                   ]}
                 >
                   Single
@@ -328,14 +488,14 @@ const AddVisaScreen: React.FC<AddVisaScreenProps> = ({
                 }
                 style={[
                   styles.entrySegment,
-                  formData.entries === 'Multiple' &&
+                  normalizeVisaEntries(formData.entries) === 'Multiple' &&
                     styles.entrySegmentSelected,
                 ]}
               >
                 <Text
                   style={[
                     styles.entryText,
-                    formData.entries === 'Multiple' &&
+                    normalizeVisaEntries(formData.entries) === 'Multiple' &&
                       styles.entryTextSelected,
                   ]}
                 >
@@ -397,15 +557,76 @@ const AddVisaScreen: React.FC<AddVisaScreenProps> = ({
               );
             })}
           </View>
+
+          {/* Remind Target Card */}
+          <View style={styles.cardContainer}>
+            <TouchableOpacity
+              activeOpacity={0.7}
+              style={styles.remindRow}
+              onPress={() => setShowMembersModal(true)}
+            >
+              <Feather name="bell" size={17} color="#8E9BAE" />
+              <Text style={styles.remindLabel}>Remind</Text>
+              <View style={styles.avatarGroup}>
+                {selectedMembersList.slice(0, 2).map((m: any, idx: number) => (
+                  <View
+                    key={m.memberId || idx}
+                    style={[
+                      styles.avatarCircle,
+                      {
+                        backgroundColor:
+                          m.avatarColor || (idx === 0 ? '#7C3AED' : '#2563EB'),
+                        marginLeft: idx > 0 ? -6 : 0,
+                      },
+                    ]}
+                  >
+                    <Text style={styles.avatarText}>
+                      {(m.fullName || m.name || 'U').charAt(0).toUpperCase()}
+                    </Text>
+                  </View>
+                ))}
+              </View>
+              <Text style={styles.remindAssigneeText} numberOfLines={1}>
+                {formData.assignees || 'Priya, Rohan'}
+              </Text>
+              <Feather name="chevron-right" size={17} color="#64748B" />
+            </TouchableOpacity>
+
+            <View style={styles.cardDivider} />
+
+            {/* Auto Renewal Task Switch */}
+            <View style={styles.switchRow}>
+              <View style={styles.switchTextContainer}>
+                <Text style={styles.switchTitle}>
+                  Add a renewal task automatically
+                </Text>
+                <Text style={styles.switchSubtitle}>
+                  Assigned to {firstMemberName || userName}, 6 months before
+                </Text>
+              </View>
+              <Switch
+                value={formData.autoRenewal}
+                onValueChange={(v) =>
+                  setFormData((prev) => ({ ...prev, autoRenewal: v }))
+                }
+                trackColor={{ false: '#334155', true: '#F0913A' }}
+                thumbColor="#FFFFFF"
+              />
+            </View>
+          </View>
         </ScrollView>
 
         {/* Bottom Save Visa Button */}
         <View style={styles.bottomBar}>
           <CommonBtn
-            title="Save visa"
+            title={documentId ? 'Update visa' : 'Save visa'}
             onPress={handleSave}
-            backgroundColor={Colors.primary || '#F0913A'}
-            textColor="#FFFFFF"
+            loading={isSaving}
+            disabled={!isFormValid || isSaving}
+            backgroundColor={
+              isFormValid ? Colors.primary || '#F0913A' : '#5C381E'
+            }
+            textColor={isFormValid ? '#FFFFFF' : '#8E9BAE'}
             height={52}
             borderRadius={26}
           />
@@ -434,6 +655,93 @@ const AddVisaScreen: React.FC<AddVisaScreenProps> = ({
           setPickerConfig((prev) => ({ ...prev, visible: false }))
         }
       />
+
+      {/* Family Member Remind Selection Modal */}
+      <Modal
+        visible={showMembersModal}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setShowMembersModal(false)}
+      >
+        <TouchableOpacity
+          style={styles.modalBackdrop}
+          activeOpacity={1}
+          onPress={() => setShowMembersModal(false)}
+        >
+          <TouchableOpacity
+            style={styles.modalContent}
+            activeOpacity={1}
+            onPress={(e) => e.stopPropagation()}
+          >
+            <View style={styles.handle} />
+            <Text style={styles.modalTitle}>Remind family members</Text>
+            <Text style={styles.modalSubtitle}>
+              Select members who should be reminded before expiry
+            </Text>
+
+            <View style={styles.membersListContainer}>
+              {familyMembers.map((member: any) => {
+                const id = member.memberId || member.id;
+                const isSelected = selectedMemberIds.includes(id);
+                const initial = (member.fullName || member.name || 'U')
+                  .charAt(0)
+                  .toUpperCase();
+
+                return (
+                  <TouchableOpacity
+                    key={id}
+                    activeOpacity={0.7}
+                    onPress={() => toggleMemberSelection(id)}
+                    style={[
+                      styles.memberRowCard,
+                      isSelected && styles.memberRowCardSelected,
+                    ]}
+                  >
+                    <View
+                      style={[
+                        styles.memberAvatarBox,
+                        { backgroundColor: member.avatarColor || '#7C3AED' },
+                      ]}
+                    >
+                      <Text style={styles.memberAvatarText}>{initial}</Text>
+                    </View>
+
+                    <View style={styles.memberInfoCol}>
+                      <Text style={styles.memberNameText}>
+                        {member.fullName || member.name || 'Member'}
+                      </Text>
+                      <Text style={styles.memberRoleText}>
+                        {member.familyRole || member.role || 'Family Member'}
+                      </Text>
+                    </View>
+
+                    <View
+                      style={[
+                        styles.checkboxSquare,
+                        isSelected && styles.checkboxSquareSelected,
+                      ]}
+                    >
+                      {isSelected && (
+                        <Feather name="check" size={14} color="#FFFFFF" />
+                      )}
+                    </View>
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
+
+            <CommonBtn
+              title={`Done (${selectedMemberIds.length} Selected)`}
+              onPress={handleApplyMembers}
+              backgroundColor={Colors.primary || '#F0913A'}
+              textColor="#FFFFFF"
+              height={50}
+              borderRadius={25}
+              marginTop={16}
+            />
+          </TouchableOpacity>
+        </TouchableOpacity>
+      </Modal>
     </View>
   );
 };
@@ -640,6 +948,168 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.background || '#0A111F',
     borderTopWidth: 1,
     borderTopColor: 'rgba(255, 255, 255, 0.06)',
+  },
+  cardContainer: {
+    backgroundColor: '#121C2F',
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.08)',
+    marginTop: 16,
+    marginBottom: 20,
+    overflow: 'hidden',
+  },
+  remindRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+  },
+  remindLabel: {
+    color: '#8E9BAE',
+    fontSize: RFValue(13),
+    marginLeft: 10,
+    marginRight: 10,
+  },
+  avatarGroup: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginRight: 8,
+  },
+  avatarCircle: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 1.5,
+    borderColor: '#121C2F',
+  },
+  avatarText: {
+    color: '#FFFFFF',
+    fontSize: RFValue(10.5),
+    fontWeight: '700',
+  },
+  remindAssigneeText: {
+    color: '#FFFFFF',
+    fontSize: RFValue(13),
+    fontWeight: '600',
+    flex: 1,
+    marginRight: 6,
+  },
+  cardDivider: {
+    height: 1,
+    backgroundColor: 'rgba(255, 255, 255, 0.06)',
+    marginHorizontal: 16,
+  },
+  switchRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+  },
+  switchTextContainer: {
+    flex: 1,
+    marginRight: 12,
+  },
+  switchTitle: {
+    color: '#FFFFFF',
+    fontSize: RFValue(13),
+    fontWeight: '600',
+  },
+  switchSubtitle: {
+    color: '#8E9BAE',
+    fontSize: RFValue(11.5),
+    marginTop: 2,
+  },
+  modalBackdrop: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.75)',
+    justifyContent: 'flex-end',
+  },
+  modalContent: {
+    backgroundColor: '#0D1726',
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    paddingHorizontal: 20,
+    paddingTop: 12,
+    paddingBottom: 34,
+    maxHeight: '80%',
+  },
+  handle: {
+    width: 36,
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: 'rgba(255, 255, 255, 0.3)',
+    alignSelf: 'center',
+    marginBottom: 16,
+  },
+  modalTitle: {
+    color: '#FFFFFF',
+    fontSize: RFValue(17),
+    fontWeight: '700',
+    marginBottom: 4,
+  },
+  modalSubtitle: {
+    color: '#8E9BAE',
+    fontSize: RFValue(12.5),
+    marginBottom: 16,
+  },
+  membersListContainer: {
+    marginVertical: 8,
+  },
+  memberRowCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 12,
+    borderRadius: 14,
+    backgroundColor: '#131F35',
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.06)',
+    marginBottom: 8,
+  },
+  memberRowCardSelected: {
+    borderColor: '#F0913A',
+    backgroundColor: '#1E2D4A',
+  },
+  memberAvatarBox: {
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 12,
+  },
+  memberAvatarText: {
+    color: '#FFFFFF',
+    fontSize: RFValue(14),
+    fontWeight: '700',
+  },
+  memberInfoCol: {
+    flex: 1,
+  },
+  memberNameText: {
+    color: '#FFFFFF',
+    fontSize: RFValue(13.5),
+    fontWeight: '600',
+  },
+  memberRoleText: {
+    color: '#8E9BAE',
+    fontSize: RFValue(11.5),
+    marginTop: 2,
+  },
+  checkboxSquare: {
+    width: 22,
+    height: 22,
+    borderRadius: 6,
+    borderWidth: 1.5,
+    borderColor: '#64748B',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  checkboxSquareSelected: {
+    borderColor: '#F0913A',
+    backgroundColor: '#F0913A',
   },
 });
 
