@@ -54,7 +54,7 @@ export type AuthStackParamList = {
   NotificationPermission: undefined;
   SetUpFamily: undefined;
   CreateFamily: { familyName?: string } | undefined;
-  FamilyCreated: { familyName?: string; familyId?: string } | undefined;
+  FamilyCreated: { familyName?: string; familyId?: string; memberId?: string } | undefined;
   JoinFamilyId: { familyId?: string; showError?: boolean } | undefined;
   FamilyInviteFound: {
     familyId?: string;
@@ -80,7 +80,7 @@ export type AuthStackParamList = {
     userInitial?: string;
     roleTitle?: string;
   } | undefined;
-  LifeProfileIntro: undefined;
+  LifeProfileIntro: { memberId?: string } | undefined;
 };
 
 // Profile Stack Param List (CompleteProfileScreens)
@@ -93,16 +93,38 @@ export type ProfileStackParamList = {
   AddPassport: undefined;
   Step3: { initialData?: Partial<Step3FormData>; initialMode?: 'input' | 'details'; memberId?: string } | undefined;
   Step4: { initialData?: Partial<Step4FormData>; initialMode?: 'form' | 'details'; memberId?: string } | undefined;
-  Step5: { memberId?: string } | undefined;
+  Step5: { memberId?: string; initialMode?: 'details' | 'form' } | undefined;
   DocumentDetailReminders: { documentId?: string } | undefined;
-  SeniorMedicineSchedule: undefined;
-  AddMedicine: undefined;
-  WhenToTakeMedicine: undefined;
-  Vaccination: { memberId?: string } | undefined;
-  AddVaccine: undefined;
-  ChildGrowth: undefined;
-  ChildMilestones: undefined;
+  SeniorMedicineSchedule: { memberId?: string } | undefined;
+  AddMedicine: { memberId?: string } | undefined;
+  WhenToTakeMedicine:
+    | { medicineId?: string; medicineName?: string; memberId?: string }
+    | undefined;
+  MedicineDetails:
+    | { medicineId: string; medicineName?: string; memberId?: string }
+    | undefined;
+  Vaccination:
+    | {
+        memberId?: string;
+        initialTab?: 'vaccines' | 'growth' | 'milestones';
+      }
+    | undefined;
+  VaccineDetail:
+    | {
+        memberId?: string;
+        childName?: string;
+        vaccine?: any;
+        vaccineId?: string;
+        vaccineName?: string;
+      }
+    | undefined;
+  AddVaccine: { memberId?: string; initialData?: any } | undefined;
+  ChildGrowth: { memberId?: string } | undefined;
+  AddMeasurement: { memberId?: string; childName?: string } | undefined;
+  ChildMilestones: { memberId?: string } | undefined;
+  AddMilestone: { memberId?: string; childName?: string } | undefined;
   InterestsAndActivities: { memberId?: string } | undefined;
+  InterestsDetails: { memberId?: string } | undefined;
 };
 
 // Root Stack Param List

@@ -28,20 +28,24 @@ describe('Section 4 & Medicine Flow Screens', () => {
     const root = renderer!.root;
     expect(root.findByProps({ children: 'Vaccination' })).toBeTruthy();
     expect(root.findByProps({ children: 'Aarav · Section 4 of 5' })).toBeTruthy();
-    expect(root.findByProps({ children: 'Influenza' })).toBeTruthy();
-    expect(root.findByProps({ children: 'Typhoid conjugate' })).toBeTruthy();
-    expect(root.findByProps({ children: 'Tdap' })).toBeTruthy();
-    expect(root.findByProps({ children: 'MMR' })).toBeTruthy();
-    expect(root.findByProps({ children: 'Hepatitis A' })).toBeTruthy();
+    expect(root.findByProps({ children: 'No vaccine records yet' })).toBeTruthy();
     expect(root.findByProps({ children: '+ Add vaccine record' })).toBeTruthy();
   });
 
-  test('renders AddVaccineScreen (image layout) and flow with CompleteProfileStep4Screen correctly', () => {
+  test('renders AddVaccineScreen (image layout) and flow with CompleteProfileStep4Screen correctly', async () => {
     let renderer: ReactTestRenderer.ReactTestRenderer;
     ReactTestRenderer.act(() => {
       renderer = ReactTestRenderer.create(
         <SafeAreaProvider initialMetrics={safeAreaMetrics}>
-          <CompleteProfileStep4Screen initialMode="form" />
+          <CompleteProfileStep4Screen
+            initialMode="form"
+            initialData={{
+              vaccineName: 'Influenza',
+              dose: 'Yearly dose',
+              dateGiven: '30 Oct 2026',
+              nextDue: 'Oct 2027',
+            }}
+          />
         </SafeAreaProvider>,
       );
     });
@@ -70,8 +74,8 @@ describe('Section 4 & Medicine Flow Screens', () => {
 
     // Tap Save to switch to Vaccination details screen with tabs
     const saveBtn = root.findByProps({ title: 'Save' });
-    ReactTestRenderer.act(() => {
-      saveBtn.props.onPress();
+    await ReactTestRenderer.act(async () => {
+      await saveBtn.props.onPress();
     });
 
     // Step 2: Vaccination screen with tabs
@@ -99,11 +103,9 @@ describe('Section 4 & Medicine Flow Screens', () => {
     });
 
     const root = renderer!.root;
-    expect(root.findByProps({ children: 'HEIGHT' })).toBeTruthy();
-    expect(root.findByProps({ children: '132 cm' })).toBeTruthy();
-    expect(root.findByProps({ children: '28 kg' })).toBeTruthy();
-    expect(root.findByProps({ children: '+5 cm' })).toBeTruthy();
-    expect(root.findByProps({ children: '✎ Add measurement' })).toBeTruthy();
+    expect(root.findByProps({ children: 'Vaccination' })).toBeTruthy();
+    expect(root.findByProps({ children: 'No growth measurements yet' })).toBeTruthy();
+    expect(root.findByProps({ children: '+ Add measurement' })).toBeTruthy();
   });
 
   test('renders ChildMilestonesScreen (LPS-10 Milestones)', () => {
@@ -118,13 +120,8 @@ describe('Section 4 & Medicine Flow Screens', () => {
 
     const root = renderer!.root;
     expect(root.findByProps({ children: 'MILESTONES' })).toBeTruthy();
-    expect(
-      root.findByProps({ children: 'Read his first chapter book' }),
-    ).toBeTruthy();
-    expect(
-      root.findByProps({ children: 'Rode a bicycle without help' }),
-    ).toBeTruthy();
-    expect(root.findByProps({ children: '✎ Add milestone' })).toBeTruthy();
+    expect(root.findByProps({ children: 'No milestones recorded yet' })).toBeTruthy();
+    expect(root.findByProps({ children: '+ Add milestone' })).toBeTruthy();
   });
 
   test('renders WhenToTakeMedicineScreen (LPS-11b)', () => {

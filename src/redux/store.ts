@@ -5,6 +5,7 @@ import emailAuthReducer from './features/emailFlow/authSlice';
 import baseProfileReducer from './features/baseProfileSet/baseProfileSlice';
 import familyReducer from './features/family/familySlice';
 import lifeProfileReducer from './features/lifeProfile/lifeProfileSlice';
+import medicineReducer from './features/medicine/medicineSlice';
 import { setStore } from './storeRegistry';
 
 export const store = configureStore({
@@ -14,6 +15,7 @@ export const store = configureStore({
     baseProfile: baseProfileReducer,
     family: familyReducer,
     lifeProfile: lifeProfileReducer,
+    medicine: medicineReducer,
   },
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware({

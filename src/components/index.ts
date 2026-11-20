@@ -17,6 +17,14 @@ import AppBottomSheet, { AppBottomSheetProps } from './AppBottomSheet';
 import AppCard, { AppCardProps, AppCardVariant } from './AppCard';
 import AppSearchBar, { AppSearchBarProps } from './AppSearchBar';
 import AppEmptyState, { AppEmptyStateProps } from './AppEmptyState';
+import AppImagePickerBottomSheet, {
+  AppImagePickerBottomSheetProps,
+  SelectedImage,
+} from './AppImagePickerBottomSheet';
+import AppConfirmationModal, {
+  AppConfirmationModalProps,
+} from './AppConfirmationModal';
+import AppErrorModal, { AppErrorModalProps } from './AppErrorModal';
 
 export {
   CommonBtn,
@@ -27,6 +35,9 @@ export {
   ThreeDotsLoader,
   QRCodeView,
   AppDateTimePicker,
+  AppImagePickerBottomSheet,
+  AppConfirmationModal,
+  AppErrorModal,
   formatDate,
   formatTime,
   parseDateTimeString,
@@ -56,6 +67,10 @@ export type {
   AppCardVariant,
   AppSearchBarProps,
   AppEmptyStateProps,
+  AppImagePickerBottomSheetProps,
+  SelectedImage,
+  AppConfirmationModalProps,
+  AppErrorModalProps,
 };
 
 export default {

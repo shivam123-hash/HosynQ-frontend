@@ -10,4 +10,8 @@ export * from './familyServices';
 export { default as lifeProfileServices } from './lifeProfileServices';
 export * from './lifeProfileServices';
 
+export { default as medicineServices } from './medicineServices';
+export * from './medicineServices';
+
 export * from './googleAuthService';
+export * from './appleAuthService';

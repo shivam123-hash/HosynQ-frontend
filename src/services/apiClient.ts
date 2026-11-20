@@ -5,7 +5,7 @@ import API_ROUTES, { API_BASE_URL } from '../redux/endPoints/endPoints';
 
 const apiClient = axios.create({
   baseURL: API_BASE_URL,
-  timeout: 15000,
+  timeout: 45000,
   headers: {
     'Content-Type': 'application/json',
   },
@@ -35,6 +35,7 @@ apiClient.interceptors.request.use(
     if (token && config.headers) {
       config.headers.Authorization = `Bearer ${token}`;
     }
+    console.log(`[apiClient] ${config.method?.toUpperCase()} ${config.baseURL || API_BASE_URL}/${config.url || ''}`);
     return config;
   },
   (error) => Promise.reject(error)
@@ -47,6 +48,20 @@ apiClient.interceptors.response.use(
     const originalRequest: any = error.config;
 
     if (error.response?.status === 401 && !originalRequest._retry) {
+      // Prevent infinite loop if the 401 originated from the refresh endpoint itself
+      const isRefreshRequest = originalRequest?.url?.includes(
+        API_ROUTES.AUTH_REFRESH
+      );
+      if (isRefreshRequest) {
+        await tokenService.clearTokens();
+        const store = getStore();
+        if (store?.dispatch) {
+          const { logout } = require('../redux/features/mobileFlow/authSlice');
+          store.dispatch(logout());
+        }
+        return Promise.reject(error);
+      }
+
       originalRequest._retry = true;
 
       if (isRefreshing) {
@@ -71,24 +86,47 @@ apiClient.interceptors.response.use(
         // Call refresh endpoint with raw axios to bypass interceptors
         const refreshResponse = await axios.post(
           `${API_BASE_URL}/${API_ROUTES.AUTH_REFRESH}`,
-          { refreshToken }
+          { refreshToken },
+          {
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            timeout: 10000,
+          }
         );
 
+        const resData = refreshResponse.data;
         const newAccessToken =
-          refreshResponse.data?.accessToken ||
-          refreshResponse.data?.data?.accessToken;
+          resData?.accessToken ||
+          resData?.data?.accessToken ||
+          resData?.tokens?.accessToken;
         const newRefreshToken =
-          refreshResponse.data?.refreshToken ||
-          refreshResponse.data?.data?.refreshToken;
+          resData?.refreshToken ||
+          resData?.data?.refreshToken ||
+          resData?.tokens?.refreshToken ||
+          refreshToken;
 
         if (newAccessToken) {
           await tokenService.setTokens(newAccessToken, newRefreshToken);
           apiClient.defaults.headers.common.Authorization = `Bearer ${newAccessToken}`;
           originalRequest.headers.Authorization = `Bearer ${newAccessToken}`;
 
+          const store = getStore();
+          if (store?.dispatch) {
+            const { setTokens } = require('../redux/features/mobileFlow/authSlice');
+            store.dispatch(
+              setTokens({
+                accessToken: newAccessToken,
+                refreshToken: newRefreshToken,
+              })
+            );
+          }
+
           processQueue(null, newAccessToken);
           isRefreshing = false;
           return apiClient(originalRequest);
+        } else {
+          throw new Error('No access token in refresh response');
         }
       } catch (refreshErr) {
         processQueue(refreshErr, null);

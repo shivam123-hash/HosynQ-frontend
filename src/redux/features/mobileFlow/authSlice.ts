@@ -96,23 +96,26 @@ export const loadInitialState = createAsyncThunk(
   async (_, { dispatch }) => {
     try {
       const stored = await getUserData();
-      if (stored?.accessToken) {
+      if (stored?.accessToken || stored?.refreshToken) {
         dispatch(getProfile());
         return {
           user: stored,
-          accessToken: stored.accessToken,
+          accessToken: stored.accessToken || null,
+          refreshToken: stored.refreshToken || null,
           isLoggedIn: true,
         };
       }
       return {
         user: null,
         accessToken: null,
+        refreshToken: null,
         isLoggedIn: false,
       };
     } catch {
       return {
         user: null,
         accessToken: null,
+        refreshToken: null,
         isLoggedIn: false,
       };
     }
@@ -151,6 +154,16 @@ const authSlice = createSlice({
     },
     setVerificationId: (state, action: PayloadAction<string>) => {
       state.verificationId = action.payload;
+    },
+    setTokens: (
+      state,
+      action: PayloadAction<{ accessToken: string; refreshToken?: string }>
+    ) => {
+      state.accessToken = action.payload.accessToken;
+      if (action.payload.refreshToken) {
+        state.refreshToken = action.payload.refreshToken;
+      }
+      state.isLoggedIn = true;
     },
   },
   extraReducers: (builder) => {
@@ -194,6 +207,7 @@ const authSlice = createSlice({
     builder.addCase(loadInitialState.fulfilled, (state, action) => {
       state.isLoggedIn = action.payload.isLoggedIn;
       state.accessToken = action.payload.accessToken || null;
+      state.refreshToken = action.payload.refreshToken || null;
       state.user = action.payload.user || null;
     });
 
@@ -214,8 +228,12 @@ const authSlice = createSlice({
   },
 });
 
-export const { clearAuthError, setActivePhoneNumber, setVerificationId } =
-  authSlice.actions;
+export const {
+  clearAuthError,
+  setActivePhoneNumber,
+  setVerificationId,
+  setTokens,
+} = authSlice.actions;
 
 export default authSlice.reducer;
 

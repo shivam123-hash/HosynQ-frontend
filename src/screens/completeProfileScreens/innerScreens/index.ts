@@ -24,6 +24,8 @@ export { default as AddMedicineScreen } from './AddMedicineScreen';
 export * from './AddMedicineScreen';
 export { default as WhenToTakeMedicineScreen } from './WhenToTakeMedicineScreen';
 export * from './WhenToTakeMedicineScreen';
+export { default as MedicineDetailsScreen } from './MedicineDetailsScreen';
+export * from './MedicineDetailsScreen';
 
 // Section 4: Vaccination & Child Growth/Milestones
 export { default as VaccinationScreen } from './VaccinationScreen';
@@ -32,10 +34,18 @@ export { default as AddVaccineScreen } from './AddVaccineScreen';
 export * from './AddVaccineScreen';
 export { default as ChildGrowthScreen } from './ChildGrowthScreen';
 export * from './ChildGrowthScreen';
+export { default as AddMeasurementScreen } from './AddMeasurementScreen';
+export * from './AddMeasurementScreen';
 export { default as ChildMilestonesScreen } from './ChildMilestonesScreen';
 export * from './ChildMilestonesScreen';
+export { default as AddMilestoneScreen } from './AddMilestoneScreen';
+export * from './AddMilestoneScreen';
+export { default as VaccineDetailScreen } from './VaccineDetailScreen';
+export * from './VaccineDetailScreen';
 
 // Section 5: Interests & Activities
 export { default as InterestsAndActivitiesScreen } from './InterestsAndActivitiesScreen';
 export * from './InterestsAndActivitiesScreen';
+export { default as InterestsDetailsScreen } from './InterestsDetailsScreen';
+export * from './InterestsDetailsScreen';
 

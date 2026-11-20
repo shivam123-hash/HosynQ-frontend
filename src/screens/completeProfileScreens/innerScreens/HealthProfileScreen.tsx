@@ -1,10 +1,23 @@
 import React, { useState, useEffect } from 'react';
-import { useAppDispatch, useAppSelector, fetchLifeProfileSectionThunk } from '../../../redux';
+import { Alert } from 'react-native';
+import {
+  useAppDispatch,
+  useAppSelector,
+  fetchLifeProfileSectionThunk,
+  updateLifeProfileSectionThunk,
+  fetchLifeProfileFullThunk,
+  fetchMedicinesThunk,
+} from '../../../redux';
+import { getMyMemberId } from '../../../units/asyncStorageManager';
 import HealthProfileInputScreen, {
   HealthProfileFormValues,
   DEFAULT_HEALTH_FORM_VALUES,
 } from './HealthProfileInputScreen';
 import HealthProfileDetailsScreen from './HealthProfileDetailsScreen';
+import {
+  buildHealthPayload,
+  mapBackendToHealthForm,
+} from './healthPayloadUtils';
 
 export type HealthProfileMode = 'input' | 'details';
 
@@ -20,14 +33,14 @@ export interface HealthProfileData {
 }
 
 export const DEFAULT_HEALTH_DATA: HealthProfileData = {
-  doctor: 'Dr. Anjali Rao · General physician',
-  clinicLocation: 'Rao Clinic, Sector 47',
-  hospital: 'CityCare Hospital, Sector 38',
-  allergies: ['Penicillin', 'Dust'],
-  conditions: 'Migraine',
-  medications: 'Vitamin D · once a week',
-  checkups: 'Last 12 Mar 2026 · Next Mar 2027',
-  eyesight: 'Right -1.25, Left -1.00 · Glasses',
+  doctor: '',
+  clinicLocation: '',
+  hospital: '',
+  allergies: [],
+  conditions: '',
+  medications: '',
+  checkups: '',
+  eyesight: '',
 };
 
 export interface HealthProfileScreenProps {
@@ -38,6 +51,7 @@ export interface HealthProfileScreenProps {
   onBack?: () => void;
   onSave?: (data: HealthProfileFormValues) => void;
   onAddMedicine?: () => void;
+  onMedicinePress?: (medicineId: string) => void;
   onDoctorPress?: () => void;
   onClinicPress?: () => void;
   onHospitalPress?: () => void;
@@ -54,6 +68,7 @@ const HealthProfileScreen: React.FC<HealthProfileScreenProps> = ({
   onBack,
   onSave,
   onAddMedicine,
+  onMedicinePress,
   onDoctorPress,
   onClinicPress,
   onHospitalPress,
@@ -63,39 +78,35 @@ const HealthProfileScreen: React.FC<HealthProfileScreenProps> = ({
 }) => {
   const dispatch = useAppDispatch();
   const authUser = useAppSelector((state) => state.auth?.user || state.emailAuth?.user);
+  const familyState = useAppSelector((state) => (state as any).family);
   const lifeProfileHealth = useAppSelector((state) => state.lifeProfile?.health);
 
   const resolvedMemberId =
     memberId ||
+    familyState?.myMemberId ||
+    familyState?.family?.myMemberId ||
     authUser?.memberId ||
+    authUser?.myMemberId ||
     authUser?.id ||
     authUser?._id ||
     'me';
 
-  // API Call Structure: GET {{BaseURL}}/api/v1/family/members/{{memberId}}/life-profile?section=health
+  // Fetch health section and medicines list
   useEffect(() => {
-    if (resolvedMemberId) {
+    if (resolvedMemberId && resolvedMemberId !== 'me') {
       dispatch(
         fetchLifeProfileSectionThunk({
           memberId: resolvedMemberId,
           section: 'health',
         })
       );
+      dispatch(fetchMedicinesThunk({ memberId: resolvedMemberId }));
     }
   }, [dispatch, resolvedMemberId]);
 
-  /*
-   * DATA MAPPING (Ready to connect when backend health data is ready):
-   * const healthData = lifeProfileHealth?.data || lifeProfileHealth;
-   * // doctor = healthData?.doctor
-   * // clinicLocation = healthData?.clinicLocation
-   * // allergies = healthData?.allergies
-   * // conditions = healthData?.conditions
-   * // medications = healthData?.medications
-   */
   const [currentMode, setCurrentMode] = useState<HealthProfileMode>(initialMode);
+  const [isSaving, setIsSaving] = useState(false);
   const [formData, setFormData] = useState<HealthProfileFormValues>(() => {
-    // If incoming data matches form values directly
     if (initialData && 'doctor' in initialData && typeof initialData.doctor === 'object') {
       return {
         ...DEFAULT_HEALTH_FORM_VALUES,
@@ -105,9 +116,76 @@ const HealthProfileScreen: React.FC<HealthProfileScreenProps> = ({
     return DEFAULT_HEALTH_FORM_VALUES;
   });
 
-  const handleInputSave = (savedValues: HealthProfileFormValues) => {
+  // Sync incoming backend health data into formData
+  useEffect(() => {
+    const rawHealth =
+      lifeProfileHealth?.data?.health ||
+      lifeProfileHealth?.health ||
+      lifeProfileHealth?.data ||
+      lifeProfileHealth;
+
+    if (rawHealth && (rawHealth.primaryDoctor || rawHealth.doctorPhone || rawHealth.clinicName || rawHealth.allergies?.length)) {
+      const mapped = mapBackendToHealthForm(rawHealth);
+      setFormData(mapped);
+    }
+  }, [lifeProfileHealth]);
+
+  const handleInputSave = async (savedValues: HealthProfileFormValues) => {
+    setIsSaving(true);
     setFormData(savedValues);
-    setCurrentMode('details');
+
+    let targetMemberId = resolvedMemberId;
+    if (!targetMemberId || targetMemberId === 'me') {
+      const storedMemberId = await getMyMemberId();
+      if (storedMemberId) {
+        targetMemberId = storedMemberId;
+      }
+    }
+
+    const payload = buildHealthPayload(savedValues);
+    console.log('====================================');
+    console.log('[HealthProfile] Submitting PATCH /life-profile with health payload:');
+    console.log(`[HealthProfile] Target MemberId: ${targetMemberId}`);
+    console.log(JSON.stringify({ health: payload }, null, 2));
+    console.log('====================================');
+
+    try {
+      const response = await dispatch(
+        updateLifeProfileSectionThunk({
+          memberId: targetMemberId,
+          payload: { health: payload },
+        })
+      ).unwrap();
+
+      console.log('====================================');
+      console.log('[HealthProfile] Health Section Saved Successfully:');
+      console.log(JSON.stringify(response, null, 2));
+      console.log('====================================');
+
+      // Refresh full profile & health section
+      try {
+        await Promise.all([
+          dispatch(fetchLifeProfileFullThunk({ memberId: targetMemberId })),
+          dispatch(fetchLifeProfileSectionThunk({ memberId: targetMemberId, section: 'health' })),
+          dispatch(fetchMedicinesThunk({ memberId: targetMemberId })),
+        ]);
+      } catch (err) {
+        console.log('[HealthProfile] Error refreshing health profile:', err);
+      }
+
+      // Transition to details screen so user sees saved data & can add medicines
+      setCurrentMode('details');
+    } catch (error: any) {
+      console.log('[HealthProfile] Save Error:', error);
+      Alert.alert(
+        'Save Failed',
+        Array.isArray(error)
+          ? error.join('\n')
+          : error?.message || error || 'Failed to save health profile.'
+      );
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   if (currentMode === 'details') {
@@ -115,6 +193,7 @@ const HealthProfileScreen: React.FC<HealthProfileScreenProps> = ({
       <HealthProfileDetailsScreen
         data={formData}
         userName={userName}
+        memberId={resolvedMemberId}
         onBack={() => {
           if (onBack) {
             onBack();
@@ -124,6 +203,7 @@ const HealthProfileScreen: React.FC<HealthProfileScreenProps> = ({
         }}
         onEditPress={() => setCurrentMode('input')}
         onAddMedicine={onAddMedicine}
+        onMedicinePress={onMedicinePress}
         onDoctorPress={onDoctorPress}
         onClinicPress={onClinicPress}
         onHospitalPress={onHospitalPress}
@@ -137,7 +217,25 @@ const HealthProfileScreen: React.FC<HealthProfileScreenProps> = ({
     <HealthProfileInputScreen
       initialValues={formData}
       userName={userName}
-      onClose={onBack}
+      onClose={() => {
+        // If details exist (e.g. user entered edit mode from details), return to details
+        const rawHealth =
+          lifeProfileHealth?.data?.health ||
+          lifeProfileHealth?.health ||
+          lifeProfileHealth?.data ||
+          lifeProfileHealth;
+        const hasSavedHealth = !!(
+          rawHealth?.primaryDoctor ||
+          rawHealth?.doctorPhone ||
+          rawHealth?.clinicName ||
+          rawHealth?.allergies?.length
+        );
+        if (hasSavedHealth) {
+          setCurrentMode('details');
+        } else if (onBack) {
+          onBack();
+        }
+      }}
       onSave={handleInputSave}
     />
   );

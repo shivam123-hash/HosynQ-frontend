@@ -11,6 +11,7 @@ import {
   KeyboardAvoidingView,
   Platform,
   Alert,
+  Modal,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Feather from '@react-native-vector-icons/feather';
@@ -19,38 +20,53 @@ import Colors from '../../../units/Colors';
 import CommonBtn from '../../../components/CommonBtn';
 import {
   AppDateTimePicker,
+  AppImagePickerBottomSheet,
   formatDate,
   parseDateTimeString,
 } from '../../../components';
 import { PersonalInfoHeader } from '../components';
+import { useAppDispatch, useAppSelector } from '../../../redux';
+import { getMyFamilyThunk } from '../../../redux/features/family/familySlice';
+import {
+  updateLifeProfileSectionThunk,
+  fetchLifeProfileSectionThunk,
+  fetchLifeProfileFullThunk,
+} from '../../../redux/features/lifeProfile/lifeProfileSlice';
+import { getMyMemberId } from '../../../units/asyncStorageManager';
+import { buildVaccineItemPayload } from './vaccinationPayloadUtils';
 
 export interface AddVaccineFormData {
+  id?: string;
   vaccineName: string;
   dose: string;
   dateGiven: string;
   givenAt?: string;
   batchNumber?: string;
   certificateName?: string | null;
+  certificateUri?: string | null;
+  certificateScanId?: string | null;
   nextDue: string;
   remindMe: boolean;
   remindTiming: string;
   whoGetsReminder: string;
+  remindMemberIds?: string[];
 }
 
 export const DEFAULT_VACCINE_FORM_DATA: AddVaccineFormData = {
-  vaccineName: 'Influenza',
-  dose: 'Yearly dose',
-  dateGiven: '30 Oct 2026',
-  givenAt: 'Little Steps Clinic',
-  batchNumber: 'FLU26-0931',
+  vaccineName: '',
+  dose: 'Dose 1',
+  dateGiven: '',
+  givenAt: '',
+  batchNumber: '',
   certificateName: null,
-  nextDue: 'Oct 2027',
+  nextDue: '',
   remindMe: true,
   remindTiming: '2 weeks before',
-  whoGetsReminder: 'Priya, Rohan',
+  whoGetsReminder: '',
 };
 
 export interface AddVaccineScreenProps {
+  memberId?: string;
   initialData?: Partial<AddVaccineFormData>;
   childName?: string;
   onClose?: () => void;
@@ -59,6 +75,7 @@ export interface AddVaccineScreenProps {
 }
 
 const AddVaccineScreen: React.FC<AddVaccineScreenProps> = ({
+  memberId,
   initialData,
   childName = 'Aarav',
   onClose,
@@ -66,11 +83,69 @@ const AddVaccineScreen: React.FC<AddVaccineScreenProps> = ({
   onUploadCertificate,
 }) => {
   const insets = useSafeAreaInsets();
+  const dispatch = useAppDispatch();
+  const familyState = useAppSelector((state: any) => state.family);
+  const rawMembers: any[] =
+    familyState?.myFamilyData?.family?.members ||
+    familyState?.family?.members ||
+    familyState?.familyData?.family?.members ||
+    [];
+  const familyMembers = rawMembers;
 
   const [formData, setFormData] = useState<AddVaccineFormData>({
     ...DEFAULT_VACCINE_FORM_DATA,
     ...(initialData || {}),
   });
+
+  const [showMembersModal, setShowMembersModal] = useState<boolean>(false);
+  const [selectedMemberIds, setSelectedMemberIds] = useState<string[]>(
+    formData.remindMemberIds || []
+  );
+
+  React.useEffect(() => {
+    dispatch(getMyFamilyThunk());
+  }, [dispatch]);
+
+  React.useEffect(() => {
+    if (
+      familyMembers.length > 0 &&
+      (!formData.remindMemberIds || formData.remindMemberIds.length === 0)
+    ) {
+      const currentMember =
+        familyMembers.find((m: any) => (m.memberId || m.id) === memberId) ||
+        familyMembers[0];
+      const validId = currentMember ? currentMember.memberId || currentMember.id : null;
+      const validName = currentMember ? currentMember.fullName || currentMember.name : '';
+
+      if (validId) {
+        setFormData((prev) => ({
+          ...prev,
+          remindMemberIds: [validId],
+          whoGetsReminder: prev.whoGetsReminder || validName,
+        }));
+        setSelectedMemberIds([validId]);
+      }
+    }
+  }, [familyMembers, memberId]);
+
+  const toggleMemberSelection = (id: string) => {
+    setSelectedMemberIds((prev) =>
+      prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id]
+    );
+  };
+
+  const handleApplyMembers = () => {
+    const selected = familyMembers.filter((m: any) =>
+      selectedMemberIds.includes(m.memberId || m.id)
+    );
+    const names = selected.map((m: any) => m.fullName || m.name).join(', ');
+    setFormData((prev) => ({
+      ...prev,
+      remindMemberIds: selectedMemberIds,
+      whoGetsReminder: names || 'Select members',
+    }));
+    setShowMembersModal(false);
+  };
 
   const [pickerConfig, setPickerConfig] = useState<{
     visible: boolean;
@@ -84,8 +159,89 @@ const AddVaccineScreen: React.FC<AddVaccineScreenProps> = ({
     format: 'DD MMM YYYY',
   });
 
-  const handleSave = () => {
-    onSave?.(formData);
+  const [showImagePicker, setShowImagePicker] = useState<boolean>(false);
+  const [isSaving, setIsSaving] = useState<boolean>(false);
+
+  const handleSave = async () => {
+    if (!formData.vaccineName?.trim()) {
+      Alert.alert('Required', 'Please enter a vaccine name.');
+      return;
+    }
+
+    setIsSaving(true);
+    let targetMemberId = memberId;
+    if (!targetMemberId || targetMemberId === 'me') {
+      const stored = await getMyMemberId();
+      if (stored) targetMemberId = stored;
+    }
+
+    const familyMembers =
+      familyState?.myFamilyData?.family?.members ||
+      familyState?.familyData?.family?.members ||
+      [];
+    const validRemindMemberIds =
+      formData.remindMemberIds && formData.remindMemberIds.length > 0
+        ? formData.remindMemberIds
+        : selectedMemberIds.length > 0
+        ? selectedMemberIds
+        : familyMembers.map((m: any) => m.memberId || m.id).filter(Boolean);
+
+    const vaccinePayload = buildVaccineItemPayload(formData, {
+      id: (initialData as any)?.id || formData.id,
+      certificateScanId: formData.certificateScanId || undefined,
+      remindMemberIds:
+        validRemindMemberIds.length > 0 ? validRemindMemberIds : undefined,
+    });
+
+    console.log('====================================');
+    console.log('[AddVaccine] Submitting PATCH /life-profile with vaccine:');
+    console.log(`[AddVaccine] Target MemberId: ${targetMemberId}`);
+    console.log(
+      JSON.stringify({ vaccination: { vaccines: [vaccinePayload] } }, null, 2),
+    );
+    console.log('====================================');
+
+    try {
+      if (targetMemberId) {
+        await dispatch(
+          updateLifeProfileSectionThunk({
+            memberId: targetMemberId,
+            payload: {
+              vaccination: {
+                vaccines: [vaccinePayload],
+              },
+            },
+          }),
+        ).unwrap();
+
+        // Refresh vaccination section and full profile
+        try {
+          await Promise.all([
+            dispatch(
+              fetchLifeProfileSectionThunk({
+                memberId: targetMemberId,
+                section: 'vaccination',
+              }),
+            ),
+            dispatch(fetchLifeProfileFullThunk({ memberId: targetMemberId })),
+          ]);
+        } catch (err) {
+          console.log('[AddVaccine] Error refreshing profile:', err);
+        }
+      }
+
+      if (onSave) {
+        onSave(formData);
+      } else if (onClose) {
+        onClose();
+      }
+    } catch (err: any) {
+      console.warn('[AddVaccine] Failed to save vaccine:', err);
+      const msg = err?.message || err?.error || 'Failed to save vaccine record';
+      Alert.alert('Error', msg);
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   const handleSelectDose = () => {
@@ -111,12 +267,7 @@ const AddVaccineScreen: React.FC<AddVaccineScreenProps> = ({
   };
 
   const handleSelectWhoGetsReminder = () => {
-    Alert.alert('Who gets the reminder', 'Select family member', [
-      { text: 'Priya, Rohan', onPress: () => setFormData((p) => ({ ...p, whoGetsReminder: 'Priya, Rohan' })) },
-      { text: 'Priya only', onPress: () => setFormData((p) => ({ ...p, whoGetsReminder: 'Priya only' })) },
-      { text: 'Rohan only', onPress: () => setFormData((p) => ({ ...p, whoGetsReminder: 'Rohan only' })) },
-      { text: 'Cancel', style: 'cancel' },
-    ]);
+    setShowMembersModal(true);
   };
 
   return (
@@ -213,8 +364,13 @@ const AddVaccineScreen: React.FC<AddVaccineScreenProps> = ({
                 })
               }
             >
-              <Text style={styles.datePickerValueText}>
-                {formData.dateGiven}
+              <Text
+                style={[
+                  styles.datePickerValueText,
+                  !formData.dateGiven && { color: '#60728B' },
+                ]}
+              >
+                {formData.dateGiven || 'Select date'}
               </Text>
               <Feather name="calendar" size={17} color="#8E9BAE" />
             </TouchableOpacity>
@@ -248,24 +404,75 @@ const AddVaccineScreen: React.FC<AddVaccineScreenProps> = ({
             />
           </View>
 
-          {/* Upload certificate button */}
-          <TouchableOpacity
-            activeOpacity={0.7}
-            style={styles.attachBtn}
-            onPress={() => {
-              if (onUploadCertificate) {
-                onUploadCertificate();
-              } else {
-                Alert.alert(
-                  'Upload Certificate',
-                  'Select vaccine certificate PDF or image.',
-                );
-              }
-            }}
-          >
-            <Feather name="paperclip" size={17} color="#F0913A" />
-            <Text style={styles.attachBtnText}>Upload certificate</Text>
-          </TouchableOpacity>
+          {/* Upload certificate button or Attached certificate preview */}
+          {formData.certificateName ? (
+            <View style={styles.uploadedCertCard}>
+              <View style={styles.uploadedCertLeft}>
+                <View style={styles.uploadedCertIconBox}>
+                  <Feather name="file-text" size={17} color="#10B981" />
+                </View>
+                <View style={styles.uploadedCertInfo}>
+                  <Text style={styles.uploadedCertName} numberOfLines={1}>
+                    {formData.certificateName}
+                  </Text>
+                  <Text style={styles.uploadedCertStatus}>
+                    Certificate attached ✓
+                  </Text>
+                </View>
+              </View>
+
+              <View style={styles.uploadedCertActions}>
+                <TouchableOpacity
+                  activeOpacity={0.7}
+                  onPress={() => {
+                    if (onUploadCertificate) {
+                      onUploadCertificate();
+                    } else {
+                      setShowImagePicker(true);
+                    }
+                  }}
+                  style={styles.certActionBtn}
+                  accessibilityRole="button"
+                  accessibilityLabel="Change certificate"
+                >
+                  <Feather name="edit-2" size={15} color="#8E9BAE" />
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  activeOpacity={0.7}
+                  onPress={() =>
+                    setFormData((prev) => ({
+                      ...prev,
+                      certificateName: null,
+                      certificateUri: null,
+                    }))
+                  }
+                  style={styles.certActionBtn}
+                  accessibilityRole="button"
+                  accessibilityLabel="Remove certificate"
+                >
+                  <Feather name="trash-2" size={15} color="#EF4444" />
+                </TouchableOpacity>
+              </View>
+            </View>
+          ) : (
+            <TouchableOpacity
+              activeOpacity={0.7}
+              style={styles.attachBtn}
+              onPress={() => {
+                if (onUploadCertificate) {
+                  onUploadCertificate();
+                } else {
+                  setShowImagePicker(true);
+                }
+              }}
+              accessibilityRole="button"
+              accessibilityLabel="Upload certificate"
+            >
+              <Feather name="paperclip" size={17} color="#F0913A" />
+              <Text style={styles.attachBtnText}>Upload certificate</Text>
+            </TouchableOpacity>
+          )}
 
           {/* SECTION 3: NEXT DOSE */}
           <Text style={[styles.sectionHeader, styles.sectionHeaderSpaced]}>
@@ -287,7 +494,14 @@ const AddVaccineScreen: React.FC<AddVaccineScreenProps> = ({
                 })
               }
             >
-              <Text style={styles.datePickerValueText}>{formData.nextDue}</Text>
+              <Text
+                style={[
+                  styles.datePickerValueText,
+                  !formData.nextDue && { color: '#60728B' },
+                ]}
+              >
+                {formData.nextDue || 'Select date'}
+              </Text>
               <Feather name="calendar" size={17} color="#8E9BAE" />
             </TouchableOpacity>
             <Text style={styles.helperText}>
@@ -350,7 +564,8 @@ const AddVaccineScreen: React.FC<AddVaccineScreenProps> = ({
         {/* Bottom Save Button */}
         <View style={styles.bottomBar}>
           <CommonBtn
-            title="Save"
+            title={isSaving ? 'Saving...' : 'Save'}
+            disabled={isSaving}
             onPress={handleSave}
             backgroundColor={Colors.primary || '#F0913A'}
             textColor="#FFFFFF"
@@ -389,6 +604,107 @@ const AddVaccineScreen: React.FC<AddVaccineScreenProps> = ({
           setPickerConfig((prev) => ({ ...prev, visible: false }))
         }
       />
+
+      {/* Reusable Image/Certificate Picker Bottom Sheet */}
+      <AppImagePickerBottomSheet
+        visible={showImagePicker}
+        title="Upload Vaccine Certificate"
+        subtitle="Take a photo or choose an image from your gallery"
+        onSelectImage={(image) => {
+          setFormData((prev) => ({
+            ...prev,
+            certificateName: image.fileName || 'Vaccine_Certificate.jpg',
+            certificateUri: image.path,
+          }));
+        }}
+        onClose={() => setShowImagePicker(false)}
+      />
+      {/* Family Member Remind Selection Modal */}
+      <Modal
+        visible={showMembersModal}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setShowMembersModal(false)}
+      >
+        <TouchableOpacity
+          style={styles.modalBackdrop}
+          activeOpacity={1}
+          onPress={() => setShowMembersModal(false)}
+        >
+          <TouchableOpacity
+            style={styles.modalContent}
+            activeOpacity={1}
+            onPress={(e) => e.stopPropagation()}
+          >
+            <View style={styles.handle} />
+            <Text style={styles.modalTitle}>Who gets the reminder</Text>
+            <Text style={styles.modalSubtitle}>
+              Select family members who should receive this vaccine reminder
+            </Text>
+
+            <View style={styles.membersListContainer}>
+              {familyMembers.map((member: any) => {
+                const id = member.memberId || member.id;
+                const isSelected = selectedMemberIds.includes(id);
+                const initial = (member.fullName || member.name || 'U')
+                  .charAt(0)
+                  .toUpperCase();
+
+                return (
+                  <TouchableOpacity
+                    key={id}
+                    activeOpacity={0.7}
+                    onPress={() => toggleMemberSelection(id)}
+                    style={[
+                      styles.memberRowCard,
+                      isSelected && styles.memberRowCardSelected,
+                    ]}
+                  >
+                    <View
+                      style={[
+                        styles.memberAvatarBox,
+                        { backgroundColor: member.avatarColor || '#7C3AED' },
+                      ]}
+                    >
+                      <Text style={styles.memberAvatarText}>{initial}</Text>
+                    </View>
+
+                    <View style={styles.memberInfoCol}>
+                      <Text style={styles.memberNameText}>
+                        {member.fullName || member.name}
+                      </Text>
+                      <Text style={styles.memberRoleText}>
+                        {member.familyRole || member.role || 'Family Member'}
+                      </Text>
+                    </View>
+
+                    <View
+                      style={[
+                        styles.memberCheckCircle,
+                        isSelected && styles.memberCheckCircleSelected,
+                      ]}
+                    >
+                      {isSelected && (
+                        <Feather name="check" size={14} color="#FFFFFF" />
+                      )}
+                    </View>
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
+
+            <CommonBtn
+              title="Apply Selection"
+              onPress={handleApplyMembers}
+              backgroundColor={Colors.primary || '#F0913A'}
+              textColor="#FFFFFF"
+              height={50}
+              borderRadius={25}
+              marginTop={14}
+            />
+          </TouchableOpacity>
+        </TouchableOpacity>
+      </Modal>
     </View>
   );
 };
@@ -522,6 +838,61 @@ const styles = StyleSheet.create({
     fontSize: RFValue(13),
     fontWeight: '600',
   },
+  uploadedCertCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: '#12243F',
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: 'rgba(16, 185, 129, 0.4)',
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    marginTop: 4,
+    marginBottom: 8,
+  },
+  uploadedCertLeft: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginRight: 10,
+  },
+  uploadedCertIconBox: {
+    width: 36,
+    height: 36,
+    borderRadius: 10,
+    backgroundColor: 'rgba(16, 185, 129, 0.12)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 10,
+  },
+  uploadedCertInfo: {
+    flex: 1,
+  },
+  uploadedCertName: {
+    color: '#FFFFFF',
+    fontSize: RFValue(13),
+    fontWeight: '600',
+    marginBottom: 2,
+  },
+  uploadedCertStatus: {
+    color: '#10B981',
+    fontSize: RFValue(11),
+    fontWeight: '500',
+  },
+  uploadedCertActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  certActionBtn: {
+    width: 32,
+    height: 32,
+    borderRadius: 8,
+    backgroundColor: 'rgba(255, 255, 255, 0.06)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
   switchCard: {
     backgroundColor: '#12243F',
     borderRadius: 14,
@@ -554,5 +925,95 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.background || '#0A111F',
     borderTopWidth: 1,
     borderTopColor: 'rgba(255, 255, 255, 0.06)',
+  },
+  modalBackdrop: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.65)',
+    justifyContent: 'flex-end',
+  },
+  modalContent: {
+    backgroundColor: '#0F1D30',
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    paddingHorizontal: 20,
+    paddingTop: 12,
+    paddingBottom: 34,
+    maxHeight: '80%',
+  },
+  handle: {
+    width: 36,
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: '#334155',
+    alignSelf: 'center',
+    marginBottom: 16,
+  },
+  modalTitle: {
+    color: '#FFFFFF',
+    fontSize: RFValue(17),
+    fontWeight: '700',
+    marginBottom: 4,
+  },
+  modalSubtitle: {
+    color: '#8E9BAE',
+    fontSize: RFValue(12.5),
+    lineHeight: 18,
+    marginBottom: 16,
+  },
+  membersListContainer: {
+    gap: 10,
+    marginBottom: 10,
+  },
+  memberRowCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#12243F',
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: '#1E324A',
+    padding: 12,
+  },
+  memberRowCardSelected: {
+    borderColor: '#F0913A',
+    backgroundColor: 'rgba(240, 145, 58, 0.08)',
+  },
+  memberAvatarBox: {
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 12,
+  },
+  memberAvatarText: {
+    color: '#FFFFFF',
+    fontSize: RFValue(14),
+    fontWeight: '700',
+  },
+  memberInfoCol: {
+    flex: 1,
+  },
+  memberNameText: {
+    color: '#FFFFFF',
+    fontSize: RFValue(13.5),
+    fontWeight: '600',
+    marginBottom: 2,
+  },
+  memberRoleText: {
+    color: '#8E9BAE',
+    fontSize: RFValue(11.5),
+  },
+  memberCheckCircle: {
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+    borderWidth: 1.5,
+    borderColor: '#64748B',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  memberCheckCircleSelected: {
+    borderColor: '#F0913A',
+    backgroundColor: '#F0913A',
   },
 });

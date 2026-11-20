@@ -13,10 +13,12 @@ import familyServices, {
   PreviewInvitationPayload,
   PreviewInvitationResponse,
 } from '../../../services/familyServices';
+import { saveMyMemberId } from '../../../units/asyncStorageManager';
 
 export interface FamilyState {
   family: FamilyData | null;
   familyCode: string | null;
+  myMemberId: string | null;
   loading: boolean;
   error: string | null;
   success: boolean;
@@ -37,6 +39,7 @@ export interface FamilyState {
 const initialState: FamilyState = {
   family: null,
   familyCode: null,
+  myMemberId: null,
   loading: false,
   error: null,
   success: false,
@@ -64,6 +67,12 @@ export const createFamilyThunk = createAsyncThunk<
     console.log('[createFamily API] Payload:', payload);
     const response = await familyServices.createFamily(payload);
     console.log('[createFamily API] Success Response:', response);
+    const myMemberId =
+      (response as any)?.family?.myMemberId ||
+      (response as any)?.myMemberId;
+    if (myMemberId) {
+      await saveMyMemberId(myMemberId);
+    }
     return response;
   } catch (error: any) {
     const errorMsg =
@@ -222,6 +231,15 @@ const familySlice = createSlice({
     setFamily: (state, action: PayloadAction<FamilyData>) => {
       state.family = action.payload;
       state.familyCode = action.payload.familyCode;
+      if (action.payload.myMemberId) {
+        state.myMemberId = action.payload.myMemberId;
+      }
+    },
+    setMyMemberId: (state, action: PayloadAction<string | null>) => {
+      state.myMemberId = action.payload;
+      if (state.family) {
+        state.family.myMemberId = action.payload || undefined;
+      }
     },
     setInvitation: (state, action: PayloadAction<FamilyInvitationData>) => {
       state.invitation = action.payload;
@@ -243,7 +261,11 @@ const familySlice = createSlice({
       .addCase(createFamilyThunk.fulfilled, (state, action) => {
         state.loading = false;
         state.family = action.payload.family;
-        state.familyCode = action.payload.family.familyCode;
+        state.familyCode = action.payload.family?.familyCode || null;
+        state.myMemberId =
+          (action.payload as any)?.family?.myMemberId ||
+          (action.payload as any)?.myMemberId ||
+          null;
         state.success = true;
         state.error = null;
       })
@@ -303,6 +325,9 @@ const familySlice = createSlice({
         if (action.payload.inFamily && action.payload.family) {
           state.family = action.payload.family;
           state.familyCode = action.payload.family.familyCode;
+          if (action.payload.family.myMemberId) {
+            state.myMemberId = action.payload.family.myMemberId;
+          }
         }
       })
       .addCase(getMyFamilyThunk.rejected, (state, action) => {
@@ -320,6 +345,7 @@ export const {
   clearMyFamilyError,
   resetFamilyState,
   setFamily,
+  setMyMemberId,
   setInvitation,
   setJoinRequest,
   setMyFamilyData,

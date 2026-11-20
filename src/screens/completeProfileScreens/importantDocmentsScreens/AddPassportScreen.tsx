@@ -22,7 +22,12 @@ import {
   formatDate,
   parseDateTimeString,
 } from '../../../components';
-import { PersonalInfoHeader } from '../components';
+import {
+  PersonalInfoHeader,
+  DocumentPhotoUploadField,
+  formatIsoToDisplayDate,
+} from '../components';
+import { useAppDispatch, useAppSelector, getMyFamilyThunk } from '../../../redux';
 
 export interface PassportFormData {
   fullName: string;
@@ -32,29 +37,42 @@ export interface PassportFormData {
   placeOfIssue: string;
   reminders: string[];
   assignees: string;
+  remindMemberIds?: string[];
   autoRenewal: boolean;
   frontImageAdded: boolean;
   backImageAdded: boolean;
+  scanId?: string;
+  frontImageUri?: string;
+  backImageUri?: string;
+  fileUrl?: string;
 }
 
 export interface AddPassportScreenProps {
   initialData?: Partial<PassportFormData>;
   userName?: string;
+  memberId?: string;
+  documentId?: string;
+  isSaving?: boolean;
   onClose?: () => void;
-  onSaveSuccess?: (data: PassportFormData) => void;
+  onSaveSuccess?: (data: PassportFormData, documentId?: string) => void;
 }
 
 export const DEFAULT_PASSPORT_DATA: PassportFormData = {
-  fullName: 'PRIYA SHARMA',
-  passportNumber: 'K1234567',
-  issueDate: '22 Aug 2017',
-  expiryDate: '21 Aug 2027',
-  placeOfIssue: 'Delhi',
+  fullName: '',
+  passportNumber: '',
+  issueDate: '',
+  expiryDate: '',
+  placeOfIssue: '',
   reminders: ['6 months', '1 month'],
-  assignees: 'Priya, Rohan',
+  assignees: '',
+  remindMemberIds: [],
   autoRenewal: true,
-  frontImageAdded: true,
+  frontImageAdded: false,
   backImageAdded: false,
+  scanId: '',
+  frontImageUri: '',
+  backImageUri: '',
+  fileUrl: '',
 };
 
 const REMINDER_OPTIONS = ['6 months', '3 months', '1 month', '1 week'];
@@ -62,6 +80,9 @@ const REMINDER_OPTIONS = ['6 months', '3 months', '1 month', '1 week'];
 const AddPassportScreen: React.FC<AddPassportScreenProps> = ({
   initialData,
   userName = 'Priya',
+  memberId,
+  documentId,
+  isSaving = false,
   onClose,
   onSaveSuccess,
 }) => {
@@ -71,6 +92,95 @@ const AddPassportScreen: React.FC<AddPassportScreenProps> = ({
     ...DEFAULT_PASSPORT_DATA,
     ...initialData,
   });
+
+  const dispatch = useAppDispatch();
+  const familyState = useAppSelector((state) => (state as any).family);
+  const myFamilyData = familyState?.myFamilyData;
+  const rawMembers: any[] =
+    myFamilyData?.family?.members ||
+    familyState?.family?.members ||
+    [];
+
+  const familyMembers = rawMembers;
+
+  const [showMembersModal, setShowMembersModal] = useState(false);
+  const [selectedMemberIds, setSelectedMemberIds] = useState<string[]>(
+    formData.remindMemberIds && Array.isArray(formData.remindMemberIds)
+      ? formData.remindMemberIds
+      : []
+  );
+
+  React.useEffect(() => {
+    dispatch(getMyFamilyThunk());
+  }, [dispatch]);
+
+  React.useEffect(() => {
+    if (formData.remindMemberIds && Array.isArray(formData.remindMemberIds)) {
+      setSelectedMemberIds(formData.remindMemberIds);
+    }
+  }, [formData.remindMemberIds]);
+
+  React.useEffect(() => {
+    if (
+      familyMembers.length > 0 &&
+      (!formData.remindMemberIds || formData.remindMemberIds.length === 0)
+    ) {
+      // Pick current member from my-family or the first family member
+      const currentMember =
+        familyMembers.find((m: any) => (m.memberId || m.id) === memberId) ||
+        familyMembers[0];
+      const validId = currentMember ? currentMember.memberId || currentMember.id : null;
+      const validName = currentMember ? currentMember.fullName || currentMember.name : '';
+
+      if (validId) {
+        setFormData((prev) => ({
+          ...prev,
+          remindMemberIds: [validId],
+          assignees: prev.assignees || validName,
+        }));
+        setSelectedMemberIds([validId]);
+      }
+    }
+  }, [familyMembers, memberId]);
+
+  const toggleMemberSelection = (id: string) => {
+    setSelectedMemberIds((prev) =>
+      prev.includes(id)
+        ? prev.filter((item) => item !== id)
+        : [...prev, id]
+    );
+  };
+
+  const handleApplyMembers = () => {
+    const selected = familyMembers.filter((m: any) =>
+      selectedMemberIds.includes(m.memberId || m.id)
+    );
+    const names = selected.map((m: any) => m.fullName || m.name).join(', ');
+    setFormData((prev) => ({
+      ...prev,
+      remindMemberIds: selectedMemberIds,
+      assignees: names,
+    }));
+    setShowMembersModal(false);
+  };
+
+  const selectedMembersList = familyMembers.filter((m: any) =>
+    selectedMemberIds.includes(m.memberId || m.id)
+  );
+  const firstMemberName = selectedMembersList[0]?.fullName
+    ? selectedMembersList[0].fullName.split(' ')[0]
+    : formData.fullName
+    ? formData.fullName.split(' ')[0]
+    : userName;
+
+  React.useEffect(() => {
+    if (initialData) {
+      setFormData((prev) => ({
+        ...prev,
+        ...initialData,
+      }));
+    }
+  }, [initialData]);
 
   const [showPassportNumber, setShowPassportNumber] = useState(false);
   const [showUploadModal, setShowUploadModal] = useState(false);
@@ -97,20 +207,17 @@ const AddPassportScreen: React.FC<AddPassportScreenProps> = ({
     });
   };
 
-  const handleSavePassport = () => {
-    // Open the upload modal prompting for front/back photos
-    setShowUploadModal(true);
-  };
+  const isFormValid = Boolean(
+    formData.fullName?.trim() &&
+    formData.passportNumber?.trim() &&
+    formData.issueDate?.trim() &&
+    formData.expiryDate?.trim() &&
+    formData.placeOfIssue?.trim()
+  );
 
-  const handleConfirmUpload = () => {
-    setShowUploadModal(false);
-    const finalData: PassportFormData = {
-      ...formData,
-      frontImageAdded: frontImage,
-      backImageAdded: backImage,
-    };
-    if (onSaveSuccess) {
-      onSaveSuccess(finalData);
+  const handleSavePassport = () => {
+    if (isFormValid && onSaveSuccess) {
+      onSaveSuccess(formData, documentId);
     }
   };
 
@@ -125,7 +232,7 @@ const AddPassportScreen: React.FC<AddPassportScreenProps> = ({
 
       {/* Header with Circular ( X ) Close Button */}
       <PersonalInfoHeader
-        title="Add passport"
+        title={documentId ? 'Edit passport' : 'Add passport'}
         subtitle={`For ${userName}`}
         onBack={onClose}
         icon="close"
@@ -141,7 +248,70 @@ const AddPassportScreen: React.FC<AddPassportScreenProps> = ({
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
         >
-          {/* Note: Front/Back photo upload is omitted from this screen per user requirement */}
+          {/* Top Field: Upload & Scan Document Photo */}
+          <DocumentPhotoUploadField
+            documentType="PASSPORT"
+            documentTitle="Passport"
+            memberId={memberId}
+            scanId={formData.scanId}
+            hasFrontImage={formData.frontImageAdded}
+            hasBackImage={formData.backImageAdded}
+            onScanSuccess={(scanned, newScanId) => {
+              console.log(
+                '[AddPassport] onScanSuccess received scanned data:',
+                JSON.stringify(scanned, null, 2)
+              );
+              const rawIssued =
+                scanned.issuedOn ||
+                scanned.issueDate ||
+                scanned.dateOfIssue ||
+                scanned.issuedDate ||
+                scanned.validFrom;
+              const rawExpiry =
+                scanned.expiresOn ||
+                scanned.expiryDate ||
+                scanned.dateOfExpiry ||
+                scanned.expirationDate ||
+                scanned.validTill ||
+                scanned.validUntil;
+
+              setFormData((prev) => ({
+                ...prev,
+                scanId: newScanId || scanned.scanId || prev.scanId,
+                fullName: (
+                  scanned.nameOnDocument ||
+                  scanned.fullName ||
+                  scanned.name ||
+                  prev.fullName
+                ).toUpperCase(),
+                passportNumber: (
+                  scanned.number ||
+                  scanned.passportNumber ||
+                  prev.passportNumber
+                ).toUpperCase(),
+                issueDate: rawIssued
+                  ? formatIsoToDisplayDate(rawIssued)
+                  : prev.issueDate,
+                expiryDate: rawExpiry
+                  ? formatIsoToDisplayDate(rawExpiry)
+                  : prev.expiryDate,
+                placeOfIssue:
+                  scanned.issuedAt ||
+                  scanned.placeOfIssue ||
+                  prev.placeOfIssue,
+                frontImageAdded: true,
+              }));
+            }}
+            onPhotosChange={(front, back) => {
+              setFormData((prev) => ({
+                ...prev,
+                frontImageAdded: Boolean(front),
+                backImageAdded: Boolean(back),
+                frontImageUri: (front as any)?.path || prev.frontImageUri,
+                backImageUri: (back as any)?.path || prev.backImageUri,
+              }));
+            }}
+          />
 
           {/* Name as on passport */}
           <View style={styles.fieldGroup}>
@@ -300,24 +470,34 @@ const AddPassportScreen: React.FC<AddPassportScreenProps> = ({
 
           {/* Remind Target Card */}
           <View style={styles.cardContainer}>
-            <TouchableOpacity activeOpacity={0.7} style={styles.remindRow}>
+            <TouchableOpacity
+              activeOpacity={0.7}
+              style={styles.remindRow}
+              onPress={() => setShowMembersModal(true)}
+            >
               <Feather name="bell" size={17} color="#8E9BAE" />
               <Text style={styles.remindLabel}>Remind</Text>
               <View style={styles.avatarGroup}>
-                <View style={[styles.avatarCircle, { backgroundColor: '#7C3AED' }]}>
-                  <Text style={styles.avatarText}>P</Text>
-                </View>
-                <View
-                  style={[
-                    styles.avatarCircle,
-                    { backgroundColor: '#2563EB', marginLeft: -6 },
-                  ]}
-                >
-                  <Text style={styles.avatarText}>R</Text>
-                </View>
+                {selectedMembersList.slice(0, 2).map((m: any, idx: number) => (
+                  <View
+                    key={m.memberId || idx}
+                    style={[
+                      styles.avatarCircle,
+                      {
+                        backgroundColor:
+                          m.avatarColor || (idx === 0 ? '#7C3AED' : '#2563EB'),
+                        marginLeft: idx > 0 ? -6 : 0,
+                      },
+                    ]}
+                  >
+                    <Text style={styles.avatarText}>
+                      {(m.fullName || m.name || 'U').charAt(0).toUpperCase()}
+                    </Text>
+                  </View>
+                ))}
               </View>
-              <Text style={styles.remindAssigneeText}>
-                {formData.assignees}
+              <Text style={styles.remindAssigneeText} numberOfLines={1}>
+                {formData.assignees || 'Priya, Rohan'}
               </Text>
               <Feather name="chevron-right" size={17} color="#64748B" />
             </TouchableOpacity>
@@ -331,7 +511,7 @@ const AddPassportScreen: React.FC<AddPassportScreenProps> = ({
                   Add a renewal task automatically
                 </Text>
                 <Text style={styles.switchSubtitle}>
-                  Assigned to {userName}, 6 months before
+                  Assigned to {firstMemberName || userName}, 6 months before
                 </Text>
               </View>
               <Switch
@@ -349,118 +529,19 @@ const AddPassportScreen: React.FC<AddPassportScreenProps> = ({
         {/* Bottom Save Passport Button */}
         <View style={styles.bottomBar}>
           <CommonBtn
-            title="Save passport"
+            title={documentId ? 'Update passport' : 'Save passport'}
             onPress={handleSavePassport}
-            backgroundColor={Colors.primary || '#F0913A'}
-            textColor="#FFFFFF"
+            loading={isSaving}
+            disabled={!isFormValid || isSaving}
+            backgroundColor={
+              isFormValid ? Colors.primary || '#F0913A' : '#5C381E'
+            }
+            textColor={isFormValid ? '#FFFFFF' : '#8E9BAE'}
             height={52}
             borderRadius={26}
           />
         </View>
       </KeyboardAvoidingView>
-
-      {/* Save & Upload Photos Modal */}
-      <Modal
-        visible={showUploadModal}
-        transparent
-        animationType="slide"
-        onRequestClose={() => setShowUploadModal(false)}
-      >
-        <TouchableOpacity
-          style={styles.modalBackdrop}
-          activeOpacity={1}
-          onPress={() => setShowUploadModal(false)}
-        >
-          <TouchableOpacity
-            style={styles.modalContent}
-            activeOpacity={1}
-            onPress={(e) => e.stopPropagation()}
-          >
-            <View style={styles.handle} />
-            <Text style={styles.modalTitle}>Upload Passport Photos</Text>
-            <Text style={styles.modalSubtitle}>
-              Please add photos of your passport pages before finalizing.
-            </Text>
-
-            {/* Front and Back photo upload row */}
-            <View style={styles.photoUploadRow}>
-              {/* Front Page Card */}
-              <TouchableOpacity
-                activeOpacity={0.7}
-                onPress={() => setFrontImage(!frontImage)}
-                style={[
-                  styles.uploadPhotoBox,
-                  frontImage
-                    ? styles.uploadPhotoBoxSuccess
-                    : styles.uploadPhotoBoxEmpty,
-                ]}
-              >
-                {frontImage ? (
-                  <>
-                    <View style={styles.checkCircle}>
-                      <Feather name="check" size={14} color="#10B981" />
-                    </View>
-                    <Text style={styles.uploadPhotoTitle}>Front added</Text>
-                    <Text style={styles.uploadPhotoSub}>Tap to replace</Text>
-                  </>
-                ) : (
-                  <>
-                    <Feather name="camera" size={20} color="#F0913A" />
-                    <Text style={styles.uploadPhotoTitle}>Add front page</Text>
-                    <Text style={styles.uploadPhotoSub}>Required</Text>
-                  </>
-                )}
-              </TouchableOpacity>
-
-              {/* Back Page Card */}
-              <TouchableOpacity
-                activeOpacity={0.7}
-                onPress={() => setBackImage(!backImage)}
-                style={[
-                  styles.uploadPhotoBox,
-                  backImage
-                    ? styles.uploadPhotoBoxSuccess
-                    : styles.uploadPhotoBoxEmpty,
-                ]}
-              >
-                {backImage ? (
-                  <>
-                    <View style={styles.checkCircle}>
-                      <Feather name="check" size={14} color="#10B981" />
-                    </View>
-                    <Text style={styles.uploadPhotoTitle}>Back added</Text>
-                    <Text style={styles.uploadPhotoSub}>Tap to replace</Text>
-                  </>
-                ) : (
-                  <>
-                    <Feather name="camera" size={20} color="#F0913A" />
-                    <Text style={styles.uploadPhotoTitle}>Add back page</Text>
-                    <Text style={styles.uploadPhotoSub}>Optional</Text>
-                  </>
-                )}
-              </TouchableOpacity>
-            </View>
-
-            <CommonBtn
-              title="Confirm & Save"
-              onPress={handleConfirmUpload}
-              backgroundColor={Colors.primary || '#F0913A'}
-              textColor="#FFFFFF"
-              height={50}
-              borderRadius={25}
-              marginTop={16}
-            />
-
-            <TouchableOpacity
-              activeOpacity={0.7}
-              onPress={handleConfirmUpload}
-              style={styles.skipButton}
-            >
-              <Text style={styles.skipText}>Skip for now</Text>
-            </TouchableOpacity>
-          </TouchableOpacity>
-        </TouchableOpacity>
-      </Modal>
 
       {/* Date Picker */}
       <AppDateTimePicker
@@ -484,6 +565,93 @@ const AddPassportScreen: React.FC<AddPassportScreenProps> = ({
           setPickerConfig((prev) => ({ ...prev, visible: false }))
         }
       />
+
+      {/* Family Member Remind Selection Modal */}
+      <Modal
+        visible={showMembersModal}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setShowMembersModal(false)}
+      >
+        <TouchableOpacity
+          style={styles.modalBackdrop}
+          activeOpacity={1}
+          onPress={() => setShowMembersModal(false)}
+        >
+          <TouchableOpacity
+            style={styles.modalContent}
+            activeOpacity={1}
+            onPress={(e) => e.stopPropagation()}
+          >
+            <View style={styles.handle} />
+            <Text style={styles.modalTitle}>Remind family members</Text>
+            <Text style={styles.modalSubtitle}>
+              Select members who should be reminded before expiry
+            </Text>
+
+            <View style={styles.membersListContainer}>
+              {familyMembers.map((member: any) => {
+                const id = member.memberId || member.id;
+                const isSelected = selectedMemberIds.includes(id);
+                const initial = (member.fullName || member.name || 'U')
+                  .charAt(0)
+                  .toUpperCase();
+
+                return (
+                  <TouchableOpacity
+                    key={id}
+                    activeOpacity={0.7}
+                    onPress={() => toggleMemberSelection(id)}
+                    style={[
+                      styles.memberRowCard,
+                      isSelected && styles.memberRowCardSelected,
+                    ]}
+                  >
+                    <View
+                      style={[
+                        styles.memberAvatarBox,
+                        { backgroundColor: member.avatarColor || '#7C3AED' },
+                      ]}
+                    >
+                      <Text style={styles.memberAvatarText}>{initial}</Text>
+                    </View>
+
+                    <View style={styles.memberInfoCol}>
+                      <Text style={styles.memberNameText}>
+                        {member.fullName || member.name}
+                      </Text>
+                      <Text style={styles.memberRoleText}>
+                        {member.familyRole || 'Family Member'}
+                      </Text>
+                    </View>
+
+                    <View
+                      style={[
+                        styles.memberCheckCircle,
+                        isSelected && styles.memberCheckCircleSelected,
+                      ]}
+                    >
+                      {isSelected && (
+                        <Feather name="check" size={14} color="#FFFFFF" />
+                      )}
+                    </View>
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
+
+            <CommonBtn
+              title="Apply Selection"
+              onPress={handleApplyMembers}
+              backgroundColor={Colors.primary || '#F0913A'}
+              textColor="#FFFFFF"
+              height={50}
+              borderRadius={25}
+              marginTop={14}
+            />
+          </TouchableOpacity>
+        </TouchableOpacity>
+      </Modal>
     </View>
   );
 };
@@ -771,6 +939,63 @@ const styles = StyleSheet.create({
   skipText: {
     color: '#8E9BAE',
     fontSize: RFValue(12.5),
+  },
+  membersListContainer: {
+    gap: 10,
+    marginBottom: 8,
+  },
+  memberRowCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#132338',
+    borderRadius: 14,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    borderWidth: 1.5,
+    borderColor: '#1E3552',
+  },
+  memberRowCardSelected: {
+    borderColor: '#F0913A',
+    backgroundColor: 'rgba(240, 145, 58, 0.08)',
+  },
+  memberAvatarBox: {
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 12,
+  },
+  memberAvatarText: {
+    color: '#FFFFFF',
+    fontSize: RFValue(13),
+    fontWeight: '700',
+  },
+  memberInfoCol: {
+    flex: 1,
+  },
+  memberNameText: {
+    color: '#FFFFFF',
+    fontSize: RFValue(13.5),
+    fontWeight: '600',
+  },
+  memberRoleText: {
+    color: '#8E9BAE',
+    fontSize: RFValue(11),
+    marginTop: 2,
+  },
+  memberCheckCircle: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    borderWidth: 1.5,
+    borderColor: '#475569',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  memberCheckCircleSelected: {
+    backgroundColor: '#F0913A',
+    borderColor: '#F0913A',
   },
 });
 

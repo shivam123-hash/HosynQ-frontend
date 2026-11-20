@@ -28,10 +28,10 @@ export interface WorkDetailsSectionProps {
 }
 
 const DEFAULT_WORK_DETAILS: WorkDetails = {
-  company: 'Kaveri Design Studio',
-  role: 'Interior designer',
-  officeLocation: 'Udyog Vihar Phase 4, Gurugram',
-  workHours: 'Mon to Sat, 10:00 AM to 6:30 PM',
+  company: '',
+  role: '',
+  officeLocation: '',
+  workHours: '',
 };
 
 const WorkDetailsSection: React.FC<WorkDetailsSectionProps> = ({
@@ -43,11 +43,10 @@ const WorkDetailsSection: React.FC<WorkDetailsSectionProps> = ({
   onWorkHoursPress,
   onMapPress,
 }) => {
-  const companyValue = details.company ?? DEFAULT_WORK_DETAILS.company;
-  const roleValue = details.role ?? DEFAULT_WORK_DETAILS.role;
-  const locationValue =
-    details.officeLocation ?? DEFAULT_WORK_DETAILS.officeLocation;
-  const hoursValue = details.workHours ?? DEFAULT_WORK_DETAILS.workHours;
+  const companyValue = details.company ?? '';
+  const roleValue = details.role ?? '';
+  const locationValue = details.officeLocation ?? '';
+  const hoursValue = details.workHours ?? '';
 
   return (
     <View style={styles.container}>

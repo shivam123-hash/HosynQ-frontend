@@ -20,7 +20,11 @@ import {
   formatDate,
   parseDateTimeString,
 } from '../../../components';
-import { PersonalInfoHeader } from '../components';
+import {
+  PersonalInfoHeader,
+  DocumentPhotoUploadField,
+  formatIsoToDisplayDate,
+} from '../components';
 
 export interface DrivingLicenceFormData {
   licenceNumber: string;
@@ -31,24 +35,29 @@ export interface DrivingLicenceFormData {
   reminders: string[];
   frontImageAdded: boolean;
   backImageAdded: boolean;
+  scanId?: string;
 }
 
 export interface AddDrivingLicenceScreenProps {
   initialData?: Partial<DrivingLicenceFormData>;
   userName?: string;
+  memberId?: string;
+  documentId?: string;
+  isSaving?: boolean;
   onClose?: () => void;
-  onSave?: (data: DrivingLicenceFormData) => void;
+  onSave?: (data: DrivingLicenceFormData, documentId?: string) => void;
 }
 
 export const DEFAULT_DL_DATA: DrivingLicenceFormData = {
-  licenceNumber: 'HR26 20080012345',
-  vehiclesAllowed: ['Car (LMV)', 'Two-wheeler (MCWG)'],
-  issueDate: '9 Aug 2008',
-  validTill: '8 Aug 2028',
-  issuingRTO: 'Gurugram',
+  licenceNumber: '',
+  vehiclesAllowed: [],
+  issueDate: '',
+  validTill: '',
+  issuingRTO: '',
   reminders: ['6 months', '1 month'],
-  frontImageAdded: true,
-  backImageAdded: true,
+  frontImageAdded: false,
+  backImageAdded: false,
+  scanId: '',
 };
 
 const VEHICLE_OPTIONS = ['Car (LMV)', 'Two-wheeler (MCWG)', 'Commercial'];
@@ -57,6 +66,9 @@ const REMINDER_OPTIONS = ['6 months', '3 months', '1 month', '1 week'];
 const AddDrivingLicenceScreen: React.FC<AddDrivingLicenceScreenProps> = ({
   initialData,
   userName = 'Priya',
+  memberId,
+  documentId,
+  isSaving = false,
   onClose,
   onSave,
 }) => {
@@ -66,6 +78,15 @@ const AddDrivingLicenceScreen: React.FC<AddDrivingLicenceScreenProps> = ({
     ...DEFAULT_DL_DATA,
     ...initialData,
   });
+
+  React.useEffect(() => {
+    if (initialData) {
+      setFormData((prev) => ({
+        ...prev,
+        ...initialData,
+      }));
+    }
+  }, [initialData]);
 
   const [pickerConfig, setPickerConfig] = useState<{
     visible: boolean;
@@ -97,8 +118,18 @@ const AddDrivingLicenceScreen: React.FC<AddDrivingLicenceScreenProps> = ({
     });
   };
 
+  const isFormValid = Boolean(
+    formData.licenceNumber?.trim() &&
+    formData.vehiclesAllowed?.length > 0 &&
+    formData.issueDate?.trim() &&
+    formData.validTill?.trim() &&
+    formData.issuingRTO?.trim()
+  );
+
   const handleSave = () => {
-    onSave?.(formData);
+    if (isFormValid && onSave) {
+      onSave(formData, documentId);
+    }
   };
 
   return (
@@ -112,7 +143,7 @@ const AddDrivingLicenceScreen: React.FC<AddDrivingLicenceScreenProps> = ({
 
       {/* Header with Circular ( X ) Close Button */}
       <PersonalInfoHeader
-        title="Add driving licence"
+        title={documentId ? 'Edit driving licence' : 'Add driving licence'}
         subtitle={`For ${userName}`}
         onBack={onClose}
         icon="close"
@@ -128,74 +159,54 @@ const AddDrivingLicenceScreen: React.FC<AddDrivingLicenceScreenProps> = ({
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
         >
-          {/* Top Front and Back Photo Upload Cards */}
-          <View style={styles.photoRow}>
-            {/* Front Card */}
-            <TouchableOpacity
-              activeOpacity={0.7}
-              onPress={() =>
-                setFormData((prev) => ({
-                  ...prev,
-                  frontImageAdded: !prev.frontImageAdded,
-                }))
-              }
-              style={[
-                styles.photoCard,
-                formData.frontImageAdded
-                  ? styles.photoCardSuccess
-                  : styles.photoCardEmpty,
-              ]}
-            >
-              {formData.frontImageAdded ? (
-                <>
-                  <View style={styles.checkCircle}>
-                    <Feather name="check" size={14} color="#10B981" />
-                  </View>
-                  <Text style={styles.photoTitle}>Front added</Text>
-                  <Text style={styles.photoSubtitle}>Tap to replace</Text>
-                </>
-              ) : (
-                <>
-                  <Feather name="camera" size={20} color="#F0913A" />
-                  <Text style={styles.photoTitle}>Add front</Text>
-                  <Text style={styles.photoSubtitle}>Tap to upload</Text>
-                </>
-              )}
-            </TouchableOpacity>
+          {/* Top Field: Upload & Scan Document Photo */}
+          <DocumentPhotoUploadField
+            documentType="DRIVING_LICENCE"
+            documentTitle="Driving Licence"
+            memberId={memberId}
+            scanId={formData.scanId}
+            hasFrontImage={formData.frontImageAdded}
+            hasBackImage={formData.backImageAdded}
+            onScanSuccess={(scanned, newScanId) => {
+              const rawIssued =
+                scanned.issuedOn ||
+                scanned.issueDate ||
+                scanned.dateOfIssue;
+              const rawExpiry =
+                scanned.expiresOn ||
+                scanned.validTill ||
+                scanned.expiryDate ||
+                scanned.dateOfExpiry;
 
-            {/* Back Card */}
-            <TouchableOpacity
-              activeOpacity={0.7}
-              onPress={() =>
-                setFormData((prev) => ({
-                  ...prev,
-                  backImageAdded: !prev.backImageAdded,
-                }))
-              }
-              style={[
-                styles.photoCard,
-                formData.backImageAdded
-                  ? styles.photoCardSuccess
-                  : styles.photoCardEmpty,
-              ]}
-            >
-              {formData.backImageAdded ? (
-                <>
-                  <View style={styles.checkCircle}>
-                    <Feather name="check" size={14} color="#10B981" />
-                  </View>
-                  <Text style={styles.photoTitle}>Back added</Text>
-                  <Text style={styles.photoSubtitle}>Tap to replace</Text>
-                </>
-              ) : (
-                <>
-                  <Feather name="camera" size={20} color="#F0913A" />
-                  <Text style={styles.photoTitle}>Add back</Text>
-                  <Text style={styles.photoSubtitle}>Tap to upload</Text>
-                </>
-              )}
-            </TouchableOpacity>
-          </View>
+              setFormData((prev) => ({
+                ...prev,
+                scanId: newScanId || scanned.scanId || prev.scanId,
+                licenceNumber: (
+                  scanned.number ||
+                  scanned.licenceNumber ||
+                  prev.licenceNumber
+                ).toUpperCase(),
+                issueDate: rawIssued
+                  ? formatIsoToDisplayDate(rawIssued)
+                  : prev.issueDate,
+                validTill: rawExpiry
+                  ? formatIsoToDisplayDate(rawExpiry)
+                  : prev.validTill,
+                issuingRTO:
+                  scanned.issuedAt ||
+                  scanned.issuingRTO ||
+                  prev.issuingRTO,
+                frontImageAdded: true,
+              }));
+            }}
+            onPhotosChange={(front, back) => {
+              setFormData((prev) => ({
+                ...prev,
+                frontImageAdded: Boolean(front),
+                backImageAdded: Boolean(back),
+              }));
+            }}
+          />
 
           {/* Licence number */}
           <View style={styles.fieldGroup}>
@@ -385,10 +396,14 @@ const AddDrivingLicenceScreen: React.FC<AddDrivingLicenceScreenProps> = ({
         {/* Bottom Save Licence Button */}
         <View style={styles.bottomBar}>
           <CommonBtn
-            title="Save licence"
+            title={documentId ? 'Update licence' : 'Save licence'}
             onPress={handleSave}
-            backgroundColor={Colors.primary || '#F0913A'}
-            textColor="#FFFFFF"
+            loading={isSaving}
+            disabled={!isFormValid || isSaving}
+            backgroundColor={
+              isFormValid ? Colors.primary || '#F0913A' : '#5C381E'
+            }
+            textColor={isFormValid ? '#FFFFFF' : '#8E9BAE'}
             height={52}
             borderRadius={26}
           />

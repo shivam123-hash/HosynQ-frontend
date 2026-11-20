@@ -16,7 +16,7 @@ import Feather from '@react-native-vector-icons/feather';
 import { RFValue } from 'react-native-responsive-fontsize';
 import Colors from '../../../units/Colors';
 import CommonBtn from '../../../components/CommonBtn';
-import { PersonalInfoHeader } from '../components';
+import { PersonalInfoHeader, DocumentPhotoUploadField } from '../components';
 
 export interface AadhaarFormData {
   aadhaarNumber: string;
@@ -24,26 +24,34 @@ export interface AadhaarFormData {
   keepLastFourOnly: boolean;
   frontImageAdded: boolean;
   backImageAdded: boolean;
+  scanId?: string;
 }
 
 export interface AddAadhaarScreenProps {
   initialData?: Partial<AadhaarFormData>;
   userName?: string;
+  memberId?: string;
+  documentId?: string;
+  isSaving?: boolean;
   onClose?: () => void;
-  onSave?: (data: AadhaarFormData) => void;
+  onSave?: (data: AadhaarFormData, documentId?: string) => void;
 }
 
 export const DEFAULT_AADHAAR_DATA: AadhaarFormData = {
-  aadhaarNumber: '•••• •••• 2290',
-  fullName: 'Priya Sharma',
+  aadhaarNumber: '',
+  fullName: '',
   keepLastFourOnly: true,
-  frontImageAdded: true,
+  frontImageAdded: false,
   backImageAdded: false,
+  scanId: '',
 };
 
 const AddAadhaarScreen: React.FC<AddAadhaarScreenProps> = ({
   initialData,
   userName = 'Priya',
+  memberId,
+  documentId,
+  isSaving = false,
   onClose,
   onSave,
 }) => {
@@ -54,10 +62,26 @@ const AddAadhaarScreen: React.FC<AddAadhaarScreenProps> = ({
     ...initialData,
   });
 
+  React.useEffect(() => {
+    if (initialData) {
+      setFormData((prev) => ({
+        ...prev,
+        ...initialData,
+      }));
+    }
+  }, [initialData]);
+
   const [showNumber, setShowNumber] = useState(false);
 
+  const isFormValid = Boolean(
+    formData.aadhaarNumber?.replace(/[^0-9]/g, '').length >= 4 &&
+    formData.fullName?.trim()
+  );
+
   const handleSave = () => {
-    onSave?.(formData);
+    if (isFormValid && onSave) {
+      onSave(formData, documentId);
+    }
   };
 
   return (
@@ -71,7 +95,7 @@ const AddAadhaarScreen: React.FC<AddAadhaarScreenProps> = ({
 
       {/* Header with Circular ( X ) Close Button */}
       <PersonalInfoHeader
-        title="Add Aadhaar"
+        title={documentId ? 'Edit Aadhaar' : 'Add Aadhaar'}
         subtitle={`For ${userName} · Optional`}
         onBack={onClose}
         icon="close"
@@ -100,74 +124,31 @@ const AddAadhaarScreen: React.FC<AddAadhaarScreenProps> = ({
             </Text>
           </View>
 
-          {/* Top Front and Back Photo Upload Cards */}
-          <View style={styles.photoRow}>
-            {/* Front Card */}
-            <TouchableOpacity
-              activeOpacity={0.7}
-              onPress={() =>
-                setFormData((prev) => ({
-                  ...prev,
-                  frontImageAdded: !prev.frontImageAdded,
-                }))
-              }
-              style={[
-                styles.photoCard,
-                formData.frontImageAdded
-                  ? styles.photoCardSuccess
-                  : styles.photoCardEmpty,
-              ]}
-            >
-              {formData.frontImageAdded ? (
-                <>
-                  <View style={styles.checkCircle}>
-                    <Feather name="check" size={14} color="#10B981" />
-                  </View>
-                  <Text style={styles.photoTitle}>Front added</Text>
-                  <Text style={styles.photoSubtitle}>Tap to replace</Text>
-                </>
-              ) : (
-                <>
-                  <Feather name="camera" size={20} color="#F0913A" />
-                  <Text style={styles.photoTitle}>Add front</Text>
-                  <Text style={styles.photoSubtitle}>Tap to upload</Text>
-                </>
-              )}
-            </TouchableOpacity>
-
-            {/* Back Card */}
-            <TouchableOpacity
-              activeOpacity={0.7}
-              onPress={() =>
-                setFormData((prev) => ({
-                  ...prev,
-                  backImageAdded: !prev.backImageAdded,
-                }))
-              }
-              style={[
-                styles.photoCard,
-                formData.backImageAdded
-                  ? styles.photoCardSuccess
-                  : styles.photoCardEmpty,
-              ]}
-            >
-              {formData.backImageAdded ? (
-                <>
-                  <View style={styles.checkCircle}>
-                    <Feather name="check" size={14} color="#10B981" />
-                  </View>
-                  <Text style={styles.photoTitle}>Back added</Text>
-                  <Text style={styles.photoSubtitle}>Tap to replace</Text>
-                </>
-              ) : (
-                <>
-                  <Feather name="camera" size={20} color="#F0913A" />
-                  <Text style={styles.photoTitle}>Add back</Text>
-                  <Text style={styles.photoSubtitle}>Optional</Text>
-                </>
-              )}
-            </TouchableOpacity>
-          </View>
+          {/* Top Field: Upload & Scan Document Photo */}
+          <DocumentPhotoUploadField
+            documentType="AADHAAR"
+            documentTitle="Aadhaar"
+            memberId={memberId}
+            scanId={formData.scanId}
+            hasFrontImage={formData.frontImageAdded}
+            hasBackImage={formData.backImageAdded}
+            onScanSuccess={(scanned, newScanId) => {
+              setFormData((prev) => ({
+                ...prev,
+                scanId: newScanId || scanned.scanId || prev.scanId,
+                aadhaarNumber: scanned.number || prev.aadhaarNumber,
+                fullName: scanned.nameOnDocument || prev.fullName,
+                frontImageAdded: true,
+              }));
+            }}
+            onPhotosChange={(front, back) => {
+              setFormData((prev) => ({
+                ...prev,
+                frontImageAdded: Boolean(front),
+                backImageAdded: Boolean(back),
+              }));
+            }}
+          />
 
           {/* Aadhaar number */}
           <View style={styles.fieldGroup}>
@@ -240,10 +221,14 @@ const AddAadhaarScreen: React.FC<AddAadhaarScreenProps> = ({
         {/* Bottom Save Aadhaar Button */}
         <View style={styles.bottomBar}>
           <CommonBtn
-            title="Save Aadhaar"
+            title={documentId ? 'Update Aadhaar' : 'Save Aadhaar'}
             onPress={handleSave}
-            backgroundColor={Colors.primary || '#F0913A'}
-            textColor="#FFFFFF"
+            loading={isSaving}
+            disabled={!isFormValid || isSaving}
+            backgroundColor={
+              isFormValid ? Colors.primary || '#F0913A' : '#5C381E'
+            }
+            textColor={isFormValid ? '#FFFFFF' : '#8E9BAE'}
             height={52}
             borderRadius={26}
           />

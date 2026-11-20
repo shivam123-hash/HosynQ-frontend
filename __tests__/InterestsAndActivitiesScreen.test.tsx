@@ -65,5 +65,53 @@ describe('InterestsAndActivitiesScreen (LPS-13)', () => {
     // Save button
     expect(root.findByProps({ children: 'Save' })).toBeTruthy();
   });
+
+  test('toggles chips and saves selected interests', async () => {
+    const onSave = jest.fn();
+    const onEnterHosynQ = jest.fn();
+
+    let renderer: ReactTestRenderer.ReactTestRenderer;
+    ReactTestRenderer.act(() => {
+      renderer = ReactTestRenderer.create(
+        <SafeAreaProvider initialMetrics={safeAreaMetrics}>
+          <InterestsAndActivitiesScreen
+            onSave={onSave}
+            onEnterHosynQ={onEnterHosynQ}
+          />
+        </SafeAreaProvider>,
+      );
+    });
+
+    const root = renderer!.root;
+
+    // Toggle 'Yoga' chip
+    const yogaChip = root.findByProps({ accessibilityLabel: 'Yoga' });
+    expect(yogaChip).toBeTruthy();
+    ReactTestRenderer.act(() => {
+      yogaChip.props.onPress();
+    });
+
+    // Toggle 'Music' chip like 'Bollywood'
+    const bollywoodChip = root.findByProps({ accessibilityLabel: 'Bollywood' });
+    expect(bollywoodChip).toBeTruthy();
+    ReactTestRenderer.act(() => {
+      bollywoodChip.props.onPress();
+    });
+
+    // Press Save
+    const saveBtn = root.findByProps({ title: 'Save' });
+    expect(saveBtn).toBeTruthy();
+
+    await ReactTestRenderer.act(async () => {
+      await saveBtn.props.onPress();
+    });
+
+    expect(onSave).toHaveBeenCalledWith(
+      expect.arrayContaining(['Yoga', 'Bollywood']),
+    );
+    expect(onEnterHosynQ).toHaveBeenCalledWith(
+      expect.arrayContaining(['Yoga', 'Bollywood']),
+    );
+  });
 });
 

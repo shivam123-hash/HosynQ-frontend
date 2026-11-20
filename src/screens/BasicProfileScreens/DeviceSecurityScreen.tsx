@@ -15,6 +15,7 @@ import Ionicons from '@react-native-vector-icons/ionicons';
 import { RFValue } from 'react-native-responsive-fontsize';
 import Colors from '../../units/Colors';
 import CommonBtn from '../../components/CommonBtn';
+import AppConfirmationModal from '../../components/AppConfirmationModal';
 import { SecurityOptionCard } from './components';
 import biometricService, {
   BiometricOptionType,
@@ -40,6 +41,17 @@ const DeviceSecurityScreen: React.FC<DeviceSecurityScreenProps> = ({
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [detectedSensor, setDetectedSensor] = useState<string>('Biometrics');
   const [isFaceIdDevice, setIsFaceIdDevice] = useState(false);
+  const [sensorNotice, setSensorNotice] = useState<{
+    visible: boolean;
+    title: string;
+    message: string;
+    onConfirm: () => void;
+  }>({
+    visible: false,
+    title: '',
+    message: '',
+    onConfirm: () => {},
+  });
 
   useEffect(() => {
     // Detect hardware capabilities on mount
@@ -53,11 +65,7 @@ const DeviceSecurityScreen: React.FC<DeviceSecurityScreenProps> = ({
   }, []);
 
   const handleContinue = async () => {
-    // BYPASS FOR NOW: Directly proceed to next screen without biometric prompt
-    onContinue?.(selectedSecurity);
-
-    /*
-    // --- Biometric Authentication Setup (Commented for testing / bypass) ---
+    // --- Biometric Authentication Setup (Fingerprint & Face Lock) ---
     setLoading(true);
     setErrorMessage(null);
 
@@ -66,24 +74,16 @@ const DeviceSecurityScreen: React.FC<DeviceSecurityScreenProps> = ({
 
       if (!available) {
         setLoading(false);
-        Alert.alert(
-          'Biometrics Not Active',
-          `Biometric sensor (${sensorName}) was not detected. This happens when:\n1. The app needs a fresh build (run: npm run android) to include the new native package.\n2. Or your phone does not have Fingerprint/Face Lock enabled in Settings.\n\nDo you want to proceed to the next step?`,
-          [
-            {
-              text: 'Cancel',
-              style: 'cancel',
-              onPress: () => setLoading(false),
-            },
-            {
-              text: 'Proceed Anyway',
-              onPress: async () => {
-                await biometricService.savePreference(true, selectedSecurity);
-                onContinue?.(selectedSecurity);
-              },
-            },
-          ]
-        );
+        setSensorNotice({
+          visible: true,
+          title: 'Biometrics Not Active',
+          message: `Biometric sensor (${sensorName}) was not detected on this device. Do you want to proceed to the next step?`,
+          onConfirm: async () => {
+            setSensorNotice((prev) => ({ ...prev, visible: false }));
+            await biometricService.savePreference(true, selectedSecurity);
+            onContinue?.(selectedSecurity);
+          },
+        });
         return;
       }
 
@@ -115,24 +115,21 @@ const DeviceSecurityScreen: React.FC<DeviceSecurityScreenProps> = ({
     } catch (error: any) {
       console.log('[DeviceSecurityScreen] Biometric verification warning:', error);
       setLoading(false);
-      Alert.alert(
-        'Setup Notice',
-        error?.message || 'Biometric verification could not be completed. Please rebuild the app to load native drivers.',
-        [
-          { text: 'Cancel', style: 'cancel' },
-          {
-            text: 'Proceed',
-            onPress: async () => {
-              await biometricService.savePreference(true, selectedSecurity);
-              onContinue?.(selectedSecurity);
-            },
-          },
-        ]
-      );
+      setSensorNotice({
+        visible: true,
+        title: 'Setup Notice',
+        message:
+          error?.message ||
+          'Biometric verification could not be completed on this device. Do you want to proceed?',
+        onConfirm: async () => {
+          setSensorNotice((prev) => ({ ...prev, visible: false }));
+          await biometricService.savePreference(true, selectedSecurity);
+          onContinue?.(selectedSecurity);
+        },
+      });
     } finally {
       setLoading(false);
     }
-    */
   };
 
   return (
@@ -242,6 +239,19 @@ const DeviceSecurityScreen: React.FC<DeviceSecurityScreenProps> = ({
           </Text>
         </View>
       </ScrollView>
+
+      <AppConfirmationModal
+        visible={sensorNotice.visible}
+        title={sensorNotice.title}
+        message={sensorNotice.message}
+        confirmText="Proceed"
+        cancelText="Cancel"
+        isDestructive={false}
+        confirmColor="#F0913A"
+        iconName="shield"
+        onConfirm={sensorNotice.onConfirm}
+        onCancel={() => setSensorNotice((prev) => ({ ...prev, visible: false }))}
+      />
     </View>
   );
 };

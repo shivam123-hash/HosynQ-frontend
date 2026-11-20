@@ -1,6 +1,8 @@
+import axios from 'axios';
 import apiClient from './apiClient';
-import API_ROUTES from '../redux/endPoints/endPoints';
+import API_ROUTES, { API_BASE_URL } from '../redux/endPoints/endPoints';
 import { saveUserData, clearUserData } from '../units/asyncStorageManager';
+import { tokenService } from '../units/tokenServices';
 
 export interface SendOtpPayload {
   phoneNumber: string;
@@ -128,16 +130,61 @@ export const authServices = {
         payload
       );
 
-      const data = response.data;
-      if (data?.accessToken) {
+      const data: any = response.data;
+      const accessToken =
+        data?.accessToken || data?.data?.accessToken;
+      const refreshToken =
+        data?.refreshToken || data?.data?.refreshToken;
+      const user = data?.user || data?.data?.user;
+
+      if (accessToken) {
         await saveUserData({
-          user: data.user,
-          accessToken: data.accessToken,
-          refreshToken: data.refreshToken,
+          user,
+          accessToken,
+          refreshToken,
         });
       }
 
       return data;
+    } catch (error) {
+      throw error;
+    }
+  },
+
+  /** Refresh / Rotate Tokens */
+  refreshToken: async (
+    token?: string
+  ): Promise<{ accessToken: string; refreshToken?: string }> => {
+    try {
+      const currentRefreshToken =
+        token || (await tokenService.getRefreshToken());
+      if (!currentRefreshToken) {
+        throw new Error('No refresh token available');
+      }
+
+      const response = await axios.post(
+        `${API_BASE_URL}/${API_ROUTES.AUTH_REFRESH}`,
+        { refreshToken: currentRefreshToken },
+        {
+          headers: { 'Content-Type': 'application/json' },
+        }
+      );
+
+      const resData = response.data;
+      const accessToken =
+        resData?.accessToken ||
+        resData?.data?.accessToken ||
+        resData?.tokens?.accessToken;
+      const refreshToken =
+        resData?.refreshToken ||
+        resData?.data?.refreshToken ||
+        resData?.tokens?.refreshToken ||
+        currentRefreshToken;
+
+      if (accessToken) {
+        await tokenService.setTokens(accessToken, refreshToken);
+      }
+      return { accessToken, refreshToken };
     } catch (error) {
       throw error;
     }
@@ -162,7 +209,7 @@ export const authServices = {
         API_ROUTES.AUTH_PROFILE,
         payload
       );
-      const data = response.data;
+      const data: any = response.data;
       if (data?.user) {
         await saveUserData({ user: data.user });
       }
@@ -186,7 +233,7 @@ export const authServices = {
           },
         }
       );
-      const data = response.data;
+      const data: any = response.data;
       if (data?.user) {
         await saveUserData({ user: data.user });
       }
@@ -219,7 +266,7 @@ export const authServices = {
       const response = await apiClient.get<EmailStatusResponse>(
         API_ROUTES.AUTH_EMAIL_STATUS(verificationId)
       );
-      const data = response.data;
+      const data: any = response.data;
       if (data?.status === 'verified' && data.accessToken) {
         await saveUserData({
           user: data.user,
@@ -269,7 +316,7 @@ export const authServices = {
         API_ROUTES.AUTH_VERIFY_OTP,
         payload
       );
-      const data = response.data;
+      const data: any = response.data;
       if (data?.user) {
         await saveUserData({ user: data.user });
       }

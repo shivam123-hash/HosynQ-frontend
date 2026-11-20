@@ -41,6 +41,7 @@ export interface CreateFamilyData {
   members: FamilyMember[];
   familyCode?: string;
   family?: any;
+  memberId?: string;
 }
 
 export interface CreateFamilyScreenProps {
@@ -139,12 +140,17 @@ const CreateFamilyScreen: React.FC<CreateFamilyScreenProps> = ({
         })
       ).unwrap();
 
+      const myMemberId =
+        (res as any)?.family?.myMemberId ||
+        (res as any)?.myMemberId;
+
       onCreateFamily?.({
         familyName: res.family?.name || trimmedName,
         familyType: res.family?.familyType || familyType,
         members,
         familyCode: res.family?.familyCode,
         family: res.family,
+        memberId: myMemberId,
       });
     } catch (err) {
       console.log('[CreateFamilyScreen] Failed to create family:', err);
