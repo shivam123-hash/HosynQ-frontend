@@ -422,5 +422,234 @@ describe('TasksScreen', () => {
     expect(texts).toContain('Priya (you)');
     expect(texts).toContain('Let Rohan know');
   });
+
+  it('renders NoTasksEmptyState when initialTasks is [] (no mock data leakage)', async () => {
+    const renderer = await renderWithProvider(<TasksScreen initialTasks={[]} />);
+    expect(renderer.root).toBeTruthy();
+
+    const textNodes = renderer.root.findAllByType(Text);
+    const texts = textNodes.map((n) => n.props.children).flat();
+
+    expect(texts).toContain('No tasks yet');
+    expect(texts).toContain('Add a task');
+    expect(texts).not.toContain('Buy Diwali sweets and diyas');
+  });
+
+  it('renders TaskDetailModal safely with uppercase backend category/priority and partial data', async () => {
+    const uppercaseBackendTask: any = {
+      id: 'backend-task-uuid-1',
+      title: 'Backend Uppercase Task',
+      dueDate: '2026-11-25',
+      category: 'HOUSEHOLD',
+      priority: 'HIGH',
+      isCompleted: false,
+    };
+
+    const renderer = await renderWithProvider(
+      <TaskDetailModal
+        visible={true}
+        task={uppercaseBackendTask}
+        onClose={jest.fn()}
+        onToggleComplete={jest.fn()}
+      />
+    );
+    expect(renderer.root).toBeTruthy();
+
+    const textNodes = renderer.root.findAllByType(Text);
+    const texts = textNodes.map((n) => n.props.children).flat();
+
+    expect(texts).toContain('Backend Uppercase Task');
+    expect(texts).toContain('Household');
+    expect(texts).toContain('High priority');
+  });
+
+  it('preserves hook order when transitioning TaskDetailModal from closed (null task) to open', async () => {
+    let renderer: ReactTestRenderer.ReactTestRenderer;
+    await ReactTestRenderer.act(() => {
+      renderer = ReactTestRenderer.create(
+        <SafeAreaProvider initialMetrics={mockMetrics}>
+          <TaskDetailModal
+            visible={false}
+            task={null}
+            onClose={jest.fn()}
+            onToggleComplete={jest.fn()}
+          />
+        </SafeAreaProvider>
+      );
+    });
+
+    const sampleTask = INITIAL_TASKS[0];
+    await ReactTestRenderer.act(() => {
+      renderer.update(
+        <SafeAreaProvider initialMetrics={mockMetrics}>
+          <TaskDetailModal
+            visible={true}
+            task={sampleTask}
+            onClose={jest.fn()}
+            onToggleComplete={jest.fn()}
+          />
+        </SafeAreaProvider>
+      );
+    });
+
+    expect(renderer!.root).toBeTruthy();
+    const textNodes = renderer!.root.findAllByType(Text);
+    const texts = textNodes.map((n) => n.props.children).flat();
+    expect(texts).toContain(sampleTask.title);
+  });
+
+  it('formats raw ISO dates into friendly human dates (formatTaskDueDate)', () => {
+    const { formatTaskDueDate } = require('../src/screens/mainScreens/tasksScreen/taskApiHelpers');
+    expect(formatTaskDueDate('2026-11-02T00:00:00.000Z')).toBe('Mon, 2 Nov');
+    expect(formatTaskDueDate('2026-11-04T00:00:00.000Z')).toBe('Wed, 4 Nov');
+    expect(formatTaskDueDate('Today')).toBe('Today');
+    expect(formatTaskDueDate(null)).toBe('Today');
+  });
+
+  it('keeps status filter tabs and displays "No completed tasks yet" when completed tab has 0 items', async () => {
+    const renderer = await renderWithProvider(
+      <TasksScreen initialStatus="completed" initialTasks={[]} />
+    );
+    expect(renderer.root).toBeTruthy();
+
+    const textNodes = renderer.root.findAllByType(Text);
+    const texts = textNodes.map((n) => n.props.children).flat();
+
+    // Filter tabs are preserved
+    expect(texts).toContain('Pending 0');
+    expect(texts).toContain('Completed 0');
+    expect(texts).toContain('Everyone');
+
+    // Dedicated completed empty message
+    expect(texts).toContain('No completed tasks yet');
+    expect(texts).toContain('Tasks you complete will show up here.');
+
+    // Global onboarding empty state must NOT show
+    expect(texts).not.toContain('OR START WITH ONE OF THESE');
+  });
+
+  it('sends empty object {} body instead of null in completeTask and reopenTask API calls', async () => {
+    const tasksServices = require('../src/services/tasksServices').default;
+    const apiClient = require('../src/services/apiClient').default;
+
+    const postSpy = jest.spyOn(apiClient, 'post').mockResolvedValueOnce({ data: { success: true } });
+    await tasksServices.completeTask('0045a34e-89ee-4d95-ba3c-eb125e63bf11', '2026-11-20');
+
+    expect(postSpy).toHaveBeenCalledWith(
+      'tasks/0045a34e-89ee-4d95-ba3c-eb125e63bf11/complete',
+      {},
+      { params: { today: '2026-11-20' } }
+    );
+    postSpy.mockRestore();
+
+    const postSpyReopen = jest.spyOn(apiClient, 'post').mockResolvedValueOnce({ data: { success: true } });
+    await tasksServices.reopenTask('0045a34e-89ee-4d95-ba3c-eb125e63bf11');
+
+    expect(postSpyReopen).toHaveBeenCalledWith(
+      'tasks/0045a34e-89ee-4d95-ba3c-eb125e63bf11/reopen',
+      {}
+    );
+    postSpyReopen.mockRestore();
+  });
+
+  it('supports scope param in deleteTask and mentionMemberIds in addComment', async () => {
+    const tasksServices = require('../src/services/tasksServices').default;
+    const apiClient = require('../src/services/apiClient').default;
+
+    const deleteSpy = jest.spyOn(apiClient, 'delete').mockResolvedValueOnce({ data: { success: true } });
+    await tasksServices.deleteTask('0045a34e-89ee-4d95-ba3c-eb125e63bf11', 'THIS_AND_FUTURE');
+
+    expect(deleteSpy).toHaveBeenCalledWith(
+      'tasks/0045a34e-89ee-4d95-ba3c-eb125e63bf11',
+      { params: { scope: 'THIS_AND_FUTURE' } }
+    );
+    deleteSpy.mockRestore();
+
+    const postCommentSpy = jest.spyOn(apiClient, 'post').mockResolvedValueOnce({ data: { success: true } });
+    await tasksServices.addComment('0045a34e-89ee-4d95-ba3c-eb125e63bf11', {
+      body: '@Rupesh please check this',
+      mentionMemberIds: ['ebcb4825-1bd2-471c-b099-de310d6c2e8f'],
+    });
+
+    expect(postCommentSpy).toHaveBeenCalledWith(
+      'tasks/0045a34e-89ee-4d95-ba3c-eb125e63bf11/comments',
+      {
+        body: '@Rupesh please check this',
+        mentionMemberIds: ['ebcb4825-1bd2-471c-b099-de310d6c2e8f'],
+      }
+    );
+    postCommentSpy.mockRestore();
+  });
+
+  it('fetches all comments via tasksServices.getComments when CommentsModal is opened with taskId', async () => {
+    const CommentsModal = require('../src/screens/mainScreens/tasksScreen/components/CommentsModal').default;
+    const tasksServices = require('../src/services/tasksServices').default;
+
+    const mockComments = [
+      { id: '1', body: 'Comment 1', author: { fullName: 'Priya' }, createdAt: '2026-11-20T10:00:00Z' },
+      { id: '2', body: 'Comment 2', author: { fullName: 'Rohan' }, createdAt: '2026-11-20T11:00:00Z' },
+      { id: '3', body: 'Comment 3', author: { fullName: 'Anaya' }, createdAt: '2026-11-20T12:00:00Z' },
+    ];
+
+    const getCommentsSpy = jest.spyOn(tasksServices, 'getComments').mockResolvedValueOnce({
+      comments: mockComments,
+      pagination: { limit: 50, total: 3, hasOlder: false },
+    });
+
+    let renderer: any;
+    await ReactTestRenderer.act(async () => {
+      renderer = ReactTestRenderer.create(
+        <SafeAreaProvider initialMetrics={mockMetrics}>
+          <CommentsModal
+            visible={true}
+            taskId="0045a34e-89ee-4d95-ba3c-eb125e63bf11"
+            taskTitle="Book train tickets to Jaipur"
+            dueDateSubtitle="Due Mon, 2 Nov"
+            comments={[]}
+            onClose={() => {}}
+          />
+        </SafeAreaProvider>
+      );
+    });
+
+    expect(getCommentsSpy).toHaveBeenCalledWith('0045a34e-89ee-4d95-ba3c-eb125e63bf11', undefined, 50);
+    const textNodes = renderer.root.findAllByType(Text);
+    const texts = textNodes.map((n: any) => n.props.children).flat();
+    expect(texts).toContain('Comment 1');
+    expect(texts).toContain('Comment 2');
+    expect(texts).toContain('Comment 3');
+
+    getCommentsSpy.mockRestore();
+  });
+
+  it('renders strictly 2 options (Edit Task and Delete Task) in TaskDetailModal options menu', async () => {
+    const sampleTask = INITIAL_TASKS[0];
+
+    let renderer: any;
+    await ReactTestRenderer.act(async () => {
+      renderer = ReactTestRenderer.create(
+        <SafeAreaProvider initialMetrics={mockMetrics}>
+          <TaskDetailModal
+            visible={true}
+            task={sampleTask}
+            onClose={() => {}}
+            onToggleComplete={() => {}}
+          />
+        </SafeAreaProvider>
+      );
+    });
+
+    const moreBtn = renderer.root.findByProps({ accessibilityLabel: 'More options' });
+    await ReactTestRenderer.act(async () => {
+      moreBtn.props.onPress();
+    });
+
+    const textNodes = renderer.root.findAllByType(Text);
+    const texts = textNodes.map((n: any) => n.props.children).flat();
+    expect(texts).toContain('Edit Task');
+    expect(texts).toContain('Delete Task');
+    expect(texts).not.toContain('Edit Due Date');
+    expect(texts).not.toContain('Category & Priority');
+  });
 });
 

@@ -11,8 +11,12 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Feather from '@react-native-vector-icons/feather';
-import { TaskItem, TaskCategory, TaskPriority } from '../types';
+import { useAppDispatch } from '../../../../redux';
+import { addTaskComment, remindTask } from '../../../../redux/features/tasks/tasksSlice';
+import { TaskDetailResponse } from '../../../../services/tasksServices';
+import { TaskItem, TaskCategory, TaskPriority, TaskComment } from '../types';
 import { CATEGORY_META, PRIORITY_META } from '../mockData';
+import { isUUID } from '../taskApiHelpers';
 import CommentsModal from './CommentsModal';
 import AssigneesAndViewersModal from './AssigneesAndViewersModal';
 import DueDateTimeModal from './DueDateTimeModal';
@@ -24,32 +28,39 @@ import EditRepeatingConfirmModal, {
 } from './EditRepeatingConfirmModal';
 import ReassignModal from './ReassignModal';
 import DeleteTaskModal from './DeleteTaskModal';
+import CreateTaskModal from './CreateTaskModal';
 import AppOptionsMenu from '../../common/AppOptionsMenu';
 import Colors from '../../../../units/Colors';
 
 export interface TaskDetailModalProps {
   visible: boolean;
   task: TaskItem | null;
+  liveTaskDetail?: TaskDetailResponse['task'] | null;
   onClose: () => void;
   onToggleComplete: (task: TaskItem) => void;
   onReassign?: (task: TaskItem, newAssignee: string) => void;
   onUpdateTask?: (updatedTask: TaskItem) => void;
   onDelete?: (task: TaskItem) => void;
+  onEditTask?: (task: TaskItem) => void;
 }
 
 const TaskDetailModal: React.FC<TaskDetailModalProps> = ({
   visible,
   task,
+  liveTaskDetail,
   onClose,
   onToggleComplete,
   onReassign,
   onUpdateTask,
   onDelete,
+  onEditTask,
 }) => {
   const insets = useSafeAreaInsets();
+  const dispatch = useAppDispatch();
   const [localTask, setLocalTask] = useState<TaskItem | null>(task);
 
   // Sub-Modals
+  const [showEditModal, setShowEditModal] = useState(false);
   const [showComments, setShowComments] = useState(false);
   const [showAssigneesModal, setShowAssigneesModal] = useState(false);
   const [showReassignModal, setShowReassignModal] = useState(false);
@@ -72,6 +83,7 @@ const TaskDetailModal: React.FC<TaskDetailModalProps> = ({
 
   React.useEffect(() => {
     if (
+      showEditModal ||
       showComments ||
       showAssigneesModal ||
       showReassignModal ||
@@ -85,6 +97,7 @@ const TaskDetailModal: React.FC<TaskDetailModalProps> = ({
       setIsMenuOpen(false);
     }
   }, [
+    showEditModal,
     showComments,
     showAssigneesModal,
     showReassignModal,
@@ -96,19 +109,73 @@ const TaskDetailModal: React.FC<TaskDetailModalProps> = ({
     showEditRepeatingConfirm,
   ]);
 
+  // Hook 17: Sync task prop with localTask state
   React.useEffect(() => {
     setLocalTask(task);
   }, [task, visible]);
 
-  if (!localTask) return null;
+  // Use localTask if edited, otherwise fallback to task prop directly
+  const currentTask = localTask || task;
 
-  const currentTask = localTask;
-  const categoryMeta = CATEGORY_META[currentTask.category];
-  const priorityMeta = PRIORITY_META[currentTask.priority];
+  // ✅ Hook 18: Declared UNCONDITIONALLY at the top level
+  const effectiveComments: TaskComment[] = React.useMemo(() => {
+    if (liveTaskDetail?.comments?.latest && liveTaskDetail.comments.latest.length > 0) {
+      return liveTaskDetail.comments.latest.map((c) => ({
+        id: c.id,
+        author: c.author?.fullName || (c.isMine ? 'You' : 'Member'),
+        authorInitial: ((c.author?.fullName || (c.isMine ? 'You' : 'M')).trim()[0] || 'M').toUpperCase(),
+        avatarBg: c.author?.avatarColor || '#1E3A66',
+        avatarColor: '#8DB8F5',
+        time: c.createdAt
+          ? new Date(c.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+          : 'Just now',
+        text: c.body,
+        isYou: c.isMine,
+      }));
+    }
+    return currentTask?.comments || [];
+  }, [liveTaskDetail, currentTask?.comments]);
 
+  // ✅ EARLY RETURN is placed AFTER ALL HOOKS HAVE BEEN CALLED
+  if (!visible || !currentTask) return null;
+
+  // Safe category & priority resolution with lowercase normalization
+  const categoryKey = (currentTask.category?.toLowerCase() || 'household') as TaskCategory;
+  const categoryMeta = CATEGORY_META[categoryKey] || CATEGORY_META.household;
+
+  const priorityKey = (currentTask.priority?.toLowerCase() || 'medium') as TaskPriority;
+  const priorityMeta = PRIORITY_META[priorityKey] || PRIORITY_META.medium;
+
+  const totalCommentsCount =
+    typeof liveTaskDetail?.comments?.count === 'number'
+      ? liveTaskDetail.comments.count
+      : (currentTask?.comments?.length ?? effectiveComments.length);
+
+  const handleSendReminder = async () => {
+    if (!isUUID(currentTask.id)) {
+      Alert.alert('Reminder Sent', 'A reminder has been sent.');
+      return;
+    }
+    try {
+      console.log('[TaskDetailModal] Sending reminder for task:', currentTask.id);
+      await dispatch(remindTask({ taskId: currentTask.id })).unwrap();
+      Alert.alert('Reminder Sent', 'A reminder has been sent.');
+    } catch (err: any) {
+      console.log('[TaskDetailModal] ❌ Reminder error:', err);
+      Alert.alert('Reminder Cooldown', err || 'Please wait before sending another reminder.');
+    }
+  };
+
+  const canRemind = liveTaskDetail?.permissions?.canRemind ?? true;
+
+  const markDoneLabel = liveTaskDetail?.permissions?.completesOwnPartOnly
+    ? 'Done my part'
+    : 'Mark as done';
+
+  const assigneeStr = currentTask.assignee || 'You';
   const isAssigneeYou =
-    currentTask.assignee.toLowerCase() === 'you' ||
-    currentTask.assignee.toLowerCase() === 'priya';
+    assigneeStr.toLowerCase() === 'you' ||
+    assigneeStr.toLowerCase() === 'priya';
 
   const isRepeating =
     Boolean(currentTask.repeat) &&
@@ -192,7 +259,7 @@ const TaskDetailModal: React.FC<TaskDetailModalProps> = ({
           </TouchableOpacity>
         </View>
 
-        {/* Dropdown Options Menu */}
+        {/* Dropdown Options Menu (Strictly 2 options: Edit Task and Delete Task) */}
         <AppOptionsMenu
           visible={
             isMenuOpen &&
@@ -200,28 +267,21 @@ const TaskDetailModal: React.FC<TaskDetailModalProps> = ({
             !showComments &&
             !showDueModal &&
             !showCategoryPriorityModal &&
-            !showReassignModal
+            !showReassignModal &&
+            !showEditModal
           }
           onClose={() => setIsMenuOpen(false)}
           topOffset={Math.max(insets.top, 16) + 54}
           items={[
             {
-              id: 'comments',
-              label: `Comments (${(currentTask.comments || []).length})`,
-              iconName: 'message-square',
-              onPress: () => setShowComments(true),
-            },
-            {
-              id: 'category-priority',
-              label: 'Category & Priority',
-              iconName: 'tag',
-              onPress: () => setShowCategoryPriorityModal(true),
-            },
-            {
-              id: 'due-date',
-              label: 'Edit Due Date',
-              iconName: 'calendar',
-              onPress: () => setShowDueModal(true),
+              id: 'edit',
+              label: 'Edit Task',
+              iconName: 'edit-2',
+              onPress: () => {
+                setIsMenuOpen(false);
+                setShowEditModal(true);
+                onEditTask?.(currentTask);
+              },
               showDividerAfter: true,
             },
             {
@@ -229,7 +289,10 @@ const TaskDetailModal: React.FC<TaskDetailModalProps> = ({
               label: 'Delete Task',
               iconName: 'trash-2',
               destructive: true,
-              onPress: () => setShowDeleteModal(true),
+              onPress: () => {
+                setIsMenuOpen(false);
+                setShowDeleteModal(true);
+              },
             },
           ]}
         />
@@ -256,21 +319,20 @@ const TaskDetailModal: React.FC<TaskDetailModalProps> = ({
                     {currentTask.overdueDateText || 'Overdue by 2 days'}
                   </Text>
                   <Text style={styles.overdueSubtitle}>
-                    {`${currentTask.assignee} was reminded yesterday at 6:00 PM.`}
+                    {`${assigneeStr} was reminded yesterday at 6:00 PM.`}
                   </Text>
                   <View style={styles.overdueActionsRow}>
                     <TouchableOpacity
-                      style={styles.bannerActionBtn}
-                      onPress={() =>
-                        Alert.alert(
-                          'Reminder Sent',
-                          `Reminder sent to ${currentTask.assignee}.`
-                        )
-                      }
+                      style={[
+                        styles.bannerActionBtn,
+                        !canRemind && { opacity: 0.5 },
+                      ]}
+                      onPress={handleSendReminder}
+                      disabled={!canRemind}
                       activeOpacity={0.7}
                     >
                       <Text style={styles.bannerActionText}>
-                        {`Remind ${currentTask.assignee}`}
+                        {`Remind ${assigneeStr}`}
                       </Text>
                     </TouchableOpacity>
 
@@ -385,10 +447,10 @@ const TaskDetailModal: React.FC<TaskDetailModalProps> = ({
             ]}
           >
             {currentTask.isCompleted
-              ? `Done ${currentTask.dueDate.toLowerCase()} at ${currentTask.completedAt || '2:14 PM'}`
+              ? `Done ${(currentTask.dueDate || 'today').toLowerCase()} at ${currentTask.completedAt || '2:14 PM'}`
               : currentTask.isOverdue
-              ? `${currentTask.amount ? `${currentTask.amount} · ` : ''}Was due ${currentTask.dueDate}`
-              : `${currentTask.amount ? `${currentTask.amount} · ` : ''}Due ${currentTask.dueDate}`}
+              ? `${currentTask.amount ? `${currentTask.amount} · ` : ''}Was due ${currentTask.dueDate || 'today'}`
+              : `${currentTask.amount ? `${currentTask.amount} · ` : ''}Due ${currentTask.dueDate || 'today'}`}
           </Text>
 
           {/* Configuration Card */}
@@ -485,7 +547,7 @@ const TaskDetailModal: React.FC<TaskDetailModalProps> = ({
                     </Text>
                   </View>
                   <Text style={styles.infoValue}>
-                    {isAssigneeYou ? 'You' : currentTask.assignee}
+                    {isAssigneeYou ? 'You' : assigneeStr}
                   </Text>
                 </View>
               </View>
@@ -566,7 +628,7 @@ const TaskDetailModal: React.FC<TaskDetailModalProps> = ({
           <View style={styles.commentsSection}>
             <View style={styles.commentsHeaderRow}>
               <Text style={styles.commentsTitle}>
-                {`Comments · ${currentTask.comments?.length || 0}`}
+                {`Comments · ${totalCommentsCount}`}
               </Text>
               <TouchableOpacity
                 onPress={() => setShowComments(true)}
@@ -576,8 +638,8 @@ const TaskDetailModal: React.FC<TaskDetailModalProps> = ({
               </TouchableOpacity>
             </View>
 
-            {currentTask.comments && currentTask.comments.length > 0 ? (
-              currentTask.comments.slice(0, 2).map((comment) => (
+            {effectiveComments && effectiveComments.length > 0 ? (
+              effectiveComments.slice(0, 2).map((comment) => (
                 <TouchableOpacity
                   key={comment.id}
                   style={styles.commentItem}
@@ -680,7 +742,7 @@ const TaskDetailModal: React.FC<TaskDetailModalProps> = ({
                 activeOpacity={0.8}
               >
                 <Feather name="check" size={18} color={Colors.white} />
-                <Text style={styles.markDoneBtnText}>Mark as done</Text>
+                <Text style={styles.markDoneBtnText}>{markDoneLabel}</Text>
               </TouchableOpacity>
             </>
           ) : (
@@ -698,25 +760,58 @@ const TaskDetailModal: React.FC<TaskDetailModalProps> = ({
         {/* Comments Modal */}
         <CommentsModal
           visible={showComments}
+          taskId={currentTask.id}
           taskTitle={currentTask.title}
-          dueDateSubtitle={`Due ${currentTask.dueDate}`}
-          comments={currentTask.comments || []}
+          dueDateSubtitle={`Due ${currentTask.dueDate || 'today'}`}
+          comments={effectiveComments}
           onClose={() => setShowComments(false)}
+          onAddComment={async (text) => {
+            console.log('[TaskDetailModal] Adding comment to task:', currentTask.id);
+            try {
+              if (isUUID(currentTask.id)) {
+                await dispatch(
+                  addTaskComment({
+                    taskId: currentTask.id,
+                    payload: { body: text },
+                  })
+                ).unwrap();
+                console.log('[TaskDetailModal] ✅ Comment added successfully');
+              }
+            } catch (err) {
+              console.log('[TaskDetailModal] ❌ Failed to add comment:', err);
+            }
+          }}
         />
 
         {/* Reassign Modal (TSK Reassign sheet) */}
         <ReassignModal
           visible={showReassignModal}
           taskTitle={currentTask.title}
-          currentAssignee={currentTask.assignee}
+          currentAssignee={currentTask.assignee || 'You'}
           onClose={() => setShowReassignModal(false)}
-          onSelectAssignee={(newAssignee) => {
+          onSelectAssignee={(newAssigneeId, newAssigneeName) => {
+            const displayName = newAssigneeName || newAssigneeId;
             handleUpdate({
-              assignee: newAssignee,
-              assigneeInitial: newAssignee === 'You' ? 'P' : newAssignee[0],
+              assignee: displayName,
+              assigneeInitial: displayName === 'You' ? 'P' : displayName[0],
             });
-            onReassign?.(currentTask, newAssignee);
+            onReassign?.(currentTask, newAssigneeId);
             setShowReassignModal(false);
+          }}
+        />
+
+        {/* Edit Task Modal */}
+        <CreateTaskModal
+          visible={showEditModal}
+          taskToEdit={currentTask}
+          onClose={() => setShowEditModal(false)}
+          onCreateTask={(updated) => {
+            handleUpdate(updated as TaskItem);
+            setShowEditModal(false);
+          }}
+          onUpdateTask={(updated) => {
+            handleUpdate(updated);
+            setShowEditModal(false);
           }}
         />
 
@@ -737,7 +832,7 @@ const TaskDetailModal: React.FC<TaskDetailModalProps> = ({
         {/* Assignees and Viewers Modal (TSK-15) */}
         <AssigneesAndViewersModal
           visible={showAssigneesModal}
-          selectedAssignees={[currentTask.assignee]}
+          selectedAssignees={[currentTask.assignee || 'You']}
           selectedViewers="everyone"
           onClose={() => setShowAssigneesModal(false)}
           onSave={(newAssignees, _newViewersOption, newViewersLabel) => {
@@ -755,7 +850,7 @@ const TaskDetailModal: React.FC<TaskDetailModalProps> = ({
         {/* Due Date & Time Modal (TSK-16) */}
         <DueDateTimeModal
           visible={showDueModal}
-          initialDate={currentTask.dueDate}
+          initialDate={currentTask.dueDate || 'Today'}
           initialTime={currentTask.dueTime || '6:00 PM'}
           onClose={() => setShowDueModal(false)}
           onSave={(newDate, newFormatted, newTime) => {
@@ -793,8 +888,8 @@ const TaskDetailModal: React.FC<TaskDetailModalProps> = ({
         {/* Category & Priority Modal (TSK-19) */}
         <CategoryPriorityModal
           visible={showCategoryPriorityModal}
-          initialCategory={currentTask.category}
-          initialPriority={currentTask.priority}
+          initialCategory={categoryKey}
+          initialPriority={priorityKey}
           onClose={() => setShowCategoryPriorityModal(false)}
           onSave={(newCategory: TaskCategory, newPriority: TaskPriority) => {
             handleUpdate({
@@ -810,7 +905,7 @@ const TaskDetailModal: React.FC<TaskDetailModalProps> = ({
         <EditRepeatingConfirmModal
           visible={showEditRepeatingConfirm}
           repeatInterval={currentTask.repeat || 'every month'}
-          dueDateText={currentTask.dueDate}
+          dueDateText={currentTask.dueDate || 'Today'}
           onClose={() => setShowEditRepeatingConfirm(false)}
           onConfirm={(_scope: RepeatEditScope) => {
             setShowEditRepeatingConfirm(false);

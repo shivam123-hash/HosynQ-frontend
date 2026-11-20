@@ -16,7 +16,12 @@ export interface DueDateTimeModalProps {
   initialDate?: string;
   initialTime?: string;
   onClose: () => void;
-  onSave: (dueDate: string, dueFormatted: string, dueTime?: string) => void;
+  onSave: (
+    dueDate: string,
+    dueFormatted: string,
+    dueTime?: string,
+    isoDate?: string
+  ) => void;
 }
 
 const MONTH_NAMES = [
@@ -357,7 +362,8 @@ const DueDateTimeModal: React.FC<DueDateTimeModalProps> = ({
       finalFormatted = `${dateLabel} · by ${finalTimeStr}`;
     }
 
-    onSave(dateLabel, finalFormatted, finalTimeStr);
+    const isoDate = `${selectedDate.getFullYear()}-${String(selectedDate.getMonth() + 1).padStart(2, '0')}-${String(selectedDate.getDate()).padStart(2, '0')}`;
+    onSave(dateLabel, finalFormatted, finalTimeStr, isoDate);
     onClose();
   };
 

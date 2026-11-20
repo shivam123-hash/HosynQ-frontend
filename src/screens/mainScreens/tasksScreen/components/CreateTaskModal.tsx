@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -10,11 +10,24 @@ import {
   KeyboardAvoidingView,
   Platform,
   StatusBar,
+  Alert,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Feather from '@react-native-vector-icons/feather';
+import { useAppDispatch, useAppSelector } from '../../../../redux';
+import { createTask, updateTask } from '../../../../redux/features/tasks/tasksSlice';
+import { getMyFamilyThunk } from '../../../../redux/features/family/familySlice';
+import { CreateTaskPayload } from '../../../../services/tasksServices';
 import { TaskItem, TaskCategory, TaskPriority } from '../types';
 import { CATEGORY_META, PRIORITY_META } from '../mockData';
+import {
+  toIsoDateString,
+  formatTimeTo24Hour,
+  mapRepeatToBackend,
+  mapRemindersListToBackend,
+  mapVisibilityToBackend,
+  isUUID,
+} from '../taskApiHelpers';
 import AssigneesAndViewersModal, {
   ViewersOption,
 } from './AssigneesAndViewersModal';
@@ -29,6 +42,8 @@ export interface CreateTaskModalProps {
   onClose: () => void;
   onCreateTask: (task: Partial<TaskItem>) => void;
   initialTitle?: string;
+  taskToEdit?: TaskItem | null;
+  onUpdateTask?: (task: TaskItem) => void;
 }
 
 const CreateTaskModal: React.FC<CreateTaskModalProps> = ({
@@ -36,8 +51,62 @@ const CreateTaskModal: React.FC<CreateTaskModalProps> = ({
   onClose,
   onCreateTask,
   initialTitle = '',
+  taskToEdit = null,
+  onUpdateTask,
 }) => {
   const insets = useSafeAreaInsets();
+  const dispatch = useAppDispatch();
+  const myMemberId = useAppSelector(
+    (state) =>
+      state.family.myMemberId ||
+      state.family.myFamilyData?.family?.myMemberId ||
+      state.family.family?.myMemberId ||
+      (state.family.myFamilyData as any)?.myMemberId ||
+      null
+  );
+  const familyMembers = useAppSelector(
+    (state) =>
+      ((state.family.myFamilyData?.family as any)?.members as any[]) ||
+      ((state.family.myFamilyData as any)?.members as any[]) ||
+      ((state.family.family as any)?.members as any[]) ||
+      []
+  );
+
+  useEffect(() => {
+    if (visible && (!myMemberId || familyMembers.length === 0)) {
+      dispatch(getMyFamilyThunk());
+    }
+  }, [visible, myMemberId, familyMembers.length, dispatch]);
+
+  const resolveMemberId = (nameOrId: string): string | null => {
+    if (!nameOrId) return null;
+    if (
+      /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(
+        nameOrId
+      )
+    ) {
+      return nameOrId;
+    }
+    const lower = nameOrId.toLowerCase();
+    if (lower === 'you' || lower === 'priya') {
+      return (
+        myMemberId ||
+        familyMembers.find((m: any) => m.isYou)?.memberId ||
+        familyMembers[0]?.memberId ||
+        familyMembers[0]?.id ||
+        null
+      );
+    }
+    const matched = familyMembers.find(
+      (m: any) =>
+        (m.fullName && m.fullName.toLowerCase().includes(lower)) ||
+        (m.name && m.name.toLowerCase().includes(lower)) ||
+        m.memberId === nameOrId ||
+        m.id === nameOrId
+    );
+    return matched?.memberId || matched?.id || null;
+  };
+
   const [title, setTitle] = useState(initialTitle);
   const [assignee, setAssignee] = useState('You');
   const [assigneesList, setAssigneesList] = useState<string[]>(['You']);
@@ -48,6 +117,7 @@ const CreateTaskModal: React.FC<CreateTaskModalProps> = ({
   const [dueDate, setDueDate] = useState('Mon, 2 Nov');
   const [dueFormatted, setDueFormatted] = useState('Mon, 2 Nov · by 6:00 PM');
   const [dueTime, setDueTime] = useState<string | undefined>('6:00 PM');
+  const [dueOnIso, setDueOnIso] = useState<string>('2026-11-02');
   const [repeat, setRepeat] = useState('Doesn’t repeat');
   const [reminders, setReminders] = useState('1 hour before');
   const [remindersList, setRemindersList] = useState<string[]>([
@@ -68,9 +138,25 @@ const CreateTaskModal: React.FC<CreateTaskModalProps> = ({
   React.useEffect(() => {
     if (!visible) {
       setShowDiscardModal(false);
+      return;
     }
-    setTitle(initialTitle);
-  }, [initialTitle, visible]);
+    if (taskToEdit) {
+      setTitle(taskToEdit.title || '');
+      setNotes(taskToEdit.notes || '');
+      setAssignee(taskToEdit.assignee || 'You');
+      setAssigneesList(taskToEdit.assignee ? taskToEdit.assignee.split(', ') : ['You']);
+      setCategory((taskToEdit.category?.toLowerCase() || 'household') as TaskCategory);
+      setPriority((taskToEdit.priority?.toLowerCase() || 'medium') as TaskPriority);
+      setDueDate(taskToEdit.dueDate || 'Today');
+      setDueTime(taskToEdit.dueTime || undefined);
+      setDueFormatted(taskToEdit.dueFormatted || taskToEdit.dueDate || '');
+      setRepeat(taskToEdit.repeat || 'Doesn’t repeat');
+      setReminders(taskToEdit.reminders || '1 hour before');
+      setRemindersList(taskToEdit.reminders ? [taskToEdit.reminders] : ['1 hour before']);
+    } else {
+      setTitle(initialTitle);
+    }
+  }, [initialTitle, taskToEdit, visible]);
 
   const resetForm = () => {
     setTitle('');
@@ -84,36 +170,130 @@ const CreateTaskModal: React.FC<CreateTaskModalProps> = ({
     setDueDate('Mon, 2 Nov');
     setDueFormatted('Mon, 2 Nov · by 6:00 PM');
     setDueTime('6:00 PM');
+    setDueOnIso('2026-11-02');
     setRepeat('Doesn’t repeat');
     setReminders('1 hour before');
     setRemindersList(['1 hour before']);
     setAlsoRemindViewers(false);
   };
 
-  const handleCreate = () => {
+  const handleCreate = async () => {
     if (!title.trim()) return;
 
-    onCreateTask({
-      title: title.trim(),
-      dueDate,
-      dueTime,
-      dueFormatted,
-      dueType: 'today',
-      assignee,
-      assigneeInitial: assignee === 'You' ? 'P' : assignee[0],
-      category,
-      categoryLabel: CATEGORY_META[category].label,
-      priority,
-      priorityLabel: PRIORITY_META[priority].label,
-      repeat,
-      reminders,
-      viewers,
-      notes: notes.trim(),
-      isCompleted: false,
-    });
+    // Resolve assignees to valid member UUIDs
+    const resolvedIds = assigneesList
+      .map(resolveMemberId)
+      .filter((id): id is string => Boolean(id));
 
-    resetForm();
-    onClose();
+    const finalAssigneeIds =
+      resolvedIds.length > 0
+        ? resolvedIds
+        : myMemberId
+        ? [myMemberId]
+        : familyMembers[0]?.memberId
+        ? [familyMembers[0].memberId]
+        : [];
+
+    if (finalAssigneeIds.length === 0) {
+      Alert.alert(
+        'Assignee Required',
+        'Please assign the task to at least one family member.'
+      );
+      return;
+    }
+
+    const finalDueOn = dueOnIso || toIsoDateString(dueDate);
+    const finalDueTime = formatTimeTo24Hour(dueTime);
+    const finalRepeat = mapRepeatToBackend(repeat);
+    const finalReminders = mapRemindersListToBackend(remindersList);
+    const finalVisibility = mapVisibilityToBackend(viewersOption);
+
+    // Rule 5: Field Interdependence
+    // 1. repeat & reminders require dueOn
+    // 2. AT_DUE & ONE_HOUR_BEFORE require dueTime
+    let sanitizedReminders = finalReminders;
+    if (!finalDueTime && sanitizedReminders.length > 0) {
+      sanitizedReminders = sanitizedReminders.filter(
+        (r) => r !== 'AT_DUE' && r !== 'ONE_HOUR_BEFORE'
+      );
+    }
+
+    const payload: CreateTaskPayload = {
+      title: title.trim(),
+      notes: notes.trim() || undefined,
+      assigneeMemberIds: finalAssigneeIds,
+      category: category.toUpperCase(),
+      priority: priority.toUpperCase(),
+      dueOn: finalDueOn || undefined,
+      dueTime: finalDueTime || undefined,
+      visibility: finalVisibility,
+      repeat: finalDueOn ? finalRepeat : undefined,
+      reminders: finalDueOn && sanitizedReminders.length > 0 ? sanitizedReminders : undefined,
+      remindViewersToo: alsoRemindViewers,
+    };
+
+    console.log('[CreateTaskModal] Submitting task payload:', payload);
+
+    try {
+      if (taskToEdit && isUUID(taskToEdit.id)) {
+        await dispatch(updateTask({ taskId: taskToEdit.id, payload })).unwrap();
+        console.log('[CreateTaskModal] ✅ Task successfully updated:', taskToEdit.id);
+        const updatedTask: TaskItem = {
+          ...taskToEdit,
+          title: title.trim(),
+          notes: notes.trim() || undefined,
+          category,
+          categoryLabel: CATEGORY_META[category].label,
+          priority,
+          priorityLabel: PRIORITY_META[priority].label,
+          dueDate,
+          dueTime,
+          dueFormatted,
+          repeat,
+          reminders,
+          viewers,
+        };
+        onUpdateTask?.(updatedTask);
+        onCreateTask(updatedTask);
+        resetForm();
+        onClose();
+        return;
+      }
+
+      const res = await dispatch(createTask(payload)).unwrap();
+      console.log('[CreateTaskModal] ✅ Task successfully created:', res);
+      onCreateTask({
+        id: res?.task?.id || `task-${Date.now()}`,
+        title: title.trim(),
+        dueDate,
+        dueTime,
+        dueFormatted,
+        dueType: 'today',
+        assignee,
+        assigneeInitial: assignee === 'You' ? 'P' : assignee[0],
+        category,
+        categoryLabel: CATEGORY_META[category].label,
+        priority,
+        priorityLabel: PRIORITY_META[priority].label,
+        repeat,
+        reminders,
+        viewers,
+        notes: notes.trim(),
+        isCompleted: false,
+      });
+      resetForm();
+      onClose();
+    } catch (err: any) {
+      console.log('[CreateTaskModal] ❌ Failed to create task:', err);
+      const errorMessage = Array.isArray(err)
+        ? err.join('\n')
+        : typeof err === 'object' && err?.message
+        ? Array.isArray(err.message)
+          ? err.message.join('\n')
+          : err.message
+        : String(err);
+      Alert.alert('Create Task Error', errorMessage);
+    }
   };
 
   const isFormDirty =
@@ -175,7 +355,9 @@ const CreateTaskModal: React.FC<CreateTaskModalProps> = ({
             <Feather name="x" size={20} color="#CAD4DF" />
           </TouchableOpacity>
 
-          <Text style={styles.headerTitle}>New task</Text>
+          <Text style={styles.headerTitle}>
+            {taskToEdit ? 'Edit task' : 'New task'}
+          </Text>
 
           <View style={styles.spacer} />
         </View>
@@ -368,7 +550,9 @@ const CreateTaskModal: React.FC<CreateTaskModalProps> = ({
             disabled={!title.trim()}
             activeOpacity={0.8}
           >
-            <Text style={styles.createButtonText}>Create task</Text>
+            <Text style={styles.createButtonText}>
+              {taskToEdit ? 'Save changes' : 'Create task'}
+            </Text>
           </TouchableOpacity>
         </View>
 
@@ -391,10 +575,11 @@ const CreateTaskModal: React.FC<CreateTaskModalProps> = ({
           initialDate={dueDate}
           initialTime={dueTime}
           onClose={() => setShowDueModal(false)}
-          onSave={(newDate, newFormatted, newTime) => {
+          onSave={(newDate, newFormatted, newTime, isoDate) => {
             setDueDate(newDate);
             setDueFormatted(newFormatted);
             setDueTime(newTime);
+            if (isoDate) setDueOnIso(isoDate);
           }}
         />
 

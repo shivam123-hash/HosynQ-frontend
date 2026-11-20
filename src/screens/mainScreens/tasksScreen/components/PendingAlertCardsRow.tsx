@@ -88,7 +88,7 @@ const styles = StyleSheet.create({
   card: {
     flex: 1,
     height: 64,
-    backgroundColor: 'transparent',
+    backgroundColor: '#0F1D30',
     borderRadius: 16,
     borderWidth: 1.5,
     flexDirection: 'row',
@@ -96,10 +96,10 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
   },
   overdueCard: {
-    borderColor: '#6B3A2A',
+    borderColor: '#6B3024',
   },
   dueThisWeekCard: {
-    borderColor: '#1F3352',
+    borderColor: '#1E3557',
   },
   activeCardBorder: {
     borderColor: '#F0913A',

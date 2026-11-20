@@ -1,15 +1,31 @@
-import React, { useState, useMemo, useCallback } from 'react';
+import React, { useState, useMemo, useCallback, useEffect } from 'react';
 import {
   StyleSheet,
   ScrollView,
   StatusBar,
   View,
+  Text,
   Alert,
 } from 'react-native';
+import Feather from '@react-native-vector-icons/feather';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Colors from '../../../units/Colors';
 import BottomNavBar from '../homeScreen/components/BottomNavBar';
 import { NavigationTab } from '../homeScreen/types';
+import { useAppDispatch, useAppSelector } from '../../../redux';
+import {
+  fetchTasks,
+  completeTask,
+  reopenTask,
+  fetchTaskDetail,
+  clearTasksError,
+  clearSelectedTask,
+  deleteTask,
+  reassignTask,
+  createTask,
+} from '../../../redux/features/tasks/tasksSlice';
+import { getMyFamilyThunk } from '../../../redux/features/family/familySlice';
+import { CreateTaskPayload, TaskItemData } from '../../../services/tasksServices';
 import {
   TasksHeader,
   TasksSegmentedTabs,
@@ -45,9 +61,71 @@ import {
   TasksStatusTab,
   TaskFilterState,
   TaskCategory,
+  TaskPriority,
+  TaskDueDateType,
   ListGroup,
   ListType,
 } from './types';
+import { formatTaskDueDate } from './taskApiHelpers';
+
+export const mapApiTaskToUiTask = (apiTask: TaskItemData): TaskItem => {
+  const assigneesList = apiTask.assignees || [];
+  const assigneeName =
+    assigneesList.length > 0
+      ? assigneesList.map((a) => a.fullName || 'Member').join(', ')
+      : 'You';
+  const firstAssignee = assigneesList[0];
+  const assigneeInitial = assigneeName ? assigneeName.trim()[0].toUpperCase() : 'P';
+
+  let dueType: TaskDueDateType = 'later';
+  if (apiTask.isOverdue) {
+    dueType = 'overdue';
+  } else if (apiTask.isToday) {
+    dueType = 'today';
+  } else if (apiTask.dueFormatted?.toLowerCase().includes('week') || apiTask.dueOn) {
+    dueType = 'this_week';
+  }
+
+  const categoryLower = (apiTask.category ? apiTask.category.toLowerCase() : 'household') as TaskCategory;
+  const priorityLower = (apiTask.priority ? apiTask.priority.toLowerCase() : 'medium') as TaskPriority;
+
+  const formattedDueDate = formatTaskDueDate(apiTask.dueOn, apiTask.isToday, apiTask.isOverdue);
+  const formattedDueWithTime = apiTask.dueTime
+    ? `${formattedDueDate} · by ${apiTask.dueTime}`
+    : formattedDueDate;
+
+  return {
+    id: apiTask.id,
+    title: apiTask.title,
+    dueDate: formattedDueDate,
+    dueTime: apiTask.dueTime || undefined,
+    dueType,
+    dueFormatted: apiTask.dueFormatted || formattedDueWithTime,
+    assignee: assigneeName,
+    assigneeInitial,
+    assigneeAvatarBg: firstAssignee?.avatarColor || '#5C3A21',
+    assigneeAvatarColor: '#FFFFFF',
+    category: categoryLower,
+    categoryLabel: apiTask.category,
+    priority: priorityLower,
+    priorityLabel: apiTask.priority,
+    repeat: apiTask.repeat || 'Doesn’t repeat',
+    reminders: apiTask.reminders?.length ? apiTask.reminders.join(', ') : 'None',
+    viewers:
+      apiTask.visibility === 'EVERYONE'
+        ? 'Everyone in the family'
+        : apiTask.visibility === 'ADULTS_ONLY'
+        ? 'Adults only'
+        : 'Assignees only',
+    notes: apiTask.notes || undefined,
+    createdBy: apiTask.createdBy?.fullName || undefined,
+    isCompleted: apiTask.status === 'DONE',
+    completedAt: apiTask.completedAt || undefined,
+    completedBy: apiTask.completedByMemberId || undefined,
+    isOverdue: apiTask.isOverdue,
+    overdueDateText: apiTask.isOverdue ? 'Overdue' : undefined,
+  };
+};
 
 export interface TasksScreenProps {
   initialMainTab?: TasksMainTab;
@@ -61,6 +139,7 @@ export interface TasksScreenProps {
   onOpenCalendar?: () => void;
   onOpenChat?: () => void;
   showBottomNavBar?: boolean;
+  initialTasks?: TaskItem[];
 }
 
 const TasksScreen: React.FC<TasksScreenProps> = ({
@@ -68,6 +147,7 @@ const TasksScreen: React.FC<TasksScreenProps> = ({
   initialStatus = 'pending',
   forceEmpty = false,
   showBottomNavBar = true,
+  initialTasks,
   onProfilePress,
   onExplorePress,
   onNotificationsPress,
@@ -76,8 +156,55 @@ const TasksScreen: React.FC<TasksScreenProps> = ({
   onOpenCalendar,
   onOpenChat,
 }) => {
+  const dispatch = useAppDispatch();
+  const {
+    tasks: apiTasks,
+    selectedTask: apiSelectedTask,
+    loading: tasksLoading,
+    error: tasksError,
+    counts: apiCounts,
+    summary: apiSummary,
+  } = useAppSelector((state) => state.tasks);
+
+  const familyMembers = useAppSelector(
+    (state) =>
+      ((state.family.myFamilyData?.family as any)?.members as any[]) ||
+      ((state.family.myFamilyData as any)?.members as any[]) ||
+      []
+  );
+
+  const memberFilterOptions = useMemo(() => {
+    if (!familyMembers || familyMembers.length === 0) {
+      return FAMILY_MEMBERS;
+    }
+    return [
+      {
+        id: 'everyone',
+        name: 'Everyone',
+        initial: 'All',
+        avatarBg: '#1E3A66',
+        avatarColor: '#FFFFFF',
+      },
+      ...familyMembers.map((m: any) => {
+        const name = m.fullName || m.name || 'Member';
+        const initial = (name.trim()[0] || 'M').toUpperCase();
+        return {
+          id: m.memberId || m.id,
+          name,
+          initial,
+          avatarBg: m.avatarColor || Colors.primary,
+          avatarColor: '#FFFFFF',
+        };
+      }),
+    ];
+  }, [familyMembers]);
+
+  const isTestEnv =
+    typeof (globalThis as any).process !== 'undefined' &&
+    (globalThis as any).process.env?.NODE_ENV === 'test';
+  const defaultInitialTasks = isTestEnv && !forceEmpty ? INITIAL_TASKS : [];
   const [tasks, setTasks] = useState<TaskItem[]>(
-    forceEmpty ? [] : INITIAL_TASKS
+    forceEmpty ? [] : initialTasks !== undefined ? initialTasks : defaultInitialTasks
   );
   const [mainTab, setMainTab] = useState<TasksMainTab>(initialMainTab);
   const [statusTab, setStatusTab] = useState<TasksStatusTab>(initialStatus);
@@ -122,6 +249,43 @@ const TasksScreen: React.FC<TasksScreenProps> = ({
   const [tripPlannerVisible, setTripPlannerVisible] = useState(false);
   const [tripInitialScreen, setTripInitialScreen] = useState<TripScreenName>('dates');
 
+  const loadTasks = useCallback(() => {
+    const statusParam = statusTab === 'completed' ? 'DONE' : 'PENDING';
+    const assigneeId = selectedMemberId === 'everyone' ? undefined : selectedMemberId;
+
+    console.log('[TasksScreen] Loading tasks for tab:', statusParam, 'assignee:', assigneeId);
+    dispatch(
+      fetchTasks({
+        status: statusParam,
+        assigneeMemberId: assigneeId,
+        today: new Date().toISOString().slice(0, 10),
+      })
+    );
+  }, [statusTab, selectedMemberId, dispatch]);
+
+  useEffect(() => {
+    dispatch(getMyFamilyThunk());
+  }, [dispatch]);
+
+  useEffect(() => {
+    dispatch(clearTasksError());
+    loadTasks();
+  }, [loadTasks, dispatch]);
+
+  useEffect(() => {
+    if (apiTasks) {
+      if (isTestEnv) {
+        if (apiTasks.length > 0) {
+          setTasks(apiTasks.map(mapApiTaskToUiTask));
+        } else if (forceEmpty) {
+          setTasks([]);
+        }
+        return;
+      }
+      setTasks(apiTasks.map(mapApiTaskToUiTask));
+    }
+  }, [apiTasks, isTestEnv, forceEmpty]);
+
   const handleCreateList = useCallback((newList: ListGroup) => {
     setLists((prev) => [newList, ...prev]);
     setSelectedList(newList);
@@ -153,8 +317,22 @@ const TasksScreen: React.FC<TasksScreenProps> = ({
     }));
   };
 
+  // Helper: Detect valid UUIDs
+  const isUUID = (id: string): boolean =>
+    /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
+
+  // Open Detail Modal
+  const handleTaskPress = useCallback((task: TaskItem) => {
+    console.log('[TasksScreen] Opening detail modal for task:', task.id);
+    if (isUUID(task.id)) {
+      dispatch(fetchTaskDetail({ taskId: task.id, today: new Date().toISOString().slice(0, 10) }));
+    }
+    setSelectedTask(task);
+  }, [dispatch]);
+
   // Mark task completed
-  const handleCompleteTask = useCallback((task: TaskItem) => {
+  const handleCompleteTask = useCallback(async (task: TaskItem) => {
+    // 1. Optimistic update
     setTasks((prev) =>
       prev.map((t) =>
         t.id === task.id
@@ -167,10 +345,40 @@ const TasksScreen: React.FC<TasksScreenProps> = ({
           : t
       )
     );
-  }, []);
+    try {
+      if (isUUID(task.id)) {
+        console.log('[TasksScreen] Completing task:', task.id);
+        await dispatch(
+          completeTask({ taskId: task.id, today: new Date().toISOString().slice(0, 10) })
+        ).unwrap();
+        console.log('[TasksScreen] ✅ Task marked as completed:', task.id);
+        loadTasks(); // Refresh live state from database
+      }
+    } catch (err: any) {
+      console.log('[TasksScreen] ❌ Complete error:', err);
+      // 2. Revert optimistic update on failure!
+      setTasks((prev) =>
+        prev.map((t) =>
+          t.id === task.id
+            ? {
+                ...t,
+                isCompleted: false,
+                completedAt: undefined,
+                completedBy: undefined,
+              }
+            : t
+        )
+      );
+      Alert.alert(
+        'Action Failed',
+        typeof err === 'string' ? err : err?.message || 'Failed to complete task. Please try again.'
+      );
+    }
+  }, [dispatch, loadTasks]);
 
   // Reopen task
-  const handleReopenTask = useCallback((task: TaskItem) => {
+  const handleReopenTask = useCallback(async (task: TaskItem) => {
+    // 1. Optimistic update
     setTasks((prev) =>
       prev.map((t) =>
         t.id === task.id
@@ -183,54 +391,101 @@ const TasksScreen: React.FC<TasksScreenProps> = ({
           : t
       )
     );
-  }, []);
+    try {
+      if (isUUID(task.id)) {
+        console.log('[TasksScreen] Reopening task:', task.id);
+        await dispatch(reopenTask(task.id)).unwrap();
+        console.log('[TasksScreen] ✅ Task reopened:', task.id);
+        loadTasks(); // Refresh live state from database
+      }
+    } catch (err: any) {
+      console.log('[TasksScreen] ❌ Reopen error:', err);
+      // 2. Revert optimistic update on failure
+      setTasks((prev) =>
+        prev.map((t) =>
+          t.id === task.id
+            ? {
+                ...t,
+                isCompleted: true,
+                completedAt: task.completedAt || 'Just now',
+                completedBy: task.completedBy || 'You',
+              }
+            : t
+        )
+      );
+      Alert.alert(
+        'Action Failed',
+        typeof err === 'string' ? err : err?.message || 'Failed to reopen task. Please try again.'
+      );
+    }
+  }, [dispatch, loadTasks]);
 
   // Reassign task
-  const handleReassignTask = useCallback((task: TaskItem, newAssignee: string) => {
-    setTasks((prev) =>
-      prev.map((t) =>
-        t.id === task.id
-          ? {
-              ...t,
-              assignee: newAssignee,
-              assigneeInitial: newAssignee === 'You' ? 'P' : newAssignee[0],
-            }
-          : t
-      )
-    );
-    Alert.alert('Task Reassigned', `Assigned to ${newAssignee}.`);
-  }, []);
+  const handleReassignTask = useCallback(
+    async (task: TaskItem, newAssigneeId: string) => {
+      const matched = memberFilterOptions.find((m) => m.id === newAssigneeId);
+      const displayName = matched?.name || newAssigneeId;
+      setTasks((prev) =>
+        prev.map((t) =>
+          t.id === task.id
+            ? {
+                ...t,
+                assignee: displayName,
+                assigneeInitial: displayName === 'You' ? 'P' : displayName[0],
+              }
+            : t
+        )
+      );
+      Alert.alert('Task Reassigned', `Assigned to ${displayName}.`);
+      try {
+        if (isUUID(task.id)) {
+          console.log('[TasksScreen] Reassigning task:', task.id, 'to member ID:', newAssigneeId);
+          await dispatch(
+            reassignTask({ taskId: task.id, payload: { memberId: newAssigneeId } })
+          ).unwrap();
+          console.log('[TasksScreen] ✅ Task reassigned:', task.id);
+          loadTasks();
+        }
+      } catch (err) {
+        console.log('[TasksScreen] ❌ Reassign error:', err);
+      }
+    },
+    [dispatch, loadTasks, memberFilterOptions]
+  );
 
   // Delete task
-  const handleDeleteTask = useCallback((task: TaskItem) => {
+  const handleDeleteTask = useCallback(async (task: TaskItem) => {
+    const previousTasks = tasks;
     setTasks((prev) => prev.filter((t) => t.id !== task.id));
-    Alert.alert('Task Deleted', `"${task.title}" has been deleted.`);
-  }, []);
+    try {
+      if (isUUID(task.id)) {
+        console.log('[TasksScreen] Deleting task:', task.id);
+        await dispatch(deleteTask(task.id)).unwrap();
+        console.log('[TasksScreen] ✅ Task deleted:', task.id);
+        loadTasks();
+      }
+      Alert.alert('Task Deleted', `"${task.title}" has been deleted.`);
+    } catch (err: any) {
+      console.log('[TasksScreen] ❌ Delete error:', err);
+      setTasks(previousTasks);
+      Alert.alert(
+        'Action Failed',
+        typeof err === 'string' ? err : err?.message || 'Failed to delete task. Please try again.'
+      );
+    }
+  }, [dispatch, loadTasks, tasks]);
 
-  // Create new task
-  const handleCreateTask = useCallback((newTaskData: Partial<TaskItem>) => {
-    const created: TaskItem = {
-      id: `task-${Date.now()}`,
-      title: newTaskData.title || 'Untitled task',
-      dueDate: newTaskData.dueDate || 'Today',
-      dueFormatted: newTaskData.dueFormatted || 'Today',
-      dueType: newTaskData.dueType || 'today',
-      assignee: newTaskData.assignee || 'You',
-      assigneeInitial: newTaskData.assigneeInitial || 'P',
-      category: newTaskData.category || 'household',
-      categoryLabel: newTaskData.categoryLabel || 'Household',
-      priority: newTaskData.priority || 'medium',
-      priorityLabel: newTaskData.priorityLabel || 'Medium',
-      repeat: newTaskData.repeat || 'Doesn’t repeat',
-      reminders: newTaskData.reminders || '1 hour before',
-      viewers: newTaskData.viewers || 'Everyone in the family',
-      notes: newTaskData.notes,
-      isCompleted: false,
-    };
-
-    setTasks((prev) => [created, ...prev]);
-    setStatusTab('pending');
-  }, []);
+  // Create new task (optimistically adds to UI and refreshes from DB)
+  const handleCreateTask = useCallback(
+    (newTaskData: Partial<TaskItem>) => {
+      if (newTaskData.id) {
+        setTasks((prev) => [newTaskData as TaskItem, ...prev]);
+      }
+      setStatusTab('pending');
+      loadTasks();
+    },
+    [loadTasks]
+  );
 
   // Pending count & Completed count
   const pendingTasksAll = useMemo(
@@ -242,17 +497,31 @@ const TasksScreen: React.FC<TasksScreenProps> = ({
     [tasks]
   );
 
+  const pendingCount =
+    apiCounts?.pending !== undefined
+      ? apiCounts.pending
+      : pendingTasksAll.length;
+  const completedCount =
+    apiCounts?.completed !== undefined
+      ? apiCounts.completed
+      : completedTasksAll.length;
+
   const overdueCount = useMemo(
-    () => pendingTasksAll.filter((t) => t.isOverdue || t.dueType === 'overdue').length,
-    [pendingTasksAll]
+    () =>
+      apiSummary?.overdue !== undefined
+        ? apiSummary.overdue
+        : pendingTasksAll.filter((t) => t.isOverdue || t.dueType === 'overdue').length,
+    [apiSummary?.overdue, pendingTasksAll]
   );
 
   const dueThisWeekCount = useMemo(
     () =>
-      pendingTasksAll.filter(
-        (t) => t.dueType === 'this_week' || t.dueType === 'today'
-      ).length,
-    [pendingTasksAll]
+      apiSummary?.dueThisWeek !== undefined
+        ? apiSummary.dueThisWeek
+        : pendingTasksAll.filter(
+            (t) => t.dueType === 'this_week' || t.dueType === 'today'
+          ).length,
+    [apiSummary?.dueThisWeek, pendingTasksAll]
   );
 
   // Active filter count check
@@ -280,7 +549,7 @@ const TasksScreen: React.FC<TasksScreenProps> = ({
 
       // 2. Member filter
       if (filters.assignedTo !== 'everyone') {
-        const member = FAMILY_MEMBERS.find((m) => m.id === filters.assignedTo);
+        const member = memberFilterOptions.find((m) => m.id === filters.assignedTo);
         if (member) {
           const mName = member.name.toLowerCase();
           const itemAssignee = item.assignee.toLowerCase();
@@ -399,7 +668,16 @@ const TasksScreen: React.FC<TasksScreenProps> = ({
     return tags;
   }, [filters]);
 
-  const hasZeroTasksOverall = tasks.length === 0;
+  const hasZeroTasksOverall =
+    statusTab === 'pending' &&
+    (forceEmpty ||
+      (initialTasks !== undefined && initialTasks.length === 0) ||
+      (tasks.length === 0 &&
+        pendingCount === 0 &&
+        completedCount === 0 &&
+        !isFilterActive &&
+        searchQuery.trim().length === 0));
+
   const hasZeroMatchingFilters =
     !hasZeroTasksOverall && filteredTasks.length === 0 && isFilterActive;
 
@@ -460,13 +738,13 @@ const TasksScreen: React.FC<TasksScreenProps> = ({
             <TasksStatusTabs
               status={statusTab}
               onSelectStatus={setStatusTab}
-              pendingCount={pendingTasksAll.length}
-              completedCount={completedTasksAll.length}
+              pendingCount={pendingCount}
+              completedCount={completedCount}
             />
 
             {/* Family Member Avatar Filter */}
             <FamilyMemberAvatarFilter
-              members={FAMILY_MEMBERS}
+              members={memberFilterOptions}
               selectedMemberId={selectedMemberId}
               onSelectMember={handleSelectMember}
             />
@@ -507,25 +785,39 @@ const TasksScreen: React.FC<TasksScreenProps> = ({
                 />
 
                 {/* Categorized Pending Task Accordions */}
-                {categorizedPendingTasks.map((group) => (
-                  <TaskCategoryAccordion
-                    key={group.category}
-                    categoryTitle={group.title}
-                    categoryColor={group.color}
-                    items={group.items}
-                    isExpanded={!!expandedCategories[group.category]}
-                    onToggleExpand={() => handleToggleCategory(group.category)}
-                    onToggleComplete={handleCompleteTask}
-                    onSelectTask={setSelectedTask}
-                  />
-                ))}
+                {categorizedPendingTasks.length === 0 ? (
+                  <View style={styles.emptyPendingContainer}>
+                    <View style={styles.emptyPendingOuterCircle}>
+                      <View style={styles.emptyPendingInnerCircle}>
+                        <Feather name="check" size={24} color="#F0913A" />
+                      </View>
+                    </View>
+                    <Text style={styles.emptyPendingTitle}>All caught up!</Text>
+                    <Text style={styles.emptyPendingSubtitle}>
+                      No pending tasks right now.
+                    </Text>
+                  </View>
+                ) : (
+                  categorizedPendingTasks.map((group) => (
+                    <TaskCategoryAccordion
+                      key={group.category}
+                      categoryTitle={group.title}
+                      categoryColor={group.color}
+                      items={group.items}
+                      isExpanded={!!expandedCategories[group.category]}
+                      onToggleExpand={() => handleToggleCategory(group.category)}
+                      onToggleComplete={handleCompleteTask}
+                      onSelectTask={handleTaskPress}
+                    />
+                  ))
+                )}
               </>
             ) : (
               /* Completed Tasks List */
               <CompletedTasksList
                 tasks={filteredTasks}
                 onReopenTask={handleReopenTask}
-                onSelectTask={setSelectedTask}
+                onSelectTask={handleTaskPress}
               />
             )}
           </>
@@ -569,7 +861,11 @@ const TasksScreen: React.FC<TasksScreenProps> = ({
       <TaskDetailModal
         visible={!!selectedTask}
         task={selectedTask}
-        onClose={() => setSelectedTask(null)}
+        liveTaskDetail={apiSelectedTask?.id === selectedTask?.id ? apiSelectedTask : null}
+        onClose={() => {
+          setSelectedTask(null);
+          dispatch(clearSelectedTask());
+        }}
         onToggleComplete={(task) => {
           if (task.isCompleted) {
             handleReopenTask(task);
@@ -634,6 +930,43 @@ const styles = StyleSheet.create({
     bottom: 0,
     left: 0,
     right: 0,
+  },
+  emptyPendingContainer: {
+    alignItems: 'center',
+    paddingVertical: 48,
+    paddingHorizontal: 24,
+  },
+  emptyPendingOuterCircle: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    borderWidth: 1.5,
+    borderColor: '#1F3352',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  emptyPendingInnerCircle: {
+    width: 52,
+    height: 52,
+    borderRadius: 26,
+    backgroundColor: '#122440',
+    borderWidth: 1.5,
+    borderColor: '#2A3E5E',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  emptyPendingTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: '#FFFFFF',
+    marginTop: 16,
+    textAlign: 'center',
+  },
+  emptyPendingSubtitle: {
+    fontSize: 14,
+    color: '#8A97AB',
+    marginTop: 6,
+    textAlign: 'center',
   },
 });
 

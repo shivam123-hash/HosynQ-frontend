@@ -6,6 +6,7 @@ import baseProfileReducer from './features/baseProfileSet/baseProfileSlice';
 import familyReducer from './features/family/familySlice';
 import lifeProfileReducer from './features/lifeProfile/lifeProfileSlice';
 import medicineReducer from './features/medicine/medicineSlice';
+import tasksReducer from './features/tasks/tasksSlice';
 import { setStore } from './storeRegistry';
 
 export const store = configureStore({
@@ -16,6 +17,7 @@ export const store = configureStore({
     family: familyReducer,
     lifeProfile: lifeProfileReducer,
     medicine: medicineReducer,
+    tasks: tasksReducer,
   },
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware({

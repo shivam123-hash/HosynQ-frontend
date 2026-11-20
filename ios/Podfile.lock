@@ -2233,7 +2233,7 @@ SPEC CHECKSUMS:
   FBLazyVector: e08a27053b503eeb756ea4bd75d570d2f2522a1b
   fmt: ba0886e864ebb21d14c98b2e12e164b8002f5b93
   glog: 3cf7cb46f743c4bc758ae3e6d9c15bd1b4cfd6d4
-  GoogleSignIn: 52f0c3c702ae6ff72fcbcf695a9f26c52f31dc4b
+  GoogleSignIn: 6c0681460b202440022a4029ac0cbd71ef72068f
   GoogleUtilities: 7dc09b3fa9ecb5c2298b952313d14628b61b9da3
   GTMAppAuth: d5a53b9611d30bb40d92293f72f12c3ac3a08321
   GTMSessionFetcher: a6d2b2aa203485893d4511ff64642dc811f7c09f

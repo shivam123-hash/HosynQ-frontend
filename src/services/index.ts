@@ -13,5 +13,8 @@ export * from './lifeProfileServices';
 export { default as medicineServices } from './medicineServices';
 export * from './medicineServices';
 
+export { default as tasksServices } from './tasksServices';
+export * from './tasksServices';
+
 export * from './googleAuthService';
 export * from './appleAuthService';

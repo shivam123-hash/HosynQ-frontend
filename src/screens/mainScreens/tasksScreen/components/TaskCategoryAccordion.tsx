@@ -116,10 +116,10 @@ export default TaskCategoryAccordion;
 
 const styles = StyleSheet.create({
   card: {
-    backgroundColor: 'transparent',
+    backgroundColor: '#0F1D30',
     borderRadius: 20,
     borderWidth: 1.5,
-    borderColor: '#3A4556',
+    borderColor: '#1E3557',
     marginHorizontal: 20,
     marginBottom: 16,
     overflow: 'hidden',
@@ -155,9 +155,9 @@ const styles = StyleSheet.create({
     width: 26,
     height: 26,
     borderRadius: 13,
-    backgroundColor: 'transparent',
-    borderWidth: 1.5,
-    borderColor: '#344458',
+    backgroundColor: '#15253C',
+    borderWidth: 1,
+    borderColor: '#243A58',
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -168,7 +168,7 @@ const styles = StyleSheet.create({
   },
   itemsList: {
     borderTopWidth: 1,
-    borderTopColor: '#1F3352',
+    borderTopColor: '#172B47',
   },
   taskRow: {
     flexDirection: 'row',
@@ -178,7 +178,7 @@ const styles = StyleSheet.create({
   },
   rowDivider: {
     borderBottomWidth: 1,
-    borderBottomColor: '#1F3352',
+    borderBottomColor: '#172B47',
   },
   checkboxTouchable: {
     paddingRight: 12,
@@ -188,7 +188,7 @@ const styles = StyleSheet.create({
     height: 22,
     borderRadius: 11,
     borderWidth: 2,
-    borderColor: '#3A4B60',
+    borderColor: '#2C415F',
     backgroundColor: 'transparent',
   },
   taskDetailsTouchable: {

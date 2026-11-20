@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import {
   View,
   Text,
@@ -8,6 +8,7 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Feather from '@react-native-vector-icons/feather';
+import { useAppSelector } from '../../../../redux';
 import { FAMILY_MEMBERS } from '../mockData';
 
 export type ViewersOption = 'everyone' | 'adults' | 'assignees';
@@ -54,7 +55,34 @@ const AssigneesAndViewersModal: React.FC<AssigneesAndViewersModalProps> = ({
   onSave,
 }) => {
   const insets = useSafeAreaInsets();
-  const members = FAMILY_MEMBERS.filter((m) => m.id !== 'everyone');
+  const familyMembers = useAppSelector(
+    (state) =>
+      ((state.family.myFamilyData?.family as any)?.members as any[]) ||
+      ((state.family.myFamilyData as any)?.members as any[]) ||
+      ((state.family.family as any)?.members as any[]) ||
+      []
+  );
+
+  const members = useMemo(() => {
+    if (familyMembers.length > 0) {
+      return familyMembers.map((m: any) => {
+        const rawName = m.fullName || m.name || (m.isYou ? 'You' : 'Member');
+        const name = m.isYou
+          ? 'You'
+          : rawName.toLowerCase() === 'priya'
+          ? 'You'
+          : rawName;
+        return {
+          id: m.memberId || m.id || name,
+          name,
+          initial: (name === 'You' ? 'P' : rawName[0] || 'M').toUpperCase(),
+          avatarBg: m.avatarColor || '#1E3A66',
+          avatarColor: '#FFFFFF',
+        };
+      });
+    }
+    return FAMILY_MEMBERS.filter((m) => m.id !== 'everyone');
+  }, [familyMembers]);
 
   // Normalize initial selection to match member names or 'You'
   const [currentAssignees, setCurrentAssignees] = useState<string[]>(() => {

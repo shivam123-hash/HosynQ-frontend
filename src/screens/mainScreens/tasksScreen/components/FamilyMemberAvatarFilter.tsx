@@ -31,6 +31,16 @@ const FamilyMemberAvatarFilter: React.FC<FamilyMemberAvatarFilterProps> = ({
           const isSelected = selectedMemberId === member.id;
           const isEveryone = member.id === 'everyone';
 
+          const avatarBgColor =
+            isEveryone && isSelected
+              ? '#F0913A'
+              : member.avatarBg;
+
+          const avatarIconColor =
+            isEveryone && isSelected
+              ? '#0B1A2F'
+              : member.avatarColor;
+
           return (
             <TouchableOpacity
               key={member.id}
@@ -43,12 +53,12 @@ const FamilyMemberAvatarFilter: React.FC<FamilyMemberAvatarFilterProps> = ({
               <View
                 style={[
                   styles.avatarCircle,
-                  { backgroundColor: member.avatarBg },
+                  { backgroundColor: avatarBgColor },
                   isSelected && !isEveryone && styles.selectedAvatarBorder,
                 ]}
               >
                 {isEveryone ? (
-                  <Feather name="users" size={20} color={member.avatarColor} />
+                  <Feather name="users" size={20} color={avatarIconColor} />
                 ) : (
                   <Text
                     style={[

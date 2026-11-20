@@ -2,16 +2,16 @@ import { Platform, NativeModules } from 'react-native';
 
 /**
  * Local development host configuration:
- * Current Mac Wi-Fi IP: 192.168.29.41
+ * Current Mac Wi-Fi IP: 192.168.1.34
  * (Find by running `ifconfig | grep "inet 192"` in Mac terminal)
  */
-export const DEV_MACHINE_IP = '192.168.29.41';
+export const DEV_MACHINE_IP = '192.168.1.34';
 
 /**
  * Automatically extracts the development host IP:
  * 1. Checks NativeModules.SourceCode.scriptURL (Metro packager IP)
- *    If Metro is accessed from 192.168.29.41, this dynamically resolves it!
- * 2. Falls back to DEV_MACHINE_IP (192.168.29.41) so real devices never call
+ *    If Metro is accessed from 192.168.1.34, this dynamically resolves it!
+ * 2. Falls back to DEV_MACHINE_IP (192.168.1.34) so real devices never call
  *    "localhost" (which points to the mobile device itself and causes Network Error).
  */
 export const resolveDevHost = (): string => {
@@ -104,6 +104,17 @@ const API_ROUTES = {
     `family/medicines/${medicineId}`,
   FAMILY_VACCINE_BY_ID: (vaccineId: string) =>
     `family/vaccines/${vaccineId}`,
+
+  // Tasks Management Endpoints
+  TASKS: 'tasks',
+  TASKS_WORKLOAD: 'tasks/workload',
+  TASK_BY_ID: (taskId: string) => `tasks/${taskId}`,
+  TASK_COMPLETE: (taskId: string) => `tasks/${taskId}/complete`,
+  TASK_REOPEN: (taskId: string) => `tasks/${taskId}/reopen`,
+  TASK_REASSIGN: (taskId: string) => `tasks/${taskId}/reassign`,
+  TASK_REMINDER_STATE: (taskId: string) => `tasks/${taskId}/reminder`,
+  TASK_REMIND: (taskId: string) => `tasks/${taskId}/remind`,
+  TASK_COMMENTS: (taskId: string) => `tasks/${taskId}/comments`,
 };
 
 export default API_ROUTES;
