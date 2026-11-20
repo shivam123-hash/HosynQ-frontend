@@ -11,6 +11,7 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Feather from '@react-native-vector-icons/feather';
 import Colors from '../../../units/Colors';
+import AppOptionsMenu from '../common/AppOptionsMenu';
 
 export interface EmptyChatScreenProps {
   onBack?: () => void;
@@ -35,6 +36,15 @@ export const EmptyChatScreen: React.FC<EmptyChatScreenProps> = ({
 }) => {
   const insets = useSafeAreaInsets();
   const [inputText, setInputText] = useState('');
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
+
+  const handleOptionsPress = () => {
+    if (onOptionsPress) {
+      onOptionsPress();
+    } else {
+      setIsMenuOpen((prev) => !prev);
+    }
+  };
 
   const handleSend = (textToSend?: string) => {
     const text = (textToSend || inputText).trim();
@@ -70,7 +80,7 @@ export const EmptyChatScreen: React.FC<EmptyChatScreenProps> = ({
 
           <TouchableOpacity
             style={styles.circleButton}
-            onPress={onOptionsPress}
+            onPress={handleOptionsPress}
             activeOpacity={0.7}
             accessibilityRole="button"
             accessibilityLabel="More options"
@@ -78,6 +88,21 @@ export const EmptyChatScreen: React.FC<EmptyChatScreenProps> = ({
             <Feather name="more-horizontal" size={20} color={Colors.white} />
           </TouchableOpacity>
         </View>
+
+        {/* Dropdown Options Menu */}
+        <AppOptionsMenu
+          visible={isMenuOpen}
+          onClose={() => setIsMenuOpen(false)}
+          topOffset={Math.max(insets.top, 16) + 54}
+          items={[
+            {
+              id: 'invite',
+              label: 'Invite Members',
+              iconName: 'user-plus',
+              onPress: () => {},
+            },
+          ]}
+        />
 
         {/* Center Content: Concentric Rings + Copy + Structured Prompt Chips */}
         <View style={styles.centerContent}>

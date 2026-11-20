@@ -26,9 +26,12 @@ import {
   ReminderItem,
   ToastConfig,
 } from '../addFlow';
+import { SideMenuModal, LogoutConfirmationModal } from '../menuScreens';
+import { CompassModal } from '../compassScreen';
 
 export interface MainTabScreenProps {
   initialTab?: NavigationTab;
+  navigation?: any;
   onProfilePress?: () => void;
   onNotificationsPress?: () => void;
   onExplorePress?: () => void;
@@ -38,6 +41,7 @@ export interface MainTabScreenProps {
 
 const MainTabScreen: React.FC<MainTabScreenProps> = ({
   initialTab = 'home',
+  navigation,
   onProfilePress,
   onNotificationsPress,
   onExplorePress,
@@ -45,6 +49,8 @@ const MainTabScreen: React.FC<MainTabScreenProps> = ({
   onOpenNeedsAttention,
 }) => {
   const [activeTab, setActiveTab] = useState<NavigationTab>(initialTab);
+  const [sideMenuVisible, setSideMenuVisible] = useState(false);
+  const [showLogoutModal, setShowLogoutModal] = useState(false);
   const [addSheetVisible, setAddSheetVisible] = useState(false);
   const [createTaskModalVisible, setCreateTaskModalVisible] = useState(false);
   const [createEventModalVisible, setCreateEventModalVisible] = useState(false);
@@ -53,6 +59,7 @@ const MainTabScreen: React.FC<MainTabScreenProps> = ({
   const [uploadModalVisible, setUploadModalVisible] = useState(false);
   const [askModalVisible, setAskModalVisible] = useState(false);
   const [vaultModalVisible, setVaultModalVisible] = useState(false);
+  const [compassVisible, setCompassVisible] = useState(false);
   const [uploadedFileForScan, setUploadedFileForScan] = useState<
     string | undefined
   >(undefined);
@@ -90,6 +97,10 @@ const MainTabScreen: React.FC<MainTabScreenProps> = ({
     }
   }, [initialTab]);
 
+  const handleOpenMenu = onExplorePress || (() => setSideMenuVisible(true));
+  const handleAvatarPress = () => setSideMenuVisible(true);
+  const handleOpenCompass = () => setCompassVisible(true);
+
   return (
     <View style={styles.container}>
       <StatusBar barStyle="light-content" />
@@ -99,9 +110,10 @@ const MainTabScreen: React.FC<MainTabScreenProps> = ({
         {activeTab === 'home' && (
           <HomeScreen
             showBottomNavBar={false}
-            onProfilePress={onProfilePress}
+            onProfilePress={handleAvatarPress}
             onNotificationsPress={onNotificationsPress}
-            onExplorePress={onExplorePress}
+            onExplorePress={handleOpenMenu}
+            onCompassPress={handleOpenCompass}
             onOpenBrief={onOpenBrief}
             onOpenNeedsAttention={onOpenNeedsAttention}
             onAllTasksPress={() => setActiveTab('tasks')}
@@ -116,9 +128,10 @@ const MainTabScreen: React.FC<MainTabScreenProps> = ({
         {activeTab === 'tasks' && (
           <TasksScreen
             showBottomNavBar={false}
-            onProfilePress={onProfilePress}
+            onProfilePress={handleAvatarPress}
             onNotificationsPress={onNotificationsPress}
-            onExplorePress={onExplorePress}
+            onExplorePress={handleOpenMenu}
+            onCompassPress={handleOpenCompass}
             onTabChange={setActiveTab}
             onOpenCalendar={() => setActiveTab('calendar')}
             onOpenChat={() => setActiveTab('chat')}
@@ -127,18 +140,20 @@ const MainTabScreen: React.FC<MainTabScreenProps> = ({
 
         {activeTab === 'calendar' && (
           <CalendarScreen
-            onProfilePress={onProfilePress}
+            onProfilePress={handleAvatarPress}
             onNotificationsPress={onNotificationsPress}
-            onExplorePress={onExplorePress}
+            onExplorePress={handleOpenMenu}
+            onCompassPress={handleOpenCompass}
             onOpenChat={() => setActiveTab('chat')}
           />
         )}
 
         {activeTab === 'chat' && (
           <ChatsScreen
-            onProfilePress={onProfilePress}
+            onProfilePress={handleAvatarPress}
             onNotificationsPress={onNotificationsPress}
-            onExplorePress={onExplorePress}
+            onExplorePress={handleOpenMenu}
+            onCompassPress={handleOpenCompass}
             onOpenVault={() => setVaultModalVisible(true)}
           />
         )}
@@ -299,6 +314,47 @@ const MainTabScreen: React.FC<MainTabScreenProps> = ({
       <FamilyVaultModal
         visible={vaultModalVisible}
         onClose={() => setVaultModalVisible(false)}
+      />
+
+      {/* Side Menu Drawer (MNU-01) */}
+      <SideMenuModal
+        visible={sideMenuVisible}
+        onClose={() => setSideMenuVisible(false)}
+        userName="Priya Sharma"
+        familyRole="Owner"
+        familyName="The Sharma Family"
+        onSelectMyProfile={() => {
+          setSideMenuVisible(false);
+          if (onProfilePress) {
+            onProfilePress();
+          } else if (navigation) {
+            navigation.navigate('MyProfile');
+          }
+        }}
+        onSelectNotifications={() => navigation?.navigate('NotificationPreferences')}
+        onSelectPrivacyConsent={() => navigation?.navigate('PrivacyConsent')}
+        onSelectSecurity={() => navigation?.navigate('Security')}
+        onSelectSubscription={() => navigation?.navigate('Subscription')}
+        onSelectAccount={() => navigation?.navigate('Account')}
+        onSelectHelpSupport={() => navigation?.navigate('HelpSupport')}
+        onSelectPolicies={() => navigation?.navigate('Policies')}
+        onSelectAbout={() => navigation?.navigate('AboutUs')}
+        onLogout={() => setShowLogoutModal(true)}
+      />
+      <LogoutConfirmationModal
+        visible={showLogoutModal}
+        onClose={() => setShowLogoutModal(false)}
+        onConfirmLogout={() => {
+          setShowLogoutModal(false);
+          navigation?.navigate('Auth');
+        }}
+      />
+
+      {/* Compass & Heading Home Modal */}
+      <CompassModal
+        visible={compassVisible}
+        initialScreen="compass"
+        onClose={() => setCompassVisible(false)}
       />
     </View>
   );

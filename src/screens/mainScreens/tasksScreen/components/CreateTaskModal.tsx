@@ -66,8 +66,29 @@ const CreateTaskModal: React.FC<CreateTaskModalProps> = ({
   const [showDiscardModal, setShowDiscardModal] = useState(false);
 
   React.useEffect(() => {
+    if (!visible) {
+      setShowDiscardModal(false);
+    }
     setTitle(initialTitle);
   }, [initialTitle, visible]);
+
+  const resetForm = () => {
+    setTitle('');
+    setNotes('');
+    setAssignee('You');
+    setAssigneesList(['You']);
+    setViewers('Everyone in the family');
+    setViewersOption('everyone');
+    setCategory('household');
+    setPriority('medium');
+    setDueDate('Mon, 2 Nov');
+    setDueFormatted('Mon, 2 Nov · by 6:00 PM');
+    setDueTime('6:00 PM');
+    setRepeat('Doesn’t repeat');
+    setReminders('1 hour before');
+    setRemindersList(['1 hour before']);
+    setAlsoRemindViewers(false);
+  };
 
   const handleCreate = () => {
     if (!title.trim()) return;
@@ -91,13 +112,27 @@ const CreateTaskModal: React.FC<CreateTaskModalProps> = ({
       isCompleted: false,
     });
 
-    setTitle('');
-    setNotes('');
+    resetForm();
     onClose();
   };
 
+  const isFormDirty =
+    title.trim().length > 0 ||
+    notes.trim().length > 0 ||
+    assignee !== 'You' ||
+    assigneesList.length !== 1 ||
+    assigneesList[0] !== 'You' ||
+    viewersOption !== 'everyone' ||
+    category !== 'household' ||
+    priority !== 'medium' ||
+    (repeat !== 'Doesn’t repeat' && repeat !== "Doesn't repeat") ||
+    dueDate !== 'Mon, 2 Nov' ||
+    dueTime !== '6:00 PM' ||
+    remindersList.length !== 1 ||
+    remindersList[0] !== '1 hour before';
+
   const handleClose = () => {
-    if (title.trim().length > 0 || notes.trim().length > 0) {
+    if (isFormDirty) {
       setShowDiscardModal(true);
     } else {
       onClose();
@@ -106,8 +141,7 @@ const CreateTaskModal: React.FC<CreateTaskModalProps> = ({
 
   const handleDiscard = () => {
     setShowDiscardModal(false);
-    setTitle('');
-    setNotes('');
+    resetForm();
     onClose();
   };
 
@@ -448,7 +482,7 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   titleInputWrapper: {
-    backgroundColor: '#0B1A2F',
+    backgroundColor: 'transparent',
     borderRadius: 16,
     borderWidth: 1.5,
     borderColor: '#F0913A',
@@ -463,10 +497,10 @@ const styles = StyleSheet.create({
     color: '#CAD4DF',
   },
   optionsCard: {
-    backgroundColor: '#122440',
+    backgroundColor: 'transparent',
     borderRadius: 20,
-    borderWidth: 1,
-    borderColor: '#1F3352',
+    borderWidth: 1.5,
+    borderColor: '#3A4556',
     overflow: 'hidden',
     marginBottom: 20,
   },
@@ -531,10 +565,10 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   notesInputCard: {
-    backgroundColor: '#122440',
+    backgroundColor: 'transparent',
     borderRadius: 16,
-    borderWidth: 1,
-    borderColor: '#1F3352',
+    borderWidth: 1.5,
+    borderColor: '#3A4556',
     padding: 14,
     minHeight: 80,
   },
@@ -568,6 +602,6 @@ const styles = StyleSheet.create({
   createButtonText: {
     fontSize: 16,
     fontWeight: '700',
-    color: '#0B1A2F',
+    color: '#FFFFFF',
   },
 });

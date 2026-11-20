@@ -788,17 +788,18 @@ const DueDateTimeModal: React.FC<DueDateTimeModalProps> = ({
               </View>
             )}
 
-            {/* Toggle: No specific time */}
-            <View style={styles.switchRow}>
-              <Text style={styles.switchLabel}>No specific time</Text>
-              <Switch
-                value={noSpecificTime}
-                onValueChange={setNoSpecificTime}
-                trackColor={{ false: '#3A4556', true: '#F0913A' }}
-                thumbColor="#FFFFFF"
-              />
-            </View>
           </ScrollView>
+
+          {/* Toggle: No specific time */}
+          <View style={styles.switchRow}>
+            <Text style={styles.switchLabel}>No specific time</Text>
+            <Switch
+              value={noSpecificTime}
+              onValueChange={setNoSpecificTime}
+              trackColor={{ false: '#3A4556', true: '#F0913A' }}
+              thumbColor="#FFFFFF"
+            />
+          </View>
 
           {/* Done Button */}
           <TouchableOpacity
@@ -832,7 +833,7 @@ const styles = StyleSheet.create({
     bottom: 0,
   },
   sheetContainer: {
-    backgroundColor: '#0B1A2F',
+    backgroundColor: '#122440',
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
     borderTopWidth: 1,
@@ -872,12 +873,12 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
   },
   quickChip: {
-    height: 38,
+    height: 36,
     paddingHorizontal: 16,
-    borderRadius: 19,
+    borderRadius: 8,
     borderWidth: 1.5,
-    borderColor: '#1F3352',
-    backgroundColor: '#122440',
+    borderColor: '#3A4556',
+    backgroundColor: 'transparent',
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -901,23 +902,23 @@ const styles = StyleSheet.create({
     color: '#8A97AB',
   },
   calendarCard: {
-    backgroundColor: '#122440',
+    backgroundColor: 'transparent',
     borderRadius: 20,
-    borderWidth: 1,
-    borderColor: '#1F3352',
-    padding: 16,
-    marginBottom: 20,
+    borderWidth: 1.5,
+    borderColor: '#3A4556',
+    padding: 14,
+    marginBottom: 16,
   },
   calendarHeaderRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginBottom: 14,
+    marginBottom: 10,
   },
   chevronBtn: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
+    width: 32,
+    height: 32,
+    borderRadius: 16,
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -929,7 +930,7 @@ const styles = StyleSheet.create({
   weekHeadersRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginBottom: 10,
+    marginBottom: 8,
   },
   weekHeaderText: {
     flex: 1,
@@ -944,15 +945,15 @@ const styles = StyleSheet.create({
   },
   dayCell: {
     width: '14.28%',
-    height: 42,
+    height: 36,
     justifyContent: 'center',
     alignItems: 'center',
     marginVertical: 1,
   },
   dayCircle: {
-    width: 34,
-    height: 34,
-    borderRadius: 17,
+    width: 32,
+    height: 32,
+    borderRadius: 16,
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -980,19 +981,19 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     letterSpacing: 1.2,
     color: '#8A97AB',
-    marginBottom: 12,
+    marginBottom: 10,
   },
   quickTimeRow: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: 8,
-    marginBottom: 16,
+    marginBottom: 8,
   },
   timePickerCard: {
-    backgroundColor: '#0F1E33',
+    backgroundColor: 'transparent',
     borderRadius: 16,
-    borderWidth: 1,
-    borderColor: '#1F3352',
+    borderWidth: 1.5,
+    borderColor: '#3A4556',
     padding: 14,
     marginBottom: 16,
   },
@@ -1036,10 +1037,10 @@ const styles = StyleSheet.create({
   timeNumberPill: {
     height: 34,
     paddingHorizontal: 12,
-    borderRadius: 17,
-    backgroundColor: '#16283E',
-    borderWidth: 1,
-    borderColor: '#1F3352',
+    borderRadius: 8,
+    backgroundColor: 'transparent',
+    borderWidth: 1.5,
+    borderColor: '#3A4556',
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -1059,8 +1060,8 @@ const styles = StyleSheet.create({
   applyTimeBtn: {
     height: 40,
     borderRadius: 20,
-    backgroundColor: '#1B3150',
-    borderWidth: 1,
+    backgroundColor: 'transparent',
+    borderWidth: 1.5,
     borderColor: '#F0913A',
     justifyContent: 'center',
     alignItems: 'center',
@@ -1075,8 +1076,8 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingVertical: 8,
-    marginBottom: 16,
+    paddingVertical: 10,
+    marginBottom: 10,
   },
   switchLabel: {
     fontSize: 16,
@@ -1089,7 +1090,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#F0913A',
     justifyContent: 'center',
     alignItems: 'center',
-    marginTop: 8,
+    marginTop: 4,
   },
   doneBtnText: {
     fontSize: 16,

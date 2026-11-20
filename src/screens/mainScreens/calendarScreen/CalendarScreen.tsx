@@ -22,6 +22,8 @@ import {
   CancelEventModal,
   CreateEventModal,
 } from './components';
+import { TaskDetailModal } from '../tasksScreen/components';
+import { TaskItem } from '../tasksScreen/types';
 import {
   INITIAL_CALENDAR_EVENTS,
   INITIAL_TASKS_DUE,
@@ -42,6 +44,7 @@ export interface CalendarScreenProps {
   onProfilePress?: () => void;
   onNotificationsPress?: () => void;
   onExplorePress?: () => void;
+  onCompassPress?: () => void;
   onOpenChat?: () => void;
 }
 
@@ -52,6 +55,7 @@ export const CalendarScreen: React.FC<CalendarScreenProps> = ({
   onProfilePress,
   onNotificationsPress,
   onExplorePress,
+  onCompassPress,
 }) => {
   const insets = useSafeAreaInsets();
 
@@ -85,6 +89,7 @@ export const CalendarScreen: React.FC<CalendarScreenProps> = ({
   const [createModalVisible, setCreateModalVisible] = useState(false);
   const [eventToEdit, setEventToEdit] = useState<CalendarEvent | null>(null);
   const [selectedImportantDate, setSelectedImportantDate] = useState<ImportantDateItem | null>(null);
+  const [selectedTaskForDetail, setSelectedTaskForDetail] = useState<TaskItem | null>(null);
 
   // Filtered Events
   const filteredEvents = useMemo(() => {
@@ -127,11 +132,12 @@ export const CalendarScreen: React.FC<CalendarScreenProps> = ({
   };
 
   const handleSaveEvent = (eventData: Partial<CalendarEvent>) => {
-    if (eventToEdit) {
+    const targetId = eventToEdit?.id || eventData.id;
+    if (targetId) {
       setEvents((prev) =>
-        prev.map((e) => (e.id === eventToEdit.id ? ({ ...e, ...eventData } as CalendarEvent) : e))
+        prev.map((e) => (e.id === targetId ? ({ ...e, ...eventData } as CalendarEvent) : e))
       );
-      if (selectedEventForDetail?.id === eventToEdit.id) {
+      if (selectedEventForDetail?.id === targetId) {
         setSelectedEventForDetail((prev) => (prev ? ({ ...prev, ...eventData } as CalendarEvent) : null));
       }
     } else {
@@ -212,6 +218,7 @@ export const CalendarScreen: React.FC<CalendarScreenProps> = ({
         onAvatarPress={onProfilePress}
         onExplorePress={onExplorePress}
         onNotificationsPress={onNotificationsPress}
+        onCompassPress={onCompassPress}
       />
 
       {/* Calendar Header */}
@@ -260,6 +267,20 @@ export const CalendarScreen: React.FC<CalendarScreenProps> = ({
               events={filteredEvents}
               tasksDue={filteredTasks}
               onSelectEvent={(evt) => setSelectedEventForDetail(evt)}
+              onSelectTask={(t) => {
+                const taskItem: TaskItem = {
+                  id: t.id,
+                  title: t.title,
+                  dueDate: t.isOverdue ? t.overdueText || 'Overdue' : 'Today',
+                  dueType: t.isOverdue ? 'overdue' : 'today',
+                  assignee: t.assignee,
+                  assigneeInitial: (t.assignee || 'P').slice(0, 1),
+                  category: 'household',
+                  isCompleted: t.isCompleted,
+                  priority: 'medium',
+                };
+                setSelectedTaskForDetail(taskItem);
+              }}
               onToggleTask={handleToggleTask}
               onAddEvent={() => {
                 setEventToEdit(null);
@@ -275,6 +296,20 @@ export const CalendarScreen: React.FC<CalendarScreenProps> = ({
               events={filteredEvents}
               tasksDue={filteredTasks}
               onSelectEvent={(evt) => setSelectedEventForDetail(evt)}
+              onSelectTask={(t) => {
+                const taskItem: TaskItem = {
+                  id: t.id,
+                  title: t.title,
+                  dueDate: t.isOverdue ? t.overdueText || 'Overdue' : 'Today',
+                  dueType: t.isOverdue ? 'overdue' : 'today',
+                  assignee: t.assignee,
+                  assigneeInitial: (t.assignee || 'P').slice(0, 1),
+                  category: 'household',
+                  isCompleted: t.isCompleted,
+                  priority: 'medium',
+                };
+                setSelectedTaskForDetail(taskItem);
+              }}
               onSelectDate={(d) => {
                 setSelectedDate(d);
                 setViewMode('day');
@@ -337,14 +372,12 @@ export const CalendarScreen: React.FC<CalendarScreenProps> = ({
         visible={
           Boolean(selectedEventForDetail) &&
           !selectedEventForComments &&
-          !selectedEventForCancel &&
-          !createModalVisible
+          !selectedEventForCancel
         }
         event={selectedEventForDetail}
         onClose={() => setSelectedEventForDetail(null)}
         onEditEvent={(evt) => {
-          setEventToEdit(evt);
-          setCreateModalVisible(true);
+          handleSaveEvent(evt);
         }}
         onOpenComments={(evt) => setSelectedEventForComments(evt)}
         onCancelEvent={(evt) => handleConfirmCancelEvent(evt.id)}
@@ -392,6 +425,33 @@ export const CalendarScreen: React.FC<CalendarScreenProps> = ({
           Alert.alert('Renewal Task Added', `Added task for ${item.title} to your family tasks list.`);
         }}
       />
+
+      {/* Task Detail Modal */}
+      {selectedTaskForDetail && (
+        <TaskDetailModal
+          visible={Boolean(selectedTaskForDetail)}
+          task={selectedTaskForDetail}
+          onClose={() => setSelectedTaskForDetail(null)}
+          onToggleComplete={(t) => {
+            handleToggleTask(t.id);
+            setSelectedTaskForDetail(null);
+          }}
+          onReassign={(task, assignee) => {
+            setTasksDue((prev) =>
+              prev.map((item) =>
+                item.id === task.id ? { ...item, assignee } : item
+              )
+            );
+            setSelectedTaskForDetail((prev) =>
+              prev ? { ...prev, assignee } : null
+            );
+          }}
+          onDelete={(t: TaskItem) => {
+            setTasksDue((prev) => prev.filter((item) => item.id !== t.id));
+            setSelectedTaskForDetail(null);
+          }}
+        />
+      )}
     </View>
   );
 };

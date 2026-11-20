@@ -68,7 +68,7 @@ const styles = StyleSheet.create({
   },
   pill: {
     height: 36,
-    borderRadius: 18,
+    borderRadius: 8,
     paddingHorizontal: 16,
     justifyContent: 'center',
     alignItems: 'center',
@@ -77,7 +77,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#F0913A',
   },
   inactivePill: {
-    backgroundColor: '#122440',
+    backgroundColor: 'transparent',
     borderWidth: 1.5,
     borderColor: '#1F3352',
   },

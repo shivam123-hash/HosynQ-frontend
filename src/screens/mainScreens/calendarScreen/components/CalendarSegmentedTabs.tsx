@@ -53,16 +53,17 @@ const styles = StyleSheet.create({
   },
   tabsTrack: {
     flexDirection: 'row',
-    backgroundColor: '#0F2036',
-    borderRadius: 22,
+    height: 48,
+    backgroundColor: 'transparent',
+    borderRadius: 24,
     padding: 4,
-    borderWidth: 1,
-    borderColor: '#1F3352',
+    borderWidth: 1.5,
+    borderColor: '#3A4556',
   },
   tabBtn: {
     flex: 1,
-    height: 36,
-    borderRadius: 18,
+    height: 40,
+    borderRadius: 20,
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -72,7 +73,7 @@ const styles = StyleSheet.create({
   tabText: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#8A97AB',
+    color: '#CAD4DF',
   },
   tabTextActive: {
     color: '#0B1A2F',

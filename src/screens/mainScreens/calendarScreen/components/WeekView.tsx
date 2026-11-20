@@ -16,6 +16,7 @@ export interface WeekViewProps {
   onSelectEvent: (event: CalendarEvent) => void;
   onSelectDate?: (date: string) => void;
   onAddEventForDate?: (date: string) => void;
+  onSelectTask?: (task: CalendarTaskDue) => void;
 }
 
 interface WeekDayRowConfig {
@@ -39,6 +40,7 @@ export const WeekView: React.FC<WeekViewProps> = ({
   events,
   tasksDue,
   onSelectEvent,
+  onSelectTask,
 }) => {
   return (
     <ScrollView
@@ -143,12 +145,18 @@ export const WeekView: React.FC<WeekViewProps> = ({
 
                     {/* Tasks */}
                     {dayTasks.map((task) => (
-                      <View key={task.id} style={styles.taskPill}>
+                      <TouchableOpacity
+                        key={task.id}
+                        style={styles.taskPill}
+                        onPress={() => onSelectTask?.(task)}
+                        activeOpacity={onSelectTask ? 0.75 : 1}
+                        disabled={!onSelectTask}
+                      >
                         <View style={styles.taskCheckboxCircle} />
                         <Text style={styles.taskTitleText} numberOfLines={1}>
                           {task.title}
                         </Text>
-                      </View>
+                      </TouchableOpacity>
                     ))}
                   </View>
                 ) : (

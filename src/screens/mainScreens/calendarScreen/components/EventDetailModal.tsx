@@ -14,6 +14,8 @@ import Feather from '@react-native-vector-icons/feather';
 import { CalendarEvent, EventComment } from '../types';
 import CancelEventModal from './CancelEventModal';
 import EventCommentsModal from './EventCommentsModal';
+import CreateEventModal from './CreateEventModal';
+import AppOptionsMenu from '../../common/AppOptionsMenu';
 
 export interface EventDetailModalProps {
   visible: boolean;
@@ -41,6 +43,7 @@ export const EventDetailModal: React.FC<EventDetailModalProps> = ({
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [showCancelModal, setShowCancelModal] = useState(false);
   const [showComments, setShowComments] = useState(false);
+  const [showEditModal, setShowEditModal] = useState(false);
 
   useEffect(() => {
     if (eventProp) {
@@ -53,8 +56,15 @@ export const EventDetailModal: React.FC<EventDetailModalProps> = ({
       setIsMenuOpen(false);
       setShowCancelModal(false);
       setShowComments(false);
+      setShowEditModal(false);
     }
   }, [visible]);
+
+  useEffect(() => {
+    if (showCancelModal || showEditModal || showComments) {
+      setIsMenuOpen(false);
+    }
+  }, [showCancelModal, showEditModal, showComments]);
 
   const event = eventProp || cachedEvent;
 
@@ -63,11 +73,21 @@ export const EventDetailModal: React.FC<EventDetailModalProps> = ({
   const handleClose = () => {
     setIsMenuOpen(false);
     setShowComments(false);
+    setShowCancelModal(false);
+    setShowEditModal(false);
     onClose();
   };
 
   const handleToggleMenu = () => {
+    if (showCancelModal || showEditModal || showComments) return;
     setIsMenuOpen((prev) => !prev);
+  };
+
+  const handleSaveEditedEvent = (updatedData: Partial<CalendarEvent>) => {
+    const updated = { ...(cachedEvent || event), ...updatedData };
+    setCachedEvent(updated);
+    setShowEditModal(false);
+    onEditEvent(updated);
   };
 
   const handleLocalAddComment = (eventId: string, commentText: string) => {
@@ -118,6 +138,7 @@ export const EventDetailModal: React.FC<EventDetailModalProps> = ({
             style={styles.circleBtn}
             onPress={handleToggleMenu}
             activeOpacity={0.7}
+            disabled={showCancelModal || showEditModal || showComments}
             accessibilityRole="button"
             accessibilityLabel="More options"
           >
@@ -126,81 +147,36 @@ export const EventDetailModal: React.FC<EventDetailModalProps> = ({
         </View>
 
         {/* Dropdown Options Menu */}
-        {isMenuOpen && (
-          <>
-            <Pressable
-              style={styles.menuBackdrop}
-              onPress={() => setIsMenuOpen(false)}
-              accessibilityRole="button"
-              accessibilityLabel="Dismiss options menu"
-            />
-            <View style={[styles.dropdownMenu, { top: insets.top + 58 }]}>
-              <TouchableOpacity
-                style={styles.dropdownItem}
-                onPress={() => {
-                  setIsMenuOpen(false);
-                  setShowComments(true);
-                  onOpenComments(event);
-                }}
-                activeOpacity={0.7}
-                accessibilityRole="button"
-                accessibilityLabel={`Comments, ${event.comments.length} comments`}
-              >
-                <Feather
-                  name="message-square"
-                  size={16}
-                  color="#8A97AB"
-                  style={styles.dropdownIcon}
-                />
-                <Text style={styles.dropdownItemText}>
-                  Comments ({event.comments.length})
-                </Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                style={styles.dropdownItem}
-                onPress={() => {
-                  setIsMenuOpen(false);
-                  onEditEvent(event);
-                }}
-                activeOpacity={0.7}
-                accessibilityRole="button"
-                accessibilityLabel="Edit Event"
-              >
-                <Feather
-                  name="edit-2"
-                  size={16}
-                  color="#8A97AB"
-                  style={styles.dropdownIcon}
-                />
-                <Text style={styles.dropdownItemText}>Edit Event</Text>
-              </TouchableOpacity>
-
-              <View style={styles.dropdownDivider} />
-
-              <TouchableOpacity
-                style={styles.dropdownItem}
-                onPress={() => {
-                  setIsMenuOpen(false);
-                  setShowCancelModal(true);
-                }}
-                activeOpacity={0.7}
-                accessibilityRole="button"
-                accessibilityLabel="Cancel Event"
-              >
-                <Feather
-                  name="trash-2"
-                  size={16}
-                  color="#EF4444"
-                  style={styles.dropdownIcon}
-                />
-                <Text style={styles.dropdownItemTextDestructive}>
-                  Cancel Event
-                </Text>
-              </TouchableOpacity>
-            </View>
-          </>
-        )}
+        <AppOptionsMenu
+          visible={isMenuOpen && !showCancelModal && !showEditModal && !showComments}
+          onClose={() => setIsMenuOpen(false)}
+          topOffset={insets.top + 58}
+          items={[
+            {
+              id: 'comments',
+              label: `Comments (${event.comments.length})`,
+              iconName: 'message-square',
+              onPress: () => {
+                setShowComments(true);
+                onOpenComments(event);
+              },
+            },
+            {
+              id: 'edit',
+              label: 'Edit Event',
+              iconName: 'edit-2',
+              onPress: () => setShowEditModal(true),
+              showDividerAfter: true,
+            },
+            {
+              id: 'cancel',
+              label: 'Cancel Event',
+              iconName: 'trash-2',
+              destructive: true,
+              onPress: () => setShowCancelModal(true),
+            },
+          ]}
+        />
 
         <ScrollView
           showsVerticalScrollIndicator={false}
@@ -220,7 +196,14 @@ export const EventDetailModal: React.FC<EventDetailModalProps> = ({
                   { backgroundColor: event.categoryColor || '#3B82F6' },
                 ]}
               />
-              <Text style={styles.categoryBadgeText}>{event.category}</Text>
+              <Text
+                style={[
+                  styles.categoryBadgeText,
+                  { color: event.categoryColor || '#3B82F6' },
+                ]}
+              >
+                {event.category}
+              </Text>
             </View>
 
             <View style={styles.todayBadge}>
@@ -387,7 +370,10 @@ export const EventDetailModal: React.FC<EventDetailModalProps> = ({
         <View style={styles.bottomBar}>
           <TouchableOpacity
             style={styles.editBtn}
-            onPress={() => onEditEvent(event)}
+            onPress={() => {
+              setIsMenuOpen(false);
+              setShowEditModal(true);
+            }}
             activeOpacity={0.8}
             accessibilityRole="button"
             accessibilityLabel="Edit event"
@@ -412,14 +398,31 @@ export const EventDetailModal: React.FC<EventDetailModalProps> = ({
           </TouchableOpacity>
         </View>
 
+        {/* Edit Event Modal Overlay (CAL-09 / CAL-10) */}
+        {showEditModal && (
+          <CreateEventModal
+            visible={showEditModal}
+            eventToEdit={cachedEvent || event}
+            onClose={() => setShowEditModal(false)}
+            onSaveEvent={handleSaveEditedEvent}
+            onDeleteEvent={() => {
+              setShowEditModal(false);
+              handleClose();
+              onCancelEvent(cachedEvent || event);
+            }}
+            asModal={false}
+          />
+        )}
+
         {/* Cancel Event Dialog Overlay (CAL-08) */}
         <CancelEventModal
           visible={showCancelModal}
-          event={event}
+          event={cachedEvent || event}
           onClose={() => setShowCancelModal(false)}
           onConfirmCancel={() => {
             setShowCancelModal(false);
-            onCancelEvent(event);
+            handleClose();
+            onCancelEvent(cachedEvent || event);
           }}
           asModal={false}
         />
@@ -532,10 +535,10 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     height: 28,
-    borderRadius: 14,
+    borderRadius: 8,
     paddingHorizontal: 12,
-    borderWidth: 1,
-    backgroundColor: 'rgba(59, 130, 246, 0.12)',
+    borderWidth: 1.5,
+    backgroundColor: 'transparent',
   },
   categoryDot: {
     width: 6,
@@ -546,17 +549,16 @@ const styles = StyleSheet.create({
   categoryBadgeText: {
     fontSize: 12,
     fontWeight: '600',
-    color: '#CAD4DF',
   },
   todayBadge: {
     flexDirection: 'row',
     alignItems: 'center',
     height: 28,
-    borderRadius: 14,
+    borderRadius: 8,
     paddingHorizontal: 12,
-    borderWidth: 1,
+    borderWidth: 1.5,
     borderColor: '#F0913A',
-    backgroundColor: 'rgba(240, 145, 58, 0.12)',
+    backgroundColor: 'transparent',
   },
   todayDot: {
     width: 6,

@@ -1,5 +1,5 @@
 import React from 'react';
-import { Text, TouchableOpacity, FlatList } from 'react-native';
+import { Text } from 'react-native';
 import ReactTestRenderer from 'react-test-renderer';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import OnboardingScreen, {
@@ -41,10 +41,6 @@ describe('OnboardingScreen', () => {
     const renderer = await renderOnboarding();
     expect(renderer.root).toBeTruthy();
 
-    const flatList = renderer.root.findByType(FlatList);
-    expect(flatList).toBeTruthy();
-    expect(flatList.props.data).toHaveLength(4);
-
     const textNodes = renderer.root.findAllByType(Text);
     const texts = textNodes.map((n) => n.props.children).flat();
 
@@ -58,9 +54,8 @@ describe('OnboardingScreen', () => {
     const onSkipMock = jest.fn();
     const renderer = await renderOnboarding({ onSkip: onSkipMock });
 
-    const touchables = renderer.root.findAllByType(TouchableOpacity);
-    const skipButton = touchables.find(
-      (t) => t.props.accessibilityLabel === 'Skip onboarding'
+    const skipButton = renderer.root.find(
+      (node) => node.props?.accessibilityLabel === 'Skip onboarding'
     );
     expect(skipButton).toBeTruthy();
 
@@ -74,9 +69,8 @@ describe('OnboardingScreen', () => {
   it('has disabled back button on the first slide', async () => {
     const renderer = await renderOnboarding();
 
-    const touchables = renderer.root.findAllByType(TouchableOpacity);
-    const backButton = touchables.find(
-      (t) => t.props.accessibilityLabel === 'Previous slide'
+    const backButton = renderer.root.find(
+      (node) => node.props?.accessibilityLabel === 'Previous onboarding page'
     );
     expect(backButton).toBeTruthy();
     expect(backButton?.props.disabled).toBe(true);
@@ -86,29 +80,35 @@ describe('OnboardingScreen', () => {
     const onFinishMock = jest.fn();
     const renderer = await renderOnboarding({ onFinish: onFinishMock });
 
-    const touchables = renderer.root.findAllByType(TouchableOpacity);
-    const nextButton = touchables.find(
-      (t) => t.props.accessibilityLabel === 'Next slide'
+    // Slide 0 -> 1
+    let nextButton = renderer.root.find(
+      (node) => node.props?.accessibilityLabel === 'Next onboarding page'
     );
     expect(nextButton).toBeTruthy();
-
-    // Next button advances slide
     await ReactTestRenderer.act(() => {
       nextButton?.props.onPress();
     });
 
-    // Simulate reaching last slide
-    const flatList = renderer.root.findByType(FlatList);
+    // Slide 1 -> 2
+    nextButton = renderer.root.find(
+      (node) => node.props?.accessibilityLabel === 'Next onboarding page'
+    );
     await ReactTestRenderer.act(() => {
-      flatList.props.onViewableItemsChanged({
-        viewableItems: [{ index: 3 }],
-      });
+      nextButton?.props.onPress();
+    });
+
+    // Slide 2 -> 3 (Last slide)
+    nextButton = renderer.root.find(
+      (node) => node.props?.accessibilityLabel === 'Next onboarding page'
+    );
+    await ReactTestRenderer.act(() => {
+      nextButton?.props.onPress();
     });
 
     // On last slide, finish button has 'Get started' accessibility label
-    const finishButton = renderer.root
-      .findAllByType(TouchableOpacity)
-      .find((t) => t.props.accessibilityLabel === 'Get started');
+    const finishButton = renderer.root.find(
+      (node) => node.props?.accessibilityLabel === 'Get started'
+    );
     expect(finishButton).toBeTruthy();
 
     await ReactTestRenderer.act(() => {

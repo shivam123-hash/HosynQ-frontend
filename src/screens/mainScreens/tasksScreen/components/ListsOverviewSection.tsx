@@ -152,7 +152,7 @@ const ListsOverviewSection: React.FC<ListsOverviewSectionProps> = ({
         accessibilityLabel="Vacation Planner: Jaipur, 13-16 Nov"
       >
         <View style={styles.airplaneCircle}>
-          <Feather name="send" size={20} color="#2DD4BF" />
+          <Ionicons name="airplane-outline" size={24} color="#0B1A2F" />
         </View>
 
         <View style={styles.vacationTextCol}>
@@ -265,20 +265,21 @@ const styles = StyleSheet.create({
     paddingBottom: 40,
   },
   vacationBanner: {
-    backgroundColor: '#0D2235',
-    borderRadius: 20,
+    backgroundColor: '#0F2A33',
+    borderRadius: 24,
     borderWidth: 1.5,
     borderColor: '#2DD4BF',
-    padding: 16,
+    paddingVertical: 14,
+    paddingHorizontal: 16,
     flexDirection: 'row',
     alignItems: 'center',
     marginBottom: 20,
   },
   airplaneCircle: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    backgroundColor: '#11424E',
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: '#2DD4BF',
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 14,
@@ -290,17 +291,17 @@ const styles = StyleSheet.create({
     fontSize: 11,
     fontWeight: '700',
     color: '#2DD4BF',
-    letterSpacing: 0.8,
-    marginBottom: 3,
+    letterSpacing: 1.2,
+    marginBottom: 4,
   },
   vacationTitle: {
-    fontSize: 16,
+    fontSize: 17,
     fontWeight: '700',
     color: '#FFFFFF',
-    marginBottom: 2,
+    marginBottom: 3,
   },
   vacationSubtitle: {
-    fontSize: 12,
+    fontSize: 13,
     fontWeight: '500',
     color: '#8A97AB',
   },
@@ -312,10 +313,10 @@ const styles = StyleSheet.create({
   },
   listCard: {
     width: (SCREEN_WIDTH - 52) / 2,
-    backgroundColor: '#122440',
+    backgroundColor: 'transparent',
     borderRadius: 20,
-    borderWidth: 1,
-    borderColor: '#1F3352',
+    borderWidth: 1.5,
+    borderColor: '#3A4556',
     padding: 14,
     minHeight: 156,
     justifyContent: 'space-between',
@@ -394,7 +395,7 @@ const styles = StyleSheet.create({
     borderColor: '#F0913A',
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#122440',
+    backgroundColor: 'transparent',
   },
 
   // Empty state styles
@@ -454,10 +455,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     height: 36,
     paddingHorizontal: 14,
-    borderRadius: 18,
-    borderWidth: 1,
-    borderColor: '#1F3352',
-    backgroundColor: '#122440',
+    borderRadius: 8,
+    borderWidth: 1.5,
+    borderColor: '#3A4556',
+    backgroundColor: 'transparent',
   },
   dot: {
     width: 8,

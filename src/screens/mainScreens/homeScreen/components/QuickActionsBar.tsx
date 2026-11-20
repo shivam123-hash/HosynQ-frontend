@@ -59,6 +59,8 @@ const QuickActionsBar: React.FC<QuickActionsBarProps> = ({
           onPress={action.onPress}
           activeOpacity={0.7}
           style={styles.actionItem}
+          accessibilityRole="button"
+          accessibilityLabel={action.label}
         >
           <View style={styles.ring}>{action.renderIcon()}</View>
           <Text style={styles.label} numberOfLines={2}>

@@ -98,7 +98,11 @@ export const EventRemindersModal: React.FC<EventRemindersModalProps> = ({
               return (
                 <TouchableOpacity
                   key={opt}
-                  style={[styles.optionRow, idx > 0 && styles.rowDivider]}
+                  style={[
+                    styles.optionRow,
+                    isChecked && styles.optionRowSelected,
+                    idx > 0 && styles.rowDivider,
+                  ]}
                   onPress={() => toggleOption(opt)}
                   activeOpacity={0.7}
                   accessibilityRole="checkbox"
@@ -193,7 +197,7 @@ const styles = StyleSheet.create({
     bottom: 0,
   },
   sheetContainer: {
-    backgroundColor: '#0B1A2F',
+    backgroundColor: '#122440',
     borderTopLeftRadius: 28,
     borderTopRightRadius: 28,
     borderTopWidth: 1,
@@ -227,10 +231,10 @@ const styles = StyleSheet.create({
     paddingBottom: 16,
   },
   optionsCard: {
-    backgroundColor: '#122440',
+    backgroundColor: 'transparent',
     borderRadius: 20,
-    borderWidth: 1,
-    borderColor: '#1F3352',
+    borderWidth: 1.5,
+    borderColor: '#3A4556',
     overflow: 'hidden',
     marginBottom: 20,
   },
@@ -240,6 +244,10 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingHorizontal: 16,
     paddingVertical: 15,
+    backgroundColor: 'transparent',
+  },
+  optionRowSelected: {
+    backgroundColor: '#1A2B47',
   },
   rowDivider: {
     borderTopWidth: 1,

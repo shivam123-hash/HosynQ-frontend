@@ -24,7 +24,11 @@ import {
   BriefLoadingState,
   BriefEmptyState,
 } from './components';
-import { BriefTimeframe, BriefTaskItem, ChecklistItem } from './types';
+import { TaskDetailModal } from '../tasksScreen/components';
+import { TaskItem } from '../tasksScreen/types';
+import { EventDetailModal } from '../calendarScreen/components';
+import { CalendarEvent } from '../calendarScreen/types';
+import { BriefTimeframe, BriefTaskItem, BriefEventItem, ChecklistItem } from './types';
 import {
   TODAY_AI_TEXT,
   TODAY_EVENTS,
@@ -54,6 +58,8 @@ export interface YourBriefScreenProps {
   onOpenTasks?: () => void;
   onAddTask?: () => void;
   onAddEvent?: () => void;
+  onSelectEvent?: (event: CalendarEvent) => void;
+  onSelectTask?: (task: TaskItem) => void;
 }
 
 const YourBriefScreen: React.FC<YourBriefScreenProps> = ({
@@ -66,17 +72,108 @@ const YourBriefScreen: React.FC<YourBriefScreenProps> = ({
   onOpenTasks,
   onAddTask,
   onAddEvent,
+  onSelectEvent,
+  onSelectTask,
 }) => {
   const [selectedTimeframe, setSelectedTimeframe] = useState<BriefTimeframe>(initialTimeframe);
   const [isLoading, setIsLoading] = useState<boolean>(forceLoading);
   const [isBriefEmpty, setIsBriefEmpty] = useState<boolean>(isEmpty);
   const [refreshing, setRefreshing] = useState<boolean>(false);
+  const [selectedTaskForDetail, setSelectedTaskForDetail] = useState<TaskItem | null>(null);
+  const [selectedEventForDetail, setSelectedEventForDetail] = useState<CalendarEvent | null>(null);
 
   // Interactive Task List state for "Due today"
   const [tasks, setTasks] = useState<BriefTaskItem[]>(TODAY_DUE_TASKS);
+  const [todayEvents, setTodayEvents] = useState<BriefEventItem[]>(TODAY_EVENTS);
 
   // Checklist state for Empty state
   const [checklist] = useState<ChecklistItem[]>(EMPTY_CHECKLIST);
+
+  const toTaskItem = (
+    t: Partial<BriefTaskItem> & { title: string }
+  ): TaskItem => {
+    const assignee = t.assignee || 'Priya';
+    return {
+      id: t.id || `task-${Date.now()}`,
+      title: t.title,
+      dueDate: t.dueDate || 'Today',
+      dueType: t.isOverdue ? 'overdue' : 'today',
+      assignee,
+      assigneeInitial: assignee.slice(0, 1).toUpperCase(),
+      category: 'household',
+      isCompleted: Boolean(t.isCompleted),
+      priority: t.priority || 'medium',
+      notes: '',
+      repeat: 'Doesn’t repeat',
+      comments: [],
+    };
+  };
+
+  const toCalendarEvent = (
+    e: Partial<BriefEventItem> & { title: string }
+  ): CalendarEvent => {
+    const startTime = e.time ? `${e.time} ${e.period || 'PM'}` : '3:00 PM';
+    return {
+      id: e.id || `event-${Date.now()}`,
+      title: e.title,
+      date: '2026-10-30',
+      startTime,
+      endTime: '',
+      formattedDate: 'Today · Fri, 30 Oct',
+      formattedTime: startTime,
+      isAllDay: false,
+      category: e.category || 'Family',
+      categoryColor: e.category === 'Personal' ? '#10B981' : '#3B82F6',
+      location: e.location || '',
+      goingMemberIds: ['m1'],
+      goingMembers: [
+        { id: 'm1', name: 'Priya', initial: 'P', color: '#B45309' },
+      ],
+      reminders: '1 hour before',
+      repeat: 'Doesn’t repeat',
+      notes: '',
+      comments: [],
+    };
+  };
+
+  const handleOpenEventDetail = (event: Partial<BriefEventItem> & { title: string }) => {
+    const calEvent = toCalendarEvent(event);
+    if (onSelectEvent) {
+      onSelectEvent(calEvent);
+    } else {
+      setSelectedEventForDetail(calEvent);
+    }
+  };
+
+  const handleOpenTaskDetail = (task: Partial<BriefTaskItem> & { title: string }) => {
+    const taskItem = toTaskItem(task);
+    if (onSelectTask) {
+      onSelectTask(taskItem);
+    } else {
+      setSelectedTaskForDetail(taskItem);
+    }
+  };
+
+  const handleEditEvent = (updated: CalendarEvent) => {
+    setTodayEvents((prev) =>
+      prev.map((e) =>
+        e.id === updated.id
+          ? {
+              ...e,
+              title: updated.title,
+              time: updated.formattedTime || e.time,
+              location: updated.location || e.location,
+              category: (updated.category as any) || e.category,
+            }
+          : e
+      )
+    );
+  };
+
+  const handleCancelEvent = (cancelled: CalendarEvent) => {
+    setTodayEvents((prev) => prev.filter((e) => e.id !== cancelled.id));
+    setSelectedEventForDetail(null);
+  };
 
   const handleToggleTask = useCallback((taskId: string) => {
     setTasks((prev) =>
@@ -186,22 +283,38 @@ const YourBriefScreen: React.FC<YourBriefScreenProps> = ({
             />
 
             <BriefTodayEvents
-              events={TODAY_EVENTS}
+              events={todayEvents}
               onOpenCalendar={onOpenCalendar}
-              onEventPress={(event) =>
-                Alert.alert(event.title, `${event.location}\nAttendees: ${event.attendees}`)
-              }
+              onEventPress={(event) => handleOpenEventDetail(event)}
             />
 
             <BriefDueTasks
               tasks={tasks}
               onOpenTasks={onOpenTasks}
               onToggleTask={handleToggleTask}
+              onTaskPress={(task) => handleOpenTaskDetail(task)}
             />
 
             <BriefWatchOutList
               items={TODAY_WATCH_OUT}
-              onItemPress={(item) => Alert.alert(item.title, item.subtitle)}
+              onItemPress={(item) => {
+                if (
+                  item.title.toLowerCase().includes('event') ||
+                  item.title.toLowerCase().includes('ptm')
+                ) {
+                  handleOpenEventDetail({
+                    title: item.title,
+                    location: item.subtitle,
+                  });
+                } else {
+                  handleOpenTaskDetail({
+                    id: item.id,
+                    title: item.title,
+                    dueDate: item.subtitle,
+                    priority: 'high',
+                  });
+                }
+              }}
             />
 
             <BriefSmartSuggestion
@@ -241,7 +354,26 @@ const YourBriefScreen: React.FC<YourBriefScreenProps> = ({
             <BriefComingUpList
               sectionTitle="Coming up"
               items={WEEK_COMING_UP}
-              onItemPress={(item) => Alert.alert(item.title, item.subtitle)}
+              onItemPress={(item) => {
+                if (
+                  item.iconName === 'calendar' ||
+                  item.title.toLowerCase().includes('birthday') ||
+                  item.title.toLowerCase().includes('ptm')
+                ) {
+                  handleOpenEventDetail({
+                    id: item.id,
+                    title: item.title,
+                    location: item.subtitle,
+                  });
+                } else {
+                  handleOpenTaskDetail({
+                    id: item.id,
+                    title: item.title,
+                    dueDate: item.subtitle,
+                    priority: item.isWarning ? 'high' : 'medium',
+                  });
+                }
+              }}
             />
 
             <BriefSmartSuggestion
@@ -282,7 +414,26 @@ const YourBriefScreen: React.FC<YourBriefScreenProps> = ({
             <BriefComingUpList
               sectionTitle="Coming in November"
               items={MONTH_COMING_UP}
-              onItemPress={(item) => Alert.alert(item.title, item.subtitle)}
+              onItemPress={(item) => {
+                if (
+                  item.iconName === 'calendar' ||
+                  item.title.toLowerCase().includes('birthday') ||
+                  item.title.toLowerCase().includes('ptm')
+                ) {
+                  handleOpenEventDetail({
+                    id: item.id,
+                    title: item.title,
+                    location: item.subtitle,
+                  });
+                } else {
+                  handleOpenTaskDetail({
+                    id: item.id,
+                    title: item.title,
+                    dueDate: item.subtitle,
+                    priority: item.isWarning ? 'high' : 'medium',
+                  });
+                }
+              }}
             />
 
             <BriefSmartSuggestion
@@ -307,6 +458,45 @@ const YourBriefScreen: React.FC<YourBriefScreenProps> = ({
           </>
         )}
       </ScrollView>
+
+      {/* Task Detail Modal */}
+      {selectedTaskForDetail && (
+        <TaskDetailModal
+          visible={Boolean(selectedTaskForDetail)}
+          task={selectedTaskForDetail}
+          onClose={() => setSelectedTaskForDetail(null)}
+          onToggleComplete={(t) => {
+            handleToggleTask(t.id);
+            setSelectedTaskForDetail(null);
+          }}
+          onReassign={(task, assignee) => {
+            setTasks((prev) =>
+              prev.map((item) =>
+                item.id === task.id ? { ...item, assignee } : item
+              )
+            );
+            setSelectedTaskForDetail((prev) =>
+              prev ? { ...prev, assignee } : null
+            );
+          }}
+          onDelete={(t: TaskItem) => {
+            setTasks((prev) => prev.filter((item) => item.id !== t.id));
+            setSelectedTaskForDetail(null);
+          }}
+        />
+      )}
+
+      {/* Event Detail Modal */}
+      {selectedEventForDetail && (
+        <EventDetailModal
+          visible={Boolean(selectedEventForDetail)}
+          event={selectedEventForDetail}
+          onClose={() => setSelectedEventForDetail(null)}
+          onEditEvent={handleEditEvent}
+          onOpenComments={() => {}}
+          onCancelEvent={handleCancelEvent}
+        />
+      )}
     </SafeAreaView>
   );
 };

@@ -198,7 +198,12 @@ export const EventCommentsModal: React.FC<EventCommentsModalProps> = ({
           accessibilityRole="button"
           accessibilityLabel="Send comment"
         >
-          <Feather name="send" size={18} color="#FFFFFF" />
+          <Feather
+            name="send"
+            size={18}
+            color="#FFFFFF"
+            style={styles.sendIcon}
+          />
         </TouchableOpacity>
       </View>
     </KeyboardAvoidingView>
@@ -388,20 +393,24 @@ const styles = StyleSheet.create({
     flex: 1,
     height: 48,
     borderRadius: 24,
-    backgroundColor: '#122440',
+    backgroundColor: 'transparent',
     borderWidth: 1.5,
-    borderColor: '#1F3352',
+    borderColor: '#3A4556',
     paddingHorizontal: 20,
     fontSize: 14.5,
     color: '#FFFFFF',
   },
   sendBtn: {
-    width: 46,
-    height: 46,
-    borderRadius: 23,
+    width: 48,
+    height: 48,
+    borderRadius: 24,
     backgroundColor: '#F0913A',
     justifyContent: 'center',
     alignItems: 'center',
     marginLeft: 10,
+  },
+  sendIcon: {
+    marginRight: 1,
+    marginTop: 1,
   },
 });

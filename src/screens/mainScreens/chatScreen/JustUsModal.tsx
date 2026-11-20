@@ -15,6 +15,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Feather from '@react-native-vector-icons/feather';
 import Colors from '../../../units/Colors';
 import { ChatMessage } from './types';
+import AppOptionsMenu from '../common/AppOptionsMenu';
 
 export interface JustUsModalProps {
   visible: boolean;
@@ -88,6 +89,13 @@ export const JustUsModal: React.FC<JustUsModalProps> = ({
   const [isAvailable, setIsAvailable] = useState(initialAvailable);
   const [messages, setMessages] = useState<ChatMessage[]>(DEFAULT_JUST_US_MESSAGES);
   const [inputText, setInputText] = useState('');
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
+
+  React.useEffect(() => {
+    if (!visible) {
+      setIsMenuOpen(false);
+    }
+  }, [visible]);
 
   const handleSendMessage = () => {
     if (!inputText.trim()) return;
@@ -151,23 +159,26 @@ export const JustUsModal: React.FC<JustUsModalProps> = ({
               activeOpacity={0.7}
               accessibilityRole="button"
               accessibilityLabel="Options"
-              onPress={() => {
-                Alert.alert(
-                  'Just Us Options',
-                  'Select action',
-                  [
-                    {
-                      text: 'Toggle Available / Unavailable',
-                      onPress: () => setIsAvailable((prev) => !prev),
-                    },
-                    { text: 'Cancel', style: 'cancel' },
-                  ]
-                );
-              }}
+              onPress={() => setIsMenuOpen((prev) => !prev)}
             >
               <Feather name="more-horizontal" size={20} color={Colors.white} />
             </TouchableOpacity>
           </View>
+
+          {/* Dropdown Options Menu */}
+          <AppOptionsMenu
+            visible={isMenuOpen}
+            onClose={() => setIsMenuOpen(false)}
+            topOffset={insets.top + 58}
+            items={[
+              {
+                id: 'toggle-availability',
+                label: isAvailable ? 'Mark Unavailable' : 'Mark Available',
+                iconName: 'toggle-right',
+                onPress: () => setIsAvailable((prev) => !prev),
+              },
+            ]}
+          />
 
           {!isAvailable ? (
             /* Unavailable / Decision Needed View (CHT-11) */

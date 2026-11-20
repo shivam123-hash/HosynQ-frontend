@@ -44,7 +44,7 @@ const FamilyMemberAvatarFilter: React.FC<FamilyMemberAvatarFilterProps> = ({
                 style={[
                   styles.avatarCircle,
                   { backgroundColor: member.avatarBg },
-                  isSelected && styles.selectedAvatarBorder,
+                  isSelected && !isEveryone && styles.selectedAvatarBorder,
                 ]}
               >
                 {isEveryone ? (

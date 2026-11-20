@@ -26,6 +26,64 @@ const REPEAT_OPTIONS = [
   { id: 'custom', title: 'Custom', subtitle: 'Pick days and an end date' },
 ];
 
+const normalizeRepeat = (val?: string) =>
+  (val || '').toLowerCase().replace(/['’]/g, "'").trim();
+
+const isOptionSelected = (
+  itemId: string,
+  itemTitle: string,
+  selected?: string
+): boolean => {
+  const normSelected = normalizeRepeat(selected);
+  const normTitle = normalizeRepeat(itemTitle);
+
+  if (normSelected === normTitle) return true;
+  if (
+    itemId === 'none' &&
+    (normSelected.includes("doesn't") ||
+      normSelected.includes('never') ||
+      normSelected === 'none' ||
+      !normSelected)
+  ) {
+    return true;
+  }
+  if (
+    itemId === 'daily' &&
+    (normSelected.includes('day') || normSelected.includes('daily'))
+  ) {
+    return true;
+  }
+  if (
+    itemId === 'weekly' &&
+    (normSelected.includes('week') || normSelected.includes('weekly'))
+  ) {
+    return true;
+  }
+  if (
+    itemId === 'monthly' &&
+    (normSelected.includes('month') || normSelected.includes('monthly'))
+  ) {
+    return true;
+  }
+  if (
+    itemId === 'quarterly' &&
+    (normSelected.includes('3 month') || normSelected.includes('quarter'))
+  ) {
+    return true;
+  }
+  if (
+    itemId === 'yearly' &&
+    (normSelected.includes('year') || normSelected.includes('annual'))
+  ) {
+    return true;
+  }
+  if (itemId === 'custom' && normSelected.includes('custom')) {
+    return true;
+  }
+
+  return false;
+};
+
 const RepeatModal: React.FC<RepeatModalProps> = ({
   visible,
   initialRepeat = 'Doesn’t repeat',
@@ -75,17 +133,22 @@ const RepeatModal: React.FC<RepeatModalProps> = ({
           >
             <View style={styles.optionsCard}>
               {REPEAT_OPTIONS.map((item, index) => {
-                const isSelected =
-                  selectedRepeat.toLowerCase() === item.title.toLowerCase() ||
-                  (item.id === 'none' &&
-                    selectedRepeat.toLowerCase().includes("doesn't"));
+                const isSelected = isOptionSelected(
+                  item.id,
+                  item.title,
+                  selectedRepeat
+                );
 
                 const isLast = index === REPEAT_OPTIONS.length - 1;
 
                 return (
                   <TouchableOpacity
                     key={item.id}
-                    style={[styles.optionRow, !isLast && styles.rowDivider]}
+                    style={[
+                      styles.optionRow,
+                      isSelected && styles.optionRowSelected,
+                      !isLast && styles.rowDivider,
+                    ]}
                     onPress={() => setSelectedRepeat(item.title)}
                     activeOpacity={0.7}
                   >
@@ -141,7 +204,7 @@ const styles = StyleSheet.create({
     bottom: 0,
   },
   sheetContainer: {
-    backgroundColor: '#0B1A2F',
+    backgroundColor: '#122440',
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
     borderTopWidth: 1,
@@ -169,10 +232,10 @@ const styles = StyleSheet.create({
     paddingBottom: 16,
   },
   optionsCard: {
-    backgroundColor: '#122440',
+    backgroundColor: 'transparent',
     borderRadius: 20,
-    borderWidth: 1,
-    borderColor: '#1F3352',
+    borderWidth: 1.5,
+    borderColor: '#3A4556',
     overflow: 'hidden',
   },
   optionRow: {
@@ -181,6 +244,10 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingVertical: 14,
     paddingHorizontal: 16,
+    backgroundColor: 'transparent',
+  },
+  optionRowSelected: {
+    backgroundColor: '#1A2B47',
   },
   rowDivider: {
     borderBottomWidth: 1,

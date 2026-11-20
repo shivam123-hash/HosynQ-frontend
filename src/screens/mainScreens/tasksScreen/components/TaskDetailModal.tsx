@@ -22,6 +22,10 @@ import CategoryPriorityModal from './CategoryPriorityModal';
 import EditRepeatingConfirmModal, {
   RepeatEditScope,
 } from './EditRepeatingConfirmModal';
+import ReassignModal from './ReassignModal';
+import DeleteTaskModal from './DeleteTaskModal';
+import AppOptionsMenu from '../../common/AppOptionsMenu';
+import Colors from '../../../../units/Colors';
 
 export interface TaskDetailModalProps {
   visible: boolean;
@@ -48,6 +52,8 @@ const TaskDetailModal: React.FC<TaskDetailModalProps> = ({
   // Sub-Modals
   const [showComments, setShowComments] = useState(false);
   const [showAssigneesModal, setShowAssigneesModal] = useState(false);
+  const [showReassignModal, setShowReassignModal] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [showDueModal, setShowDueModal] = useState(false);
   const [showRepeatModal, setShowRepeatModal] = useState(false);
   const [showRemindersModal, setShowRemindersModal] = useState(false);
@@ -56,6 +62,39 @@ const TaskDetailModal: React.FC<TaskDetailModalProps> = ({
   const [showEditRepeatingConfirm, setShowEditRepeatingConfirm] =
     useState(false);
   const [showCompletedToast, setShowCompletedToast] = useState(false);
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
+
+  React.useEffect(() => {
+    if (!visible) {
+      setIsMenuOpen(false);
+    }
+  }, [visible]);
+
+  React.useEffect(() => {
+    if (
+      showComments ||
+      showAssigneesModal ||
+      showReassignModal ||
+      showDeleteModal ||
+      showDueModal ||
+      showRepeatModal ||
+      showRemindersModal ||
+      showCategoryPriorityModal ||
+      showEditRepeatingConfirm
+    ) {
+      setIsMenuOpen(false);
+    }
+  }, [
+    showComments,
+    showAssigneesModal,
+    showReassignModal,
+    showDeleteModal,
+    showDueModal,
+    showRepeatModal,
+    showRemindersModal,
+    showCategoryPriorityModal,
+    showEditRepeatingConfirm,
+  ]);
 
   React.useEffect(() => {
     setLocalTask(task);
@@ -100,33 +139,7 @@ const TaskDetailModal: React.FC<TaskDetailModalProps> = ({
   };
 
   const handleMorePress = () => {
-    Alert.alert(
-      'Task Options',
-      currentTask.title,
-      [
-        {
-          text: 'Add Comment',
-          onPress: () => setShowComments(true),
-        },
-        {
-          text: 'Category & Priority',
-          onPress: () => setShowCategoryPriorityModal(true),
-        },
-        {
-          text: 'Edit Due Date',
-          onPress: () => setShowDueModal(true),
-        },
-        {
-          text: 'Delete Task',
-          style: 'destructive',
-          onPress: () => {
-            onDelete?.(currentTask);
-            onClose();
-          },
-        },
-        { text: 'Cancel', style: 'cancel' },
-      ]
-    );
+    setIsMenuOpen((prev) => !prev);
   };
 
   const handleMarkDonePress = () => {
@@ -171,12 +184,55 @@ const TaskDetailModal: React.FC<TaskDetailModalProps> = ({
             style={styles.circleBtn}
             onPress={handleMorePress}
             activeOpacity={0.7}
+            disabled={showDeleteModal || showComments || showDueModal || showCategoryPriorityModal || showReassignModal}
             accessibilityRole="button"
             accessibilityLabel="More options"
           >
             <Feather name="more-horizontal" size={20} color="#CAD4DF" />
           </TouchableOpacity>
         </View>
+
+        {/* Dropdown Options Menu */}
+        <AppOptionsMenu
+          visible={
+            isMenuOpen &&
+            !showDeleteModal &&
+            !showComments &&
+            !showDueModal &&
+            !showCategoryPriorityModal &&
+            !showReassignModal
+          }
+          onClose={() => setIsMenuOpen(false)}
+          topOffset={Math.max(insets.top, 16) + 54}
+          items={[
+            {
+              id: 'comments',
+              label: `Comments (${(currentTask.comments || []).length})`,
+              iconName: 'message-square',
+              onPress: () => setShowComments(true),
+            },
+            {
+              id: 'category-priority',
+              label: 'Category & Priority',
+              iconName: 'tag',
+              onPress: () => setShowCategoryPriorityModal(true),
+            },
+            {
+              id: 'due-date',
+              label: 'Edit Due Date',
+              iconName: 'calendar',
+              onPress: () => setShowDueModal(true),
+              showDividerAfter: true,
+            },
+            {
+              id: 'delete',
+              label: 'Delete Task',
+              iconName: 'trash-2',
+              destructive: true,
+              onPress: () => setShowDeleteModal(true),
+            },
+          ]}
+        />
 
         <ScrollView
           showsVerticalScrollIndicator={false}
@@ -188,38 +244,45 @@ const TaskDetailModal: React.FC<TaskDetailModalProps> = ({
           {/* Overdue Alert Banner */}
           {currentTask.isOverdue && !currentTask.isCompleted && (
             <View style={styles.overdueBanner}>
-              <View style={styles.overdueHeaderRow}>
-                <Feather name="alert-circle" size={18} color="#F87171" />
-                <Text style={styles.overdueTitle}>
-                  {currentTask.overdueDateText || 'Overdue by 2 days'}
-                </Text>
-              </View>
-              <Text style={styles.overdueSubtitle}>
-                {`${currentTask.assignee} was reminded yesterday at 6:00 PM.`}
-              </Text>
-              <View style={styles.overdueActionsRow}>
-                <TouchableOpacity
-                  style={styles.bannerActionBtn}
-                  onPress={() =>
-                    Alert.alert(
-                      'Reminder Sent',
-                      `Reminder sent to ${currentTask.assignee}.`
-                    )
-                  }
-                  activeOpacity={0.7}
-                >
-                  <Text style={styles.bannerActionText}>
-                    {`Remind ${currentTask.assignee}`}
+              <View style={styles.overdueTopRow}>
+                <Feather
+                  name="alert-circle"
+                  size={18}
+                  color="#F06A6A"
+                  style={styles.overdueIcon}
+                />
+                <View style={styles.overdueContentCol}>
+                  <Text style={styles.overdueTitle}>
+                    {currentTask.overdueDateText || 'Overdue by 2 days'}
                   </Text>
-                </TouchableOpacity>
+                  <Text style={styles.overdueSubtitle}>
+                    {`${currentTask.assignee} was reminded yesterday at 6:00 PM.`}
+                  </Text>
+                  <View style={styles.overdueActionsRow}>
+                    <TouchableOpacity
+                      style={styles.bannerActionBtn}
+                      onPress={() =>
+                        Alert.alert(
+                          'Reminder Sent',
+                          `Reminder sent to ${currentTask.assignee}.`
+                        )
+                      }
+                      activeOpacity={0.7}
+                    >
+                      <Text style={styles.bannerActionText}>
+                        {`Remind ${currentTask.assignee}`}
+                      </Text>
+                    </TouchableOpacity>
 
-                <TouchableOpacity
-                  style={styles.bannerActionBtn}
-                  onPress={() => setShowDueModal(true)}
-                  activeOpacity={0.7}
-                >
-                  <Text style={styles.bannerActionText}>Change due date</Text>
-                </TouchableOpacity>
+                    <TouchableOpacity
+                      style={styles.bannerActionBtn}
+                      onPress={() => setShowDueModal(true)}
+                      activeOpacity={0.7}
+                    >
+                      <Text style={styles.bannerActionText}>Change due date</Text>
+                    </TouchableOpacity>
+                  </View>
+                </View>
               </View>
             </View>
           )}
@@ -227,13 +290,15 @@ const TaskDetailModal: React.FC<TaskDetailModalProps> = ({
           {/* Completed Banner */}
           {currentTask.isCompleted && (
             <View style={styles.completedBanner}>
-              <View style={styles.completedHeaderRow}>
-                <Feather name="check-circle" size={18} color="#10B981" />
-                <Text style={styles.completedTitle}>Completed by you</Text>
+              <View style={styles.completedContentRow}>
+                <Feather name="check-circle" size={20} color="#6FDAA6" style={styles.completedIcon} />
+                <View style={styles.completedTextCol}>
+                  <Text style={styles.completedTitle}>Completed by you</Text>
+                  <Text style={styles.completedSubtitle}>
+                    Just now · Rohan and Dadi can see it
+                  </Text>
+                </View>
               </View>
-              <Text style={styles.completedSubtitle}>
-                Just now · Rohan and Dadi can see it
-              </Text>
             </View>
           )}
 
@@ -243,7 +308,7 @@ const TaskDetailModal: React.FC<TaskDetailModalProps> = ({
               <TouchableOpacity
                 style={[
                   styles.badge,
-                  { borderColor: categoryMeta.badgeBorder },
+                  { borderColor: categoryMeta.color },
                 ]}
                 onPress={() => setShowCategoryPriorityModal(true)}
                 activeOpacity={0.7}
@@ -266,7 +331,7 @@ const TaskDetailModal: React.FC<TaskDetailModalProps> = ({
               <TouchableOpacity
                 style={[
                   styles.badge,
-                  styles.priorityBadge,
+                  { borderColor: priorityMeta.color },
                 ]}
                 onPress={() => setShowCategoryPriorityModal(true)}
                 activeOpacity={0.7}
@@ -601,8 +666,10 @@ const TaskDetailModal: React.FC<TaskDetailModalProps> = ({
             <>
               <TouchableOpacity
                 style={styles.reassignBtn}
-                onPress={() => setShowAssigneesModal(true)}
+                onPress={() => setShowReassignModal(true)}
                 activeOpacity={0.7}
+                accessibilityRole="button"
+                accessibilityLabel="Reassign task"
               >
                 <Text style={styles.reassignBtnText}>Reassign</Text>
               </TouchableOpacity>
@@ -612,7 +679,7 @@ const TaskDetailModal: React.FC<TaskDetailModalProps> = ({
                 onPress={handleMarkDonePress}
                 activeOpacity={0.8}
               >
-                <Feather name="check" size={18} color="#0B1A2F" />
+                <Feather name="check" size={18} color={Colors.white} />
                 <Text style={styles.markDoneBtnText}>Mark as done</Text>
               </TouchableOpacity>
             </>
@@ -635,6 +702,36 @@ const TaskDetailModal: React.FC<TaskDetailModalProps> = ({
           dueDateSubtitle={`Due ${currentTask.dueDate}`}
           comments={currentTask.comments || []}
           onClose={() => setShowComments(false)}
+        />
+
+        {/* Reassign Modal (TSK Reassign sheet) */}
+        <ReassignModal
+          visible={showReassignModal}
+          taskTitle={currentTask.title}
+          currentAssignee={currentTask.assignee}
+          onClose={() => setShowReassignModal(false)}
+          onSelectAssignee={(newAssignee) => {
+            handleUpdate({
+              assignee: newAssignee,
+              assigneeInitial: newAssignee === 'You' ? 'P' : newAssignee[0],
+            });
+            onReassign?.(currentTask, newAssignee);
+            setShowReassignModal(false);
+          }}
+        />
+
+        {/* Delete Task Modal (TSK Delete confirmation dialog) */}
+        <DeleteTaskModal
+          visible={showDeleteModal}
+          taskTitle={currentTask.title}
+          isRepeating={isRepeating}
+          repeatText={currentTask.repeat}
+          onClose={() => setShowDeleteModal(false)}
+          onConfirmDelete={() => {
+            setShowDeleteModal(false);
+            onDelete?.(currentTask);
+            onClose();
+          }}
         />
 
         {/* Assignees and Viewers Modal (TSK-15) */}
@@ -760,31 +857,39 @@ const styles = StyleSheet.create({
     paddingTop: 12,
   },
   overdueBanner: {
-    backgroundColor: '#1C1522',
-    borderWidth: 1,
-    borderColor: '#6B2B2B',
+    backgroundColor: '#23192A',
+    borderWidth: 1.5,
+    borderColor: '#6B3A3A',
     borderRadius: 18,
     padding: 16,
     marginBottom: 20,
   },
-  overdueHeaderRow: {
+  overdueTopRow: {
     flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    marginBottom: 4,
+    alignItems: 'flex-start',
+    gap: 10,
+  },
+  overdueIcon: {
+    marginTop: 1,
+  },
+  overdueContentCol: {
+    flex: 1,
   },
   overdueTitle: {
     fontSize: 15,
     fontWeight: '700',
-    color: '#F87171',
+    color: '#F06A6A',
+    marginBottom: 4,
   },
   overdueSubtitle: {
     fontSize: 13,
-    color: '#8A97AB',
-    marginBottom: 12,
+    color: '#CDD1D9',
+    marginBottom: 14,
+    lineHeight: 18,
   },
   overdueActionsRow: {
     flexDirection: 'row',
+    flexWrap: 'wrap',
     gap: 10,
   },
   bannerActionBtn: {
@@ -792,37 +897,45 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     borderRadius: 18,
     borderWidth: 1.5,
-    borderColor: '#6B2B2B',
+    borderColor: '#F06A6A',
+    backgroundColor: 'transparent',
     justifyContent: 'center',
     alignItems: 'center',
   },
   bannerActionText: {
     fontSize: 13,
     fontWeight: '600',
-    color: '#F87171',
+    color: '#F06A6A',
   },
   completedBanner: {
-    backgroundColor: '#0F261E',
-    borderWidth: 1,
-    borderColor: '#1E4E38',
+    backgroundColor: '#0F2229',
+    borderWidth: 1.5,
+    borderColor: '#2F6B52',
     borderRadius: 18,
     padding: 16,
     marginBottom: 20,
   },
-  completedHeaderRow: {
+  completedContentRow: {
     flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    marginBottom: 4,
+    alignItems: 'flex-start',
+    gap: 12,
+  },
+  completedIcon: {
+    marginTop: 1,
+  },
+  completedTextCol: {
+    flex: 1,
   },
   completedTitle: {
     fontSize: 15,
     fontWeight: '700',
-    color: '#10B981',
+    color: '#6FDAA6',
   },
   completedSubtitle: {
     fontSize: 13,
-    color: '#8A97AB',
+    fontWeight: '400',
+    color: '#CBD2D9',
+    marginTop: 4,
   },
   badgesRow: {
     flexDirection: 'row',
@@ -835,22 +948,20 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 6,
     height: 28,
-    borderRadius: 14,
-    paddingHorizontal: 10,
-    borderWidth: 1,
-    backgroundColor: '#122440',
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    borderWidth: 1.5,
+    backgroundColor: 'transparent',
   },
   repeatBadge: {
-    borderColor: 'rgba(141, 184, 245, 0.4)',
+    borderColor: '#8A97AB',
   },
-  priorityBadge: {
-    borderColor: 'rgba(248, 113, 113, 0.4)',
-  },
+  priorityBadge: {},
   repeatBadgeDot: {
-    backgroundColor: '#8DB8F5',
+    backgroundColor: '#8A97AB',
   },
   repeatBadgeText: {
-    color: '#8DB8F5',
+    color: '#C9D1DC',
   },
   badgeDot: {
     width: 6,
@@ -881,10 +992,10 @@ const styles = StyleSheet.create({
     color: '#F0913A',
   },
   infoCard: {
-    backgroundColor: '#122440',
+    backgroundColor: 'transparent',
     borderRadius: 20,
-    borderWidth: 1,
-    borderColor: '#1F3352',
+    borderWidth: 1.5,
+    borderColor: '#3A4556',
     overflow: 'hidden',
     marginBottom: 16,
   },
@@ -896,7 +1007,7 @@ const styles = StyleSheet.create({
   },
   divider: {
     borderTopWidth: 1,
-    borderTopColor: '#1F3352',
+    borderTopColor: '#26354A',
   },
   infoIconBox: {
     marginRight: 14,
@@ -994,10 +1105,10 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   notesCard: {
-    backgroundColor: '#122440',
+    backgroundColor: 'transparent',
     borderRadius: 20,
-    borderWidth: 1,
-    borderColor: '#1F3352',
+    borderWidth: 1.5,
+    borderColor: '#3A4556',
     padding: 16,
     marginBottom: 16,
   },
@@ -1067,10 +1178,10 @@ const styles = StyleSheet.create({
     color: '#8A97AB',
   },
   commentBubble: {
-    backgroundColor: '#122440',
+    backgroundColor: 'transparent',
     borderRadius: 14,
-    borderWidth: 1,
-    borderColor: '#1F3352',
+    borderWidth: 1.5,
+    borderColor: '#3A4556',
     padding: 12,
   },
   commentBubbleYou: {
@@ -1154,14 +1265,14 @@ const styles = StyleSheet.create({
   markDoneBtnText: {
     fontSize: 16,
     fontWeight: '700',
-    color: '#0B1A2F',
+    color: Colors.white,
   },
   writeCommentPill: {
     height: 48,
     borderRadius: 24,
-    backgroundColor: '#122440',
-    borderWidth: 1,
-    borderColor: '#1F3352',
+    backgroundColor: 'transparent',
+    borderWidth: 1.5,
+    borderColor: '#3A4556',
     justifyContent: 'center',
     paddingHorizontal: 18,
     marginTop: 6,

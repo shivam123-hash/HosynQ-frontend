@@ -287,10 +287,10 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   sheetContainer: {
-    backgroundColor: '#0B1A2F',
+    backgroundColor: '#122440',
     borderTopLeftRadius: 28,
     borderTopRightRadius: 28,
-    borderWidth: 1,
+    borderWidth: 1.5,
     borderColor: '#1F3352',
     maxHeight: '85%',
     paddingTop: 12,
@@ -308,7 +308,7 @@ const styles = StyleSheet.create({
   sheetTitle: {
     fontSize: 22,
     fontWeight: '700',
-    color: '#CAD4DF',
+    color: '#FFFFFF',
     textAlign: 'center',
     marginBottom: 20,
   },
@@ -330,7 +330,7 @@ const styles = StyleSheet.create({
   },
   chip: {
     height: 38,
-    borderRadius: 19,
+    borderRadius: 8,
     paddingHorizontal: 16,
     flexDirection: 'row',
     alignItems: 'center',
@@ -341,9 +341,9 @@ const styles = StyleSheet.create({
     backgroundColor: '#F0913A',
   },
   inactiveChip: {
-    backgroundColor: '#122440',
+    backgroundColor: 'transparent',
     borderWidth: 1.5,
-    borderColor: '#1F3352',
+    borderColor: '#3A4556',
   },
   chipDot: {
     width: 8,
@@ -358,7 +358,7 @@ const styles = StyleSheet.create({
     fontWeight: '700',
   },
   inactiveChipText: {
-    color: '#CAD4DF',
+    color: '#C9D1DC',
     fontWeight: '500',
   },
   bottomButtonsRow: {
@@ -380,7 +380,7 @@ const styles = StyleSheet.create({
   clearButtonText: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#CAD4DF',
+    color: '#FFFFFF',
   },
   showButton: {
     flex: 1.3,
@@ -393,7 +393,7 @@ const styles = StyleSheet.create({
   showButtonText: {
     fontSize: 16,
     fontWeight: '700',
-    color: '#0B1A2F',
+    color: '#FFFFFF',
   },
 });
 

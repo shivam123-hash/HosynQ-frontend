@@ -19,6 +19,7 @@ export interface ChatsScreenProps {
   onProfilePress?: () => void;
   onNotificationsPress?: () => void;
   onExplorePress?: () => void;
+  onCompassPress?: () => void;
   onOpenVault?: () => void;
 }
 
@@ -69,6 +70,7 @@ export const ChatsScreen: React.FC<ChatsScreenProps> = ({
   onProfilePress,
   onNotificationsPress,
   onExplorePress,
+  onCompassPress,
   onOpenVault,
 }) => {
   const insets = useSafeAreaInsets();
@@ -95,6 +97,7 @@ export const ChatsScreen: React.FC<ChatsScreenProps> = ({
         onAvatarPress={onProfilePress}
         onExplorePress={onExplorePress}
         onNotificationsPress={onNotificationsPress}
+        onCompassPress={onCompassPress}
       />
 
       <ScrollView
@@ -112,8 +115,8 @@ export const ChatsScreen: React.FC<ChatsScreenProps> = ({
         <View style={styles.searchBar}>
           <Feather
             name="search"
-            size={18}
-            color={Colors.textSecondary}
+            size={20}
+            color="#8A97AB"
             style={styles.searchIcon}
           />
           <TextInput
@@ -121,7 +124,7 @@ export const ChatsScreen: React.FC<ChatsScreenProps> = ({
             value={searchQuery}
             onChangeText={setSearchQuery}
             placeholder="Search messages"
-            placeholderTextColor={Colors.textPlaceholder}
+            placeholderTextColor="#8A97AB"
           />
         </View>
 
@@ -147,7 +150,9 @@ export const ChatsScreen: React.FC<ChatsScreenProps> = ({
                   <View
                     style={[
                       styles.avatarBox,
-                      { backgroundColor: thread.avatarColor },
+                      isJustUs
+                        ? styles.avatarBoxJustUs
+                        : styles.avatarBoxFamily,
                     ]}
                   >
                     <Feather
@@ -196,7 +201,7 @@ export const ChatsScreen: React.FC<ChatsScreenProps> = ({
           <Feather
             name="lock"
             size={14}
-            color={Colors.textSecondary}
+            color="#8A97AB"
             style={styles.privacyLockIcon}
           />
           <Text style={styles.privacyNoteText}>
@@ -296,41 +301,51 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: Colors.cardBackground,
-    borderRadius: 24,
-    paddingHorizontal: 16,
-    height: 48,
-    borderWidth: 1,
+    borderRadius: 26,
+    paddingHorizontal: 18,
+    height: 52,
+    borderWidth: 1.5,
     borderColor: Colors.border,
     marginBottom: 20,
   },
   searchIcon: {
-    marginRight: 10,
+    marginRight: 12,
   },
   searchInput: {
     flex: 1,
     color: Colors.white,
     fontSize: 15,
+    padding: 0,
   },
   threadsCard: {
     backgroundColor: Colors.cardBackground,
-    borderRadius: 20,
-    borderWidth: 1,
+    borderRadius: 24,
+    borderWidth: 1.5,
     borderColor: Colors.border,
     overflow: 'hidden',
-    marginBottom: 12,
+    marginBottom: 14,
   },
   threadItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    padding: 16,
+    paddingVertical: 18,
+    paddingHorizontal: 16,
   },
   avatarBox: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
+    width: 52,
+    height: 52,
+    borderRadius: 26,
     alignItems: 'center',
     justifyContent: 'center',
     marginRight: 14,
+    borderWidth: 2,
+    backgroundColor: 'transparent',
+  },
+  avatarBoxFamily: {
+    borderColor: '#3A8EF0',
+  },
+  avatarBoxJustUs: {
+    borderColor: '#9D65E5',
   },
   threadTextGroup: {
     flex: 1,
@@ -348,20 +363,22 @@ const styles = StyleSheet.create({
     marginRight: 8,
   },
   privatePill: {
-    paddingHorizontal: 8,
+    paddingHorizontal: 10,
     paddingVertical: 2,
-    borderRadius: 10,
-    borderWidth: 1,
-    borderColor: Colors.accentPurple,
+    borderRadius: 12,
+    borderWidth: 1.5,
+    borderColor: '#9D65E5',
+    backgroundColor: 'transparent',
   },
   privatePillText: {
-    color: Colors.accentPurple,
-    fontSize: 11,
+    color: '#A884F0',
+    fontSize: 12,
     fontWeight: '600',
   },
   threadSubtitle: {
     fontSize: 13,
-    color: Colors.textSecondary,
+    color: '#CAD4DF',
+    marginTop: 2,
   },
   threadMetaGroup: {
     alignItems: 'flex-end',
@@ -369,25 +386,26 @@ const styles = StyleSheet.create({
   },
   threadTimeText: {
     fontSize: 12,
-    color: Colors.textSecondary,
+    color: '#8A97AB',
     marginBottom: 6,
+    fontWeight: '500',
   },
   unreadBadge: {
-    width: 20,
-    height: 20,
-    borderRadius: 10,
-    backgroundColor: Colors.primary,
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+    backgroundColor: '#F0913A',
     alignItems: 'center',
     justifyContent: 'center',
   },
   unreadBadgeText: {
-    color: Colors.white,
-    fontSize: 11,
+    color: '#0B1A2F',
+    fontSize: 12,
     fontWeight: '700',
   },
   divider: {
     height: 1,
-    backgroundColor: Colors.borderSubtle,
+    backgroundColor: '#192A44',
   },
   privacyNoteRow: {
     flexDirection: 'row',
@@ -402,7 +420,7 @@ const styles = StyleSheet.create({
   privacyNoteText: {
     flex: 1,
     fontSize: 12,
-    color: Colors.textSecondary,
+    color: '#8A97AB',
     lineHeight: 18,
   },
   sectionHeaderRow: {

@@ -16,6 +16,7 @@ import { MoodType } from './types';
 import { FamilyPulseModal } from './FamilyPulseModal';
 import { TodayMoodModal } from './TodayMoodModal';
 import { FamilyVaultModal } from '../addFlow/FamilyVaultModal';
+import { MembersModal } from './MembersModal';
 
 export interface FamilyHubModalProps {
   visible: boolean;
@@ -24,6 +25,8 @@ export interface FamilyHubModalProps {
   onOpenPulse?: () => void;
   onInviteMember?: () => void;
   onThemePress?: () => void;
+  onOpenCompass?: () => void;
+  onOpenMembers?: () => void;
 }
 
 interface MemberHub {
@@ -99,12 +102,15 @@ export const FamilyHubModal: React.FC<FamilyHubModalProps> = ({
   onOpenPulse,
   onInviteMember,
   onThemePress,
+  onOpenCompass,
+  onOpenMembers,
 }) => {
   const insets = useSafeAreaInsets();
   const [selectedMood, setSelectedMood] = useState<MoodType>('good');
   const [showPulseModal, setShowPulseModal] = useState(false);
   const [showMoodModal, setShowMoodModal] = useState(false);
   const [showVaultModal, setShowVaultModal] = useState(false);
+  const [showMembersModal, setShowMembersModal] = useState(false);
 
   const handleCopyFamilyId = () => {
     Alert.alert('Copied', 'Family ID HSQ-4821 copied to clipboard');
@@ -337,6 +343,10 @@ export const FamilyHubModal: React.FC<FamilyHubModalProps> = ({
             <TouchableOpacity
               style={styles.gridCard}
               activeOpacity={0.85}
+              onPress={() => {
+                onClose();
+                onOpenCompass?.();
+              }}
               accessibilityRole="button"
               accessibilityLabel="Compass, 4 sharing location"
             >
@@ -355,6 +365,13 @@ export const FamilyHubModal: React.FC<FamilyHubModalProps> = ({
             <TouchableOpacity
               style={styles.gridCard}
               activeOpacity={0.85}
+              onPress={() => {
+                if (onOpenMembers) {
+                  onOpenMembers();
+                } else {
+                  setShowMembersModal(true);
+                }
+              }}
               accessibilityRole="button"
               accessibilityLabel="Members, 1 join request to review"
             >
@@ -453,6 +470,11 @@ export const FamilyHubModal: React.FC<FamilyHubModalProps> = ({
         <FamilyVaultModal
           visible={showVaultModal}
           onClose={() => setShowVaultModal(false)}
+        />
+
+        <MembersModal
+          visible={showMembersModal}
+          onClose={() => setShowMembersModal(false)}
         />
       </View>
     </Modal>

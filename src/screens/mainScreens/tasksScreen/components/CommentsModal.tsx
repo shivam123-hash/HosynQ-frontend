@@ -100,7 +100,7 @@ const CommentsModal: React.FC<CommentsModalProps> = ({
             onPress={onClose}
             activeOpacity={0.7}
           >
-            <Feather name="chevron-left" size={22} color="#CAD4DF" />
+            <Feather name="chevron-left" size={22} color="#FFFFFF" />
           </TouchableOpacity>
           <Text style={styles.headerTitle}>Comments</Text>
           <View style={styles.spacer} />
@@ -174,14 +174,18 @@ const CommentsModal: React.FC<CommentsModalProps> = ({
             onChangeText={setInputText}
           />
           <TouchableOpacity
-            style={[
-              styles.sendButton,
-              inputText.trim().length > 0 && styles.sendButtonActive,
-            ]}
+            style={styles.sendButton}
             onPress={handleSend}
             activeOpacity={0.8}
+            accessibilityRole="button"
+            accessibilityLabel="Send comment"
           >
-            <Feather name="send" size={16} color="#0B1A2F" />
+            <Feather
+              name="send"
+              size={18}
+              color="#FFFFFF"
+              style={styles.sendIcon}
+            />
           </TouchableOpacity>
         </View>
       </KeyboardAvoidingView>
@@ -216,7 +220,7 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: 18,
     fontWeight: '700',
-    color: '#CAD4DF',
+    color: '#FFFFFF',
   },
   spacer: {
     width: 44,
@@ -230,9 +234,9 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    backgroundColor: '#122440',
+    backgroundColor: 'transparent',
     borderRadius: 16,
-    borderWidth: 1,
+    borderWidth: 1.5,
     borderColor: '#1F3352',
     paddingVertical: 14,
     paddingHorizontal: 16,
@@ -249,12 +253,12 @@ const styles = StyleSheet.create({
     width: 8,
     height: 8,
     borderRadius: 4,
-    backgroundColor: '#F87171',
+    backgroundColor: '#F06A6A',
   },
   taskTitle: {
     fontSize: 15,
     fontWeight: '700',
-    color: '#CAD4DF',
+    color: '#FFFFFF',
     flex: 1,
   },
   dueDateText: {
@@ -296,10 +300,10 @@ const styles = StyleSheet.create({
     color: '#8A97AB',
   },
   bubble: {
-    backgroundColor: '#122440',
+    backgroundColor: 'transparent',
     borderRadius: 16,
-    borderWidth: 1,
-    borderColor: '#1F3352',
+    borderWidth: 1.5,
+    borderColor: '#3A4556',
     padding: 14,
   },
   bubbleYou: {
@@ -328,24 +332,25 @@ const styles = StyleSheet.create({
   inputField: {
     flex: 1,
     height: 48,
-    backgroundColor: '#122440',
+    backgroundColor: 'transparent',
     borderRadius: 24,
-    borderWidth: 1,
-    borderColor: '#1F3352',
-    paddingHorizontal: 16,
-    color: '#CAD4DF',
+    borderWidth: 1.5,
+    borderColor: '#3A4556',
+    paddingHorizontal: 18,
+    color: '#FFFFFF',
     fontSize: 14,
   },
   sendButton: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    backgroundColor: '#8A97AB',
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: '#F0913A',
     justifyContent: 'center',
     alignItems: 'center',
   },
-  sendButtonActive: {
-    backgroundColor: '#F0913A',
+  sendIcon: {
+    marginRight: 1,
+    marginTop: 1,
   },
 });
 

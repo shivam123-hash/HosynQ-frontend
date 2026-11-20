@@ -19,6 +19,7 @@ import { ShareItemModal } from './ShareItemModal';
 import { QuickMessagesModal } from './QuickMessagesModal';
 import { SmartReactionsModal } from './SmartReactionsModal';
 import { ImageViewerModal } from './ImageViewerModal';
+import AppOptionsMenu from '../common/AppOptionsMenu';
 
 export interface ChatConversationModalProps {
   visible: boolean;
@@ -38,7 +39,7 @@ const DEFAULT_MESSAGES: ChatMessage[] = [
     senderName: 'Dadi',
     senderInitial: 'D',
     senderColor: Colors.avatarGreen,
-    nameColor: Colors.accentGreenSoft,
+    nameColor: '#25A269',
     text: 'Diyas for tonight. Anaya, help me light them at 7?',
     timeText: '1:15 PM',
     isYou: false,
@@ -52,7 +53,7 @@ const DEFAULT_MESSAGES: ChatMessage[] = [
     senderName: 'Rohan',
     senderInitial: 'R',
     senderColor: Colors.avatarNavy,
-    nameColor: Colors.accentBlueSoft,
+    nameColor: '#3A8EF0',
     text: 'I’ll be at the PTM by 2:55',
     timeText: '12:30 PM',
     isYou: false,
@@ -76,7 +77,7 @@ const DEFAULT_MESSAGES: ChatMessage[] = [
     senderName: 'Anaya',
     senderInitial: 'A',
     senderColor: Colors.avatarWine,
-    nameColor: Colors.accentPink,
+    nameColor: '#E879A8',
     text: 'Can someone pick me up after badminton? Done by 7:30',
     timeText: '2:40 PM',
     isYou: false,
@@ -119,6 +120,13 @@ export const ChatConversationModal: React.FC<ChatConversationModalProps> = ({
   const [selectedMessageForReactions, setSelectedMessageForReactions] =
     useState<ChatMessage | null>(null);
   const [showImageViewer, setShowImageViewer] = useState(false);
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
+
+  React.useEffect(() => {
+    if (!visible) {
+      setIsMenuOpen(false);
+    }
+  }, [visible]);
 
   const handleSendMessage = (textToSend?: string) => {
     const text = (textToSend || inputText).trim();
@@ -199,7 +207,7 @@ export const ChatConversationModal: React.FC<ChatConversationModalProps> = ({
               accessibilityRole="button"
               accessibilityLabel="Back"
             >
-              <Feather name="chevron-left" size={24} color={Colors.white} />
+              <Feather name="chevron-left" size={20} color={Colors.white} />
             </TouchableOpacity>
 
             <View style={styles.headerTitleGroup}>
@@ -212,27 +220,34 @@ export const ChatConversationModal: React.FC<ChatConversationModalProps> = ({
               activeOpacity={0.7}
               accessibilityRole="button"
               accessibilityLabel="Options"
-              onPress={() => {
-                Alert.alert(
-                  'Chat Options',
-                  'Select action',
-                  [
-                    {
-                      text: 'Toggle Offline / Online',
-                      onPress: () => setIsOffline((prev) => !prev),
-                    },
-                    {
-                      text: 'Clear Chat',
-                      onPress: () => setMessages([]),
-                    },
-                    { text: 'Cancel', style: 'cancel' },
-                  ]
-                );
-              }}
+              onPress={() => setIsMenuOpen((prev) => !prev)}
             >
               <Feather name="more-horizontal" size={20} color={Colors.white} />
             </TouchableOpacity>
           </View>
+
+          {/* Dropdown Options Menu */}
+          <AppOptionsMenu
+            visible={isMenuOpen}
+            onClose={() => setIsMenuOpen(false)}
+            topOffset={insets.top + 58}
+            items={[
+              {
+                id: 'toggle-offline',
+                label: isOffline ? 'Switch to Online' : 'Switch to Offline',
+                iconName: isOffline ? 'wifi' : 'wifi-off',
+                onPress: () => setIsOffline((prev) => !prev),
+                showDividerAfter: true,
+              },
+              {
+                id: 'clear-chat',
+                label: 'Clear Chat',
+                iconName: 'trash-2',
+                destructive: true,
+                onPress: () => setMessages([]),
+              },
+            ]}
+          />
 
           {/* Offline Banner (CHT-09) */}
           {isOffline && (
@@ -387,8 +402,8 @@ export const ChatConversationModal: React.FC<ChatConversationModalProps> = ({
                           <Text style={styles.metaTimeText}>{msg.timeText}</Text>
                           <Feather
                             name="check"
-                            size={14}
-                            color={Colors.accentTeal}
+                            size={13}
+                            color="#1FA066"
                             style={styles.checkIcon}
                           />
                         </View>
@@ -521,7 +536,9 @@ export const ChatConversationModal: React.FC<ChatConversationModalProps> = ({
                                   key={`att-diya-${idx}`}
                                   style={styles.smallDiyaItem}
                                 >
-                                  <View style={styles.smallDiyaFlame} />
+                                  <View style={styles.smallDiyaFlame}>
+                                    <View style={styles.diyaInnerCore} />
+                                  </View>
                                   <View style={styles.smallDiyaBowl} />
                                 </View>
                               ))}
@@ -565,7 +582,7 @@ export const ChatConversationModal: React.FC<ChatConversationModalProps> = ({
                 value={inputText}
                 onChangeText={setInputText}
                 placeholder="Message"
-                placeholderTextColor={Colors.textPlaceholder}
+                placeholderTextColor="#8A97AB"
                 onSubmitEditing={() => handleSendMessage()}
               />
               <TouchableOpacity
@@ -577,8 +594,8 @@ export const ChatConversationModal: React.FC<ChatConversationModalProps> = ({
               >
                 <Feather
                   name="camera"
-                  size={18}
-                  color={Colors.textSecondary}
+                  size={20}
+                  color="#8A97AB"
                 />
               </TouchableOpacity>
             </View>
@@ -590,7 +607,7 @@ export const ChatConversationModal: React.FC<ChatConversationModalProps> = ({
                 onPress={() => handleSendMessage()}
                 activeOpacity={0.85}
               >
-                <Feather name="send" size={18} color={Colors.white} />
+                <Feather name="send" size={20} color={Colors.white} />
               </TouchableOpacity>
             ) : (
               <TouchableOpacity
@@ -598,7 +615,7 @@ export const ChatConversationModal: React.FC<ChatConversationModalProps> = ({
                 onPress={() => setShowQuickMessages(true)}
                 activeOpacity={0.85}
               >
-                <Feather name="mic" size={18} color={Colors.white} />
+                <Feather name="mic" size={20} color={Colors.white} />
               </TouchableOpacity>
             )}
           </View>
@@ -649,10 +666,12 @@ export const ChatConversationModal: React.FC<ChatConversationModalProps> = ({
 const styles = StyleSheet.create({
   keyboardContainer: {
     flex: 1,
+    width: '100%',
     backgroundColor: Colors.background,
   },
   container: {
     flex: 1,
+    width: '100%',
     backgroundColor: Colors.background,
   },
   header: {
@@ -666,24 +685,24 @@ const styles = StyleSheet.create({
     width: 44,
     height: 44,
     borderRadius: 22,
-    backgroundColor: Colors.cardBackground,
+    backgroundColor: 'transparent',
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 1,
-    borderColor: Colors.border,
+    borderColor: '#3A4556',
   },
   headerTitleGroup: {
     alignItems: 'center',
   },
   headerTitle: {
-    fontSize: 18,
+    fontSize: 20,
     fontWeight: '700',
     color: Colors.white,
     letterSpacing: -0.2,
   },
   headerSubtitle: {
-    fontSize: 12,
-    color: Colors.textSecondary,
+    fontSize: 13,
+    color: '#8A97AB',
     marginTop: 2,
   },
   offlineBanner: {
@@ -798,7 +817,6 @@ const styles = StyleSheet.create({
   outgoingBubble: {
     backgroundColor: Colors.primary,
     borderRadius: 20,
-    borderBottomRightRadius: 4,
     paddingHorizontal: 18,
     paddingVertical: 12,
     maxWidth: '80%',
@@ -815,12 +833,14 @@ const styles = StyleSheet.create({
   outgoingMetaRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginTop: 4,
+    marginTop: 6,
+    marginRight: 2,
   },
   metaTimeText: {
-    fontSize: 11,
-    color: Colors.textSecondary,
+    fontSize: 12,
+    color: '#8A97AB',
     marginRight: 4,
+    fontWeight: '400',
   },
   checkIcon: {
     marginLeft: 2,
@@ -847,9 +867,9 @@ const styles = StyleSheet.create({
     alignItems: 'flex-start',
   },
   senderNameLabel: {
-    fontSize: 12,
-    fontWeight: '700',
-    marginLeft: 40,
+    fontSize: 13,
+    fontWeight: '600',
+    marginLeft: 46,
     marginBottom: 4,
   },
   incomingRow: {
@@ -858,30 +878,27 @@ const styles = StyleSheet.create({
     maxWidth: '85%',
   },
   avatarCircle: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
     alignItems: 'center',
     justifyContent: 'center',
     marginRight: 10,
-    marginBottom: 16,
+    marginBottom: 18,
   },
   avatarInitial: {
     color: Colors.white,
-    fontSize: 12,
+    fontSize: 14,
     fontWeight: '700',
   },
   incomingContentGroup: {
     flex: 1,
   },
   incomingBubble: {
-    backgroundColor: Colors.cardBackground,
+    backgroundColor: '#162842',
     borderRadius: 20,
-    borderBottomLeftRadius: 4,
     paddingHorizontal: 18,
     paddingVertical: 12,
-    borderWidth: 1,
-    borderColor: Colors.border,
   },
   incomingText: {
     color: Colors.white,
@@ -889,42 +906,51 @@ const styles = StyleSheet.create({
     lineHeight: 20,
   },
   incomingTimeText: {
-    fontSize: 11,
-    color: Colors.textSecondary,
-    marginTop: 4,
-    marginLeft: 4,
+    fontSize: 12,
+    color: '#8A97AB',
+    marginTop: 6,
+    marginLeft: 2,
+    fontWeight: '400',
   },
   imageAttachmentBox: {
     borderRadius: 18,
     overflow: 'hidden',
     marginTop: 8,
-    borderWidth: 1,
-    borderColor: Colors.border,
+    maxWidth: 260,
   },
   diyaAttachmentStage: {
-    height: 120,
-    backgroundColor: '#28170D',
+    height: 130,
+    backgroundColor: '#351D0F',
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-around',
-    paddingHorizontal: 12,
+    paddingHorizontal: 16,
+    paddingTop: 24,
   },
   smallDiyaItem: {
     alignItems: 'center',
   },
   smallDiyaFlame: {
-    width: 18,
-    height: 18,
-    borderRadius: 9,
-    backgroundColor: '#FFE2B8',
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    backgroundColor: '#F5A962',
+    alignItems: 'center',
+    justifyContent: 'center',
     marginBottom: 4,
   },
+  diyaInnerCore: {
+    width: 12,
+    height: 12,
+    borderRadius: 6,
+    backgroundColor: '#FFF2DB',
+  },
   smallDiyaBowl: {
-    width: 22,
-    height: 8,
+    width: 26,
+    height: 9,
     borderBottomLeftRadius: 6,
     borderBottomRightRadius: 6,
-    backgroundColor: '#7A3F1D',
+    backgroundColor: '#6B3C20',
   },
   sharedCardEvent: {
     backgroundColor: Colors.cardElevated,
@@ -1067,32 +1093,34 @@ const styles = StyleSheet.create({
     fontWeight: '700',
   },
   inputBar: {
+    width: '100%',
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 16,
-    paddingTop: 10,
+    paddingTop: 12,
     backgroundColor: Colors.background,
     borderTopWidth: 1,
-    borderTopColor: Colors.borderSubtle,
+    borderTopColor: '#192E4A',
     gap: 10,
   },
   plusButton: {
     width: 44,
     height: 44,
     borderRadius: 22,
-    backgroundColor: Colors.cardBackground,
+    backgroundColor: 'transparent',
     borderWidth: 1,
-    borderColor: Colors.border,
+    borderColor: '#3A4556',
     alignItems: 'center',
     justifyContent: 'center',
   },
   inputPill: {
     flex: 1,
-    height: 44,
-    borderRadius: 22,
-    backgroundColor: Colors.cardBackground,
+    flexGrow: 1,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: 'transparent',
     borderWidth: 1,
-    borderColor: Colors.border,
+    borderColor: '#3A4556',
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 16,
@@ -1101,14 +1129,15 @@ const styles = StyleSheet.create({
     flex: 1,
     color: Colors.white,
     fontSize: 15,
+    padding: 0,
   },
   cameraIconBtn: {
     padding: 4,
   },
   micButton: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
+    width: 48,
+    height: 48,
+    borderRadius: 24,
     backgroundColor: Colors.primary,
     alignItems: 'center',
     justifyContent: 'center',

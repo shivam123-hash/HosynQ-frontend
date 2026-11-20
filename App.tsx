@@ -175,7 +175,15 @@ function AppContent() {
 export default function App() {
   return (
     <Provider store={store}>
-      <AppContent />
+      <SafeAreaProvider>
+        <StatusBar barStyle="light-content" />
+        <NavigationContainer>
+          <RootNavigator
+            initialRouteName="Home"
+            authInitialRouteName="Onboarding"
+          />
+        </NavigationContainer>
+      </SafeAreaProvider>
     </Provider>
   );
 }

@@ -35,7 +35,7 @@ const PendingAlertCardsRow: React.FC<PendingAlertCardsRowProps> = ({
       >
         <Feather
           name="alert-circle"
-          size={24}
+          size={20}
           color="#F0913A"
           style={styles.icon}
         />
@@ -61,7 +61,7 @@ const PendingAlertCardsRow: React.FC<PendingAlertCardsRowProps> = ({
       >
         <Feather
           name="clock"
-          size={24}
+          size={20}
           color="#CAD4DF"
           style={styles.icon}
         />
@@ -87,13 +87,13 @@ const styles = StyleSheet.create({
   },
   card: {
     flex: 1,
-    height: 76,
-    backgroundColor: '#122440',
-    borderRadius: 20,
+    height: 64,
+    backgroundColor: 'transparent',
+    borderRadius: 16,
     borderWidth: 1.5,
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 16,
+    paddingHorizontal: 14,
   },
   overdueCard: {
     borderColor: '#6B3A2A',
@@ -105,20 +105,20 @@ const styles = StyleSheet.create({
     borderColor: '#F0913A',
   },
   icon: {
-    marginRight: 12,
+    marginRight: 10,
   },
   textColumn: {
     justifyContent: 'center',
   },
   cardEyebrow: {
-    fontSize: 12,
+    fontSize: 11,
     fontWeight: '700',
-    letterSpacing: 1,
+    letterSpacing: 1.2,
     color: '#8A97AB',
     marginBottom: 2,
   },
   cardValue: {
-    fontSize: 18,
+    fontSize: 16,
     fontWeight: '700',
     color: '#FFFFFF',
   },

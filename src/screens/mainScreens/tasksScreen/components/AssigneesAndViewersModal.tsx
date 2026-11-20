@@ -192,7 +192,11 @@ const AssigneesAndViewersModal: React.FC<AssigneesAndViewersModalProps> = ({
               return (
                 <TouchableOpacity
                   key={option.id}
-                  style={[styles.viewerRow, !isLast && styles.rowDivider]}
+                  style={[
+                    styles.viewerRow,
+                    isSelected && styles.viewerRowSelected,
+                    !isLast && styles.rowDivider,
+                  ]}
                   onPress={() => setCurrentViewers(option.id)}
                   activeOpacity={0.7}
                 >
@@ -245,7 +249,7 @@ const styles = StyleSheet.create({
     bottom: 0,
   },
   sheetContainer: {
-    backgroundColor: '#0B1A2F',
+    backgroundColor: '#122440',
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
     borderTopWidth: 1,
@@ -338,10 +342,10 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   viewersCard: {
-    backgroundColor: '#122440',
+    backgroundColor: 'transparent',
     borderRadius: 20,
-    borderWidth: 1,
-    borderColor: '#1F3352',
+    borderWidth: 1.5,
+    borderColor: '#3A4556',
     overflow: 'hidden',
     marginBottom: 24,
   },
@@ -351,6 +355,10 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingVertical: 14,
     paddingHorizontal: 16,
+    backgroundColor: 'transparent',
+  },
+  viewerRowSelected: {
+    backgroundColor: '#1A2B47',
   },
   rowDivider: {
     borderBottomWidth: 1,

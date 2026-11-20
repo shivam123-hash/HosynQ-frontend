@@ -21,8 +21,9 @@ import {
   FamilyPulseSection,
   BottomNavBar,
 } from './components';
-import { CreateTaskModal } from '../tasksScreen/components';
-import { CreateEventModal } from '../calendarScreen/components';
+import { CreateTaskModal, TaskDetailModal } from '../tasksScreen/components';
+import { TaskItem as TasksScreenTaskItem } from '../tasksScreen/types';
+import { CreateEventModal, EventDetailModal } from '../calendarScreen/components';
 import { CalendarEvent } from '../calendarScreen/types';
 import {
   AddSheetModal,
@@ -36,6 +37,7 @@ import {
   ToastConfig,
 } from '../addFlow';
 import { FamilyPulseModal, FamilyHubModal } from '../familyPulse';
+import { CompassModal, CompassScreenMode } from '../compassScreen';
 import {
   INITIAL_ATTENTION_ITEMS,
   INITIAL_UPCOMING_EVENTS,
@@ -58,6 +60,7 @@ export interface HomeScreenProps {
   onProfilePress?: () => void;
   onNotificationsPress?: () => void;
   onExplorePress?: () => void;
+  onCompassPress?: () => void;
   onOpenCalendar?: () => void;
   onAllTasksPress?: () => void;
   onContinueProfile?: () => void;
@@ -79,6 +82,7 @@ const HomeScreen: React.FC<HomeScreenProps> = ({
   onProfilePress,
   onNotificationsPress,
   onExplorePress,
+  onCompassPress,
   onOpenCalendar,
   onAllTasksPress,
   onContinueProfile,
@@ -104,9 +108,33 @@ const HomeScreen: React.FC<HomeScreenProps> = ({
   const [internalVaultVisible, setInternalVaultVisible] = useState(false);
   const [internalPulseVisible, setInternalPulseVisible] = useState(false);
   const [internalFamilyHubVisible, setInternalFamilyHubVisible] = useState(false);
+  const [internalCompassVisible, setInternalCompassVisible] = useState(false);
+  const [compassInitialScreen, setCompassInitialScreen] = useState<CompassScreenMode>('compass');
   const [internalUploadedFile, setInternalUploadedFile] = useState<
     string | undefined
   >(undefined);
+  const [selectedTaskForDetail, setSelectedTaskForDetail] = useState<TasksScreenTaskItem | null>(null);
+  const [selectedEventForDetail, setSelectedEventForDetail] = useState<CalendarEvent | null>(null);
+
+  const toTaskDetailItem = (
+    t: Partial<TasksScreenTaskItem> & { title: string }
+  ): TasksScreenTaskItem => {
+    const assignee = t.assignee || 'Priya';
+    return {
+      id: t.id || `task-${Date.now()}`,
+      title: t.title,
+      dueDate: t.dueDate || 'Today',
+      dueType: t.dueType || (t.isOverdue ? 'overdue' : 'today'),
+      assignee,
+      assigneeInitial: t.assigneeInitial || assignee.slice(0, 1),
+      category: (t.category as any) || 'household',
+      isCompleted: Boolean(t.isCompleted),
+      priority: t.priority || 'medium',
+      notes: t.notes || '',
+      repeat: t.repeat || 'Doesn’t repeat',
+      comments: t.comments || [],
+    };
+  };
 
   const [toastConfig, setToastConfig] = useState<ToastConfig>({
     visible: false,
@@ -131,7 +159,7 @@ const HomeScreen: React.FC<HomeScreenProps> = ({
   };
 
   const [attentionItems] = useState<AttentionItem[]>(INITIAL_ATTENTION_ITEMS);
-  const [upcomingEvents] = useState<EventItem[]>(INITIAL_UPCOMING_EVENTS);
+  const [upcomingEvents, setUpcomingEvents] = useState<EventItem[]>(INITIAL_UPCOMING_EVENTS);
   const [tasks, setTasks] = useState<TaskItem[]>(INITIAL_PENDING_TASKS);
   const [recentlyDone, setRecentlyDone] = useState(INITIAL_RECENTLY_DONE);
   const [familyMembers] = useState<FamilyMemberStatus[]>(INITIAL_FAMILY_MEMBERS);
@@ -195,6 +223,38 @@ const HomeScreen: React.FC<HomeScreenProps> = ({
     }
   };
 
+  const handleHeadingHomePress = () => {
+    if (onHeadingHomePress) {
+      onHeadingHomePress();
+    } else {
+      setCompassInitialScreen('headingHome');
+      setInternalCompassVisible(true);
+    }
+  };
+
+  const handleEditEvent = (updated: CalendarEvent) => {
+    setUpcomingEvents((prev) =>
+      prev.map((e) =>
+        e.id === updated.id
+          ? {
+              ...e,
+              title: updated.title,
+              time: updated.formattedTime || e.time,
+              location: updated.location || e.location,
+              category: (updated.category as any) || e.category,
+            }
+          : e
+      )
+    );
+    showToast('Event updated');
+  };
+
+  const handleCancelEvent = (cancelled: CalendarEvent) => {
+    setUpcomingEvents((prev) => prev.filter((e) => e.id !== cancelled.id));
+    setSelectedEventForDetail(null);
+    showToast('Event cancelled');
+  };
+
   return (
     <SafeAreaView style={styles.safeArea} edges={['top', 'left', 'right']}>
       <StatusBar barStyle="light-content" />
@@ -204,6 +264,13 @@ const HomeScreen: React.FC<HomeScreenProps> = ({
         onAvatarPress={onProfilePress}
         onExplorePress={onExplorePress}
         onNotificationPress={onNotificationsPress}
+        onCompassPress={
+          onCompassPress ||
+          (() => {
+            setCompassInitialScreen('compass');
+            setInternalCompassVisible(true);
+          })
+        }
       />
 
       {/* Main Scrollable Dashboard Content */}
@@ -243,10 +310,7 @@ const HomeScreen: React.FC<HomeScreenProps> = ({
         <QuickActionsBar
           onAddTask={handleAddTaskPress}
           onAddEvent={onAddEventPress}
-          onHeadingHome={
-            onHeadingHomePress ||
-            (() => Alert.alert('Heading Home', 'ETA shared with family members!'))
-          }
+          onHeadingHome={handleHeadingHomePress}
           onScan={onScanPress}
         />
 
@@ -257,16 +321,82 @@ const HomeScreen: React.FC<HomeScreenProps> = ({
             onOpenNeedsAttention ||
             (() => Alert.alert('Needs Attention', 'Showing all 3 urgent alerts.'))
           }
-          onItemPress={(item) => Alert.alert(item.title, item.subtitle)}
+          onItemPress={(item) => {
+            const matchedEvent = upcomingEvents.find((e) =>
+              e.title.toLowerCase().includes(item.title.toLowerCase())
+            );
+            if (matchedEvent) {
+              const calEvent: CalendarEvent = {
+                id: matchedEvent.id,
+                title: matchedEvent.title,
+                date: '2026-10-30',
+                startTime: `${matchedEvent.time} ${matchedEvent.period}`,
+                endTime: '',
+                formattedDate: 'Today · Fri, 30 Oct',
+                formattedTime: `${matchedEvent.time} ${matchedEvent.period}`,
+                isAllDay: false,
+                category: matchedEvent.category || 'Family',
+                categoryColor: matchedEvent.category === 'Family' ? '#3B82F6' : '#10B981',
+                location: matchedEvent.location,
+                goingMemberIds: ['m1'],
+                goingMembers: [
+                  { id: 'm1', name: 'Priya', initial: 'P', color: '#B45309' },
+                ],
+                reminders: '1 hour before',
+                repeat: 'Doesn’t repeat',
+                notes: item.subtitle,
+                comments: [],
+              };
+              setSelectedEventForDetail(calEvent);
+            } else {
+              const matchedTask = tasks.find((t) =>
+                t.title.toLowerCase().includes(item.title.toLowerCase())
+              );
+              const detailTask = toTaskDetailItem(
+                matchedTask || {
+                  id: item.id,
+                  title: item.title,
+                  dueDate: 'Due tomorrow',
+                  assignee: 'Priya',
+                  category: 'household' as any,
+                  isCompleted: false,
+                  priority: item.type === 'urgent' ? 'high' : 'medium',
+                  notes: item.subtitle,
+                }
+              );
+              setSelectedTaskForDetail(detailTask);
+            }
+          }}
         />
 
         {/* Upcoming Today Events */}
         <UpcomingEventsSection
           events={upcomingEvents}
           onOpenCalendar={onOpenCalendar}
-          onEventPress={(event) =>
-            Alert.alert(event.title, `${event.location}\nAttendees: ${event.attendees}`)
-          }
+          onEventPress={(event) => {
+            const calEvent: CalendarEvent = {
+              id: event.id,
+              title: event.title,
+              date: '2026-10-30',
+              startTime: `${event.time} ${event.period}`,
+              endTime: '',
+              formattedDate: 'Today · Fri, 30 Oct',
+              formattedTime: `${event.time} ${event.period}`,
+              isAllDay: false,
+              category: event.category || 'Family',
+              categoryColor: event.category === 'Family' ? '#3B82F6' : '#10B981',
+              location: event.location,
+              goingMemberIds: ['m1'],
+              goingMembers: [
+                { id: 'm1', name: 'Priya', initial: 'P', color: '#B45309' },
+              ],
+              reminders: '1 hour before',
+              repeat: 'Doesn’t repeat',
+              notes: '',
+              comments: [],
+            };
+            setSelectedEventForDetail(calEvent);
+          }}
         />
 
         {/* Pending Tasks with Filtering & Checkboxes */}
@@ -274,13 +404,24 @@ const HomeScreen: React.FC<HomeScreenProps> = ({
           tasks={tasks}
           onAllTasksPress={onAllTasksPress}
           onToggleTask={handleToggleTask}
-          onTaskPress={(t) => Alert.alert(t.title, `Due: ${t.dueDate} · Assigned to: ${t.assignee}`)}
+          onTaskPress={(t) => setSelectedTaskForDetail(toTaskDetailItem(t))}
         />
 
         {/* Recently Done Section */}
         <RecentlyDoneSection
           items={recentlyDone}
           onReopen={handleReopenTask}
+          onItemPress={(item) => {
+            const detailTask = toTaskDetailItem({
+              id: item.id,
+              title: item.title,
+              dueDate: 'Today',
+              assignee: item.completedBy,
+              isCompleted: true,
+              priority: 'medium',
+            });
+            setSelectedTaskForDetail(detailTask);
+          }}
         />
 
         {/* Life Profile Progress Card (Optional - from Pic 2 spec) */}
@@ -511,7 +652,60 @@ const HomeScreen: React.FC<HomeScreenProps> = ({
           setInternalFamilyHubVisible(false);
           setInternalVaultVisible(true);
         }}
+        onOpenCompass={() => {
+          setInternalFamilyHubVisible(false);
+          setCompassInitialScreen('compass');
+          setInternalCompassVisible(true);
+        }}
       />
+
+      {/* Compass & Heading Home Modal (CMP-01 to CMP-13) */}
+      <CompassModal
+        visible={internalCompassVisible}
+        initialScreen={compassInitialScreen}
+        onClose={() => setInternalCompassVisible(false)}
+      />
+
+      {/* Task Detail Modal */}
+      {selectedTaskForDetail && (
+        <TaskDetailModal
+          visible={Boolean(selectedTaskForDetail)}
+          task={selectedTaskForDetail}
+          onClose={() => setSelectedTaskForDetail(null)}
+          onToggleComplete={(t) => {
+            handleToggleTask(t.id);
+            setSelectedTaskForDetail(null);
+          }}
+          onReassign={(task, assignee) => {
+            setTasks((prev) =>
+              prev.map((item) =>
+                item.id === task.id ? { ...item, assignee } : item
+              )
+            );
+            setSelectedTaskForDetail((prev) =>
+              prev ? { ...prev, assignee } : null
+            );
+            showToast(`Reassigned to ${assignee}`);
+          }}
+          onDelete={(t: TasksScreenTaskItem) => {
+            setTasks((prev) => prev.filter((item) => item.id !== t.id));
+            setSelectedTaskForDetail(null);
+            showToast('Task deleted');
+          }}
+        />
+      )}
+
+      {/* Event Detail Modal */}
+      {selectedEventForDetail && (
+        <EventDetailModal
+          visible={Boolean(selectedEventForDetail)}
+          event={selectedEventForDetail}
+          onClose={() => setSelectedEventForDetail(null)}
+          onEditEvent={handleEditEvent}
+          onOpenComments={() => {}}
+          onCancelEvent={handleCancelEvent}
+        />
+      )}
     </SafeAreaView>
   );
 };

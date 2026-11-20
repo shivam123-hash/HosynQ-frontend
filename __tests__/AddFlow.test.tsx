@@ -780,13 +780,16 @@ describe('Add Flow Components (ADD-01 to ADD-25)', () => {
       );
 
     expect(texts).toContain('Family Vault');
-    expect(texts).toContain('Proposed: every scan and upload is kept here, sorted by type.');
-    expect(texts).toContain('RECENT');
+    expect(texts).toContain('Car insurance renews in 19 days');
+    expect(texts).toContain('Documents and renewals');
+    expect(texts).toContain('Insurance');
+    expect(texts).toContain('Warranties and bills');
+    expect(texts).toContain('Home assets');
+    expect(texts).toContain('Important contacts');
+    expect(texts).toContain('Scans and uploads');
+    expect(texts).toContain('RECENTLY ADDED');
     expect(texts).toContain('St. Mary’s circular');
     expect(texts).toContain('Electricity bill · October');
-    expect(texts).toContain('IMG_2041.jpg');
-    expect(texts).toContain('Aarav · Vaccination certificate');
-    expect(texts).toContain('Car insurance policy');
 
     // Tap back button
     const backBtn = renderer.root

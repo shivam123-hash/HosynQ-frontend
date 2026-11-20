@@ -12,6 +12,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Feather from '@react-native-vector-icons/feather';
 import Ionicons from '@react-native-vector-icons/ionicons';
 import { TripPackingItem } from './types';
+import AppOptionsMenu from '../../../common/AppOptionsMenu';
 
 export interface TripPackingModalProps {
   visible?: boolean;
@@ -43,6 +44,13 @@ export const TripPackingModal: React.FC<TripPackingModalProps> = ({
   const insets = useSafeAreaInsets();
   const [items, setItems] = useState<TripPackingItem[]>(initialItems);
   const [activeFilter, setActiveFilter] = useState('Everyone');
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
+
+  React.useEffect(() => {
+    if (!visible) {
+      setIsMenuOpen(false);
+    }
+  }, [visible]);
 
   const toggleItemPacked = (itemId: string) => {
     const updated = items.map((it) =>
@@ -148,7 +156,7 @@ export const TripPackingModal: React.FC<TripPackingModalProps> = ({
 
         <TouchableOpacity
           style={styles.circleBtn}
-          onPress={() => {}}
+          onPress={() => setIsMenuOpen((prev) => !prev)}
           activeOpacity={0.7}
           accessibilityRole="button"
           accessibilityLabel="Packing options"
@@ -156,6 +164,35 @@ export const TripPackingModal: React.FC<TripPackingModalProps> = ({
           <Feather name="more-horizontal" size={22} color="#FFFFFF" />
         </TouchableOpacity>
       </View>
+
+      {/* Dropdown Options Menu */}
+      <AppOptionsMenu
+        visible={isMenuOpen}
+        onClose={() => setIsMenuOpen(false)}
+        topOffset={insets.top + 58}
+        items={[
+          {
+            id: 'clear-all',
+            label: 'Unpack All Items',
+            iconName: 'rotate-ccw',
+            onPress: () => {
+              const updated = items.map((it) => ({ ...it, isPacked: false }));
+              setItems(updated);
+              if (onUpdatePackingItems) onUpdatePackingItems(updated);
+            },
+          },
+          {
+            id: 'pack-all',
+            label: 'Pack All Items',
+            iconName: 'check-square',
+            onPress: () => {
+              const updated = items.map((it) => ({ ...it, isPacked: true }));
+              setItems(updated);
+              if (onUpdatePackingItems) onUpdatePackingItems(updated);
+            },
+          },
+        ]}
+      />
 
       <ScrollView
         showsVerticalScrollIndicator={false}
@@ -295,9 +332,9 @@ const styles = StyleSheet.create({
     width: 44,
     height: 44,
     borderRadius: 22,
-    backgroundColor: '#122440',
-    borderWidth: 1,
-    borderColor: '#1F3352',
+    backgroundColor: 'transparent',
+    borderWidth: 1.5,
+    borderColor: '#3A4556',
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -311,7 +348,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     borderWidth: 1.5,
     borderColor: '#2DD4BF',
-    borderRadius: 14,
+    borderRadius: 8,
     paddingHorizontal: 12,
     paddingVertical: 5,
     alignSelf: 'flex-start',
@@ -355,15 +392,17 @@ const styles = StyleSheet.create({
   },
   filterScroll: {
     paddingVertical: 18,
-    gap: 8,
+    gap: 10,
   },
   filterChip: {
-    backgroundColor: '#122440',
-    borderRadius: 20,
-    borderWidth: 1,
-    borderColor: '#1F3352',
+    height: 36,
+    backgroundColor: 'transparent',
+    borderRadius: 18,
+    borderWidth: 1.5,
+    borderColor: '#3A4556',
     paddingHorizontal: 16,
-    paddingVertical: 8,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   filterChipActive: {
     backgroundColor: '#F0913A',
@@ -406,6 +445,7 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     borderWidth: 2,
     borderColor: '#2C3E55',
+    backgroundColor: 'transparent',
     marginRight: 14,
   },
   checkedCircle: {

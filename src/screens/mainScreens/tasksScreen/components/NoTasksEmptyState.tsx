@@ -40,7 +40,7 @@ const NoTasksEmptyState: React.FC<NoTasksEmptyStateProps> = ({
         accessibilityRole="button"
         accessibilityLabel="Add a task"
       >
-        <Feather name="plus" size={20} color="#0B1A2F" />
+        <Feather name="plus" size={20} color="#FFFFFF" />
         <Text style={styles.addButtonText}>Add a task</Text>
       </TouchableOpacity>
 
@@ -132,7 +132,7 @@ const styles = StyleSheet.create({
   addButtonText: {
     fontSize: 16,
     fontWeight: '700',
-    color: '#0B1A2F',
+    color: '#FFFFFF',
   },
   suggestionEyebrow: {
     fontSize: 11,
@@ -151,10 +151,10 @@ const styles = StyleSheet.create({
   suggestionPill: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#122440',
-    borderRadius: 20,
-    borderWidth: 1,
-    borderColor: '#1F3352',
+    backgroundColor: 'transparent',
+    borderRadius: 8,
+    borderWidth: 1.5,
+    borderColor: '#3A4556',
     paddingVertical: 10,
     paddingHorizontal: 14,
     gap: 8,

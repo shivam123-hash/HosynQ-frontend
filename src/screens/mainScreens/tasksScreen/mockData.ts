@@ -79,8 +79,8 @@ export const CATEGORY_META: Record<
   },
   finance: {
     label: 'Finance',
-    color: '#EF4444',
-    badgeBorder: '#6B2B2B',
+    color: '#F06A6A',
+    badgeBorder: '#F06A6A',
   },
   health: {
     label: 'Health',
@@ -103,7 +103,7 @@ export const PRIORITY_META: Record<
   TaskPriority,
   { label: string; color: string }
 > = {
-  high: { label: 'High priority', color: '#F87171' },
+  high: { label: 'High priority', color: '#F06A6A' },
   medium: { label: 'Medium', color: '#FBBF24' },
   low: { label: 'Low', color: '#94A3B8' },
 };

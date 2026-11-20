@@ -1,76 +1,88 @@
 import React, { memo } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Image } from 'react-native';
 import Feather from '@react-native-vector-icons/feather';
 import Colors from '../units/Colors';
+
+const DEFAULT_AVATAR = require('../assets/image/default_avatar.png');
 
 export interface AppTopBarProps {
   userAvatarBg?: string;
   userInitial?: string;
+  avatarUrl?: string | null;
+  avatarSource?: any;
   hasUnreadNotifications?: boolean;
   unreadCount?: number;
   onAvatarPress?: () => void;
   onExplorePress?: () => void;
   onNotificationsPress?: () => void;
   onMenuPress?: () => void;
+  onCompassPress?: () => void;
 }
 
 const AppTopBar: React.FC<AppTopBarProps> = ({
-  userAvatarBg = Colors.avatarBrown,
+  userAvatarBg = '#1E293B',
   userInitial = 'P',
+  avatarUrl,
+  avatarSource,
   hasUnreadNotifications = true,
-  unreadCount = 3,
+  unreadCount,
   onAvatarPress,
   onExplorePress,
   onNotificationsPress,
   onMenuPress,
+  onCompassPress,
 }) => {
+  const handleAvatarPress = onAvatarPress || onMenuPress || onExplorePress;
+
   return (
     <View style={styles.container}>
-      {/* Left Menu / Hamburger Icon */}
+      {/* Left User Avatar Button (Tapping opens menu) */}
       <TouchableOpacity
-        onPress={onMenuPress || onExplorePress}
+        onPress={handleAvatarPress}
         activeOpacity={0.7}
         accessibilityRole="button"
-        accessibilityLabel="Menu"
-        style={styles.menuButton}
+        accessibilityLabel="Open menu"
+        style={styles.avatarButton}
       >
-        <Feather name="menu" size={24} color={Colors.white} />
+        {avatarSource ? (
+          <Image source={avatarSource} style={styles.avatarImage} />
+        ) : avatarUrl ? (
+          <Image source={{ uri: avatarUrl }} style={styles.avatarImage} />
+        ) : DEFAULT_AVATAR ? (
+          <Image source={DEFAULT_AVATAR} style={styles.avatarImage} />
+        ) : (
+          <View style={[styles.avatarFallback, { backgroundColor: userAvatarBg }]}>
+            <Text style={styles.avatarInitial}>{userInitial}</Text>
+          </View>
+        )}
       </TouchableOpacity>
 
-      {/* Center Brand Logo (Orange house square + HosynQ) */}
-      <View style={styles.brandContainer}>
-        <View style={styles.logoSquare}>
-          <Feather name="home" size={16} color={Colors.white} />
-        </View>
+      {/* Center Brand Title */}
+      <View style={styles.brandContainer} pointerEvents="none">
         <Text style={styles.brandTitle}>HosynQ</Text>
       </View>
 
-      {/* Right Actions (Notification Bell with Badge + User Avatar) */}
+      {/* Right Actions: Compass & Notification Bell */}
       <View style={styles.rightActions}>
+        <TouchableOpacity
+          onPress={onCompassPress || onExplorePress}
+          activeOpacity={0.7}
+          accessibilityRole="button"
+          accessibilityLabel="Compass"
+          style={styles.iconButton}
+        >
+          <Feather name="compass" size={24} color={Colors.white} />
+        </TouchableOpacity>
+
         <TouchableOpacity
           onPress={onNotificationsPress}
           activeOpacity={0.7}
           accessibilityRole="button"
           accessibilityLabel="Notifications"
-          style={styles.bellButton}
+          style={styles.iconButton}
         >
           <Feather name="bell" size={22} color={Colors.white} />
-          {hasUnreadNotifications && (
-            <View style={styles.badgeContainer}>
-              <Text style={styles.badgeText}>{unreadCount}</Text>
-            </View>
-          )}
-        </TouchableOpacity>
-
-        {/* User Profile Avatar */}
-        <TouchableOpacity
-          onPress={onAvatarPress}
-          activeOpacity={0.8}
-          accessibilityRole="button"
-          accessibilityLabel="Open profile"
-          style={[styles.avatarButton, { backgroundColor: userAvatarBg }]}
-        >
-          <Text style={styles.avatarInitial}>{userInitial}</Text>
+          {hasUnreadNotifications && <View style={styles.badgeDot} />}
         </TouchableOpacity>
       </View>
     </View>
@@ -88,72 +100,68 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     backgroundColor: Colors.background,
   },
-  menuButton: {
-    width: 40,
-    height: 40,
-    alignItems: 'flex-start',
+  avatarButton: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    overflow: 'hidden',
     justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: Colors.avatarPlaceholderBg,
+    zIndex: 1,
+  },
+  avatarImage: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+  },
+  avatarFallback: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  avatarInitial: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: Colors.white,
   },
   brandContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  logoSquare: {
-    width: 30,
-    height: 30,
-    borderRadius: 8,
-    backgroundColor: Colors.primary,
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    top: 0,
+    bottom: 0,
     alignItems: 'center',
     justifyContent: 'center',
-    marginRight: 8,
   },
   brandTitle: {
-    fontSize: 22,
-    fontWeight: '800',
+    fontSize: 20,
+    fontWeight: '700',
     color: Colors.white,
-    letterSpacing: -0.3,
+    letterSpacing: -0.2,
   },
   rightActions: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 12,
+    gap: 16,
+    zIndex: 1,
   },
-  bellButton: {
+  iconButton: {
     width: 36,
     height: 36,
     alignItems: 'center',
     justifyContent: 'center',
     position: 'relative',
   },
-  badgeContainer: {
+  badgeDot: {
     position: 'absolute',
-    top: 2,
-    right: 2,
-    width: 17,
-    height: 17,
-    borderRadius: 8.5,
+    top: 5,
+    right: 5,
+    width: 8,
+    height: 8,
+    borderRadius: 4,
     backgroundColor: Colors.primary,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  badgeText: {
-    color: Colors.black,
-    fontSize: 10,
-    fontWeight: '800',
-  },
-  avatarButton: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderWidth: 1.5,
-    borderColor: Colors.primary,
-    overflow: 'hidden',
-  },
-  avatarInitial: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: Colors.white,
   },
 });

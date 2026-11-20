@@ -882,7 +882,7 @@ const styles = StyleSheet.create({
     bottom: 0,
   },
   sheetContainer: {
-    backgroundColor: Colors.background,
+    backgroundColor: '#122440',
     borderTopLeftRadius: 28,
     borderTopRightRadius: 28,
     borderWidth: 1,

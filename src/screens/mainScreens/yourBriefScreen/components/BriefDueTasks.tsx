@@ -8,12 +8,14 @@ export interface BriefDueTasksProps {
   tasks: BriefTaskItem[];
   onOpenTasks?: () => void;
   onToggleTask?: (taskId: string) => void;
+  onTaskPress?: (task: BriefTaskItem) => void;
 }
 
 const BriefDueTasks: React.FC<BriefDueTasksProps> = ({
   tasks,
   onOpenTasks,
   onToggleTask,
+  onTaskPress,
 }) => {
   return (
     <View style={styles.container}>
@@ -37,25 +39,35 @@ const BriefDueTasks: React.FC<BriefDueTasksProps> = ({
 
           return (
             <React.Fragment key={task.id}>
-              <TouchableOpacity
-                style={styles.taskRow}
-                onPress={() => onToggleTask?.(task.id)}
-                activeOpacity={0.7}
-              >
+              <View style={styles.taskRow}>
                 {/* Circular Checkbox */}
-                <View
-                  style={[
-                    styles.checkbox,
-                    task.isCompleted && styles.checkboxCompleted,
-                  ]}
+                <TouchableOpacity
+                  onPress={() => onToggleTask?.(task.id)}
+                  activeOpacity={0.7}
+                  hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                  accessibilityRole="checkbox"
+                  accessibilityState={{ checked: task.isCompleted }}
+                  accessibilityLabel={`Mark ${task.title} as ${task.isCompleted ? 'incomplete' : 'complete'}`}
                 >
-                  {task.isCompleted && (
-                    <Feather name="check" size={13} color="#FFFFFF" />
-                  )}
-                </View>
+                  <View
+                    style={[
+                      styles.checkbox,
+                      task.isCompleted && styles.checkboxCompleted,
+                    ]}
+                  >
+                    {task.isCompleted && (
+                      <Feather name="check" size={13} color="#FFFFFF" />
+                    )}
+                  </View>
+                </TouchableOpacity>
 
                 {/* Task Details */}
-                <View style={styles.taskContent}>
+                <TouchableOpacity
+                  style={styles.taskContent}
+                  onPress={() => onTaskPress?.(task)}
+                  activeOpacity={onTaskPress ? 0.7 : 1}
+                  disabled={!onTaskPress}
+                >
                   <Text
                     style={[
                       styles.taskTitle,
@@ -77,7 +89,7 @@ const BriefDueTasks: React.FC<BriefDueTasksProps> = ({
                     <Text style={styles.taskDot}> · </Text>
                     <Text style={styles.taskAssignee}>{task.assignee}</Text>
                   </View>
-                </View>
+                </TouchableOpacity>
 
                 {/* Priority Dot */}
                 <View
@@ -86,7 +98,7 @@ const BriefDueTasks: React.FC<BriefDueTasksProps> = ({
                     task.priority === 'high' && styles.highPriorityDot,
                   ]}
                 />
-              </TouchableOpacity>
+              </View>
 
               {!isLast && <View style={styles.divider} />}
             </React.Fragment>
