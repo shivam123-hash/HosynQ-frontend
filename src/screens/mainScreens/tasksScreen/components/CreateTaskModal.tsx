@@ -37,6 +37,14 @@ import RemindersModal from './RemindersModal';
 import CategoryPriorityModal from './CategoryPriorityModal';
 import DiscardChangesModal from './DiscardChangesModal';
 
+const getTodayIsoString = (): string => {
+  const d = new Date();
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${day}`;
+};
+
 export interface CreateTaskModalProps {
   visible: boolean;
   onClose: () => void;
@@ -114,10 +122,10 @@ const CreateTaskModal: React.FC<CreateTaskModalProps> = ({
   const [viewersOption, setViewersOption] = useState<ViewersOption>('everyone');
   const [category, setCategory] = useState<TaskCategory>('household');
   const [priority, setPriority] = useState<TaskPriority>('medium');
-  const [dueDate, setDueDate] = useState('Mon, 2 Nov');
-  const [dueFormatted, setDueFormatted] = useState('Mon, 2 Nov · by 6:00 PM');
+  const [dueDate, setDueDate] = useState('Today');
+  const [dueFormatted, setDueFormatted] = useState('Today · by 6:00 PM');
   const [dueTime, setDueTime] = useState<string | undefined>('6:00 PM');
-  const [dueOnIso, setDueOnIso] = useState<string>('2026-11-02');
+  const [dueOnIso, setDueOnIso] = useState<string>(getTodayIsoString());
   const [repeat, setRepeat] = useState('Doesn’t repeat');
   const [reminders, setReminders] = useState('1 hour before');
   const [remindersList, setRemindersList] = useState<string[]>([
@@ -155,6 +163,10 @@ const CreateTaskModal: React.FC<CreateTaskModalProps> = ({
       setRemindersList(taskToEdit.reminders ? [taskToEdit.reminders] : ['1 hour before']);
     } else {
       setTitle(initialTitle);
+      setDueDate('Today');
+      setDueFormatted('Today · by 6:00 PM');
+      setDueTime('6:00 PM');
+      setDueOnIso(getTodayIsoString());
     }
   }, [initialTitle, taskToEdit, visible]);
 
@@ -167,10 +179,10 @@ const CreateTaskModal: React.FC<CreateTaskModalProps> = ({
     setViewersOption('everyone');
     setCategory('household');
     setPriority('medium');
-    setDueDate('Mon, 2 Nov');
-    setDueFormatted('Mon, 2 Nov · by 6:00 PM');
+    setDueDate('Today');
+    setDueFormatted('Today · by 6:00 PM');
     setDueTime('6:00 PM');
-    setDueOnIso('2026-11-02');
+    setDueOnIso(getTodayIsoString());
     setRepeat('Doesn’t repeat');
     setReminders('1 hour before');
     setRemindersList(['1 hour before']);
@@ -306,7 +318,7 @@ const CreateTaskModal: React.FC<CreateTaskModalProps> = ({
     category !== 'household' ||
     priority !== 'medium' ||
     (repeat !== 'Doesn’t repeat' && repeat !== "Doesn't repeat") ||
-    dueDate !== 'Mon, 2 Nov' ||
+    dueDate !== 'Today' ||
     dueTime !== '6:00 PM' ||
     remindersList.length !== 1 ||
     remindersList[0] !== '1 hour before';

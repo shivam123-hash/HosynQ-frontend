@@ -24,8 +24,15 @@ import {
   reassignTask,
   createTask,
 } from '../../../redux/features/tasks/tasksSlice';
+import {
+  fetchLists,
+  createList,
+  updateList,
+  deleteList,
+} from '../../../redux/features/lists/listsSlice';
 import { getMyFamilyThunk } from '../../../redux/features/family/familySlice';
 import { CreateTaskPayload, TaskItemData } from '../../../services/tasksServices';
+import { mapApiListSummaryToUiList } from './listApiHelpers';
 import {
   TasksHeader,
   TasksSegmentedTabs,
@@ -48,6 +55,7 @@ import {
   TripData,
   INITIAL_TRIP_DATA,
 } from './components';
+import { TasksSkeleton, ListsSkeleton } from '../../../components/SkeletonLoader';
 import {
   INITIAL_TASKS,
   INITIAL_LISTS,
@@ -66,7 +74,13 @@ import {
   ListGroup,
   ListType,
 } from './types';
-import { formatTaskDueDate } from './taskApiHelpers';
+import {
+  formatTaskDueDate,
+  isTaskOverdue,
+  resolveMemberId,
+  resolveMemberDisplayName,
+  isUUID,
+} from './taskApiHelpers';
 
 export const mapApiTaskToUiTask = (apiTask: TaskItemData): TaskItem => {
   const assigneesList = apiTask.assignees || [];
@@ -77,8 +91,20 @@ export const mapApiTaskToUiTask = (apiTask: TaskItemData): TaskItem => {
   const firstAssignee = assigneesList[0];
   const assigneeInitial = assigneeName ? assigneeName.trim()[0].toUpperCase() : 'P';
 
+  const isCompleted = apiTask.status === 'DONE';
+  const overdue = Boolean(
+    apiTask.isOverdue ||
+    isTaskOverdue({
+      isOverdue: apiTask.isOverdue,
+      isCompleted,
+      dueOn: apiTask.dueOn,
+      dueTime: apiTask.dueTime,
+      dueFormatted: apiTask.dueFormatted,
+    })
+  );
+
   let dueType: TaskDueDateType = 'later';
-  if (apiTask.isOverdue) {
+  if (overdue) {
     dueType = 'overdue';
   } else if (apiTask.isToday) {
     dueType = 'today';
@@ -89,7 +115,7 @@ export const mapApiTaskToUiTask = (apiTask: TaskItemData): TaskItem => {
   const categoryLower = (apiTask.category ? apiTask.category.toLowerCase() : 'household') as TaskCategory;
   const priorityLower = (apiTask.priority ? apiTask.priority.toLowerCase() : 'medium') as TaskPriority;
 
-  const formattedDueDate = formatTaskDueDate(apiTask.dueOn, apiTask.isToday, apiTask.isOverdue);
+  const formattedDueDate = formatTaskDueDate(apiTask.dueOn, apiTask.isToday, overdue);
   const formattedDueWithTime = apiTask.dueTime
     ? `${formattedDueDate} · by ${apiTask.dueTime}`
     : formattedDueDate;
@@ -119,11 +145,11 @@ export const mapApiTaskToUiTask = (apiTask: TaskItemData): TaskItem => {
         : 'Assignees only',
     notes: apiTask.notes || undefined,
     createdBy: apiTask.createdBy?.fullName || undefined,
-    isCompleted: apiTask.status === 'DONE',
+    isCompleted,
     completedAt: apiTask.completedAt || undefined,
     completedBy: apiTask.completedByMemberId || undefined,
-    isOverdue: apiTask.isOverdue,
-    overdueDateText: apiTask.isOverdue ? 'Overdue' : undefined,
+    isOverdue: overdue,
+    overdueDateText: overdue ? 'Overdue' : undefined,
   };
 };
 
@@ -165,6 +191,7 @@ const TasksScreen: React.FC<TasksScreenProps> = ({
     counts: apiCounts,
     summary: apiSummary,
   } = useAppSelector((state) => state.tasks);
+  const { lists: apiLists, loading: listsLoading } = useAppSelector((state) => state.lists);
 
   const familyMembers = useAppSelector(
     (state) =>
@@ -236,8 +263,9 @@ const TasksScreen: React.FC<TasksScreenProps> = ({
   const [prefillTitle, setPrefillTitle] = useState('');
 
   // Lists state
+  const defaultInitialLists = isTestEnv && !forceEmpty ? INITIAL_LISTS : [];
   const [lists, setLists] = useState<ListGroup[]>(
-    forceEmpty ? [] : INITIAL_LISTS
+    forceEmpty ? [] : defaultInitialLists
   );
   const [selectedList, setSelectedList] = useState<ListGroup | null>(null);
   const [newListModalVisible, setNewListModalVisible] = useState(false);
@@ -263,9 +291,20 @@ const TasksScreen: React.FC<TasksScreenProps> = ({
     );
   }, [statusTab, selectedMemberId, dispatch]);
 
+  const loadLists = useCallback(() => {
+    dispatch(fetchLists());
+  }, [dispatch]);
+
   useEffect(() => {
     dispatch(getMyFamilyThunk());
-  }, [dispatch]);
+    loadLists();
+  }, [dispatch, loadLists]);
+
+  useEffect(() => {
+    if (mainTab === 'lists') {
+      loadLists();
+    }
+  }, [mainTab, loadLists]);
 
   useEffect(() => {
     dispatch(clearTasksError());
@@ -286,10 +325,25 @@ const TasksScreen: React.FC<TasksScreenProps> = ({
     }
   }, [apiTasks, isTestEnv, forceEmpty]);
 
+  useEffect(() => {
+    if (apiLists) {
+      if (isTestEnv) {
+        if (apiLists.length > 0) {
+          setLists(apiLists.map((l) => mapApiListSummaryToUiList(l)));
+        } else if (forceEmpty) {
+          setLists([]);
+        }
+        return;
+      }
+      setLists(apiLists.map((l) => mapApiListSummaryToUiList(l)));
+    }
+  }, [apiLists, isTestEnv, forceEmpty]);
+
   const handleCreateList = useCallback((newList: ListGroup) => {
     setLists((prev) => [newList, ...prev]);
     setSelectedList(newList);
-  }, []);
+    loadLists();
+  }, [loadLists]);
 
   const handleUpdateList = useCallback((updatedList: ListGroup) => {
     setLists((prev) =>
@@ -301,7 +355,10 @@ const TasksScreen: React.FC<TasksScreenProps> = ({
   const handleDeleteList = useCallback((listId: string) => {
     setLists((prev) => prev.filter((l) => l.id !== listId));
     setSelectedList(null);
-  }, []);
+    if (isUUID(listId)) {
+      dispatch(deleteList(listId));
+    }
+  }, [dispatch]);
 
   // Keep family member avatar and filter modal in sync
   const handleSelectMember = (memberId: string) => {
@@ -422,9 +479,14 @@ const TasksScreen: React.FC<TasksScreenProps> = ({
 
   // Reassign task
   const handleReassignTask = useCallback(
-    async (task: TaskItem, newAssigneeId: string) => {
-      const matched = memberFilterOptions.find((m) => m.id === newAssigneeId);
-      const displayName = matched?.name || newAssigneeId;
+    async (task: TaskItem, newAssigneeIdOrName: string) => {
+      const myMemberId =
+        familyMembers.find((m: any) => m.isYou)?.memberId ||
+        (familyMembers[0]?.myMemberId ?? null);
+
+      const resolvedId = resolveMemberId(newAssigneeIdOrName, familyMembers, myMemberId);
+      const displayName = resolveMemberDisplayName(newAssigneeIdOrName, familyMembers);
+
       setTasks((prev) =>
         prev.map((t) =>
           t.id === task.id
@@ -437,20 +499,26 @@ const TasksScreen: React.FC<TasksScreenProps> = ({
         )
       );
       Alert.alert('Task Reassigned', `Assigned to ${displayName}.`);
-      try {
-        if (isUUID(task.id)) {
-          console.log('[TasksScreen] Reassigning task:', task.id, 'to member ID:', newAssigneeId);
-          await dispatch(
-            reassignTask({ taskId: task.id, payload: { memberId: newAssigneeId } })
-          ).unwrap();
-          console.log('[TasksScreen] ✅ Task reassigned:', task.id);
-          loadTasks();
+
+      if (isUUID(task.id)) {
+        const targetMemberId = resolvedId || (isUUID(newAssigneeIdOrName) ? newAssigneeIdOrName : null);
+        if (targetMemberId && isUUID(targetMemberId)) {
+          try {
+            console.log('[TasksScreen] Reassigning task:', task.id, 'to member ID:', targetMemberId);
+            await dispatch(
+              reassignTask({ taskId: task.id, payload: { memberId: targetMemberId } })
+            ).unwrap();
+            console.log('[TasksScreen] ✅ Task reassigned:', task.id);
+            loadTasks();
+          } catch (err) {
+            console.log('[TasksScreen] ❌ Reassign error:', err);
+          }
+        } else {
+          console.log('[TasksScreen] ⚠️ Skipping reassign API: could not resolve UUID for member:', newAssigneeIdOrName);
         }
-      } catch (err) {
-        console.log('[TasksScreen] ❌ Reassign error:', err);
       }
     },
-    [dispatch, loadTasks, memberFilterOptions]
+    [dispatch, loadTasks, familyMembers]
   );
 
   // Delete task
@@ -710,19 +778,25 @@ const TasksScreen: React.FC<TasksScreenProps> = ({
         />
 
         {mainTab === 'lists' ? (
-          <ListsOverviewSection
-            lists={lists}
-            tripData={tripData}
-            onSelectList={(list) => setSelectedList(list)}
-            onCreateNewList={(prefillType) => {
-              setNewListPrefillType(prefillType || 'grocery');
-              setNewListModalVisible(true);
-            }}
-            onOpenVacationPlanner={() => {
-              setTripInitialScreen(!tripData.step1Done ? 'dates' : 'overview');
-              setTripPlannerVisible(true);
-            }}
-          />
+          listsLoading && lists.length === 0 && !forceEmpty ? (
+            <ListsSkeleton />
+          ) : (
+            <ListsOverviewSection
+              lists={lists}
+              tripData={tripData}
+              onSelectList={(list) => setSelectedList(list)}
+              onCreateNewList={(prefillType) => {
+                setNewListPrefillType(prefillType || 'grocery');
+                setNewListModalVisible(true);
+              }}
+              onOpenVacationPlanner={() => {
+                setTripInitialScreen(!tripData.step1Done ? 'dates' : 'overview');
+                setTripPlannerVisible(true);
+              }}
+            />
+          )
+        ) : tasksLoading && tasks.length === 0 && !forceEmpty ? (
+          <TasksSkeleton />
         ) : hasZeroTasksOverall ? (
           /* TSK-03: No tasks yet */
           <NoTasksEmptyState
@@ -876,6 +950,12 @@ const TasksScreen: React.FC<TasksScreenProps> = ({
         }}
         onReassign={handleReassignTask}
         onDelete={handleDeleteTask}
+        onUpdateTask={(updatedTask) => {
+          setTasks((prev) =>
+            prev.map((t) => (t.id === updatedTask.id ? updatedTask : t))
+          );
+          setSelectedTask(updatedTask);
+        }}
       />
 
       {/* Create Task Modal */}

@@ -12,8 +12,11 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Ionicons from '@react-native-vector-icons/ionicons';
+import { useAppDispatch } from '../../../../redux';
+import { createList } from '../../../../redux/features/lists/listsSlice';
 import { ListGroup, ListType } from '../types';
 import { LIST_TYPE_CONFIG } from '../mockData';
+import { mapUiListTypeToBackend, mapApiListDetailToUiList } from '../listApiHelpers';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
@@ -54,6 +57,7 @@ const NewListModal: React.FC<NewListModalProps> = ({
   onCreateList,
 }) => {
   const insets = useSafeAreaInsets();
+  const dispatch = useAppDispatch();
   const [selectedType, setSelectedType] = useState<ListType>(prefillType);
   const [listName, setListName] = useState<string>('Weekend groceries');
   const [shareWithFamily, setShareWithFamily] = useState<boolean>(true);
@@ -91,25 +95,41 @@ const NewListModal: React.FC<NewListModalProps> = ({
     }
   };
 
-  const handleCreate = () => {
+  const handleCreate = async () => {
     const trimmed = listName.trim();
     if (!trimmed) return;
 
     const config = LIST_TYPE_CONFIG[selectedType];
-    const newList: ListGroup = {
-      id: `lst-${Date.now()}`,
-      title: trimmed,
-      type: selectedType,
-      typeLabel: config.label,
-      items: [],
-      sharedWith: shareWithFamily
-        ? ['Priya', 'Rohan', 'Dadi', 'Anaya', 'Aarav']
-        : ['Priya'],
-      isSharedWithAll: shareWithFamily,
-    };
+    const backendType = mapUiListTypeToBackend(selectedType);
 
-    onCreateList(newList);
-    onClose();
+    try {
+      const res = await dispatch(
+        createList({
+          name: trimmed,
+          type: backendType,
+          sharedWithAll: shareWithFamily,
+        })
+      ).unwrap();
+
+      const uiList = mapApiListDetailToUiList(res);
+      onCreateList(uiList);
+      onClose();
+    } catch (e) {
+      console.log('[NewListModal] API creation failed, fallback to local list:', e);
+      const newList: ListGroup = {
+        id: `lst-${Date.now()}`,
+        title: trimmed,
+        type: selectedType,
+        typeLabel: config.label,
+        items: [],
+        sharedWith: shareWithFamily
+          ? ['Priya', 'Rohan', 'Dadi', 'Anaya', 'Aarav']
+          : ['Priya'],
+        isSharedWithAll: shareWithFamily,
+      };
+      onCreateList(newList);
+      onClose();
+    }
   };
 
   return (

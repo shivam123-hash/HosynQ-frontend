@@ -10,9 +10,17 @@ import {
   StatusBar,
   Alert,
   Platform,
+  ActivityIndicator,
+  Share,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Feather from '@react-native-vector-icons/feather';
+import Ionicons from '@react-native-vector-icons/ionicons';
+import { useAppDispatch, useAppSelector, RootState } from '../../../redux/store';
+import {
+  inviteAdultMemberThunk,
+  createInvitationThunk,
+} from '../../../redux/features/family/familySlice';
 
 export type InviteRole = 'Adult' | 'Admin';
 export type InviteMethod = 'mobile' | 'email';
@@ -38,6 +46,9 @@ export const InviteAdultModal: React.FC<InviteAdultModalProps> = ({
   isScreen = false,
 }) => {
   const insets = useSafeAreaInsets();
+  const dispatch = useAppDispatch();
+  const { actionLoading } = useAppSelector((state) => state.family);
+
   const [method, setMethod] = useState<InviteMethod>('mobile');
   const [phone, setPhone] = useState('98765 43210');
   const [email, setEmail] = useState('meera@example.com');
@@ -46,30 +57,93 @@ export const InviteAdultModal: React.FC<InviteAdultModalProps> = ({
 
   const [isPhoneFocused, setIsPhoneFocused] = useState(false);
   const [isNameFocused, setIsNameFocused] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isGeneratingLink, setIsGeneratingLink] = useState(false);
 
-  const handleSend = () => {
-    const contact = method === 'mobile' ? phone : email;
+  const handleSend = async () => {
+    const contact = method === 'mobile' ? phone.trim() : email.trim();
+
+    if (!contact) {
+      Alert.alert(
+        'Required Field',
+        method === 'mobile'
+          ? 'Please enter a mobile number.'
+          : 'Please enter an email address.'
+      );
+      return;
+    }
+
     if (onSendInvite) {
-      onSendInvite({ method, contact, name, role });
-    } else {
+      onSendInvite({ method, contact, name: name.trim(), role });
+      return;
+    }
+
+    setIsSubmitting(true);
+    const assignedRole = role === 'Admin' ? 'FAMILY_ADMIN' : 'ADULT_MEMBER';
+    const payload =
+      method === 'mobile'
+        ? {
+            phoneNumber: contact.startsWith('+') ? contact : `+91${contact}`,
+            name: name.trim() || undefined,
+            role: assignedRole,
+          }
+        : {
+            email: contact,
+            name: name.trim() || undefined,
+            role: assignedRole,
+          };
+
+    try {
+      await dispatch(inviteAdultMemberThunk(payload)).unwrap();
       Alert.alert(
         'Invite Sent',
-        `Invitation sent to ${name || contact} as ${role}.`
+        `Invitation sent successfully to ${name.trim() || contact}.`
       );
+      setIsSubmitting(false);
       onClose();
+    } catch (err: any) {
+      setIsSubmitting(false);
+      Alert.alert('Failed to send invite', err || 'Could not send invitation.');
     }
   };
 
-  const handleShareLink = () => {
+  const handleShareLink = async () => {
     if (onShareInviteLink) {
       onShareInviteLink();
-    } else {
+      return;
+    }
+
+    setIsGeneratingLink(true);
+    try {
+      const response = await dispatch(createInvitationThunk()).unwrap();
+      setIsGeneratingLink(false);
+
+      const link =
+        response?.invitation?.url ||
+        `https://hosynq.app/invite/${response?.invitation?.token}`;
+
       Alert.alert(
-        'Invite Link',
-        'Invite link copied: https://hosynq.app/join/HSQ-4821'
+        'Invite Link Ready',
+        `Share this 7-day link with anyone you want to invite:\n\n${link}`,
+        [
+          {
+            text: 'Share',
+            onPress: () => {
+              Share.share({
+                message: `Join our family on HosynQ: ${link}`,
+              });
+            },
+          },
+          { text: 'Done', style: 'cancel' },
+        ]
       );
+    } catch (err: any) {
+      setIsGeneratingLink(false);
+      Alert.alert('Error', err || 'Could not generate invitation link.');
     }
   };
+
+  const isBusy = isSubmitting || isGeneratingLink || actionLoading;
 
   const topPadding =
     Math.max(
@@ -160,59 +234,61 @@ export const InviteAdultModal: React.FC<InviteAdultModalProps> = ({
           </TouchableOpacity>
         </View>
 
-        {/* Input 1: Mobile number / Email */}
-        <Text style={styles.inputLabel}>
-          {method === 'mobile' ? 'Mobile number' : 'Email address'}
-        </Text>
-
+        {/* Form Inputs */}
         {method === 'mobile' ? (
-          <View
-            style={[
-              styles.inputWrapper,
-              isPhoneFocused && styles.inputWrapperFocused,
-            ]}
-          >
-            <Text style={styles.countryCodeText}>+91</Text>
-            <View style={styles.inputDivider} />
-            <TextInput
-              style={styles.textInput}
-              value={phone}
-              onChangeText={setPhone}
-              placeholder="Enter phone number"
-              placeholderTextColor="#6E8096"
-              keyboardType="phone-pad"
-              selectionColor="#F0913A"
-              cursorColor="#F0913A"
-              onFocus={() => setIsPhoneFocused(true)}
-              onBlur={() => setIsPhoneFocused(false)}
-              accessibilityLabel="Mobile number"
-            />
-          </View>
+          <>
+            <Text style={styles.inputLabel}>Mobile number</Text>
+            <View
+              style={[
+                styles.inputWrapper,
+                isPhoneFocused && styles.inputWrapperFocused,
+              ]}
+            >
+              <Text style={styles.countryCodeText}>+91</Text>
+              <View style={styles.inputDivider} />
+              <TextInput
+                style={styles.textInput}
+                value={phone}
+                onChangeText={setPhone}
+                placeholder="98765 43210"
+                placeholderTextColor="#4E5D78"
+                keyboardType="phone-pad"
+                selectionColor="#F0913A"
+                cursorColor="#F0913A"
+                onFocus={() => setIsPhoneFocused(true)}
+                onBlur={() => setIsPhoneFocused(false)}
+                accessibilityLabel="Mobile number"
+              />
+            </View>
+          </>
         ) : (
-          <View
-            style={[
-              styles.inputWrapper,
-              isPhoneFocused && styles.inputWrapperFocused,
-            ]}
-          >
-            <TextInput
-              style={styles.textInput}
-              value={email}
-              onChangeText={setEmail}
-              placeholder="Enter email address"
-              placeholderTextColor="#6E8096"
-              keyboardType="email-address"
-              autoCapitalize="none"
-              selectionColor="#F0913A"
-              cursorColor="#F0913A"
-              onFocus={() => setIsPhoneFocused(true)}
-              onBlur={() => setIsPhoneFocused(false)}
-              accessibilityLabel="Email address"
-            />
-          </View>
+          <>
+            <Text style={styles.inputLabel}>Email address</Text>
+            <View
+              style={[
+                styles.inputWrapper,
+                isPhoneFocused && styles.inputWrapperFocused,
+              ]}
+            >
+              <TextInput
+                style={styles.textInput}
+                value={email}
+                onChangeText={setEmail}
+                placeholder="name@example.com"
+                placeholderTextColor="#4E5D78"
+                keyboardType="email-address"
+                autoCapitalize="none"
+                selectionColor="#F0913A"
+                cursorColor="#F0913A"
+                onFocus={() => setIsPhoneFocused(true)}
+                onBlur={() => setIsPhoneFocused(false)}
+                accessibilityLabel="Email address"
+              />
+            </View>
+          </>
         )}
 
-        {/* Input 2: Their name (optional) */}
+        {/* Name Input */}
         <Text style={styles.inputLabel}>Their name (optional)</Text>
         <View
           style={[
@@ -225,7 +301,7 @@ export const InviteAdultModal: React.FC<InviteAdultModalProps> = ({
             value={name}
             onChangeText={setName}
             placeholder="e.g. Meera"
-            placeholderTextColor="#6E8096"
+            placeholderTextColor="#4E5D78"
             selectionColor="#F0913A"
             cursorColor="#F0913A"
             onFocus={() => setIsNameFocused(true)}
@@ -234,18 +310,16 @@ export const InviteAdultModal: React.FC<InviteAdultModalProps> = ({
           />
         </View>
 
-        {/* ROLE section */}
+        {/* Role Selection */}
         <Text style={styles.roleSectionLabel}>ROLE</Text>
         <View style={styles.roleChipsRow}>
           <TouchableOpacity
             style={[
               styles.roleChip,
-              role === 'Adult'
-                ? styles.roleChipActive
-                : styles.roleChipInactive,
+              role === 'Adult' ? styles.roleChipActive : styles.roleChipInactive,
             ]}
             onPress={() => setRole('Adult')}
-            activeOpacity={0.75}
+            activeOpacity={0.8}
             accessibilityRole="button"
             accessibilityLabel="Role Adult"
           >
@@ -264,12 +338,10 @@ export const InviteAdultModal: React.FC<InviteAdultModalProps> = ({
           <TouchableOpacity
             style={[
               styles.roleChip,
-              role === 'Admin'
-                ? styles.roleChipActive
-                : styles.roleChipInactive,
+              role === 'Admin' ? styles.roleChipActive : styles.roleChipInactive,
             ]}
             onPress={() => setRole('Admin')}
-            activeOpacity={0.75}
+            activeOpacity={0.8}
             accessibilityRole="button"
             accessibilityLabel="Role Admin"
           >
@@ -286,51 +358,57 @@ export const InviteAdultModal: React.FC<InviteAdultModalProps> = ({
           </TouchableOpacity>
         </View>
 
+        {/* Role Explanation Text */}
         <Text style={styles.roleExplanationText}>
-          Adults use everything. Admins can also manage members and approve
-          requests.
+          Adults use everything. Admins can also manage members and approve requests.
         </Text>
 
-        {/* Share invite link card */}
+        {/* Share Link Card */}
         <TouchableOpacity
           style={styles.linkCard}
           onPress={handleShareLink}
+          disabled={isBusy}
           activeOpacity={0.8}
           accessibilityRole="button"
           accessibilityLabel="Share an invite link instead"
         >
           <View style={styles.linkIconBox}>
-            <Feather name="link-2" size={20} color="#F0913A" />
+            {isGeneratingLink ? (
+              <ActivityIndicator size="small" color="#F0913A" />
+            ) : (
+              <Ionicons name="link-outline" size={20} color="#F0913A" />
+            )}
           </View>
-
           <View style={styles.linkTextGroup}>
-            <Text style={styles.linkTitle}>
-              Share an invite link instead
-            </Text>
+            <Text style={styles.linkTitle}>Share an invite link instead</Text>
             <Text style={styles.linkSubtitle}>
               Anyone with the link can ask to join
             </Text>
           </View>
-
-          <Feather name="chevron-right" size={18} color="#5A6880" />
+          <Feather name="chevron-right" size={18} color="#CAD4DF" />
         </TouchableOpacity>
       </ScrollView>
 
-      {/* Pinned Bottom Button */}
+      {/* Pinned Bottom Buttons */}
       <View
         style={[
           styles.pinnedBottomContainer,
-          { paddingBottom: Math.max(insets.bottom, 16) + 4 },
+          { paddingBottom: Math.max(insets.bottom, 16) + 8 },
         ]}
       >
         <TouchableOpacity
-          style={styles.sendButton}
+          style={[styles.sendButton, isBusy && styles.buttonDisabled]}
           onPress={handleSend}
+          disabled={isBusy}
           activeOpacity={0.85}
           accessibilityRole="button"
           accessibilityLabel="Send invite"
         >
-          <Text style={styles.sendButtonText}>Send invite</Text>
+          {isSubmitting ? (
+            <ActivityIndicator size="small" color="#FFFFFF" />
+          ) : (
+            <Text style={styles.sendButtonText}>Send invite</Text>
+          )}
         </TouchableOpacity>
       </View>
     </View>
@@ -373,7 +451,7 @@ const styles = StyleSheet.create({
     borderRadius: 22,
     borderWidth: 1,
     borderColor: '#3A4556',
-    backgroundColor: 'transparent',
+    backgroundColor: '#122440',
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -389,59 +467,56 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     paddingHorizontal: 20,
-    paddingTop: 8,
+    paddingTop: 16,
     paddingBottom: 24,
   },
   tabsContainer: {
     flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#0B1A2F',
-    borderRadius: 26,
-    borderWidth: 1,
-    borderColor: '#3A4556',
+    backgroundColor: '#11223A',
+    borderRadius: 14,
     padding: 4,
-    height: 52,
-    marginTop: 6,
+    marginBottom: 24,
+    borderWidth: 1,
+    borderColor: '#1F3352',
   },
   tabButton: {
     flex: 1,
     height: 42,
-    borderRadius: 21,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
+    borderRadius: 10,
+    gap: 8,
   },
   tabButtonActive: {
-    backgroundColor: '#F0923A',
+    backgroundColor: '#F0913A',
   },
   tabButtonText: {
     fontSize: 14,
-    marginLeft: 8,
+    fontWeight: '600',
   },
   tabButtonTextActive: {
     color: '#0B1A2F',
-    fontWeight: '700',
   },
   tabButtonTextInactive: {
-    color: '#C8D1DC',
-    fontWeight: '500',
+    color: '#CAD4DF',
   },
   inputLabel: {
-    fontSize: 14,
-    color: '#CAD4DF',
+    fontSize: 13,
+    color: '#8A9BAE',
     fontWeight: '500',
-    marginTop: 20,
     marginBottom: 8,
   },
   inputWrapper: {
-    height: 54,
-    borderRadius: 27,
-    backgroundColor: '#11223A',
+    height: 52,
+    borderRadius: 26,
+    backgroundColor: '#122440',
     borderWidth: 1,
     borderColor: '#1F3352',
     paddingHorizontal: 18,
     flexDirection: 'row',
     alignItems: 'center',
+    marginBottom: 18,
   },
   inputWrapperFocused: {
     borderColor: '#F0913A',
@@ -471,7 +546,7 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     letterSpacing: 1.2,
     textTransform: 'uppercase',
-    marginTop: 22,
+    marginTop: 6,
     marginBottom: 10,
   },
   roleChipsRow: {
@@ -507,7 +582,7 @@ const styles = StyleSheet.create({
   },
   roleExplanationText: {
     fontSize: 13,
-    color: '#8997AB',
+    color: '#8A9BAE',
     lineHeight: 19,
     marginTop: 12,
     marginBottom: 20,
@@ -542,7 +617,7 @@ const styles = StyleSheet.create({
   },
   linkSubtitle: {
     fontSize: 13,
-    color: '#8997AB',
+    color: '#8A9BAE',
     marginTop: 3,
   },
   pinnedBottomContainer: {
@@ -563,6 +638,9 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '700',
     color: '#FFFFFF',
+  },
+  buttonDisabled: {
+    opacity: 0.7,
   },
 });
 

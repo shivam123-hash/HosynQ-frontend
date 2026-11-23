@@ -13,15 +13,17 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Feather from '@react-native-vector-icons/feather';
+import { AddStaffModal } from './AddStaffModal';
 
 export interface StaffModalProps {
   visible?: boolean;
   isScreen?: boolean;
+  initialStaff?: StaffMember[];
   onClose: () => void;
   onAddStaff?: () => void;
 }
 
-interface StaffMember {
+export interface StaffMember {
   id: string;
   name: string;
   subtext: string;
@@ -39,60 +41,30 @@ interface StaffMember {
   };
 }
 
-const DEFAULT_STAFF: StaffMember[] = [
-  {
-    id: 'ramesh',
-    name: 'Ramesh',
-    subtext: 'Sees pickups and drop-offs',
-    badge: 'Driver',
-    badgeBorder: '#2E5080',
-    badgeColor: '#8EB7F5',
-    initial: 'Ra',
-    avatarBg: '#1E3F3B',
-    avatarColor: '#80D0D1',
-    permissions: {
-      pickups: true,
-      calendar: false,
-      location: false,
-      chat: false,
-    },
-  },
-  {
-    id: 'sunita',
-    name: 'Sunita',
-    subtext: 'Sees grocery lists and chores',
-    badge: 'House help',
-    badgeBorder: '#6E4D1B',
-    badgeColor: '#F3C049',
-    initial: 'Su',
-    avatarBg: '#4A3519',
-    avatarColor: '#F3C049',
-    permissions: {
-      pickups: false,
-      calendar: false,
-      location: false,
-      chat: false,
-    },
-  },
-];
+const DEFAULT_STAFF: StaffMember[] = [];
 
 export const StaffModal: React.FC<StaffModalProps> = ({
   visible = true,
   isScreen = false,
+  initialStaff = DEFAULT_STAFF,
   onClose,
   onAddStaff,
 }) => {
   const insets = useSafeAreaInsets();
-  const [staffList, setStaffList] = useState<StaffMember[]>(DEFAULT_STAFF);
-  const [selectedStaffId, setSelectedStaffId] = useState<string>('ramesh');
+  const [staffList, setStaffList] = useState<StaffMember[]>(initialStaff);
+  const [selectedStaffId, setSelectedStaffId] = useState<string | null>(
+    initialStaff.length > 0 ? initialStaff[0].id : null
+  );
+  const [showAddStaffModal, setShowAddStaffModal] = useState<boolean>(false);
 
   const selectedStaff =
-    staffList.find((s) => s.id === selectedStaffId) || staffList[0];
+    staffList.find((s) => s.id === selectedStaffId) || staffList[0] || null;
 
   const handleTogglePermission = (
     key: keyof StaffMember['permissions'],
     value: boolean
   ) => {
+    if (!selectedStaff) return;
     setStaffList((prev) =>
       prev.map((s) =>
         s.id === selectedStaff.id
@@ -112,11 +84,14 @@ export const StaffModal: React.FC<StaffModalProps> = ({
     if (onAddStaff) {
       onAddStaff();
     } else {
-      Alert.alert(
-        'Staff Feature Reserved',
-        'Staff management (drivers, nannies and house help) is proposed and reserved for after V1.'
-      );
+      setShowAddStaffModal(true);
     }
+  };
+
+  const handleAddNewStaff = (newStaff: StaffMember) => {
+    setStaffList((prev) => [newStaff, ...prev]);
+    setSelectedStaffId(newStaff.id);
+    setShowAddStaffModal(false);
   };
 
   const topPadding = Math.max(
@@ -163,137 +138,152 @@ export const StaffModal: React.FC<StaffModalProps> = ({
           Give drivers and house help only what they need to see.
         </Text>
 
-        {/* Staff Members List Card */}
-        <View style={styles.staffCard}>
-          {staffList.map((member, index) => {
-            const isLast = index === staffList.length - 1;
-            const isSelected = selectedStaffId === member.id;
+        {/* Staff Members List Card or Empty State */}
+        {staffList.length === 0 ? (
+          <View style={styles.emptyCard}>
+            <View style={styles.emptyIconCircle}>
+              <Feather name="users" size={24} color="#8EB7F5" />
+            </View>
+            <Text style={styles.emptyTitle}>No staff added yet</Text>
+            <Text style={styles.emptySubtitle}>
+              Drivers, house help, and nannies will appear here once added.
+            </Text>
+          </View>
+        ) : (
+          <View style={styles.staffCard}>
+            {staffList.map((member, index) => {
+              const isLast = index === staffList.length - 1;
+              const isSelected = selectedStaff?.id === member.id;
 
-            return (
-              <React.Fragment key={member.id}>
-                <TouchableOpacity
-                  style={[
-                    styles.staffRow,
-                    isSelected && styles.staffRowSelected,
-                  ]}
-                  onPress={() => setSelectedStaffId(member.id)}
-                  activeOpacity={0.75}
-                  accessibilityRole="button"
-                  accessibilityLabel={`${member.name}, ${member.badge}`}
-                >
-                  {/* Avatar */}
-                  <View
+              return (
+                <React.Fragment key={member.id || `staff-${index}`}>
+                  <TouchableOpacity
                     style={[
-                      styles.avatar,
-                      { backgroundColor: member.avatarBg },
+                      styles.staffRow,
+                      isSelected && styles.staffRowSelected,
                     ]}
+                    onPress={() => setSelectedStaffId(member.id)}
+                    activeOpacity={0.75}
+                    accessibilityRole="button"
+                    accessibilityLabel={`${member.name}, ${member.badge}`}
                   >
-                    <Text
+                    {/* Avatar */}
+                    <View
                       style={[
-                        styles.avatarText,
-                        { color: member.avatarColor },
+                        styles.avatar,
+                        { backgroundColor: member.avatarBg },
                       ]}
                     >
-                      {member.initial}
-                    </Text>
-                  </View>
+                      <Text
+                        style={[
+                          styles.avatarText,
+                          { color: member.avatarColor },
+                        ]}
+                      >
+                        {member.initial}
+                      </Text>
+                    </View>
 
-                  {/* Staff Info */}
-                  <View style={styles.staffInfo}>
-                    <Text style={styles.staffName}>{member.name}</Text>
-                    <Text style={styles.staffSubtext}>{member.subtext}</Text>
-                  </View>
+                    {/* Staff Info */}
+                    <View style={styles.staffInfo}>
+                      <Text style={styles.staffName}>{member.name}</Text>
+                      <Text style={styles.staffSubtext}>{member.subtext}</Text>
+                    </View>
 
-                  {/* Badge */}
-                  <View
-                    style={[
-                      styles.staffBadge,
-                      { borderColor: member.badgeBorder },
-                    ]}
-                  >
-                    <Text
+                    {/* Badge */}
+                    <View
                       style={[
-                        styles.staffBadgeText,
-                        { color: member.badgeColor },
+                        styles.staffBadge,
+                        { borderColor: member.badgeBorder },
                       ]}
                     >
-                      {member.badge}
-                    </Text>
-                  </View>
+                      <Text
+                        style={[
+                          styles.staffBadgeText,
+                          { color: member.badgeColor },
+                        ]}
+                      >
+                        {member.badge}
+                      </Text>
+                    </View>
 
-                  {/* Chevron Right */}
-                  <Feather
-                    name="chevron-right"
-                    size={18}
-                    color="#6E8096"
-                    style={styles.chevron}
-                  />
-                </TouchableOpacity>
+                    {/* Chevron Right */}
+                    <Feather
+                      name="chevron-right"
+                      size={18}
+                      color="#6E8096"
+                      style={styles.chevron}
+                    />
+                  </TouchableOpacity>
 
-                {!isLast && <View style={styles.divider} />}
-              </React.Fragment>
-            );
-          })}
-        </View>
-
-        {/* Section Label: WHAT [NAME] CAN SEE */}
-        <Text style={styles.sectionLabel}>
-          {`WHAT ${selectedStaff.name.toUpperCase()} CAN SEE`}
-        </Text>
-
-        {/* Permissions Toggles Card */}
-        <View style={styles.permissionsCard}>
-          {/* Permission 1: Pickups and drop-offs */}
-          <View style={styles.permissionRow}>
-            <Text style={styles.permissionLabel}>Pickups and drop-offs</Text>
-            <Switch
-              value={selectedStaff.permissions.pickups}
-              onValueChange={(val) => handleTogglePermission('pickups', val)}
-              trackColor={{ false: '#1F3352', true: '#F0923A' }}
-              thumbColor="#FFFFFF"
-              accessibilityLabel="Pickups and drop-offs permission"
-            />
+                  {!isLast && <View style={styles.divider} />}
+                </React.Fragment>
+              );
+            })}
           </View>
-          <View style={styles.divider} />
+        )}
 
-          {/* Permission 2: Family calendar */}
-          <View style={styles.permissionRow}>
-            <Text style={styles.permissionLabel}>Family calendar</Text>
-            <Switch
-              value={selectedStaff.permissions.calendar}
-              onValueChange={(val) => handleTogglePermission('calendar', val)}
-              trackColor={{ false: '#1F3352', true: '#F0923A' }}
-              thumbColor="#FFFFFF"
-              accessibilityLabel="Family calendar permission"
-            />
-          </View>
-          <View style={styles.divider} />
+        {/* Section Label & Permissions Toggles Card (Only shown when staff exists) */}
+        {selectedStaff && (
+          <>
+            <Text style={styles.sectionLabel}>
+              {`WHAT ${selectedStaff.name.toUpperCase()} CAN SEE`}
+            </Text>
 
-          {/* Permission 3: Live location */}
-          <View style={styles.permissionRow}>
-            <Text style={styles.permissionLabel}>Live location</Text>
-            <Switch
-              value={selectedStaff.permissions.location}
-              onValueChange={(val) => handleTogglePermission('location', val)}
-              trackColor={{ false: '#1F3352', true: '#F0923A' }}
-              thumbColor="#FFFFFF"
-              accessibilityLabel="Live location permission"
-            />
-          </View>
-          <View style={styles.divider} />
+            <View style={styles.permissionsCard}>
+              {/* Permission 1: Pickups and drop-offs */}
+              <View style={styles.permissionRow}>
+                <Text style={styles.permissionLabel}>Pickups and drop-offs</Text>
+                <Switch
+                  value={selectedStaff.permissions.pickups}
+                  onValueChange={(val) => handleTogglePermission('pickups', val)}
+                  trackColor={{ false: '#1F3352', true: '#F0923A' }}
+                  thumbColor="#FFFFFF"
+                  accessibilityLabel="Pickups and drop-offs permission"
+                />
+              </View>
+              <View style={styles.divider} />
 
-          {/* Permission 4: Family chat */}
-          <View style={styles.permissionRow}>
-            <Text style={styles.permissionLabel}>Family chat</Text>
-            <Switch
-              value={selectedStaff.permissions.chat}
-              onValueChange={(val) => handleTogglePermission('chat', val)}
-              trackColor={{ false: '#1F3352', true: '#F0923A' }}
-              thumbColor="#FFFFFF"
-              accessibilityLabel="Family chat permission"
-            />
-          </View>
-        </View>
+              {/* Permission 2: Family calendar */}
+              <View style={styles.permissionRow}>
+                <Text style={styles.permissionLabel}>Family calendar</Text>
+                <Switch
+                  value={selectedStaff.permissions.calendar}
+                  onValueChange={(val) => handleTogglePermission('calendar', val)}
+                  trackColor={{ false: '#1F3352', true: '#F0923A' }}
+                  thumbColor="#FFFFFF"
+                  accessibilityLabel="Family calendar permission"
+                />
+              </View>
+              <View style={styles.divider} />
+
+              {/* Permission 3: Live location */}
+              <View style={styles.permissionRow}>
+                <Text style={styles.permissionLabel}>Live location</Text>
+                <Switch
+                  value={selectedStaff.permissions.location}
+                  onValueChange={(val) => handleTogglePermission('location', val)}
+                  trackColor={{ false: '#1F3352', true: '#F0923A' }}
+                  thumbColor="#FFFFFF"
+                  accessibilityLabel="Live location permission"
+                />
+              </View>
+              <View style={styles.divider} />
+
+              {/* Permission 4: Family chat */}
+              <View style={styles.permissionRow}>
+                <Text style={styles.permissionLabel}>Family chat</Text>
+                <Switch
+                  value={selectedStaff.permissions.chat}
+                  onValueChange={(val) => handleTogglePermission('chat', val)}
+                  trackColor={{ false: '#1F3352', true: '#F0923A' }}
+                  thumbColor="#FFFFFF"
+                  accessibilityLabel="Family chat permission"
+                />
+              </View>
+            </View>
+          </>
+        )}
       </ScrollView>
 
       {/* Pinned Bottom Button: + Add staff */}
@@ -314,6 +304,13 @@ export const StaffModal: React.FC<StaffModalProps> = ({
           <Text style={styles.addStaffButtonText}>Add staff</Text>
         </TouchableOpacity>
       </View>
+
+      {/* Add Staff Modal */}
+      <AddStaffModal
+        visible={showAddStaffModal}
+        onClose={() => setShowAddStaffModal(false)}
+        onAddStaff={handleAddNewStaff}
+      />
     </View>
   );
 
@@ -394,6 +391,40 @@ const styles = StyleSheet.create({
     lineHeight: 20,
     color: '#8A9BAE',
     marginBottom: 18,
+  },
+  emptyCard: {
+    backgroundColor: '#122440',
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: '#1F3249',
+    paddingVertical: 36,
+    paddingHorizontal: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 20,
+  },
+  emptyIconCircle: {
+    width: 52,
+    height: 52,
+    borderRadius: 26,
+    backgroundColor: 'rgba(142, 183, 245, 0.12)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 14,
+  },
+  emptyTitle: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#FFFFFF',
+    marginBottom: 6,
+    textAlign: 'center',
+  },
+  emptySubtitle: {
+    fontSize: 13,
+    color: '#8A9BAE',
+    textAlign: 'center',
+    lineHeight: 18,
+    maxWidth: 280,
   },
   staffCard: {
     backgroundColor: '#122440',

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import {
   View,
   Text,
@@ -11,13 +11,19 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Feather from '@react-native-vector-icons/feather';
+import { useAppSelector } from '../../../../redux';
 import { ListGroup } from '../types';
 
 export interface ShareListModalProps {
   visible: boolean;
   list: ListGroup | null;
   onClose: () => void;
-  onUpdateShare: (listId: string, sharedWith: string[], isSharedAll: boolean) => void;
+  onUpdateShare: (
+    listId: string,
+    sharedWith: string[],
+    isSharedAll: boolean,
+    memberIds?: string[]
+  ) => void;
   onSendToChat?: (list: ListGroup) => void;
 }
 
@@ -71,6 +77,30 @@ const ShareListModal: React.FC<ShareListModalProps> = ({
   onSendToChat,
 }) => {
   const insets = useSafeAreaInsets();
+  const familyMembers = useAppSelector(
+    (state) =>
+      ((state.family.myFamilyData?.family as any)?.members as any[]) ||
+      ((state.family.myFamilyData as any)?.members as any[]) ||
+      []
+  );
+
+  const members: ShareMemberState[] = useMemo(() => {
+    if (familyMembers && familyMembers.length > 0) {
+      return familyMembers.map((m: any) => {
+        const rawName = m.fullName || m.name || 'Member';
+        const name = m.isYou ? `${rawName} (you)` : rawName;
+        return {
+          id: m.memberId || m.id,
+          name,
+          initial: (rawName.trim()[0] || 'M').toUpperCase(),
+          avatarBg: m.avatarColor || '#1E3A8A',
+          isOwner: Boolean(m.isYou || m.role === 'ADMIN'),
+        };
+      });
+    }
+    return MEMBERS;
+  }, [familyMembers]);
+
   const [sharedMap, setSharedMap] = useState<Record<string, boolean>>({
     rohan: true,
     dadi: true,
@@ -81,7 +111,7 @@ const ShareListModal: React.FC<ShareListModalProps> = ({
   React.useEffect(() => {
     if (list) {
       const initialMap: Record<string, boolean> = {};
-      MEMBERS.forEach((m) => {
+      members.forEach((m) => {
         if (!m.isOwner) {
           initialMap[m.id] = list.isSharedWithAll
             ? true
@@ -92,7 +122,7 @@ const ShareListModal: React.FC<ShareListModalProps> = ({
       });
       setSharedMap(initialMap);
     }
-  }, [list, visible]);
+  }, [list, visible, members]);
 
   if (!list) return null;
 
@@ -101,17 +131,17 @@ const ShareListModal: React.FC<ShareListModalProps> = ({
   };
 
   const handleDone = () => {
-    const activeNames = ['Priya'];
-    let allCount = 1;
-    MEMBERS.forEach((m) => {
-      if (!m.isOwner && sharedMap[m.id]) {
+    const activeNames: string[] = [];
+    const activeIds: string[] = [];
+    members.forEach((m) => {
+      if (m.isOwner || sharedMap[m.id]) {
         activeNames.push(m.name.replace(' (you)', ''));
-        allCount++;
+        activeIds.push(m.id);
       }
     });
 
-    const isAll = allCount === MEMBERS.length;
-    onUpdateShare(list.id, activeNames, isAll);
+    const isAll = activeIds.length === members.length;
+    onUpdateShare(list.id, activeNames, isAll, isAll ? undefined : activeIds);
     onClose();
   };
 
@@ -161,7 +191,7 @@ const ShareListModal: React.FC<ShareListModalProps> = ({
           >
             {/* Member List Card */}
             <View style={styles.membersCard}>
-              {MEMBERS.map((member, idx) => {
+              {members.map((member, idx) => {
                 const isShared = Boolean(sharedMap[member.id]);
 
                 return (

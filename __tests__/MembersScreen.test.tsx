@@ -20,21 +20,101 @@ import { TransferOwnershipModal } from '../src/screens/mainScreens/familyPulse/T
 import { TransferOwnershipScreen } from '../src/screens/mainScreens/familyPulse/TransferOwnershipScreen';
 import { DeleteFamilyModal } from '../src/screens/mainScreens/familyPulse/DeleteFamilyModal';
 import { DeleteFamilyScreen } from '../src/screens/mainScreens/familyPulse/DeleteFamilyScreen';
-import { StaffModal } from '../src/screens/mainScreens/familyPulse/StaffModal';
+import { StaffModal, StaffMember } from '../src/screens/mainScreens/familyPulse/StaffModal';
 import { StaffScreen } from '../src/screens/mainScreens/familyPulse/StaffScreen';
+import { AddStaffModal } from '../src/screens/mainScreens/familyPulse/AddStaffModal';
+import { AddStaffScreen } from '../src/screens/mainScreens/familyPulse/AddStaffScreen';
+import { Provider } from 'react-redux';
+import { store } from '../src/redux/store';
+import {
+  setMyFamilyData,
+  setPendingRequests,
+} from '../src/redux/features/family/familySlice';
 
 const initialMetrics = {
   frame: { x: 0, y: 0, width: 390, height: 844 },
   insets: { top: 47, left: 0, right: 0, bottom: 34 },
 };
 
+const seedTestStore = () => {
+  store.dispatch(
+    setMyFamilyData({
+      inFamily: true,
+      family: {
+        id: 'fam-sharma',
+        name: 'The Sharma Family',
+        familyCode: 'HSQ-4821',
+        memberCount: 5,
+        members: [
+          {
+            id: 'mem-priya',
+            fullName: 'Priya',
+            relationship: 'Mother',
+            role: 'FAMILY_OWNER',
+            isYou: true,
+            avatarColor: '#1F3A66',
+          },
+          {
+            id: 'rohan',
+            fullName: 'Rohan',
+            relationship: 'Father',
+            role: 'FAMILY_ADMIN',
+            isYou: false,
+            avatarColor: '#2E5080',
+          },
+          {
+            id: 'mem-dadi',
+            fullName: 'Dadi',
+            relationship: 'Grandmother',
+            role: 'ADULT_MEMBER',
+            isYou: false,
+            avatarColor: '#3E2723',
+          },
+          {
+            id: 'mem-anaya',
+            fullName: 'Anaya',
+            relationship: 'Daughter · 15',
+            role: 'DEPENDENT_CHILD_PROFILE',
+            isYou: false,
+            avatarColor: '#4A148C',
+          },
+          {
+            id: 'mem-aarav',
+            fullName: 'Aarav',
+            relationship: 'Son · 9',
+            role: 'DEPENDENT_CHILD_PROFILE',
+            isYou: false,
+            avatarColor: '#1B5E20',
+          },
+        ],
+      },
+      pendingRequest: null,
+    } as any)
+  );
+
+  store.dispatch(
+    setPendingRequests([
+      {
+        id: 'req-meera',
+        fullName: 'Meera Sharma',
+        phoneNumber: '+91 98··· ··210',
+        createdAt: '2 hours ago',
+        message: "Hi! I'm Rohan's sister.",
+        avatarColor: '#4B244A',
+      },
+    ] as any)
+  );
+};
+
 const renderWithProvider = async (element: React.ReactElement) => {
   let renderer: ReactTestRenderer.ReactTestRenderer;
   await ReactTestRenderer.act(async () => {
     renderer = ReactTestRenderer.create(
-      <SafeAreaProvider initialMetrics={initialMetrics}>
-        {element}
-      </SafeAreaProvider>
+      <Provider store={store}>
+        <SafeAreaProvider initialMetrics={initialMetrics}>
+          {element}
+        </SafeAreaProvider>
+      </Provider>
     );
   });
   return renderer!;
@@ -43,6 +123,7 @@ const renderWithProvider = async (element: React.ReactElement) => {
 describe('MEM-01 · Members Screen', () => {
   beforeEach(() => {
     jest.useFakeTimers();
+    seedTestStore();
   });
 
   afterEach(() => {
@@ -308,6 +389,29 @@ describe('MEM-01 · Members Screen', () => {
 });
 
 describe('MEM-02 · Join Requests Screen', () => {
+  beforeEach(() => {
+    store.dispatch(
+      setPendingRequests([
+        {
+          id: 'req-meera',
+          fullName: 'Meera Sharma',
+          phoneNumber: '+91 98··· ··210',
+          createdAt: '2 hours ago',
+          message: "Hi! I'm Rohan's sister.",
+          avatarColor: '#4B244A',
+        },
+        {
+          id: 'req-unknown',
+          fullName: 'Unknown number',
+          phoneNumber: '+91 70··· ··881',
+          createdAt: 'Yesterday',
+          message: undefined,
+          avatarColor: '#1E324D',
+        },
+      ] as any)
+    );
+  });
+
   it('renders Join requests header, descriptions, Meera Sharma card, unknown number card, role chips and action buttons', async () => {
     const onClose = jest.fn();
     const onApprove = jest.fn();
@@ -451,269 +555,6 @@ describe('MEM-02 · Join Requests Screen', () => {
 
 
 
-describe('MEM-07 · Family Action Confirmation Modal (Reusable Modal)', () => {
-  it('renders Variant 1: Remove Dadi from the family with coral button and cancel', async () => {
-    const onClose = jest.fn();
-    const onConfirm = jest.fn();
-
-    const renderer = await renderWithProvider(
-      <FamilyActionConfirmationModal
-        visible={true}
-        type="remove_member"
-        memberName="Dadi"
-        onClose={onClose}
-        onConfirm={onConfirm}
-      />
-    );
-
-    const texts = renderer.root.findAllByType(Text).map((t) => t.props.children);
-    expect(texts).toContain('Remove Dadi from the family?');
-    expect(texts).toContain(
-      'Dadi will lose access to shared tasks, calendar, chat and Family Vault. Things she added will stay.'
-    );
-    expect(texts).toContain('Remove Dadi');
-    expect(texts).toContain('Cancel');
-
-    const buttons = renderer.root.findAllByType(TouchableOpacity);
-    const confirmBtn = buttons.find((b) => b.props.accessibilityLabel === 'Remove Dadi');
-    expect(confirmBtn).toBeDefined();
-    await ReactTestRenderer.act(async () => {
-      confirmBtn?.props.onPress();
-    });
-    expect(onConfirm).toHaveBeenCalled();
-    expect(onClose).toHaveBeenCalled();
-  });
-
-  it('renders Variant 2: Leave The Sharma Family with coral button and stay link', async () => {
-    const onClose = jest.fn();
-    const onConfirm = jest.fn();
-
-    const renderer = await renderWithProvider(
-      <FamilyActionConfirmationModal
-        visible={true}
-        type="leave_family"
-        familyName="The Sharma Family"
-        onClose={onClose}
-        onConfirm={onConfirm}
-      />
-    );
-
-    const texts = renderer.root.findAllByType(Text).map((t) => t.props.children);
-    expect(texts).toContain('Leave The Sharma Family?');
-    expect(texts).toContain(
-      'You’ll lose access to shared tasks, calendar, chat and Family Vault. Your own Life Profile goes with you.'
-    );
-    expect(texts).toContain('Leave family');
-    expect(texts).toContain('Stay');
-  });
-
-  it('renders Variant 3: Make someone else Owner first with orange transfer button and cancel', async () => {
-    const onClose = jest.fn();
-    const onConfirm = jest.fn();
-
-    const renderer = await renderWithProvider(
-      <FamilyActionConfirmationModal
-        visible={true}
-        type="transfer_owner_required"
-        familyName="The Sharma Family"
-        onClose={onClose}
-        onConfirm={onConfirm}
-      />
-    );
-
-    const texts = renderer.root.findAllByType(Text).map((t) => t.props.children);
-    expect(texts).toContain('Make someone else Owner first');
-    expect(texts).toContain(
-      'You’re the Owner of The Sharma Family. Transfer ownership to another adult before you leave.'
-    );
-    expect(texts).toContain('Transfer ownership');
-    expect(texts).toContain('Cancel');
-  });
-
-  it('renders FamilyActionConfirmationScreen directly and switches variants', async () => {
-    const mockGoBack = jest.fn();
-    const renderer = await renderWithProvider(
-      <FamilyActionConfirmationScreen
-        navigation={{ goBack: mockGoBack, canGoBack: () => true } as any}
-      />
-    );
-
-    const texts = renderer.root.findAllByType(Text).map((t) => t.props.children);
-    expect(texts).toContain('Remove Dadi from the family?');
-
-    const buttons = renderer.root.findAllByType(TouchableOpacity);
-    const leaveTab = buttons.find((b) => {
-      const child = b.props.children;
-      return Array.isArray(child)
-        ? child.some((c) => c?.props?.children === 'Leave Family')
-        : child?.props?.children === 'Leave Family';
-    });
-    expect(leaveTab).toBeDefined();
-
-    await ReactTestRenderer.act(async () => {
-      leaveTab?.props.onPress();
-    });
-
-    const updatedTexts = renderer.root.findAllByType(Text).map((t) => t.props.children);
-    expect(updatedTexts).toContain('Leave The Sharma Family?');
-  });
-});
-
-describe('MEM-08 · Transfer Ownership Screen', () => {
-  it('renders Transfer ownership header, candidate list, warning box and action button', async () => {
-    const onClose = jest.fn();
-    const onTransferComplete = jest.fn();
-
-
-
-
-
-
-
-
-    const renderer = await renderWithProvider(
-      <TransferOwnershipModal
-        onClose={onClose}
-        onTransferComplete={onTransferComplete}
-      />
-    );
-
-    const texts = renderer.root.findAllByType(Text).map((t) => t.props.children);
-    expect(texts).toContain('Transfer ownership');
-    expect(texts).toContain(
-      'Pick an adult to become the new Owner. You’ll become an Admin.'
-    );
-    expect(texts).toContain('NEW OWNER');
-    expect(texts).toContain('Rohan');
-    expect(texts).toContain('Dadi');
-    expect(texts).toContain('Anaya');
-    expect(texts).toContain('What changes');
-    expect(texts).toContain('We’ll send an OTP to your phone to confirm.');
-    expect(texts).toContain('Transfer to Rohan');
-  });
-
-  it('allows selecting Dadi and updating warning/button', async () => {
-    const renderer = await renderWithProvider(
-      <TransferOwnershipModal onClose={jest.fn()} />
-    );
-
-    const buttons = renderer.root.findAllByType(TouchableOpacity);
-    const dadiBtn = buttons.find((b) => b.props.accessibilityLabel === 'Dadi, Adult');
-    expect(dadiBtn).toBeDefined();
-
-    await ReactTestRenderer.act(async () => {
-      dadiBtn?.props.onPress();
-    });
-
-    const texts = renderer.root.findAllByType(Text).map((t) => t.props.children);
-    expect(texts).toContain('Transfer to Dadi');
-  });
-
-  it('renders TransferOwnershipScreen directly and handles back', async () => {
-    const mockGoBack = jest.fn();
-    const renderer = await renderWithProvider(
-      <TransferOwnershipScreen
-        navigation={{ goBack: mockGoBack, canGoBack: () => true } as any}
-      />
-    );
-
-    const buttons = renderer.root.findAllByType(TouchableOpacity);
-    const backBtn = buttons.find((b) => b.props.accessibilityLabel === 'Back');
-    await ReactTestRenderer.act(async () => {
-      backBtn?.props.onPress();
-    });
-    expect(mockGoBack).toHaveBeenCalled();
-  });
-});
-
-describe('MEM-09 · Delete Family Screen', () => {
-  it('renders Delete family header, owner badge, deletion items, and confirmation input', async () => {
-    const onClose = jest.fn();
-    const onDeleteFamily = jest.fn();
-
-    const renderer = await renderWithProvider(
-      <DeleteFamilyModal
-        familyName="The Sharma Family"
-        onClose={onClose}
-        onDeleteFamily={onDeleteFamily}
-      />
-    );
-
-    const texts = renderer.root.findAllByType(Text).map((t) => t.props.children);
-    expect(texts).toContain('Delete family');
-    expect(texts).toContain('Owner only');
-    expect(texts).toContain('Delete The Sharma Family?');
-    expect(texts).toContain('WHAT GETS DELETED');
-    expect(texts).toContain('All tasks, events and lists');
-    expect(texts).toContain('Family chat and Just Us');
-    expect(texts).toContain('Everything in Family Vault');
-    expect(texts).toContain('Children’s Life Profiles');
-    expect(texts).toContain('Type DELETE to confirm');
-    expect(texts).toContain('Download your family’s data first');
-    expect(texts).toContain('Delete family');
-    expect(texts).toContain('Cancel');
-  });
-
-  it('renders DeleteFamilyScreen directly and handles back', async () => {
-    const mockGoBack = jest.fn();
-    const renderer = await renderWithProvider(
-      <DeleteFamilyScreen
-        navigation={{ goBack: mockGoBack, canGoBack: () => true } as any}
-      />
-    );
-
-    const buttons = renderer.root.findAllByType(TouchableOpacity);
-    const backBtn = buttons.find((b) => b.props.accessibilityLabel === 'Back');
-    await ReactTestRenderer.act(async () => {
-      backBtn?.props.onPress();
-    });
-    expect(mockGoBack).toHaveBeenCalled();
-  });
-});
-
-describe('MEM-10 · Staff Screen', () => {
-  it('renders Staff header, proposed notice, staff list, permissions toggles, and add staff button', async () => {
-    const onClose = jest.fn();
-
-    const renderer = await renderWithProvider(
-      <StaffModal onClose={onClose} />
-    );
-
-    const texts = renderer.root.findAllByType(Text).map((t) => t.props.children);
-    expect(texts).toContain('Staff');
-    expect(texts).toContain('Proposed · Reserved for later, not in V1.');
-    expect(texts).toContain('Give drivers and house help only what they need to see.');
-    expect(texts).toContain('Ramesh');
-    expect(texts).toContain('Driver');
-    expect(texts).toContain('Sunita');
-    expect(texts).toContain('House help');
-    expect(texts).toContain('WHAT RAMESH CAN SEE');
-    expect(texts).toContain('Pickups and drop-offs');
-    expect(texts).toContain('Family calendar');
-    expect(texts).toContain('Live location');
-    expect(texts).toContain('Family chat');
-    expect(texts).toContain('Add staff');
-  });
-
-  it('renders StaffScreen directly and handles back', async () => {
-    const mockGoBack = jest.fn();
-    const renderer = await renderWithProvider(
-      <StaffScreen
-        navigation={{ goBack: mockGoBack, canGoBack: () => true } as any}
-      />
-    );
-
-    const buttons = renderer.root.findAllByType(TouchableOpacity);
-    const backBtn = buttons.find((b) => b.props.accessibilityLabel === 'Back');
-    await ReactTestRenderer.act(async () => {
-      backBtn?.props.onPress();
-    });
-    expect(mockGoBack).toHaveBeenCalled();
-  });
-});
-
-
-
 describe('MEM-03 · Invite an Adult Screen', () => {
   it('renders Invite an adult header, segmented tabs, phone input, name input, role selection and share link card', async () => {
     const onClose = jest.fn();
@@ -848,269 +689,6 @@ describe('MEM-03 · Invite an Adult Screen', () => {
   });
 });
 
-
-
-
-describe('MEM-07 · Family Action Confirmation Modal (Reusable Modal)', () => {
-  it('renders Variant 1: Remove Dadi from the family with coral button and cancel', async () => {
-    const onClose = jest.fn();
-    const onConfirm = jest.fn();
-
-    const renderer = await renderWithProvider(
-      <FamilyActionConfirmationModal
-        visible={true}
-        type="remove_member"
-        memberName="Dadi"
-        onClose={onClose}
-        onConfirm={onConfirm}
-      />
-    );
-
-    const texts = renderer.root.findAllByType(Text).map((t) => t.props.children);
-    expect(texts).toContain('Remove Dadi from the family?');
-    expect(texts).toContain(
-      'Dadi will lose access to shared tasks, calendar, chat and Family Vault. Things she added will stay.'
-    );
-    expect(texts).toContain('Remove Dadi');
-    expect(texts).toContain('Cancel');
-
-    const buttons = renderer.root.findAllByType(TouchableOpacity);
-    const confirmBtn = buttons.find((b) => b.props.accessibilityLabel === 'Remove Dadi');
-    expect(confirmBtn).toBeDefined();
-    await ReactTestRenderer.act(async () => {
-      confirmBtn?.props.onPress();
-    });
-    expect(onConfirm).toHaveBeenCalled();
-    expect(onClose).toHaveBeenCalled();
-  });
-
-  it('renders Variant 2: Leave The Sharma Family with coral button and stay link', async () => {
-    const onClose = jest.fn();
-    const onConfirm = jest.fn();
-
-    const renderer = await renderWithProvider(
-      <FamilyActionConfirmationModal
-        visible={true}
-        type="leave_family"
-        familyName="The Sharma Family"
-        onClose={onClose}
-        onConfirm={onConfirm}
-      />
-    );
-
-    const texts = renderer.root.findAllByType(Text).map((t) => t.props.children);
-    expect(texts).toContain('Leave The Sharma Family?');
-    expect(texts).toContain(
-      'You’ll lose access to shared tasks, calendar, chat and Family Vault. Your own Life Profile goes with you.'
-    );
-    expect(texts).toContain('Leave family');
-    expect(texts).toContain('Stay');
-  });
-
-  it('renders Variant 3: Make someone else Owner first with orange transfer button and cancel', async () => {
-    const onClose = jest.fn();
-    const onConfirm = jest.fn();
-
-    const renderer = await renderWithProvider(
-      <FamilyActionConfirmationModal
-        visible={true}
-        type="transfer_owner_required"
-        familyName="The Sharma Family"
-        onClose={onClose}
-        onConfirm={onConfirm}
-      />
-    );
-
-    const texts = renderer.root.findAllByType(Text).map((t) => t.props.children);
-    expect(texts).toContain('Make someone else Owner first');
-    expect(texts).toContain(
-      'You’re the Owner of The Sharma Family. Transfer ownership to another adult before you leave.'
-    );
-    expect(texts).toContain('Transfer ownership');
-    expect(texts).toContain('Cancel');
-  });
-
-  it('renders FamilyActionConfirmationScreen directly and switches variants', async () => {
-    const mockGoBack = jest.fn();
-    const renderer = await renderWithProvider(
-      <FamilyActionConfirmationScreen
-        navigation={{ goBack: mockGoBack, canGoBack: () => true } as any}
-      />
-    );
-
-    const texts = renderer.root.findAllByType(Text).map((t) => t.props.children);
-    expect(texts).toContain('Remove Dadi from the family?');
-
-    const buttons = renderer.root.findAllByType(TouchableOpacity);
-    const leaveTab = buttons.find((b) => {
-      const child = b.props.children;
-      return Array.isArray(child)
-        ? child.some((c) => c?.props?.children === 'Leave Family')
-        : child?.props?.children === 'Leave Family';
-    });
-    expect(leaveTab).toBeDefined();
-
-    await ReactTestRenderer.act(async () => {
-      leaveTab?.props.onPress();
-    });
-
-    const updatedTexts = renderer.root.findAllByType(Text).map((t) => t.props.children);
-    expect(updatedTexts).toContain('Leave The Sharma Family?');
-  });
-});
-
-describe('MEM-08 · Transfer Ownership Screen', () => {
-  it('renders Transfer ownership header, candidate list, warning box and action button', async () => {
-    const onClose = jest.fn();
-    const onTransferComplete = jest.fn();
-
-
-
-
-
-
-
-
-    const renderer = await renderWithProvider(
-      <TransferOwnershipModal
-        onClose={onClose}
-        onTransferComplete={onTransferComplete}
-      />
-    );
-
-    const texts = renderer.root.findAllByType(Text).map((t) => t.props.children);
-    expect(texts).toContain('Transfer ownership');
-    expect(texts).toContain(
-      'Pick an adult to become the new Owner. You’ll become an Admin.'
-    );
-    expect(texts).toContain('NEW OWNER');
-    expect(texts).toContain('Rohan');
-    expect(texts).toContain('Dadi');
-    expect(texts).toContain('Anaya');
-    expect(texts).toContain('What changes');
-    expect(texts).toContain('We’ll send an OTP to your phone to confirm.');
-    expect(texts).toContain('Transfer to Rohan');
-  });
-
-  it('allows selecting Dadi and updating warning/button', async () => {
-    const renderer = await renderWithProvider(
-      <TransferOwnershipModal onClose={jest.fn()} />
-    );
-
-    const buttons = renderer.root.findAllByType(TouchableOpacity);
-    const dadiBtn = buttons.find((b) => b.props.accessibilityLabel === 'Dadi, Adult');
-    expect(dadiBtn).toBeDefined();
-
-    await ReactTestRenderer.act(async () => {
-      dadiBtn?.props.onPress();
-    });
-
-    const texts = renderer.root.findAllByType(Text).map((t) => t.props.children);
-    expect(texts).toContain('Transfer to Dadi');
-  });
-
-  it('renders TransferOwnershipScreen directly and handles back', async () => {
-    const mockGoBack = jest.fn();
-    const renderer = await renderWithProvider(
-      <TransferOwnershipScreen
-        navigation={{ goBack: mockGoBack, canGoBack: () => true } as any}
-      />
-    );
-
-    const buttons = renderer.root.findAllByType(TouchableOpacity);
-    const backBtn = buttons.find((b) => b.props.accessibilityLabel === 'Back');
-    await ReactTestRenderer.act(async () => {
-      backBtn?.props.onPress();
-    });
-    expect(mockGoBack).toHaveBeenCalled();
-  });
-});
-
-describe('MEM-09 · Delete Family Screen', () => {
-  it('renders Delete family header, owner badge, deletion items, and confirmation input', async () => {
-    const onClose = jest.fn();
-    const onDeleteFamily = jest.fn();
-
-    const renderer = await renderWithProvider(
-      <DeleteFamilyModal
-        familyName="The Sharma Family"
-        onClose={onClose}
-        onDeleteFamily={onDeleteFamily}
-      />
-    );
-
-    const texts = renderer.root.findAllByType(Text).map((t) => t.props.children);
-    expect(texts).toContain('Delete family');
-    expect(texts).toContain('Owner only');
-    expect(texts).toContain('Delete The Sharma Family?');
-    expect(texts).toContain('WHAT GETS DELETED');
-    expect(texts).toContain('All tasks, events and lists');
-    expect(texts).toContain('Family chat and Just Us');
-    expect(texts).toContain('Everything in Family Vault');
-    expect(texts).toContain('Children’s Life Profiles');
-    expect(texts).toContain('Type DELETE to confirm');
-    expect(texts).toContain('Download your family’s data first');
-    expect(texts).toContain('Delete family');
-    expect(texts).toContain('Cancel');
-  });
-
-  it('renders DeleteFamilyScreen directly and handles back', async () => {
-    const mockGoBack = jest.fn();
-    const renderer = await renderWithProvider(
-      <DeleteFamilyScreen
-        navigation={{ goBack: mockGoBack, canGoBack: () => true } as any}
-      />
-    );
-
-    const buttons = renderer.root.findAllByType(TouchableOpacity);
-    const backBtn = buttons.find((b) => b.props.accessibilityLabel === 'Back');
-    await ReactTestRenderer.act(async () => {
-      backBtn?.props.onPress();
-    });
-    expect(mockGoBack).toHaveBeenCalled();
-  });
-});
-
-describe('MEM-10 · Staff Screen', () => {
-  it('renders Staff header, proposed notice, staff list, permissions toggles, and add staff button', async () => {
-    const onClose = jest.fn();
-
-    const renderer = await renderWithProvider(
-      <StaffModal onClose={onClose} />
-    );
-
-    const texts = renderer.root.findAllByType(Text).map((t) => t.props.children);
-    expect(texts).toContain('Staff');
-    expect(texts).toContain('Proposed · Reserved for later, not in V1.');
-    expect(texts).toContain('Give drivers and house help only what they need to see.');
-    expect(texts).toContain('Ramesh');
-    expect(texts).toContain('Driver');
-    expect(texts).toContain('Sunita');
-    expect(texts).toContain('House help');
-    expect(texts).toContain('WHAT RAMESH CAN SEE');
-    expect(texts).toContain('Pickups and drop-offs');
-    expect(texts).toContain('Family calendar');
-    expect(texts).toContain('Live location');
-    expect(texts).toContain('Family chat');
-    expect(texts).toContain('Add staff');
-  });
-
-  it('renders StaffScreen directly and handles back', async () => {
-    const mockGoBack = jest.fn();
-    const renderer = await renderWithProvider(
-      <StaffScreen
-        navigation={{ goBack: mockGoBack, canGoBack: () => true } as any}
-      />
-    );
-
-    const buttons = renderer.root.findAllByType(TouchableOpacity);
-    const backBtn = buttons.find((b) => b.props.accessibilityLabel === 'Back');
-    await ReactTestRenderer.act(async () => {
-      backBtn?.props.onPress();
-    });
-    expect(mockGoBack).toHaveBeenCalled();
-  });
-});
 
 
 
@@ -1340,269 +918,6 @@ describe('MEM-05 · Add Child Screen', () => {
   });
 });
 
-
-
-
-describe('MEM-07 · Family Action Confirmation Modal (Reusable Modal)', () => {
-  it('renders Variant 1: Remove Dadi from the family with coral button and cancel', async () => {
-    const onClose = jest.fn();
-    const onConfirm = jest.fn();
-
-    const renderer = await renderWithProvider(
-      <FamilyActionConfirmationModal
-        visible={true}
-        type="remove_member"
-        memberName="Dadi"
-        onClose={onClose}
-        onConfirm={onConfirm}
-      />
-    );
-
-    const texts = renderer.root.findAllByType(Text).map((t) => t.props.children);
-    expect(texts).toContain('Remove Dadi from the family?');
-    expect(texts).toContain(
-      'Dadi will lose access to shared tasks, calendar, chat and Family Vault. Things she added will stay.'
-    );
-    expect(texts).toContain('Remove Dadi');
-    expect(texts).toContain('Cancel');
-
-    const buttons = renderer.root.findAllByType(TouchableOpacity);
-    const confirmBtn = buttons.find((b) => b.props.accessibilityLabel === 'Remove Dadi');
-    expect(confirmBtn).toBeDefined();
-    await ReactTestRenderer.act(async () => {
-      confirmBtn?.props.onPress();
-    });
-    expect(onConfirm).toHaveBeenCalled();
-    expect(onClose).toHaveBeenCalled();
-  });
-
-  it('renders Variant 2: Leave The Sharma Family with coral button and stay link', async () => {
-    const onClose = jest.fn();
-    const onConfirm = jest.fn();
-
-    const renderer = await renderWithProvider(
-      <FamilyActionConfirmationModal
-        visible={true}
-        type="leave_family"
-        familyName="The Sharma Family"
-        onClose={onClose}
-        onConfirm={onConfirm}
-      />
-    );
-
-    const texts = renderer.root.findAllByType(Text).map((t) => t.props.children);
-    expect(texts).toContain('Leave The Sharma Family?');
-    expect(texts).toContain(
-      'You’ll lose access to shared tasks, calendar, chat and Family Vault. Your own Life Profile goes with you.'
-    );
-    expect(texts).toContain('Leave family');
-    expect(texts).toContain('Stay');
-  });
-
-  it('renders Variant 3: Make someone else Owner first with orange transfer button and cancel', async () => {
-    const onClose = jest.fn();
-    const onConfirm = jest.fn();
-
-    const renderer = await renderWithProvider(
-      <FamilyActionConfirmationModal
-        visible={true}
-        type="transfer_owner_required"
-        familyName="The Sharma Family"
-        onClose={onClose}
-        onConfirm={onConfirm}
-      />
-    );
-
-    const texts = renderer.root.findAllByType(Text).map((t) => t.props.children);
-    expect(texts).toContain('Make someone else Owner first');
-    expect(texts).toContain(
-      'You’re the Owner of The Sharma Family. Transfer ownership to another adult before you leave.'
-    );
-    expect(texts).toContain('Transfer ownership');
-    expect(texts).toContain('Cancel');
-  });
-
-  it('renders FamilyActionConfirmationScreen directly and switches variants', async () => {
-    const mockGoBack = jest.fn();
-    const renderer = await renderWithProvider(
-      <FamilyActionConfirmationScreen
-        navigation={{ goBack: mockGoBack, canGoBack: () => true } as any}
-      />
-    );
-
-    const texts = renderer.root.findAllByType(Text).map((t) => t.props.children);
-    expect(texts).toContain('Remove Dadi from the family?');
-
-    const buttons = renderer.root.findAllByType(TouchableOpacity);
-    const leaveTab = buttons.find((b) => {
-      const child = b.props.children;
-      return Array.isArray(child)
-        ? child.some((c) => c?.props?.children === 'Leave Family')
-        : child?.props?.children === 'Leave Family';
-    });
-    expect(leaveTab).toBeDefined();
-
-    await ReactTestRenderer.act(async () => {
-      leaveTab?.props.onPress();
-    });
-
-    const updatedTexts = renderer.root.findAllByType(Text).map((t) => t.props.children);
-    expect(updatedTexts).toContain('Leave The Sharma Family?');
-  });
-});
-
-describe('MEM-08 · Transfer Ownership Screen', () => {
-  it('renders Transfer ownership header, candidate list, warning box and action button', async () => {
-    const onClose = jest.fn();
-    const onTransferComplete = jest.fn();
-
-
-
-
-
-
-
-
-    const renderer = await renderWithProvider(
-      <TransferOwnershipModal
-        onClose={onClose}
-        onTransferComplete={onTransferComplete}
-      />
-    );
-
-    const texts = renderer.root.findAllByType(Text).map((t) => t.props.children);
-    expect(texts).toContain('Transfer ownership');
-    expect(texts).toContain(
-      'Pick an adult to become the new Owner. You’ll become an Admin.'
-    );
-    expect(texts).toContain('NEW OWNER');
-    expect(texts).toContain('Rohan');
-    expect(texts).toContain('Dadi');
-    expect(texts).toContain('Anaya');
-    expect(texts).toContain('What changes');
-    expect(texts).toContain('We’ll send an OTP to your phone to confirm.');
-    expect(texts).toContain('Transfer to Rohan');
-  });
-
-  it('allows selecting Dadi and updating warning/button', async () => {
-    const renderer = await renderWithProvider(
-      <TransferOwnershipModal onClose={jest.fn()} />
-    );
-
-    const buttons = renderer.root.findAllByType(TouchableOpacity);
-    const dadiBtn = buttons.find((b) => b.props.accessibilityLabel === 'Dadi, Adult');
-    expect(dadiBtn).toBeDefined();
-
-    await ReactTestRenderer.act(async () => {
-      dadiBtn?.props.onPress();
-    });
-
-    const texts = renderer.root.findAllByType(Text).map((t) => t.props.children);
-    expect(texts).toContain('Transfer to Dadi');
-  });
-
-  it('renders TransferOwnershipScreen directly and handles back', async () => {
-    const mockGoBack = jest.fn();
-    const renderer = await renderWithProvider(
-      <TransferOwnershipScreen
-        navigation={{ goBack: mockGoBack, canGoBack: () => true } as any}
-      />
-    );
-
-    const buttons = renderer.root.findAllByType(TouchableOpacity);
-    const backBtn = buttons.find((b) => b.props.accessibilityLabel === 'Back');
-    await ReactTestRenderer.act(async () => {
-      backBtn?.props.onPress();
-    });
-    expect(mockGoBack).toHaveBeenCalled();
-  });
-});
-
-describe('MEM-09 · Delete Family Screen', () => {
-  it('renders Delete family header, owner badge, deletion items, and confirmation input', async () => {
-    const onClose = jest.fn();
-    const onDeleteFamily = jest.fn();
-
-    const renderer = await renderWithProvider(
-      <DeleteFamilyModal
-        familyName="The Sharma Family"
-        onClose={onClose}
-        onDeleteFamily={onDeleteFamily}
-      />
-    );
-
-    const texts = renderer.root.findAllByType(Text).map((t) => t.props.children);
-    expect(texts).toContain('Delete family');
-    expect(texts).toContain('Owner only');
-    expect(texts).toContain('Delete The Sharma Family?');
-    expect(texts).toContain('WHAT GETS DELETED');
-    expect(texts).toContain('All tasks, events and lists');
-    expect(texts).toContain('Family chat and Just Us');
-    expect(texts).toContain('Everything in Family Vault');
-    expect(texts).toContain('Children’s Life Profiles');
-    expect(texts).toContain('Type DELETE to confirm');
-    expect(texts).toContain('Download your family’s data first');
-    expect(texts).toContain('Delete family');
-    expect(texts).toContain('Cancel');
-  });
-
-  it('renders DeleteFamilyScreen directly and handles back', async () => {
-    const mockGoBack = jest.fn();
-    const renderer = await renderWithProvider(
-      <DeleteFamilyScreen
-        navigation={{ goBack: mockGoBack, canGoBack: () => true } as any}
-      />
-    );
-
-    const buttons = renderer.root.findAllByType(TouchableOpacity);
-    const backBtn = buttons.find((b) => b.props.accessibilityLabel === 'Back');
-    await ReactTestRenderer.act(async () => {
-      backBtn?.props.onPress();
-    });
-    expect(mockGoBack).toHaveBeenCalled();
-  });
-});
-
-describe('MEM-10 · Staff Screen', () => {
-  it('renders Staff header, proposed notice, staff list, permissions toggles, and add staff button', async () => {
-    const onClose = jest.fn();
-
-    const renderer = await renderWithProvider(
-      <StaffModal onClose={onClose} />
-    );
-
-    const texts = renderer.root.findAllByType(Text).map((t) => t.props.children);
-    expect(texts).toContain('Staff');
-    expect(texts).toContain('Proposed · Reserved for later, not in V1.');
-    expect(texts).toContain('Give drivers and house help only what they need to see.');
-    expect(texts).toContain('Ramesh');
-    expect(texts).toContain('Driver');
-    expect(texts).toContain('Sunita');
-    expect(texts).toContain('House help');
-    expect(texts).toContain('WHAT RAMESH CAN SEE');
-    expect(texts).toContain('Pickups and drop-offs');
-    expect(texts).toContain('Family calendar');
-    expect(texts).toContain('Live location');
-    expect(texts).toContain('Family chat');
-    expect(texts).toContain('Add staff');
-  });
-
-  it('renders StaffScreen directly and handles back', async () => {
-    const mockGoBack = jest.fn();
-    const renderer = await renderWithProvider(
-      <StaffScreen
-        navigation={{ goBack: mockGoBack, canGoBack: () => true } as any}
-      />
-    );
-
-    const buttons = renderer.root.findAllByType(TouchableOpacity);
-    const backBtn = buttons.find((b) => b.props.accessibilityLabel === 'Back');
-    await ReactTestRenderer.act(async () => {
-      backBtn?.props.onPress();
-    });
-    expect(mockGoBack).toHaveBeenCalled();
-  });
-});
 
 
 
@@ -1933,11 +1248,64 @@ describe('MEM-09 · Delete Family Screen', () => {
 });
 
 describe('MEM-10 · Staff Screen', () => {
-  it('renders Staff header, proposed notice, staff list, permissions toggles, and add staff button', async () => {
+  const TEST_STAFF: StaffMember[] = [
+    {
+      id: 'staff-ramesh',
+      name: 'Ramesh',
+      subtext: 'Sees pickups and drop-offs',
+      badge: 'Driver',
+      badgeBorder: '#2E5080',
+      badgeColor: '#8EB7F5',
+      initial: 'Ra',
+      avatarBg: '#1E3F3B',
+      avatarColor: '#80D0D1',
+      permissions: {
+        pickups: true,
+        calendar: false,
+        location: false,
+        chat: false,
+      },
+    },
+    {
+      id: 'staff-sunita',
+      name: 'Sunita',
+      subtext: 'Sees grocery lists and chores',
+      badge: 'House help',
+      badgeBorder: '#6E4D1B',
+      badgeColor: '#F3C049',
+      initial: 'Su',
+      avatarBg: '#4A3519',
+      avatarColor: '#F3C049',
+      permissions: {
+        pickups: false,
+        calendar: false,
+        location: false,
+        chat: false,
+      },
+    },
+  ];
+
+  it('renders Staff header, proposed notice, empty state when no staff, and add staff button', async () => {
     const onClose = jest.fn();
 
     const renderer = await renderWithProvider(
       <StaffModal onClose={onClose} />
+    );
+
+    const texts = renderer.root.findAllByType(Text).map((t) => t.props.children);
+    expect(texts).toContain('Staff');
+    expect(texts).toContain('Proposed · Reserved for later, not in V1.');
+    expect(texts).toContain('Give drivers and house help only what they need to see.');
+    expect(texts).toContain('No staff added yet');
+    expect(texts).toContain('Drivers, house help, and nannies will appear here once added.');
+    expect(texts).toContain('Add staff');
+  });
+
+  it('renders Staff header, proposed notice, staff list, permissions toggles when staff is populated', async () => {
+    const onClose = jest.fn();
+
+    const renderer = await renderWithProvider(
+      <StaffModal onClose={onClose} initialStaff={TEST_STAFF} />
     );
 
     const texts = renderer.root.findAllByType(Text).map((t) => t.props.children);
@@ -1954,6 +1322,61 @@ describe('MEM-10 · Staff Screen', () => {
     expect(texts).toContain('Live location');
     expect(texts).toContain('Family chat');
     expect(texts).toContain('Add staff');
+  });
+
+  it('opens AddStaffModal when + Add staff is tapped and dynamically adds new staff member', async () => {
+    const onClose = jest.fn();
+
+    const renderer = await renderWithProvider(
+      <StaffModal onClose={onClose} />
+    );
+
+    // Initial state: empty
+    let texts = renderer.root.findAllByType(Text).map((t) => t.props.children);
+    expect(texts).toContain('No staff added yet');
+
+    // Tap + Add staff
+    const addStaffBtn = renderer.root
+      .findAllByType(TouchableOpacity)
+      .find((b) => b.props.accessibilityLabel === '+ Add staff');
+    expect(addStaffBtn).toBeDefined();
+
+    await ReactTestRenderer.act(async () => {
+      addStaffBtn?.props.onPress();
+    });
+
+    // AddStaffModal is now visible
+    texts = renderer.root.findAllByType(Text).map((t) => t.props.children);
+    expect(texts).toContain('Add staff');
+    expect(texts).toContain('ROLE / CATEGORY');
+    expect(texts).toContain('FULL NAME');
+
+    // Find input and type name
+    const textInputs = renderer.root.findAllByType(TextInput);
+    const nameInput = textInputs.find(
+      (ti) => ti.props.placeholder === 'e.g. Ramesh Kumar'
+    );
+    expect(nameInput).toBeDefined();
+
+    await ReactTestRenderer.act(async () => {
+      nameInput?.props.onChangeText('Ramesh Kumar');
+    });
+
+    // Tap Add staff member button inside AddStaffModal
+    const submitBtn = renderer.root
+      .findAllByType(TouchableOpacity)
+      .find((b) => b.props.accessibilityLabel === 'Add staff member');
+    expect(submitBtn).toBeDefined();
+
+    await ReactTestRenderer.act(async () => {
+      submitBtn?.props.onPress();
+    });
+
+    // Now staff is added! List displays Ramesh Kumar and what he can see
+    texts = renderer.root.findAllByType(Text).map((t) => t.props.children);
+    expect(texts).toContain('Ramesh Kumar');
+    expect(texts).toContain('WHAT RAMESH KUMAR CAN SEE');
+    expect(texts).not.toContain('No staff added yet');
   });
 
   it('renders StaffScreen directly and handles back', async () => {
@@ -1973,6 +1396,24 @@ describe('MEM-10 · Staff Screen', () => {
   });
 });
 
+describe('MEM-11 · Add Staff Screen', () => {
+  it('renders AddStaffScreen directly and handles back', async () => {
+    const mockGoBack = jest.fn();
+    const renderer = await renderWithProvider(
+      <AddStaffScreen
+        navigation={{ goBack: mockGoBack, canGoBack: () => true } as any}
+      />
+    );
 
+    const texts = renderer.root.findAllByType(Text).map((t) => t.props.children);
+    expect(texts).toContain('Add staff');
+    expect(texts).toContain('ROLE / CATEGORY');
 
-
+    const buttons = renderer.root.findAllByType(TouchableOpacity);
+    const backBtn = buttons.find((b) => b.props.accessibilityLabel === 'Back');
+    await ReactTestRenderer.act(async () => {
+      backBtn?.props.onPress();
+    });
+    expect(mockGoBack).toHaveBeenCalled();
+  });
+});

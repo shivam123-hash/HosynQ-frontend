@@ -11,9 +11,20 @@ import {
   Switch,
   Platform,
   Alert,
+  ActivityIndicator,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Feather from '@react-native-vector-icons/feather';
+import { useAppDispatch, useAppSelector, RootState } from '../../../redux/store';
+import {
+  addManagedMemberThunk,
+  updateChildAvatarThunk,
+} from '../../../redux/features/family/familySlice';
+import {
+  AppCalendarDatePickerModal,
+  formatDate,
+  parseDateTimeString,
+} from '../../../components';
 
 export type ChildRelationship = 'Daughter' | 'Son' | 'Grandchild' | 'Other';
 
@@ -39,6 +50,52 @@ const AVATAR_COLORS = [
   '#80D0D1', // Soft Teal
 ];
 
+function parseToIsoDate(dateStr: string): string {
+  if (!dateStr) return new Date().toISOString().split('T')[0];
+  const parsed = parseDateTimeString(dateStr, 'date');
+  if (parsed && !isNaN(parsed.getTime())) {
+    const year = parsed.getFullYear();
+    const month = String(parsed.getMonth() + 1).padStart(2, '0');
+    const day = String(parsed.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  }
+  return '2018-05-14';
+}
+
+function calculateAgeText(childName: string, dateStr: string): string {
+  const displayName = childName.trim() || 'Child';
+  if (!dateStr) return '';
+
+  const date = parseDateTimeString(dateStr, 'date');
+  if (!date || isNaN(date.getTime())) return '';
+
+  const now = new Date();
+  let years = now.getFullYear() - date.getFullYear();
+  const m = now.getMonth() - date.getMonth();
+  if (m < 0 || (m === 0 && now.getDate() < date.getDate())) {
+    years--;
+  }
+
+  if (years < 0) {
+    return '';
+  }
+
+  if (years === 0) {
+    let months =
+      (now.getFullYear() - date.getFullYear()) * 12 +
+      (now.getMonth() - date.getMonth());
+    if (now.getDate() < date.getDate()) {
+      months--;
+    }
+    if (months <= 0) {
+      return `${displayName} was born recently.`;
+    }
+    return `${displayName} is ${months} ${months === 1 ? 'month' : 'months'} old.`;
+  }
+
+  return `${displayName} is ${years} ${years === 1 ? 'year' : 'years'} old.`;
+}
+
 export const AddChildModal: React.FC<AddChildModalProps> = ({
   visible,
   onClose,
@@ -46,6 +103,9 @@ export const AddChildModal: React.FC<AddChildModalProps> = ({
   isScreen = false,
 }) => {
   const insets = useSafeAreaInsets();
+  const dispatch = useAppDispatch();
+  const { actionLoading } = useAppSelector((state) => state.family);
+
   const [selectedColor, setSelectedColor] = useState<string>('#F7A8C8');
   const [name, setName] = useState('Myra');
   const [dob, setDob] = useState('14 Mar 2022');
@@ -53,26 +113,87 @@ export const AddChildModal: React.FC<AddChildModalProps> = ({
     useState<ChildRelationship>('Daughter');
   const [canSignIn, setCanSignIn] = useState(false);
 
-  const [isNameFocused, setIsNameFocused] = useState(true);
-  const [isDobFocused, setIsDobFocused] = useState(false);
+  const [isNameFocused, setIsNameFocused] = useState(false);
+  const [isDatePickerVisible, setIsDatePickerVisible] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const handleAddChild = () => {
+  const ageText = calculateAgeText(name, dob);
+
+  const handleAddChild = async () => {
+    const trimmedName = name.trim();
+    if (!trimmedName) {
+      Alert.alert('Required Field', 'Please enter the child’s name.');
+      return;
+    }
+
     if (onAddChild) {
       onAddChild({
-        name,
+        name: trimmedName,
         dob,
         relationship,
         selectedColor,
         canSignIn,
       });
-    } else {
+      return;
+    }
+
+    setIsSubmitting(true);
+    const isoDate = parseToIsoDate(dob);
+    const familyRole =
+      relationship === 'Daughter'
+        ? 'DAUGHTER'
+        : relationship === 'Son'
+        ? 'SON'
+        : 'OTHER';
+    const gender =
+      relationship === 'Son'
+        ? 'MALE'
+        : relationship === 'Daughter'
+        ? 'FEMALE'
+        : 'OTHER';
+
+    try {
+      const response = await dispatch(
+        addManagedMemberThunk({
+          role: 'DEPENDENT_CHILD_PROFILE',
+          personal: {
+            fullName: trimmedName,
+            familyRole,
+            gender,
+            birthDate: isoDate,
+          },
+        })
+      ).unwrap();
+
+      // If created member has ID, save avatar color
+      const createdMemberId =
+        response?.member?.id || (response?.member as any)?.memberId;
+      if (createdMemberId && selectedColor) {
+        try {
+          await dispatch(
+            updateChildAvatarThunk({
+              memberId: createdMemberId,
+              avatarColor: selectedColor,
+            })
+          ).unwrap();
+        } catch (e) {
+          // Non-fatal if avatar color update fails
+        }
+      }
+
+      setIsSubmitting(false);
       Alert.alert(
         'Child Added',
-        `${name} has been added as your ${relationship.toLowerCase()}.`
+        `${trimmedName} has been added to your family.`
       );
       onClose();
+    } catch (err: any) {
+      setIsSubmitting(false);
+      Alert.alert('Failed to Add Child', err || 'Could not add child profile.');
     }
   };
+
+  const isBusy = isSubmitting || actionLoading;
 
   const topPadding =
     Math.max(
@@ -156,7 +277,7 @@ export const AddChildModal: React.FC<AddChildModalProps> = ({
             style={styles.textInput}
             value={name}
             onChangeText={setName}
-            placeholder="Child's name"
+            placeholder="Child's full name"
             placeholderTextColor="#6E8096"
             selectionColor="#F0913A"
             cursorColor="#F0913A"
@@ -168,29 +289,33 @@ export const AddChildModal: React.FC<AddChildModalProps> = ({
 
         {/* Input 2: Date of birth */}
         <Text style={styles.inputLabel}>Date of birth</Text>
-        <View
+        <TouchableOpacity
           style={[
             styles.inputWrapper,
-            isDobFocused && styles.inputWrapperFocused,
+            isDatePickerVisible && styles.inputWrapperFocused,
           ]}
+          onPress={() => setIsDatePickerVisible(true)}
+          activeOpacity={0.75}
+          accessibilityRole="button"
+          accessibilityLabel="Date of birth"
         >
-          <TextInput
-            style={styles.textInput}
-            value={dob}
-            onChangeText={setDob}
-            placeholder="e.g. 14 Mar 2022"
-            placeholderTextColor="#6E8096"
-            selectionColor="#F0913A"
-            cursorColor="#F0913A"
-            onFocus={() => setIsDobFocused(true)}
-            onBlur={() => setIsDobFocused(false)}
-            accessibilityLabel="Date of birth"
+          <Text
+            style={[
+              styles.textInputDisplay,
+              !dob && styles.placeholderText,
+            ]}
+          >
+            {dob || 'Select date of birth'}
+          </Text>
+          <Feather
+            name="calendar"
+            size={18}
+            color={isDatePickerVisible ? '#F0913A' : '#8997AB'}
           />
-          <Feather name="calendar" size={18} color="#8997AB" />
-        </View>
+        </TouchableOpacity>
 
         {/* Age Helper Text */}
-        <Text style={styles.ageHelperText}>{`${name || 'Child'} is 4 years old.`}</Text>
+        {ageText ? <Text style={styles.ageHelperText}>{ageText}</Text> : null}
 
         {/* RELATIONSHIP Section */}
         <Text style={styles.roleSectionLabel}>RELATIONSHIP</Text>
@@ -267,15 +392,33 @@ export const AddChildModal: React.FC<AddChildModalProps> = ({
         ]}
       >
         <TouchableOpacity
-          style={styles.addChildButton}
+          style={[styles.addChildButton, isBusy && styles.buttonDisabled]}
           onPress={handleAddChild}
+          disabled={isBusy}
           activeOpacity={0.85}
           accessibilityRole="button"
           accessibilityLabel="Add child"
         >
-          <Text style={styles.addChildButtonText}>Add child</Text>
+          {isSubmitting ? (
+            <ActivityIndicator size="small" color="#0B1A2F" />
+          ) : (
+            <Text style={styles.addChildButtonText}>Add child</Text>
+          )}
         </TouchableOpacity>
       </View>
+
+      {/* Custom Calendar DOB Picker Modal */}
+      <AppCalendarDatePickerModal
+        visible={isDatePickerVisible}
+        title="Date of birth"
+        initialDate={dob}
+        maximumDate={new Date()}
+        onConfirm={(selectedDate, formattedDate) => {
+          setDob(formattedDate);
+          setIsDatePickerVisible(false);
+        }}
+        onClose={() => setIsDatePickerVisible(false)}
+      />
     </View>
   );
 
@@ -349,160 +492,169 @@ const styles = StyleSheet.create({
     borderStyle: 'dashed',
     alignItems: 'center',
     justifyContent: 'center',
-    marginRight: 18,
+    backgroundColor: '#14253E',
   },
   colorPaletteGroup: {
+    marginLeft: 16,
     flex: 1,
   },
   colorPaletteLabel: {
     fontSize: 13,
-    color: '#CAD4DF',
+    color: '#8A9BAE',
+    marginBottom: 8,
     fontWeight: '500',
-    marginBottom: 10,
   },
   dotsRow: {
     flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
+    gap: 8,
+    flexWrap: 'wrap',
   },
   colorDot: {
-    width: 26,
-    height: 26,
-    borderRadius: 13,
+    width: 28,
+    height: 28,
+    borderRadius: 14,
   },
   colorDotSelected: {
     borderWidth: 2.5,
     borderColor: '#FFFFFF',
+    transform: [{ scale: 1.15 }],
   },
   inputLabel: {
-    fontSize: 14,
-    color: '#CAD4DF',
-    fontWeight: '500',
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#8997AB',
+    letterSpacing: 1.1,
     marginTop: 18,
     marginBottom: 8,
+    textTransform: 'uppercase',
   },
   inputWrapper: {
-    height: 54,
-    borderRadius: 27,
-    backgroundColor: '#122440',
-    borderWidth: 1,
-    borderColor: '#1F3352',
-    paddingHorizontal: 18,
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
+    backgroundColor: '#11223A',
+    borderRadius: 16,
+    borderWidth: 1.2,
+    borderColor: '#1F3352',
+    height: 52,
+    paddingHorizontal: 16,
   },
   inputWrapperFocused: {
     borderColor: '#F0913A',
-    borderWidth: 1.5,
   },
   textInput: {
     flex: 1,
-    fontSize: 16,
+    fontSize: 15,
     color: '#FFFFFF',
-    fontWeight: '500',
-    padding: 0,
+  },
+  textInputDisplay: {
+    flex: 1,
+    fontSize: 15,
+    color: '#FFFFFF',
+    lineHeight: 20,
+  },
+  placeholderText: {
+    color: '#6E8096',
   },
   ageHelperText: {
-    fontSize: 13,
-    color: '#8997AB',
+    fontSize: 12.5,
+    color: '#CAD4DF',
     marginTop: 6,
-    marginBottom: 6,
+    paddingHorizontal: 4,
   },
   roleSectionLabel: {
     fontSize: 12,
-    color: '#8997AB',
     fontWeight: '700',
-    letterSpacing: 1.2,
-    textTransform: 'uppercase',
-    marginTop: 18,
+    color: '#8997AB',
+    letterSpacing: 1.1,
+    marginTop: 20,
     marginBottom: 10,
   },
   roleChipsRow: {
     flexDirection: 'row',
-    alignItems: 'center',
     gap: 8,
+    flexWrap: 'wrap',
   },
   roleChip: {
-    height: 38,
-    borderRadius: 19,
     paddingHorizontal: 16,
-    alignItems: 'center',
-    justifyContent: 'center',
+    paddingVertical: 9,
+    borderRadius: 18,
+    borderWidth: 1.2,
   },
   roleChipActive: {
-    backgroundColor: '#F0913A',
+    backgroundColor: 'rgba(240, 145, 58, 0.12)',
+    borderColor: '#F0913A',
   },
   roleChipInactive: {
-    backgroundColor: 'transparent',
-    borderWidth: 1,
-    borderColor: '#3A4556',
+    backgroundColor: '#14253E',
+    borderColor: '#233754',
   },
   roleChipText: {
-    fontSize: 14,
+    fontSize: 13,
+    fontWeight: '600',
   },
   roleChipTextActive: {
-    color: '#0B1A2F',
-    fontWeight: '700',
+    color: '#F0913A',
   },
   roleChipTextInactive: {
-    color: '#C8D1DC',
-    fontWeight: '500',
+    color: '#8A9BAE',
   },
   infoNoticeBox: {
-    backgroundColor: '#122440',
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#11223A',
     borderRadius: 14,
     borderWidth: 1,
     borderColor: '#1F3352',
     padding: 14,
     marginTop: 20,
-    flexDirection: 'row',
-    alignItems: 'center',
+    gap: 12,
   },
   infoNoticeIcon: {
-    marginRight: 12,
+    flexShrink: 0,
   },
   infoNoticeText: {
     flex: 1,
-    fontSize: 13,
-    color: '#CAD4DF',
+    fontSize: 12.5,
+    color: '#8A9BAE',
     lineHeight: 18,
   },
   toggleCard: {
-    backgroundColor: '#122440',
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: '#1F3352',
-    padding: 16,
-    marginTop: 16,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
+    backgroundColor: '#11223A',
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: '#1F3352',
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    marginTop: 16,
+    marginBottom: 20,
   },
   toggleTextGroup: {
     flex: 1,
-    marginRight: 16,
+    marginRight: 12,
   },
   toggleTitle: {
-    fontSize: 15,
-    fontWeight: '700',
+    fontSize: 14.5,
+    fontWeight: '600',
     color: '#FFFFFF',
   },
   toggleSubtitle: {
-    fontSize: 13,
-    color: '#8997AB',
+    fontSize: 12,
+    color: '#8A9BAE',
     marginTop: 2,
   },
   pinnedBottomContainer: {
     borderTopWidth: 1,
-    borderTopColor: '#17273F',
+    borderTopColor: '#1D314E',
     backgroundColor: '#0B1A2F',
     paddingHorizontal: 20,
     paddingTop: 16,
   },
   addChildButton: {
-    height: 54,
-    borderRadius: 27,
+    height: 52,
+    borderRadius: 26,
     backgroundColor: '#F0913A',
     alignItems: 'center',
     justifyContent: 'center',
@@ -510,7 +662,10 @@ const styles = StyleSheet.create({
   addChildButtonText: {
     fontSize: 16,
     fontWeight: '700',
-    color: '#FFFFFF',
+    color: '#0B1A2F',
+  },
+  buttonDisabled: {
+    opacity: 0.7,
   },
 });
 

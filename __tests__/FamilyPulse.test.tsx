@@ -58,7 +58,7 @@ describe('Family Hub and Pulse Screens (FAM-01, PUL-01 through PUL-11)', () => {
     const touchables = renderer.root.findAllByType(TouchableOpacity);
     const labels = touchables.map((t) => t.props.accessibilityLabel);
     expect(labels).toContain('Back');
-    expect(labels).toContain('Invite member');
+    expect(labels).toContain('Invite member to The Sharma Family');
     expect(labels).toContain('Theme');
 
     // Verify Family Card & ID

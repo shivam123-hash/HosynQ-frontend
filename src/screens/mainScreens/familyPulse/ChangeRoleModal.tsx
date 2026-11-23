@@ -7,8 +7,13 @@ import {
   Modal,
   TouchableWithoutFeedback,
   Platform,
+  ActivityIndicator,
+  Alert,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import Feather from '@react-native-vector-icons/feather';
+import { useAppDispatch, useAppSelector, RootState } from '../../../redux/store';
+import { updateMemberRoleThunk } from '../../../redux/features/family/familySlice';
 import type { FamilyMemberItem, MemberRole } from './MembersModal';
 
 export interface ChangeRoleModalProps {
@@ -65,9 +70,13 @@ export const ChangeRoleModal: React.FC<ChangeRoleModalProps> = ({
   isScreen = false,
 }) => {
   const insets = useSafeAreaInsets();
-  const memberName = member?.name?.replace(/\s*\(you\)/i, '') || 'Rohan';
+  const dispatch = useAppDispatch();
+  const { actionLoading } = useAppSelector((state) => state.family);
+
+  const memberName = member?.name?.replace(/\s*\(you\)/i, '') || 'Member';
   const initialRole: MemberRole = member?.role || 'Admin';
   const [selectedRole, setSelectedRole] = useState<MemberRole>(initialRole);
+  const [isSaving, setIsSaving] = useState(false);
 
   useEffect(() => {
     if (member?.role) {
@@ -75,16 +84,50 @@ export const ChangeRoleModal: React.FC<ChangeRoleModalProps> = ({
     }
   }, [member?.role]);
 
-  const handleSave = () => {
-    if (member && onSaveRole) {
-      onSaveRole(member.id, selectedRole);
+  const handleSave = async () => {
+    if (!member) {
+      onClose();
+      return;
     }
-    onClose();
+
+    if (onSaveRole) {
+      onSaveRole(member.id, selectedRole);
+      onClose();
+      return;
+    }
+
+    if (selectedRole !== 'Admin' && selectedRole !== 'Adult') {
+      onClose();
+      return;
+    }
+
+    setIsSaving(true);
+    const backendRole = selectedRole === 'Admin' ? 'FAMILY_ADMIN' : 'ADULT_MEMBER';
+    try {
+      await dispatch(
+        updateMemberRoleThunk({ memberId: member.id, role: backendRole })
+      ).unwrap();
+      setIsSaving(false);
+      Alert.alert(
+        'Role Updated',
+        `${memberName}’s role has been updated to ${selectedRole}.`
+      );
+      onClose();
+    } catch (err: any) {
+      setIsSaving(false);
+      Alert.alert('Role Update Failed', err || 'Could not change member role.');
+    }
   };
+
+  const isBusy = isSaving || actionLoading;
 
   const content = (
     <View style={styles.sheetOverlay}>
-      <TouchableWithoutFeedback onPress={onClose} accessibilityRole="button" accessibilityLabel="Dismiss modal">
+      <TouchableWithoutFeedback
+        onPress={onClose}
+        accessibilityRole="button"
+        accessibilityLabel="Dismiss modal"
+      >
         <View style={styles.backdrop} />
       </TouchableWithoutFeedback>
 
@@ -111,7 +154,6 @@ export const ChangeRoleModal: React.FC<ChangeRoleModalProps> = ({
             const isSelected = selectedRole === option.role;
             const isDisabled = option.disabled;
 
-            // Exact color tokens extracted from Figma design
             let titleColor = '#FFFFFF';
             let descColor = '#8A9BAE';
             let radioBorderColor = '#3B4D66';
@@ -125,7 +167,6 @@ export const ChangeRoleModal: React.FC<ChangeRoleModalProps> = ({
               descColor = '#405066';
               radioBorderColor = '#27374D';
             } else {
-              // Unselected & enabled (e.g. Adult)
               titleColor = '#FFFFFF';
               descColor = '#8A9BAE';
               radioBorderColor = '#3B4D66';
@@ -145,7 +186,10 @@ export const ChangeRoleModal: React.FC<ChangeRoleModalProps> = ({
                       setSelectedRole(option.role);
                     }
                   }}
-                  disabled={isDisabled && (option.role !== 'Owner' || !onTransferOwnershipPress)}
+                  disabled={
+                    isDisabled &&
+                    (option.role !== 'Owner' || !onTransferOwnershipPress)
+                  }
                   activeOpacity={0.7}
                   accessibilityRole="radio"
                   accessibilityState={{ selected: isSelected, disabled: isDisabled }}
@@ -180,15 +224,35 @@ export const ChangeRoleModal: React.FC<ChangeRoleModalProps> = ({
           })}
         </View>
 
+        {/* Remove Member option button if allowed */}
+        {member && !member.isYou && member.role !== 'Owner' && onRemoveMember && (
+          <TouchableOpacity
+            style={styles.removeMemberRow}
+            onPress={() => {
+              onClose();
+              onRemoveMember(member);
+            }}
+            activeOpacity={0.7}
+          >
+            <Feather name="trash-2" size={16} color="#F06A6D" />
+            <Text style={styles.removeMemberText}>{`Remove ${memberName} from family`}</Text>
+          </TouchableOpacity>
+        )}
+
         {/* Save Role Button */}
         <TouchableOpacity
-          style={styles.saveButton}
+          style={[styles.saveButton, isBusy && styles.buttonDisabled]}
           onPress={handleSave}
+          disabled={isBusy}
           activeOpacity={0.85}
           accessibilityRole="button"
           accessibilityLabel="Save role"
         >
-          <Text style={styles.saveButtonText}>Save role</Text>
+          {isSaving ? (
+            <ActivityIndicator size="small" color="#FFFFFF" />
+          ) : (
+            <Text style={styles.saveButtonText}>Save role</Text>
+          )}
         </TouchableOpacity>
       </View>
     </View>
@@ -202,9 +266,8 @@ export const ChangeRoleModal: React.FC<ChangeRoleModalProps> = ({
     <Modal
       visible={visible}
       transparent
-      animationType="slide"
+      animationType="fade"
       onRequestClose={onClose}
-      statusBarTranslucent
     >
       {content}
     </Modal>
@@ -215,76 +278,67 @@ const styles = StyleSheet.create({
   sheetOverlay: {
     flex: 1,
     justifyContent: 'flex-end',
+    backgroundColor: 'rgba(0, 0, 0, 0.6)',
   },
   backdrop: {
     ...StyleSheet.absoluteFill,
-    backgroundColor: 'rgba(5, 12, 22, 0.70)',
   },
   sheetContainer: {
-    backgroundColor: '#122440',
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
-    paddingTop: 12,
+    backgroundColor: '#0B1A2F',
+    borderTopLeftRadius: 28,
+    borderTopRightRadius: 28,
+    borderTopWidth: 1,
+    borderColor: '#1F3352',
     paddingHorizontal: 20,
-    ...Platform.select({
-      ios: {
-        shadowColor: '#000000',
-        shadowOffset: { width: 0, height: -6 },
-        shadowOpacity: 0.35,
-        shadowRadius: 12,
-      },
-      android: {
-        elevation: 16,
-      },
-    }),
+    paddingTop: 12,
   },
   handle: {
-    width: 44,
+    width: 36,
     height: 4,
     borderRadius: 2,
-    backgroundColor: '#38495F',
+    backgroundColor: '#27384E',
     alignSelf: 'center',
-    marginBottom: 20,
+    marginBottom: 16,
   },
   title: {
-    fontSize: 22,
+    fontSize: 20,
     fontWeight: '700',
     color: '#FFFFFF',
-    marginBottom: 18,
     letterSpacing: -0.2,
+    marginBottom: 16,
   },
   rolesCard: {
-    backgroundColor: '#0F1E34',
-    borderRadius: 16,
+    backgroundColor: '#11223A',
+    borderRadius: 20,
     borderWidth: 1,
-    borderColor: '#1D304A',
+    borderColor: '#1F3352',
     overflow: 'hidden',
+    marginBottom: 16,
   },
   roleRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingVertical: 18,
     paddingHorizontal: 16,
+    paddingVertical: 14,
   },
   roleInfo: {
     flex: 1,
-    paddingRight: 16,
+    marginRight: 14,
   },
   roleTitle: {
     fontSize: 16,
-    fontWeight: '600',
-    letterSpacing: -0.1,
+    fontWeight: '700',
+    marginBottom: 4,
   },
   roleDescription: {
-    fontSize: 13.5,
-    marginTop: 4,
-    lineHeight: 18,
+    fontSize: 12.5,
+    lineHeight: 17,
   },
   radioCircle: {
-    width: 24,
-    height: 24,
-    borderRadius: 12,
+    width: 22,
+    height: 22,
+    borderRadius: 11,
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: 'transparent',
@@ -297,23 +351,38 @@ const styles = StyleSheet.create({
   },
   divider: {
     height: 1,
-    backgroundColor: '#1A2A40',
-    width: '100%',
+    backgroundColor: '#192C45',
+    marginLeft: 16,
+  },
+  removeMemberRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 10,
+    gap: 8,
+    marginBottom: 8,
+  },
+  removeMemberText: {
+    fontSize: 14,
+    color: '#F06A6D',
+    fontWeight: '600',
   },
   saveButton: {
     height: 52,
     borderRadius: 26,
-    backgroundColor: '#F0923A',
+    backgroundColor: '#F0913A',
     alignItems: 'center',
     justifyContent: 'center',
-    marginTop: 22,
+    marginTop: 4,
   },
   saveButtonText: {
     fontSize: 16,
-    fontWeight: '600',
+    fontWeight: '700',
     color: '#FFFFFF',
+  },
+  buttonDisabled: {
+    opacity: 0.7,
   },
 });
 
 export default ChangeRoleModal;
-

@@ -59,6 +59,7 @@ const CommentsModal: React.FC<CommentsModalProps> = ({
 }) => {
   const insets = useSafeAreaInsets();
   const [commentList, setCommentList] = useState<TaskComment[]>(comments);
+  const [totalCount, setTotalCount] = useState<number>(comments?.length || 0);
   const [inputText, setInputText] = useState('');
   const [loading, setLoading] = useState(false);
   const [loadingOlder, setLoadingOlder] = useState(false);
@@ -68,6 +69,7 @@ const CommentsModal: React.FC<CommentsModalProps> = ({
   const fetchAllComments = useCallback(async () => {
     if (!taskId || !isUUID(taskId)) {
       setCommentList(comments);
+      setTotalCount(comments?.length || 0);
       return;
     }
     try {
@@ -85,17 +87,19 @@ const CommentsModal: React.FC<CommentsModalProps> = ({
       });
 
       setCommentList(uiComments);
+      setTotalCount(res?.pagination?.total ?? uiComments.length);
       setHasOlder(Boolean(res?.pagination?.hasOlder));
       setOlderCursor(res?.pagination?.olderCursor || null);
     } catch (err) {
       console.log('[CommentsModal] ❌ Error fetching comments:', err);
       if (comments && comments.length > 0) {
         setCommentList(comments);
+        setTotalCount(comments.length);
       }
     } finally {
       setLoading(false);
     }
-  }, [taskId, comments]);
+  }, [taskId]);
 
   useEffect(() => {
     if (visible) {
@@ -122,6 +126,7 @@ const CommentsModal: React.FC<CommentsModalProps> = ({
         const filteredOlder = olderComments.filter((c) => !existingIds.has(c.id));
         return [...filteredOlder, ...prev];
       });
+      setTotalCount(res?.pagination?.total ?? totalCount);
       setHasOlder(Boolean(res?.pagination?.hasOlder));
       setOlderCursor(res?.pagination?.olderCursor || null);
     } catch (err) {
@@ -148,6 +153,7 @@ const CommentsModal: React.FC<CommentsModalProps> = ({
     };
 
     setCommentList((prev) => [...prev, tempComment]);
+    setTotalCount((prev) => prev + 1);
     setInputText('');
 
     try {
@@ -166,6 +172,7 @@ const CommentsModal: React.FC<CommentsModalProps> = ({
             return timeA - timeB;
           });
           setCommentList(uiComments);
+          setTotalCount(res?.pagination?.total ?? uiComments.length);
           setHasOlder(Boolean(res?.pagination?.hasOlder));
           setOlderCursor(res?.pagination?.olderCursor || null);
         }
@@ -218,7 +225,9 @@ const CommentsModal: React.FC<CommentsModalProps> = ({
           >
             <Feather name="chevron-left" size={22} color="#FFFFFF" />
           </TouchableOpacity>
-          <Text style={styles.headerTitle}>Comments</Text>
+          <Text style={styles.headerTitle}>
+            {totalCount > 0 ? `Comments · ${totalCount}` : 'Comments'}
+          </Text>
           <View style={styles.spacer} />
         </View>
 

@@ -7,6 +7,7 @@ import {
   Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useNavigation } from '@react-navigation/native';
 import Colors from '../../../units/Colors';
 import {
   HomeHeader,
@@ -96,6 +97,12 @@ const HomeScreen: React.FC<HomeScreenProps> = ({
   onOpenBrief,
   onOpenNeedsAttention,
 }) => {
+  let navigation: any = null;
+  try {
+    navigation = useNavigation<any>();
+  } catch {
+    navigation = null;
+  }
   const [refreshing, setRefreshing] = useState(false);
   const [activeTab, setActiveTab] = useState<NavigationTab>('home');
   const [internalCreateTaskVisible, setInternalCreateTaskVisible] = useState(false);
@@ -656,6 +663,18 @@ const HomeScreen: React.FC<HomeScreenProps> = ({
           setInternalFamilyHubVisible(false);
           setCompassInitialScreen('compass');
           setInternalCompassVisible(true);
+        }}
+        onOpenMembers={() => {
+          setInternalFamilyHubVisible(false);
+          if (navigation && typeof navigation.navigate === 'function') {
+            navigation.navigate('Members');
+          }
+        }}
+        onInviteMember={() => {
+          setInternalFamilyHubVisible(false);
+          if (navigation && typeof navigation.navigate === 'function') {
+            navigation.navigate('InviteAdult');
+          }
         }}
       />
 

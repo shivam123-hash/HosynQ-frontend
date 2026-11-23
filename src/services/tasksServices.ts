@@ -150,8 +150,40 @@ export interface ReassignTaskPayload {
   notify?: boolean;
 }
 
+export interface RemindableMemberData {
+  memberId: string;
+  fullName: string | null;
+  avatarUrl: string | null;
+  avatarColor: string | null;
+  canRemindNow: boolean;
+  nextAllowedAt: string | null;
+}
+
+export interface TaskReminderState {
+  canRemind: boolean;
+  remindableMembers: RemindableMemberData[];
+  nextAllowedAt: string | null;
+  lastReminder: {
+    at: string;
+    by: { memberId?: string; fullName: string | null; avatarColor?: string | null } | null;
+    to: Array<{ memberId?: string; fullName: string | null; avatarColor?: string | null }>;
+  } | null;
+}
+
+export interface GetReminderStateResponse {
+  success: boolean;
+  reminder: TaskReminderState;
+}
+
 export interface RemindTaskPayload {
   memberIds?: string[];
+}
+
+export interface RemindTaskResponse {
+  success: boolean;
+  remindedMemberIds: string[];
+  pushDelivered: boolean;
+  reminder: TaskReminderState;
 }
 
 export interface CreateCommentPayload {
@@ -160,6 +192,38 @@ export interface CreateCommentPayload {
 }
 export type AddCommentPayload = CreateCommentPayload;
 export type FetchTasksParams = ListTasksQueryParams;
+
+export interface TaskCommentItemData {
+  id: string;
+  body: string;
+  mentionMemberIds?: string[];
+  author: {
+    memberId: string;
+    fullName: string | null;
+    avatarUrl: string | null;
+    avatarColor: string | null;
+  } | null;
+  isMine: boolean;
+  createdAt: string;
+}
+
+export interface TaskCommentsPagination {
+  limit: number;
+  total: number;
+  hasOlder: boolean;
+  olderCursor: string | null;
+}
+
+export interface TaskCommentsResponse {
+  success: boolean;
+  comments: TaskCommentItemData[];
+  pagination: TaskCommentsPagination;
+}
+
+export interface CreateTaskCommentResponse {
+  success: boolean;
+  comment: TaskCommentItemData;
+}
 
 export interface WorkloadMemberData {
   memberId: string;
@@ -269,9 +333,11 @@ const tasksServices = {
   },
 
   /** 9. Check reminder state (GET /api/v1/tasks/:id/reminder) */
-  getReminderState: async (taskId: string): Promise<any> => {
+  getReminderState: async (taskId: string): Promise<GetReminderStateResponse> => {
     try {
-      const response = await apiClient.get(API_ROUTES.TASK_REMINDER_STATE(taskId));
+      const response = await apiClient.get<GetReminderStateResponse>(
+        API_ROUTES.TASK_REMINDER_STATE(taskId)
+      );
       return response.data;
     } catch (error) {
       throw error;
@@ -279,9 +345,15 @@ const tasksServices = {
   },
 
   /** 10. Send reminder to assignees (POST /api/v1/tasks/:id/remind) */
-  remindTask: async (taskId: string, payload?: RemindTaskPayload): Promise<any> => {
+  remindTask: async (
+    taskId: string,
+    payload?: RemindTaskPayload
+  ): Promise<RemindTaskResponse> => {
     try {
-      const response = await apiClient.post(API_ROUTES.TASK_REMIND(taskId), payload || {});
+      const response = await apiClient.post<RemindTaskResponse>(
+        API_ROUTES.TASK_REMIND(taskId),
+        payload || {}
+      );
       return response.data;
     } catch (error) {
       throw error;
@@ -301,11 +373,23 @@ const tasksServices = {
   },
 
   /** 12. Get task comments (GET /api/v1/tasks/:id/comments) */
-  getComments: async (taskId: string, before?: string, limit = 20): Promise<any> => {
+  getComments: async (
+    taskId: string,
+    before?: string | null,
+    limit: number = 30
+  ): Promise<TaskCommentsResponse> => {
     try {
-      const response = await apiClient.get(API_ROUTES.TASK_COMMENTS(taskId), {
-        params: { before, limit },
-      });
+      const params: Record<string, any> = {};
+      if (typeof limit === 'number' && limit > 0) {
+        params.limit = limit;
+      }
+      if (before && typeof before === 'string' && before.trim().length > 0) {
+        params.before = before.trim();
+      }
+      const response = await apiClient.get<TaskCommentsResponse>(
+        API_ROUTES.TASK_COMMENTS(taskId),
+        { params }
+      );
       return response.data;
     } catch (error) {
       throw error;
@@ -313,9 +397,15 @@ const tasksServices = {
   },
 
   /** 13. Add comment to task (POST /api/v1/tasks/:id/comments) */
-  addComment: async (taskId: string, payload: CreateCommentPayload): Promise<any> => {
+  addComment: async (
+    taskId: string,
+    payload: CreateCommentPayload
+  ): Promise<CreateTaskCommentResponse> => {
     try {
-      const response = await apiClient.post(API_ROUTES.TASK_COMMENTS(taskId), payload);
+      const response = await apiClient.post<CreateTaskCommentResponse>(
+        API_ROUTES.TASK_COMMENTS(taskId),
+        payload
+      );
       return response.data;
     } catch (error) {
       throw error;

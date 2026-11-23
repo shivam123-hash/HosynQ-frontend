@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
   View,
   Text,
@@ -17,6 +17,9 @@ import { FamilyPulseModal } from './FamilyPulseModal';
 import { TodayMoodModal } from './TodayMoodModal';
 import { FamilyVaultModal } from '../addFlow/FamilyVaultModal';
 import { MembersModal } from './MembersModal';
+import { useAppDispatch, useAppSelector, RootState } from '../../../redux/store';
+import { getMyFamilyThunk } from '../../../redux/features/family/familySlice';
+import { FamilyHubSkeleton } from '../../../components/SkeletonLoader';
 
 export interface FamilyHubModalProps {
   visible: boolean;
@@ -27,6 +30,7 @@ export interface FamilyHubModalProps {
   onThemePress?: () => void;
   onOpenCompass?: () => void;
   onOpenMembers?: () => void;
+  initialFamily?: any;
 }
 
 interface MemberHub {
@@ -37,15 +41,25 @@ interface MemberHub {
   textColor: string;
   statusLocation: string;
   isOnline: boolean;
+  raw?: any;
 }
 
-const MEMBERS: MemberHub[] = [
+const AVATAR_COLOR_PALETTE = [
+  '#5C3A21', // Brown
+  '#1F3A66', // Navy Blue
+  '#6E2042', // Wine Red
+  '#5A4E1B', // Olive / Mustard
+  '#24422E', // Forest Green
+  '#3D2A54', // Deep Purple
+];
+
+const FALLBACK_MEMBERS: MemberHub[] = [
   {
     id: 'priya',
     name: 'Priya',
     initial: 'P',
-    bgColor: Colors.avatarBrown,
-    textColor: Colors.primarySubtle,
+    bgColor: '#5C3A21',
+    textColor: Colors.white,
     statusLocation: 'You',
     isOnline: true,
   },
@@ -53,8 +67,8 @@ const MEMBERS: MemberHub[] = [
     id: 'rohan',
     name: 'Rohan',
     initial: 'R',
-    bgColor: Colors.avatarNavy,
-    textColor: Colors.accentBlueSoft,
+    bgColor: '#1F3A66',
+    textColor: Colors.white,
     statusLocation: 'Office',
     isOnline: true,
   },
@@ -62,8 +76,8 @@ const MEMBERS: MemberHub[] = [
     id: 'anaya',
     name: 'Anaya',
     initial: 'A',
-    bgColor: Colors.avatarWine,
-    textColor: Colors.accentPink,
+    bgColor: '#6E2042',
+    textColor: Colors.white,
     statusLocation: 'Home',
     isOnline: true,
   },
@@ -71,8 +85,8 @@ const MEMBERS: MemberHub[] = [
     id: 'aarav',
     name: 'Aarav',
     initial: 'Aa',
-    bgColor: Colors.avatarOlive,
-    textColor: Colors.accentYellow,
+    bgColor: '#5A4E1B',
+    textColor: Colors.white,
     statusLocation: 'School',
     isOnline: true,
   },
@@ -80,12 +94,51 @@ const MEMBERS: MemberHub[] = [
     id: 'dadi',
     name: 'Dadi',
     initial: 'D',
-    bgColor: Colors.avatarGreen,
-    textColor: Colors.accentGreenSoft,
+    bgColor: '#24422E',
+    textColor: Colors.white,
     statusLocation: 'Home',
     isOnline: false,
   },
 ];
+
+/**
+ * Extracts smart initials matching HosynQ design system:
+ * - "Aarav" -> "Aa"
+ * - "Priya" -> "P"
+ * - "Rohan" -> "R"
+ */
+const getMemberInitial = (name: string): string => {
+  if (!name) return 'U';
+  const clean = name.trim().split(/\s+/)[0];
+  if (clean.length >= 2 && clean.toLowerCase().startsWith('aa')) {
+    return 'Aa';
+  }
+  return clean.charAt(0).toUpperCase();
+};
+
+/**
+ * Resolves location / status subtitle text:
+ * - Current User: "You"
+ * - Child: "School"
+ * - Adult Account: "Office" / "Home"
+ * - Managed elder: "Home"
+ */
+const getMemberStatusLocation = (member: any): string => {
+  if (member.isYou) return 'You';
+  if (member.role === 'DEPENDENT_CHILD_PROFILE' || (member.age && member.age < 18)) {
+    return 'School';
+  }
+  if (
+    member.familyRole?.toUpperCase() === 'GRANDMOTHER' ||
+    member.familyRole?.toUpperCase() === 'GRANDFATHER'
+  ) {
+    return 'Home';
+  }
+  if (member.hasAccount) {
+    return 'Office';
+  }
+  return 'Home';
+};
 
 const MOOD_OPTIONS: { id: MoodType; label: string }[] = [
   { id: 'great', label: 'Great' },
@@ -104,16 +157,107 @@ export const FamilyHubModal: React.FC<FamilyHubModalProps> = ({
   onThemePress,
   onOpenCompass,
   onOpenMembers,
+  initialFamily,
 }) => {
   const insets = useSafeAreaInsets();
+  const dispatch = useAppDispatch();
+
+  // Redux: fetch & select family state
+  const { myFamilyData, family, myFamilyLoading, pendingRequests } = useAppSelector(
+    (state: RootState) => state.family
+  );
+
+  useEffect(() => {
+    if (visible) {
+      dispatch(getMyFamilyThunk());
+    }
+  }, [visible, dispatch]);
+
   const [selectedMood, setSelectedMood] = useState<MoodType>('good');
   const [showPulseModal, setShowPulseModal] = useState(false);
   const [showMoodModal, setShowMoodModal] = useState(false);
   const [showVaultModal, setShowVaultModal] = useState(false);
   const [showMembersModal, setShowMembersModal] = useState(false);
 
+  // Unified dynamic family resolution
+  const currentFamily = initialFamily || myFamilyData?.family || family;
+  const familyName = currentFamily?.name || 'The Sharma Family';
+  const familyInitial = familyName.trim()
+    ? familyName.trim().charAt(0).toUpperCase()
+    : 'T';
+  const familyCode = currentFamily?.familyCode || 'HSQ-4821';
+  const rawMembers = currentFamily?.members;
+  const memberCount =
+    currentFamily?.memberCount ??
+    (rawMembers && rawMembers.length > 0 ? rawMembers.length : 5);
+
+  // Determine owner label
+  const isOwner = currentFamily
+    ? currentFamily.myRole === 'FAMILY_OWNER'
+    : true;
+  const ownerMember = rawMembers?.find((m: any) => m.role === 'FAMILY_OWNER');
+  const ownerLabel = isOwner
+    ? 'you'
+    : ownerMember?.fullName
+    ? ownerMember.fullName.trim().split(/\s+/)[0]
+    : 'you';
+  const familyMetaText = `${memberCount} members · Owner: ${ownerLabel}`;
+
+  // Map API members to UI member items
+  const dynamicMembers = useMemo(() => {
+    if (!rawMembers || rawMembers.length === 0) {
+      return FALLBACK_MEMBERS;
+    }
+    return rawMembers.map((m: any, index: number) => {
+      const id = String(m.memberId || m.id || m.userId || `member-${index}`);
+      const firstName = m.fullName ? m.fullName.trim().split(/\s+/)[0] : 'Member';
+      const initial = getMemberInitial(m.fullName || firstName);
+      const bgColor =
+        m.avatarColor || AVATAR_COLOR_PALETTE[index % AVATAR_COLOR_PALETTE.length];
+      const statusLocation = getMemberStatusLocation(m);
+      const isOnline = Boolean(m.hasAccount);
+
+      return {
+        id,
+        name: firstName,
+        initial,
+        bgColor,
+        textColor: Colors.white,
+        statusLocation,
+        isOnline,
+        raw: m,
+      };
+    });
+  }, [rawMembers]);
+
+  const pendingRequestCount =
+    currentFamily?.pendingRequestCount ??
+    (pendingRequests && pendingRequests.length > 0
+      ? pendingRequests.length
+      : myFamilyData?.pendingRequest
+      ? 1
+      : 0);
+
+  const pendingLabel = `${pendingRequestCount} join request${pendingRequestCount === 1 ? '' : 's'} to review`;
+
   const handleCopyFamilyId = () => {
-    Alert.alert('Copied', 'Family ID HSQ-4821 copied to clipboard');
+    Alert.alert('Copied', `Family ID ${familyCode} copied to clipboard`);
+  };
+
+  const handleInvitePress = () => {
+    if (onInviteMember) {
+      onInviteMember();
+    } else {
+      Alert.alert('Invite Member', `Share invite link or Family ID ${familyCode}`);
+    }
+  };
+
+  const handleOpenMembersPress = () => {
+    if (onOpenMembers) {
+      onOpenMembers();
+    } else {
+      setShowMembersModal(true);
+    }
   };
 
   const handleOpenPulse = () => {
@@ -160,17 +304,10 @@ export const FamilyHubModal: React.FC<FamilyHubModalProps> = ({
           <View style={styles.headerRightActions}>
             <TouchableOpacity
               style={styles.circleButton}
-              onPress={
-                onInviteMember ||
-                (() =>
-                  Alert.alert(
-                    'Invite Member',
-                    'Share invite link or Family ID HSQ-4821'
-                  ))
-              }
+              onPress={handleInvitePress}
               activeOpacity={0.7}
               accessibilityRole="button"
-              accessibilityLabel="Invite member"
+              accessibilityLabel={`Invite member to ${familyName}`}
             >
               <Feather name="user-plus" size={19} color={Colors.white} />
             </TouchableOpacity>
@@ -197,261 +334,350 @@ export const FamilyHubModal: React.FC<FamilyHubModalProps> = ({
           ]}
           showsVerticalScrollIndicator={false}
         >
-          {/* Family Card */}
-          <View style={styles.familyCard}>
-            <View style={styles.familyAvatar}>
-              <Text style={styles.familyAvatarText}>S</Text>
-            </View>
-            <View style={styles.familyTextGroup}>
-              <Text style={styles.familyName}>The Sharma Family</Text>
-              <Text style={styles.familyMeta}>5 members · Owner: you</Text>
-            </View>
-            <TouchableOpacity
-              style={styles.familyIdBadge}
-              onPress={handleCopyFamilyId}
-              activeOpacity={0.7}
-              accessibilityRole="button"
-              accessibilityLabel="Copy Family ID"
-            >
-              <Text style={styles.familyIdText}>HSQ-4821</Text>
-              <Feather
-                name="copy"
-                size={13}
-                color={Colors.primary}
-                style={styles.copyIcon}
-              />
-            </TouchableOpacity>
-          </View>
-
-          {/* Members Avatars Row */}
-          <View style={styles.membersRow}>
-            {MEMBERS.map((member) => (
-              <View key={member.id} style={styles.memberItem}>
-                <View style={styles.avatarContainer}>
-                  <View
-                    style={[
-                      styles.memberAvatarCircle,
-                      { backgroundColor: member.bgColor },
-                    ]}
-                  >
-                    <Text
-                      style={[
-                        styles.memberAvatarInitial,
-                        { color: member.textColor },
-                      ]}
-                    >
-                      {member.initial}
-                    </Text>
+          {myFamilyLoading && !currentFamily ? (
+            <FamilyHubSkeleton />
+          ) : myFamilyData && myFamilyData.inFamily === false && !initialFamily ? (
+            <>
+              {myFamilyData.pendingRequest ? (
+                <View style={styles.pendingRequestCard}>
+                  <View style={styles.pendingIconRow}>
+                    <Feather name="clock" size={20} color="#F0913A" />
+                    <Text style={styles.pendingCardTitle}>Join Request Pending</Text>
                   </View>
-                  <View
-                    style={[
-                      styles.statusDot,
-                      member.isOnline
-                        ? styles.statusDotGreen
-                        : styles.statusDotGray,
-                    ]}
-                  />
+                  <Text style={styles.pendingCardBody}>
+                    Your request to join{' '}
+                    <Text style={styles.pendingCardBold}>
+                      {myFamilyData.pendingRequest.familyName}
+                    </Text>{' '}
+                    is awaiting approval from the family owner.
+                  </Text>
+                  {Boolean(myFamilyData.pendingRequest.familyCode) && (
+                    <View style={styles.pendingFamilyCodeRow}>
+                      <Text style={styles.pendingCodeLabel}>Family ID:</Text>
+                      <Text style={styles.pendingCodeValue}>
+                        {myFamilyData.pendingRequest.familyCode}
+                      </Text>
+                    </View>
+                  )}
+                  <View style={styles.pendingStatusBadge}>
+                    <Text style={styles.pendingStatusText}>STATUS: PENDING</Text>
+                  </View>
                 </View>
-                <Text style={styles.memberNameText}>{member.name}</Text>
-                <Text style={styles.memberLocationText}>
-                  {member.statusLocation}
-                </Text>
-              </View>
-            ))}
-
-            {/* Add Member Button */}
-            <TouchableOpacity
-              style={styles.memberItem}
-              activeOpacity={0.7}
-              onPress={
-                onInviteMember ||
-                (() =>
-                  Alert.alert(
-                    'Add Member',
-                    'Share invite link or Family ID HSQ-4821'
-                  ))
-              }
-              accessibilityRole="button"
-              accessibilityLabel="Add family member"
-            >
-              <View style={styles.avatarContainer}>
-                <View style={styles.addMemberCircle}>
-                  <Feather name="plus" size={20} color={Colors.primary} />
-                </View>
-              </View>
-              <Text style={styles.addMemberText}>Add</Text>
-              <Text
-                style={[
-                  styles.memberLocationText,
-                  styles.memberLocationSpacer,
-                ]}
-              >
-                {'\u00A0'}
-              </Text>
-            </TouchableOpacity>
-          </View>
-
-          {/* 2x2 Feature Grid */}
-          <View style={styles.gridContainer}>
-            {/* Family Pulse */}
-            <TouchableOpacity
-              style={styles.gridCard}
-              onPress={handleOpenPulse}
-              activeOpacity={0.85}
-              accessibilityRole="button"
-              accessibilityLabel="Family Pulse, 3 of 5 checked in today"
-            >
-              <View style={styles.gridCardTopRow}>
-                <View style={styles.gridIconCirclePulse}>
-                  <Feather name="activity" size={20} color={Colors.accentPurple} />
-                </View>
-              </View>
-              <View style={styles.gridCardBottomGroup}>
-                <Text style={styles.gridCardTitle}>Family Pulse</Text>
-                <Text style={styles.gridCardSubtitle}>3 of 5 checked in today</Text>
-              </View>
-            </TouchableOpacity>
-
-            {/* Family Chat */}
-            <TouchableOpacity
-              style={styles.gridCard}
-              activeOpacity={0.85}
-              accessibilityRole="button"
-              accessibilityLabel="Family chat, 2 unread messages"
-            >
-              <View style={styles.gridCardTopRow}>
-                <View style={styles.gridIconCircleChat}>
+              ) : (
+                <View style={styles.notInFamilyCard}>
                   <Feather
-                    name="message-square"
-                    size={20}
-                    color={Colors.accentBlue}
+                    name="users"
+                    size={36}
+                    color="#8EB7F5"
+                    style={{ marginBottom: 12 }}
                   />
-                </View>
-                <View style={styles.counterBadge}>
-                  <Text style={styles.counterBadgeText}>2</Text>
-                </View>
-              </View>
-              <View style={styles.gridCardBottomGroup}>
-                <Text style={styles.gridCardTitle}>Family chat</Text>
-                <Text style={styles.gridCardSubtitle}>
-                  Anaya: Can someone pick me up?
-                </Text>
-              </View>
-            </TouchableOpacity>
-
-            {/* Compass */}
-            <TouchableOpacity
-              style={styles.gridCard}
-              activeOpacity={0.85}
-              onPress={() => {
-                onClose();
-                onOpenCompass?.();
-              }}
-              accessibilityRole="button"
-              accessibilityLabel="Compass, 4 sharing location"
-            >
-              <View style={styles.gridCardTopRow}>
-                <View style={styles.gridIconCircleCompass}>
-                  <Feather name="navigation" size={20} color={Colors.accentTeal} />
-                </View>
-              </View>
-              <View style={styles.gridCardBottomGroup}>
-                <Text style={styles.gridCardTitle}>Compass</Text>
-                <Text style={styles.gridCardSubtitle}>4 sharing location</Text>
-              </View>
-            </TouchableOpacity>
-
-            {/* Members */}
-            <TouchableOpacity
-              style={styles.gridCard}
-              activeOpacity={0.85}
-              onPress={() => {
-                if (onOpenMembers) {
-                  onOpenMembers();
-                } else {
-                  setShowMembersModal(true);
-                }
-              }}
-              accessibilityRole="button"
-              accessibilityLabel="Members, 1 join request to review"
-            >
-              <View style={styles.gridCardTopRow}>
-                <View style={styles.gridIconCircleMembers}>
-                  <Feather name="users" size={20} color={Colors.accentGreen} />
-                </View>
-                <View style={styles.counterBadge}>
-                  <Text style={styles.counterBadgeText}>1</Text>
-                </View>
-              </View>
-              <View style={styles.gridCardBottomGroup}>
-                <Text style={styles.gridCardTitle}>Members</Text>
-                <Text style={styles.gridCardSubtitle}>
-                  1 join request to review
-                </Text>
-              </View>
-            </TouchableOpacity>
-          </View>
-
-          {/* Full-width Family Vault Card */}
-          <TouchableOpacity
-            style={styles.vaultCard}
-            onPress={handleOpenVault}
-            activeOpacity={0.85}
-            accessibilityRole="button"
-            accessibilityLabel="Family Vault, Documents, insurance, warranties, contacts"
-          >
-            <View style={styles.vaultIconBox}>
-              <Feather name="instagram" size={20} color={Colors.primary} />
-            </View>
-            <View style={styles.vaultTextGroup}>
-              <Text style={styles.vaultTitle}>Family Vault</Text>
-              <Text style={styles.vaultSubtitle}>
-                Documents, insurance, warranties, contacts
-              </Text>
-            </View>
-            <Feather
-              name="chevron-right"
-              size={20}
-              color={Colors.textSubtle}
-            />
-          </TouchableOpacity>
-
-          {/* How are you today? Card */}
-          <View style={styles.moodCard}>
-            <Text style={styles.moodSectionTitle}>How are you today?</Text>
-            <View style={styles.moodChipsWrap}>
-              {MOOD_OPTIONS.map((option) => {
-                const isSelected = selectedMood === option.id;
-                return (
+                  <Text style={styles.notInFamilyTitle}>No Family Group Yet</Text>
+                  <Text style={styles.notInFamilyBody}>
+                    You are not currently part of any family group. Create your own
+                    family or join an existing family using their code or invite
+                    link.
+                  </Text>
                   <TouchableOpacity
-                    key={option.id}
-                    style={[
-                      styles.moodChip,
-                      isSelected ? styles.moodChipActive : styles.moodChipInactive,
-                    ]}
-                    onPress={() => {
-                      setSelectedMood(option.id);
-                      setShowMoodModal(true);
-                    }}
-                    activeOpacity={0.7}
+                    style={styles.createJoinFamilyBtn}
+                    onPress={handleInvitePress}
+                    activeOpacity={0.8}
                     accessibilityRole="button"
-                    accessibilityLabel={option.label}
+                    accessibilityLabel="Create or Join Family"
                   >
-                    <Text
-                      style={[
-                        styles.moodChipText,
-                        isSelected
-                          ? styles.moodChipTextActive
-                          : styles.moodChipTextInactive,
-                      ]}
-                    >
-                      {option.label}
+                    <Text style={styles.createJoinFamilyBtnText}>
+                      Create or Join Family
                     </Text>
                   </TouchableOpacity>
-                );
-              })}
-            </View>
-          </View>
+                </View>
+              )}
+            </>
+          ) : (
+            <>
+              {/* Family Card */}
+              <View style={styles.familyCard}>
+                <View style={styles.familyAvatar}>
+                  <Text style={styles.familyAvatarText}>{familyInitial}</Text>
+                </View>
+                <View style={styles.familyTextGroup}>
+                  <Text style={styles.familyName} numberOfLines={1}>
+                    {familyName}
+                  </Text>
+                  <Text style={styles.familyMeta}>{familyMetaText}</Text>
+                </View>
+                <TouchableOpacity
+                  style={styles.familyIdBadge}
+                  onPress={handleCopyFamilyId}
+                  activeOpacity={0.7}
+                  accessibilityRole="button"
+                  accessibilityLabel={`Copy Family ID ${familyCode}`}
+                >
+                  <Text style={styles.familyIdText}>{familyCode}</Text>
+                  <Feather
+                    name="copy"
+                    size={13}
+                    color={Colors.primary}
+                    style={styles.copyIcon}
+                  />
+                </TouchableOpacity>
+              </View>
+
+              {/* Members Avatars Row */}
+              <View style={styles.membersRow}>
+                <ScrollView
+                  horizontal
+                  showsHorizontalScrollIndicator={false}
+                  contentContainerStyle={styles.membersRowContent}
+                >
+                  {dynamicMembers.map((member: MemberHub, idx: number) => (
+                    <TouchableOpacity
+                      key={`hub-member-${member.id || 'idx'}-${idx}`}
+                      style={styles.memberItem}
+                      activeOpacity={0.8}
+                      onPress={handleOpenMembersPress}
+                      accessibilityRole="button"
+                      accessibilityLabel={`${member.name}, ${member.statusLocation}`}
+                    >
+                      <View style={styles.avatarContainer}>
+                        <View
+                          style={[
+                            styles.memberAvatarCircle,
+                            { backgroundColor: member.bgColor },
+                          ]}
+                        >
+                          <Text
+                            style={[
+                              styles.memberAvatarInitial,
+                              { color: member.textColor },
+                            ]}
+                          >
+                            {member.initial}
+                          </Text>
+                        </View>
+                        <View
+                          style={[
+                            styles.statusDot,
+                            member.isOnline
+                              ? styles.statusDotGreen
+                              : styles.statusDotGray,
+                          ]}
+                        />
+                      </View>
+                      <Text style={styles.memberNameText} numberOfLines={1}>
+                        {member.name}
+                      </Text>
+                      <Text style={styles.memberLocationText} numberOfLines={1}>
+                        {member.statusLocation}
+                      </Text>
+                    </TouchableOpacity>
+                  ))}
+
+                  {/* Add Member Button */}
+                  <TouchableOpacity
+                    style={styles.memberItem}
+                    activeOpacity={0.7}
+                    onPress={handleInvitePress}
+                    accessibilityRole="button"
+                    accessibilityLabel="Add family member"
+                  >
+                    <View style={styles.avatarContainer}>
+                      <View style={styles.addMemberCircle}>
+                        <Feather name="plus" size={20} color={Colors.primary} />
+                      </View>
+                    </View>
+                    <Text style={styles.addMemberText}>Add</Text>
+                    <Text
+                      style={[
+                        styles.memberLocationText,
+                        styles.memberLocationSpacer,
+                      ]}
+                    >
+                      {'\u00A0'}
+                    </Text>
+                  </TouchableOpacity>
+                </ScrollView>
+              </View>
+
+              {/* 2x2 Feature Grid */}
+              <View style={styles.gridContainer}>
+                {/* Family Pulse */}
+                <TouchableOpacity
+                  style={styles.gridCard}
+                  onPress={handleOpenPulse}
+                  activeOpacity={0.85}
+                  accessibilityRole="button"
+                  accessibilityLabel="Family Pulse, 3 of 5 checked in today"
+                >
+                  <View style={styles.gridCardTopRow}>
+                    <View style={styles.gridIconCirclePulse}>
+                      <Feather
+                        name="activity"
+                        size={20}
+                        color={Colors.accentPurple}
+                      />
+                    </View>
+                  </View>
+                  <View style={styles.gridCardBottomGroup}>
+                    <Text style={styles.gridCardTitle}>Family Pulse</Text>
+                    <Text style={styles.gridCardSubtitle}>
+                      3 of 5 checked in today
+                    </Text>
+                  </View>
+                </TouchableOpacity>
+
+                {/* Family Chat */}
+                <TouchableOpacity
+                  style={styles.gridCard}
+                  activeOpacity={0.85}
+                  accessibilityRole="button"
+                  accessibilityLabel="Family chat, 2 unread messages"
+                >
+                  <View style={styles.gridCardTopRow}>
+                    <View style={styles.gridIconCircleChat}>
+                      <Feather
+                        name="message-square"
+                        size={20}
+                        color={Colors.accentBlue}
+                      />
+                    </View>
+                    <View style={styles.counterBadge}>
+                      <Text style={styles.counterBadgeText}>2</Text>
+                    </View>
+                  </View>
+                  <View style={styles.gridCardBottomGroup}>
+                    <Text style={styles.gridCardTitle}>Family chat</Text>
+                    <Text style={styles.gridCardSubtitle}>
+                      Anaya: Can someone pick me up?
+                    </Text>
+                  </View>
+                </TouchableOpacity>
+
+                {/* Compass */}
+                <TouchableOpacity
+                  style={styles.gridCard}
+                  activeOpacity={0.85}
+                  onPress={() => {
+                    onClose();
+                    onOpenCompass?.();
+                  }}
+                  accessibilityRole="button"
+                  accessibilityLabel="Compass, 4 sharing location"
+                >
+                  <View style={styles.gridCardTopRow}>
+                    <View style={styles.gridIconCircleCompass}>
+                      <Feather
+                        name="navigation"
+                        size={20}
+                        color={Colors.accentTeal}
+                      />
+                    </View>
+                  </View>
+                  <View style={styles.gridCardBottomGroup}>
+                    <Text style={styles.gridCardTitle}>Compass</Text>
+                    <Text style={styles.gridCardSubtitle}>
+                      4 sharing location
+                    </Text>
+                  </View>
+                </TouchableOpacity>
+
+                {/* Members */}
+                <TouchableOpacity
+                  style={styles.gridCard}
+                  activeOpacity={0.85}
+                  onPress={handleOpenMembersPress}
+                  accessibilityRole="button"
+                  accessibilityLabel={`Members, ${pendingLabel}`}
+                >
+                  <View style={styles.gridCardTopRow}>
+                    <View style={styles.gridIconCircleMembers}>
+                      <Feather
+                        name="users"
+                        size={20}
+                        color={Colors.accentGreen}
+                      />
+                    </View>
+                    {pendingRequestCount > 0 && (
+                      <View style={styles.counterBadge}>
+                        <Text style={styles.counterBadgeText}>
+                          {pendingRequestCount}
+                        </Text>
+                      </View>
+                    )}
+                  </View>
+                  <View style={styles.gridCardBottomGroup}>
+                    <Text style={styles.gridCardTitle}>Members</Text>
+                    <Text style={styles.gridCardSubtitle}>
+                      {pendingRequestCount > 0
+                        ? `${pendingRequestCount} join request${pendingRequestCount === 1 ? '' : 's'} to review`
+                        : `${memberCount} family member${memberCount === 1 ? '' : 's'}`}
+                    </Text>
+                  </View>
+                </TouchableOpacity>
+              </View>
+
+              {/* Full-width Family Vault Card */}
+              <TouchableOpacity
+                style={styles.vaultCard}
+                onPress={handleOpenVault}
+                activeOpacity={0.85}
+                accessibilityRole="button"
+                accessibilityLabel="Family Vault, Documents, insurance, warranties, contacts"
+              >
+                <View style={styles.vaultIconBox}>
+                  <Feather name="instagram" size={20} color={Colors.primary} />
+                </View>
+                <View style={styles.vaultTextGroup}>
+                  <Text style={styles.vaultTitle}>Family Vault</Text>
+                  <Text style={styles.vaultSubtitle}>
+                    Documents, insurance, warranties, contacts
+                  </Text>
+                </View>
+                <Feather
+                  name="chevron-right"
+                  size={20}
+                  color={Colors.textSubtle}
+                />
+              </TouchableOpacity>
+
+              {/* How are you today? Card */}
+              <View style={styles.moodCard}>
+                <Text style={styles.moodSectionTitle}>How are you today?</Text>
+                <View style={styles.moodChipsWrap}>
+                  {MOOD_OPTIONS.map((option) => {
+                    const isSelected = selectedMood === option.id;
+                    return (
+                      <TouchableOpacity
+                        key={option.id}
+                        style={[
+                          styles.moodChip,
+                          isSelected
+                            ? styles.moodChipActive
+                            : styles.moodChipInactive,
+                        ]}
+                        onPress={() => {
+                          setSelectedMood(option.id);
+                          setShowMoodModal(true);
+                        }}
+                        activeOpacity={0.7}
+                        accessibilityRole="button"
+                        accessibilityLabel={option.label}
+                      >
+                        <Text
+                          style={[
+                            styles.moodChipText,
+                            isSelected
+                              ? styles.moodChipTextActive
+                              : styles.moodChipTextInactive,
+                          ]}
+                        >
+                          {option.label}
+                        </Text>
+                      </TouchableOpacity>
+                    );
+                  })}
+                </View>
+              </View>
+            </>
+          )}
         </ScrollView>
 
         {/* Sub-Modals */}
@@ -588,11 +814,13 @@ const styles = StyleSheet.create({
     marginLeft: 1,
   },
   membersRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
     marginBottom: 20,
     paddingHorizontal: 2,
+  },
+  membersRowContent: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 12,
   },
   memberItem: {
     alignItems: 'center',
@@ -839,6 +1067,99 @@ const styles = StyleSheet.create({
   moodChipTextInactive: {
     color: Colors.white,
     fontWeight: '500',
+  },
+  pendingRequestCard: {
+    backgroundColor: Colors.cardBackground,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: Colors.primary,
+    padding: 20,
+    marginBottom: 20,
+  },
+  pendingIconRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    marginBottom: 10,
+  },
+  pendingCardTitle: {
+    fontSize: 17,
+    fontWeight: '700',
+    color: Colors.primary,
+  },
+  pendingCardBody: {
+    fontSize: 14,
+    color: Colors.white,
+    lineHeight: 20,
+    marginBottom: 12,
+  },
+  pendingCardBold: {
+    fontWeight: '700',
+    color: Colors.white,
+  },
+  pendingFamilyCodeRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginBottom: 12,
+  },
+  pendingCodeLabel: {
+    fontSize: 13,
+    color: Colors.textSubtle,
+  },
+  pendingCodeValue: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: Colors.white,
+  },
+  pendingStatusBadge: {
+    alignSelf: 'flex-start',
+    backgroundColor: 'rgba(240, 145, 58, 0.15)',
+    borderRadius: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 4,
+  },
+  pendingStatusText: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: Colors.primary,
+    letterSpacing: 0.5,
+  },
+  notInFamilyCard: {
+    backgroundColor: Colors.cardBackground,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    padding: 24,
+    alignItems: 'center',
+    marginBottom: 20,
+  },
+  notInFamilyTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: Colors.white,
+    marginBottom: 8,
+    textAlign: 'center',
+  },
+  notInFamilyBody: {
+    fontSize: 14,
+    color: Colors.textSubtle,
+    lineHeight: 20,
+    textAlign: 'center',
+    marginBottom: 20,
+  },
+  createJoinFamilyBtn: {
+    backgroundColor: Colors.primary,
+    borderRadius: 24,
+    paddingHorizontal: 24,
+    paddingVertical: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  createJoinFamilyBtnText: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: Colors.black,
   },
 });
 

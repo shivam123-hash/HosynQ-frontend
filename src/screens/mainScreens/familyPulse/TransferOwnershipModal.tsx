@@ -9,10 +9,12 @@ import {
   Alert,
   Modal,
   Platform,
+  ActivityIndicator,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Feather from '@react-native-vector-icons/feather';
-import type { FamilyMemberItem } from './MembersModal';
+import { useAppDispatch, useAppSelector, RootState } from '../../../redux/store';
+import { transferOwnershipThunk } from '../../../redux/features/family/familySlice';
 
 export interface TransferOwnershipModalProps {
   visible?: boolean;
@@ -32,7 +34,7 @@ interface TransferCandidate {
   subtext?: string;
 }
 
-const CANDIDATES: TransferCandidate[] = [
+const DEFAULT_FALLBACK_CANDIDATES: TransferCandidate[] = [
   {
     id: 'rohan',
     name: 'Rohan',
@@ -68,28 +70,98 @@ export const TransferOwnershipModal: React.FC<TransferOwnershipModalProps> = ({
   onTransferComplete,
 }) => {
   const insets = useSafeAreaInsets();
-  const [selectedId, setSelectedId] = useState<string>('rohan');
+  const dispatch = useAppDispatch();
 
-  const selectedCandidate = CANDIDATES.find((c) => c.id === selectedId) || CANDIDATES[0];
+  const { family, myFamilyData, actionLoading } = useAppSelector(
+    (state) => state.family
+  );
+
+  const currentFamily = myFamilyData?.family || family;
+  const rawMembers = currentFamily?.members || [];
+
+  // Build candidate list: other members of the family
+  const candidates: TransferCandidate[] =
+    rawMembers.length > 0
+      ? rawMembers
+          .filter((m) => !m.isYou && m.role !== 'FAMILY_OWNER')
+          .map((m: any, index: number) => {
+            const isChild = m.role === 'DEPENDENT_CHILD_PROFILE';
+            const roleDisplay =
+              m.role === 'FAMILY_ADMIN'
+                ? 'Admin'
+                : isChild
+                ? 'Child'
+                : 'Adult';
+
+            const initial = m.fullName
+              ? m.fullName.trim().charAt(0).toUpperCase()
+              : '?';
+
+            const candidateId = m.id || m.memberId || m._id || m.userId || `candidate-${index}`;
+
+            return {
+              id: String(candidateId),
+              name: m.fullName,
+              role: roleDisplay,
+              initial,
+              avatarBg: m.avatarColor || '#1F3A66',
+              avatarColor: '#FFFFFF',
+              disabled: isChild,
+              subtext: isChild ? 'Child · Children can’t be Owners' : undefined,
+            };
+          })
+      : DEFAULT_FALLBACK_CANDIDATES;
+
+  const firstEligible = candidates.find((c) => !c.disabled);
+  const [selectedId, setSelectedId] = useState<string>(firstEligible?.id || '');
+  const [isTransferring, setIsTransferring] = useState(false);
+
+  const selectedCandidate =
+    candidates.find((c) => c.id === selectedId) || firstEligible || candidates[0];
 
   const handleTransfer = () => {
+    if (!selectedCandidate) {
+      Alert.alert(
+        'No Candidate Selected',
+        'Please select an adult member to transfer ownership to.'
+      );
+      return;
+    }
+
     Alert.alert(
-      'OTP Sent',
-      `We sent a 6-digit confirmation code to verify transferring ownership to ${selectedCandidate.name}.`,
+      'Confirm Transfer',
+      `Are you sure you want to transfer family ownership to ${selectedCandidate.name}? You will become a Family Admin.`,
       [
         {
-          text: 'Confirm',
-          onPress: () => {
-            if (onTransferComplete) {
-              onTransferComplete(selectedCandidate.id);
+          text: 'Transfer',
+          style: 'destructive',
+          onPress: async () => {
+            setIsTransferring(true);
+            try {
+              await dispatch(
+                transferOwnershipThunk(selectedCandidate.id)
+              ).unwrap();
+              setIsTransferring(false);
+              Alert.alert(
+                'Ownership Transferred',
+                `${selectedCandidate.name} is now the Family Owner.`
+              );
+              if (onTransferComplete) {
+                onTransferComplete(selectedCandidate.id);
+              }
+              onClose();
+            } catch (err: any) {
+              setIsTransferring(false);
+              Alert.alert('Transfer Failed', err || 'Could not transfer ownership.');
             }
-            onClose();
           },
         },
         { text: 'Cancel', style: 'cancel' },
       ]
     );
   };
+
+  const isBusy = isTransferring || actionLoading;
 
   const topPadding = Math.max(
     insets.top,
@@ -132,94 +204,107 @@ export const TransferOwnershipModal: React.FC<TransferOwnershipModalProps> = ({
 
         {/* Candidates Card */}
         <View style={styles.candidatesCard}>
-          {CANDIDATES.map((candidate, index) => {
-            const isLast = index === CANDIDATES.length - 1;
-            const isSelected = selectedId === candidate.id;
-            const isDisabled = candidate.disabled;
+          {candidates.length === 0 ? (
+            <View style={styles.emptyContainer}>
+              <Text style={styles.emptyText}>
+                No other members found in your family. Invite an adult member first.
+              </Text>
+            </View>
+          ) : (
+            candidates.map((candidate, index) => {
+              const isLast = index === candidates.length - 1;
+              const isSelected = selectedId === candidate.id;
+              const isDisabled = candidate.disabled;
 
-            return (
-              <React.Fragment key={candidate.id}>
-                <TouchableOpacity
-                  style={[
-                    styles.candidateRow,
-                    isDisabled && styles.candidateRowDisabled,
-                  ]}
-                  onPress={() => {
-                    if (!isDisabled) {
-                      setSelectedId(candidate.id);
-                    }
-                  }}
-                  disabled={isDisabled}
-                  activeOpacity={0.7}
-                  accessibilityRole="radio"
-                  accessibilityState={{ selected: isSelected, disabled: isDisabled }}
-                  accessibilityLabel={`${candidate.name}, ${candidate.role}`}
-                >
-                  {/* Avatar */}
-                  <View
+              return (
+                <React.Fragment key={candidate.id || `candidate-${index}`}>
+                  <TouchableOpacity
                     style={[
-                      styles.avatar,
-                      { backgroundColor: candidate.avatarBg },
+                      styles.candidateRow,
+                      isDisabled && styles.candidateRowDisabled,
                     ]}
+                    onPress={() => {
+                      if (!isDisabled) {
+                        setSelectedId(candidate.id);
+                      }
+                    }}
+                    disabled={isDisabled || isBusy}
+                    activeOpacity={0.7}
+                    accessibilityRole="radio"
+                    accessibilityState={{
+                      selected: isSelected,
+                      disabled: isDisabled,
+                    }}
+                    accessibilityLabel={`${candidate.name}, ${candidate.role}`}
                   >
-                    <Text
+                    {/* Avatar */}
+                    <View
                       style={[
-                        styles.avatarText,
-                        { color: candidate.avatarColor },
+                        styles.avatar,
+                        { backgroundColor: candidate.avatarBg },
                       ]}
                     >
-                      {candidate.initial}
-                    </Text>
-                  </View>
+                      <Text
+                        style={[
+                          styles.avatarText,
+                          { color: candidate.avatarColor },
+                        ]}
+                      >
+                        {candidate.initial}
+                      </Text>
+                    </View>
 
-                  {/* Candidate Info */}
-                  <View style={styles.candidateInfo}>
-                    <Text
+                    {/* Candidate Info */}
+                    <View style={styles.candidateInfo}>
+                      <Text
+                        style={[
+                          styles.candidateName,
+                          isDisabled && styles.candidateNameDisabled,
+                        ]}
+                      >
+                        {candidate.name}
+                      </Text>
+                      <Text
+                        style={[
+                          styles.candidateRole,
+                          isDisabled && styles.candidateRoleDisabled,
+                        ]}
+                      >
+                        {candidate.subtext || candidate.role}
+                      </Text>
+                    </View>
+
+                    {/* Radio Button */}
+                    <View
                       style={[
-                        styles.candidateName,
-                        isDisabled && styles.candidateNameDisabled,
+                        styles.radioCircle,
+                        isSelected && styles.radioCircleSelected,
+                        isDisabled && styles.radioCircleDisabled,
                       ]}
                     >
-                      {candidate.name}
-                    </Text>
-                    <Text
-                      style={[
-                        styles.candidateRole,
-                        isDisabled && styles.candidateRoleDisabled,
-                      ]}
-                    >
-                      {candidate.subtext || candidate.role}
-                    </Text>
-                  </View>
+                      {isSelected && <View style={styles.radioDot} />}
+                    </View>
+                  </TouchableOpacity>
 
-                  {/* Radio Button */}
-                  <View
-                    style={[
-                      styles.radioCircle,
-                      isSelected && styles.radioCircleSelected,
-                      isDisabled && styles.radioCircleDisabled,
-                    ]}
-                  >
-                    {isSelected && <View style={styles.radioDot} />}
-                  </View>
-                </TouchableOpacity>
-
-                {!isLast && <View style={styles.divider} />}
-              </React.Fragment>
-            );
-          })}
+                  {!isLast && <View style={styles.divider} />}
+                </React.Fragment>
+              );
+            })
+          )}
         </View>
 
         {/* What changes Warning Box */}
-        <View style={styles.warningBox}>
-          <View style={styles.warningHeaderRow}>
-            <Feather name="alert-circle" size={17} color="#F0923A" />
-            <Text style={styles.warningTitle}>What changes</Text>
+        {selectedCandidate && (
+          <View style={styles.warningBox}>
+            <View style={styles.warningHeaderRow}>
+              <Feather name="alert-circle" size={17} color="#F0923A" />
+              <Text style={styles.warningTitle}>What changes</Text>
+            </View>
+            <Text style={styles.warningBody}>
+              {`${selectedCandidate.name} will control billing and can delete the family. Only ${selectedCandidate.name} can undo this.`}
+            </Text>
           </View>
-          <Text style={styles.warningBody}>
-            {`${selectedCandidate.name} will control billing and can delete the family. Only ${selectedCandidate.name} can undo this.`}
-          </Text>
-        </View>
+        )}
       </ScrollView>
 
       {/* Pinned Bottom CTA */}
@@ -233,15 +318,30 @@ export const TransferOwnershipModal: React.FC<TransferOwnershipModalProps> = ({
           We’ll send an OTP to your phone to confirm.
         </Text>
         <TouchableOpacity
-          style={styles.transferButton}
+          style={[
+            styles.transferButton,
+            (!selectedCandidate || isBusy || selectedCandidate.disabled) &&
+              styles.transferButtonDisabled,
+          ]}
           onPress={handleTransfer}
+          disabled={!selectedCandidate || isBusy || selectedCandidate.disabled}
           activeOpacity={0.85}
           accessibilityRole="button"
-          accessibilityLabel={`Transfer to ${selectedCandidate.name}`}
+          accessibilityLabel={
+            selectedCandidate
+              ? `Transfer to ${selectedCandidate.name}`
+              : 'Transfer ownership'
+          }
         >
-          <Text style={styles.transferButtonText}>
-            {`Transfer to ${selectedCandidate.name}`}
-          </Text>
+          {isTransferring ? (
+            <ActivityIndicator size="small" color="#FFFFFF" />
+          ) : (
+            <Text style={styles.transferButtonText}>
+              {selectedCandidate
+                ? `Transfer to ${selectedCandidate.name}`
+                : 'Transfer ownership'}
+            </Text>
+          )}
         </TouchableOpacity>
       </View>
     </View>
@@ -275,71 +375,66 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     paddingHorizontal: 20,
     position: 'relative',
-    marginBottom: 8,
+  },
+  backButton: {
+    position: 'absolute',
+    left: 20,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: '#122440',
+    borderWidth: 1,
+    borderColor: '#1F3352',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   headerTitle: {
-    fontSize: 17,
+    fontSize: 18,
     fontWeight: '700',
     color: '#FFFFFF',
     letterSpacing: -0.2,
     textAlign: 'center',
   },
-  backButton: {
-    position: 'absolute',
-    left: 20,
-    top: 6,
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: '#122440',
-    borderWidth: 1,
-    borderColor: '#1F3352',
-    alignItems: 'center',
-    justifyContent: 'center',
-    zIndex: 2,
-  },
   content: {
     paddingHorizontal: 20,
-    paddingTop: 8,
+    paddingTop: 16,
   },
   subtitle: {
     fontSize: 14,
-    lineHeight: 21,
     color: '#8A9BAE',
+    lineHeight: 20,
     marginBottom: 20,
   },
   sectionLabel: {
-    fontSize: 11,
+    fontSize: 12,
     fontWeight: '700',
-    color: '#8A9BAE',
-    letterSpacing: 1.2,
-    textTransform: 'uppercase',
+    color: '#8997AB',
+    letterSpacing: 1.1,
     marginBottom: 10,
   },
   candidatesCard: {
-    backgroundColor: '#122440',
-    borderRadius: 16,
+    backgroundColor: '#11223A',
+    borderRadius: 20,
     borderWidth: 1,
     borderColor: '#1F3352',
     overflow: 'hidden',
-    marginBottom: 18,
+    marginBottom: 20,
   },
   candidateRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 14,
     paddingHorizontal: 16,
+    paddingVertical: 14,
   },
   candidateRowDisabled: {
-    opacity: 0.7,
+    opacity: 0.5,
   },
   avatar: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+    width: 42,
+    height: 42,
+    borderRadius: 21,
     alignItems: 'center',
     justifyContent: 'center',
-    marginRight: 14,
   },
   avatarText: {
     fontSize: 16,
@@ -347,55 +442,67 @@ const styles = StyleSheet.create({
   },
   candidateInfo: {
     flex: 1,
+    marginLeft: 14,
   },
   candidateName: {
-    fontSize: 15.5,
-    fontWeight: '600',
+    fontSize: 16,
+    fontWeight: '700',
     color: '#FFFFFF',
+    marginBottom: 3,
   },
   candidateNameDisabled: {
-    color: '#6E8096',
+    color: '#8A9BAE',
   },
   candidateRole: {
     fontSize: 13,
     color: '#8A9BAE',
-    marginTop: 2,
   },
   candidateRoleDisabled: {
-    color: '#4E5F76',
+    color: '#55667E',
   },
   radioCircle: {
-    width: 24,
-    height: 24,
-    borderRadius: 12,
+    width: 22,
+    height: 22,
+    borderRadius: 11,
     borderWidth: 2,
-    borderColor: '#4A5870',
+    borderColor: '#3B4D66',
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: 'transparent',
   },
   radioCircleSelected: {
     borderColor: '#F0923A',
+    borderWidth: 2.5,
   },
   radioCircleDisabled: {
-    borderColor: '#243447',
+    borderColor: '#24344A',
   },
   radioDot: {
-    width: 10.5,
-    height: 10.5,
-    borderRadius: 5.5,
+    width: 10,
+    height: 10,
+    borderRadius: 5,
     backgroundColor: '#F0923A',
   },
   divider: {
     height: 1,
-    backgroundColor: '#1F3352',
-    width: '100%',
+    backgroundColor: '#192C45',
+    marginLeft: 16,
+  },
+  emptyContainer: {
+    paddingVertical: 24,
+    paddingHorizontal: 16,
+    alignItems: 'center',
+  },
+  emptyText: {
+    fontSize: 13.5,
+    color: '#8A9BAE',
+    textAlign: 'center',
   },
   warningBox: {
     backgroundColor: 'rgba(240, 146, 58, 0.08)',
-    borderRadius: 14,
+    borderRadius: 16,
     borderWidth: 1,
-    borderColor: 'rgba(240, 146, 58, 0.35)',
+    borderColor: 'rgba(240, 146, 58, 0.3)',
     padding: 16,
   },
   warningHeaderRow: {
@@ -411,8 +518,8 @@ const styles = StyleSheet.create({
   },
   warningBody: {
     fontSize: 13,
-    lineHeight: 19,
-    color: '#8A9BAE',
+    color: '#CAD4DF',
+    lineHeight: 18,
   },
   bottomBar: {
     position: 'absolute',
@@ -432,15 +539,19 @@ const styles = StyleSheet.create({
     marginBottom: 10,
   },
   transferButton: {
-    height: 54,
-    borderRadius: 27,
-    backgroundColor: '#F0923A',
+    height: 52,
+    borderRadius: 26,
+    backgroundColor: '#F0913A',
     alignItems: 'center',
     justifyContent: 'center',
   },
+  transferButtonDisabled: {
+    opacity: 0.5,
+    backgroundColor: '#3A4B60',
+  },
   transferButtonText: {
-    fontSize: 16,
-    fontWeight: '600',
+    fontSize: 15.5,
+    fontWeight: '700',
     color: '#FFFFFF',
   },
 });

@@ -1,5 +1,6 @@
 import React from 'react';
 import DatePicker from 'react-native-date-picker';
+import Colors from '../units/Colors';
 
 export type DateTimePickerMode = 'date' | 'time' | 'datetime';
 
@@ -14,6 +15,8 @@ export interface AppDateTimePickerProps {
   maximumDate?: Date;
   minuteInterval?: 1 | 2 | 3 | 4 | 5 | 6 | 10 | 12 | 15 | 20 | 30;
   theme?: 'light' | 'dark' | 'auto';
+  buttonColor?: string;
+  dividerColor?: string;
   onConfirm: (selectedDate: Date) => void;
   onCancel: () => void;
 }
@@ -133,6 +136,8 @@ const AppDateTimePicker: React.FC<AppDateTimePickerProps> = ({
   maximumDate,
   minuteInterval,
   theme = 'dark',
+  buttonColor = Colors.primary,
+  dividerColor = Colors.borderNavy,
   onConfirm,
   onCancel,
 }) => {
@@ -149,6 +154,8 @@ const AppDateTimePicker: React.FC<AppDateTimePickerProps> = ({
       minimumDate={minimumDate}
       maximumDate={maximumDate}
       minuteInterval={minuteInterval}
+      buttonColor={buttonColor}
+      dividerColor={dividerColor}
       onConfirm={(selectedDate) => {
         onConfirm(selectedDate);
       }}

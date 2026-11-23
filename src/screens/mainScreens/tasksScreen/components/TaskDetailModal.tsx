@@ -11,12 +11,23 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Feather from '@react-native-vector-icons/feather';
-import { useAppDispatch } from '../../../../redux';
-import { addTaskComment, remindTask } from '../../../../redux/features/tasks/tasksSlice';
-import { TaskDetailResponse } from '../../../../services/tasksServices';
+import { useAppDispatch, useAppSelector } from '../../../../redux';
+import {
+  addTaskComment,
+  remindTask,
+  fetchReminderState,
+  updateTask,
+} from '../../../../redux/features/tasks/tasksSlice';
+import { TaskDetailResponse, TaskReminderState } from '../../../../services/tasksServices';
 import { TaskItem, TaskCategory, TaskPriority, TaskComment } from '../types';
 import { CATEGORY_META, PRIORITY_META } from '../mockData';
-import { isUUID } from '../taskApiHelpers';
+import {
+  isUUID,
+  isTaskOverdue,
+  toIsoDateString,
+  formatTimeTo24Hour,
+  resolveMemberId,
+} from '../taskApiHelpers';
 import CommentsModal from './CommentsModal';
 import AssigneesAndViewersModal from './AssigneesAndViewersModal';
 import DueDateTimeModal from './DueDateTimeModal';
@@ -57,6 +68,23 @@ const TaskDetailModal: React.FC<TaskDetailModalProps> = ({
 }) => {
   const insets = useSafeAreaInsets();
   const dispatch = useAppDispatch();
+  const authUser = useAppSelector(
+    (state: any) => state.auth?.user || state.emailAuth?.user
+  );
+  const familyMembers = useAppSelector(
+    (state) =>
+      state.family.family?.members ||
+      state.family.myFamilyData?.family?.members ||
+      ((state.family.myFamilyData as any)?.members as any[]) ||
+      []
+  );
+  const myMemberId = useAppSelector(
+    (state) =>
+      state.family.myFamilyData?.family?.myMemberId ||
+      state.family.family?.myMemberId ||
+      state.family.myMemberId ||
+      null
+  );
   const [localTask, setLocalTask] = useState<TaskItem | null>(task);
 
   // Sub-Modals
@@ -74,6 +102,8 @@ const TaskDetailModal: React.FC<TaskDetailModalProps> = ({
     useState(false);
   const [showCompletedToast, setShowCompletedToast] = useState(false);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [reminderState, setReminderState] = useState<TaskReminderState | null>(null);
+  const [remindLoading, setRemindLoading] = useState(false);
 
   React.useEffect(() => {
     if (!visible) {
@@ -117,6 +147,45 @@ const TaskDetailModal: React.FC<TaskDetailModalProps> = ({
   // Use localTask if edited, otherwise fallback to task prop directly
   const currentTask = localTask || task;
 
+  // Sync initial reminderState from liveTaskDetail
+  React.useEffect(() => {
+    if (liveTaskDetail?.reminder && !reminderState) {
+      setReminderState({
+        canRemind: liveTaskDetail.reminder.canRemind,
+        remindableMembers: [],
+        nextAllowedAt: null,
+        lastReminder: liveTaskDetail.reminder.lastRemindedAt
+          ? {
+              at: liveTaskDetail.reminder.lastRemindedAt,
+              by: liveTaskDetail.reminder.lastRemindedBy
+                ? {
+                    fullName: liveTaskDetail.reminder.lastRemindedBy.fullName,
+                  }
+                : null,
+              to: [],
+            }
+          : null,
+      });
+    }
+  }, [liveTaskDetail?.reminder, reminderState]);
+
+  // Fetch live reminder state (GET /api/v1/tasks/:id/reminder)
+  React.useEffect(() => {
+    if (visible && currentTask?.id && isUUID(currentTask.id)) {
+      dispatch(fetchReminderState(currentTask.id))
+        .unwrap()
+        .then((state) => {
+          console.log('[TaskDetailModal] Fetched reminder state:', state);
+          setReminderState(state);
+        })
+        .catch((err) => {
+          console.log('[TaskDetailModal] Could not fetch reminder state:', err);
+        });
+    } else if (!visible) {
+      setReminderState(null);
+    }
+  }, [visible, currentTask?.id, dispatch]);
+
   // ✅ Hook 18: Declared UNCONDITIONALLY at the top level
   const effectiveComments: TaskComment[] = React.useMemo(() => {
     if (liveTaskDetail?.comments?.latest && liveTaskDetail.comments.latest.length > 0) {
@@ -136,6 +205,151 @@ const TaskDetailModal: React.FC<TaskDetailModalProps> = ({
     return currentTask?.comments || [];
   }, [liveTaskDetail, currentTask?.comments]);
 
+  // Hook 19: Compute dynamic overdue status based on date AND time
+  const isOverdue = React.useMemo(() => {
+    if (!currentTask) return false;
+    return isTaskOverdue({
+      isOverdue: currentTask.isOverdue || liveTaskDetail?.isOverdue,
+      isCompleted: currentTask.isCompleted,
+      dueDate: currentTask.dueDate,
+      dueOn: liveTaskDetail?.dueOn,
+      dueTime: currentTask.dueTime || liveTaskDetail?.dueTime,
+      dueFormatted: currentTask.dueFormatted,
+    });
+  }, [currentTask, liveTaskDetail]);
+
+  const currentUserName = useAppSelector(
+    (state) =>
+      state.baseProfile?.fullName ||
+      state.baseProfile?.user?.fullName ||
+      (state as any).auth?.user?.fullName ||
+      (state as any).emailAuth?.user?.fullName ||
+      (state as any).auth?.user?.name ||
+      (state as any).emailAuth?.user?.name ||
+      ''
+  );
+  const youMember = familyMembers.find(
+    (m: any) =>
+      m.isYou ||
+      (myMemberId && (m.memberId === myMemberId || m.id === myMemberId))
+  );
+  const myName =
+    youMember?.fullName || youMember?.name || currentUserName || '';
+
+  const assigneeStr = currentTask?.assignee || 'You';
+  const isAssigneeYou = React.useMemo(() => {
+    if (!assigneeStr) return true;
+    const lower = assigneeStr.toLowerCase().trim();
+    if (lower === 'you') return true;
+    if (lower === 'priya') return true;
+    if (myName && lower === myName.toLowerCase().trim()) return true;
+    if (authUser?.fullName && lower === authUser.fullName.toLowerCase().trim())
+      return true;
+    if (authUser?.name && lower === authUser.name.toLowerCase().trim())
+      return true;
+    if (myMemberId) {
+      if (
+        liveTaskDetail?.assignees?.some((a: any) => a.memberId === myMemberId)
+      )
+        return true;
+    }
+    const youFromList = familyMembers.find((m: any) => m.isYou);
+    if (
+      youFromList?.fullName &&
+      lower === youFromList.fullName.toLowerCase().trim()
+    )
+      return true;
+    return false;
+  }, [
+    assigneeStr,
+    myName,
+    authUser,
+    myMemberId,
+    liveTaskDetail?.assignees,
+    familyMembers,
+  ]);
+
+  // Hook 20: Compute live reminder eligibility (authoritative from API when loaded)
+  const canRemindNow = React.useMemo(() => {
+    if (isAssigneeYou) return false;
+    if (currentTask?.isCompleted) return false;
+
+    // 1. If reminderState is loaded from GET /tasks/:id/reminder, it is authoritative
+    if (reminderState) {
+      if (reminderState.canRemind === false) return false;
+      if (
+        Array.isArray(reminderState.remindableMembers) &&
+        reminderState.remindableMembers.length === 0
+      ) {
+        return false;
+      }
+      if (reminderState.nextAllowedAt) {
+        const nextTime = new Date(reminderState.nextAllowedAt).getTime();
+        if (!isNaN(nextTime) && nextTime > Date.now()) {
+          return false;
+        }
+      }
+      return Boolean(reminderState.canRemind);
+    }
+
+    // 2. If task detail permissions are present
+    if (liveTaskDetail?.permissions?.canRemind !== undefined) {
+      return Boolean(liveTaskDetail.permissions.canRemind);
+    }
+
+    // 3. Fallback: only if assigned to another family member and task is active
+    return !isAssigneeYou && !currentTask?.isCompleted;
+  }, [isAssigneeYou, currentTask?.isCompleted, reminderState, liveTaskDetail?.permissions?.canRemind]);
+
+  // Hook 21: Compute reminder subtitle matching Figma/Live design
+  const reminderSubtitle = React.useMemo(() => {
+    const lastReminder =
+      reminderState?.lastReminder ||
+      (liveTaskDetail?.reminder?.lastRemindedAt
+        ? {
+            at: liveTaskDetail.reminder.lastRemindedAt,
+            by: liveTaskDetail.reminder.lastRemindedBy,
+            to: [],
+          }
+        : null);
+
+    if (lastReminder?.at) {
+      const d = new Date(lastReminder.at);
+      if (!isNaN(d.getTime())) {
+        const timeStr = d.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+        const now = new Date();
+        const isToday = d.toDateString() === now.toDateString();
+        const yesterday = new Date(now);
+        yesterday.setDate(now.getDate() - 1);
+        const isYesterday = d.toDateString() === yesterday.toDateString();
+        const dayStr = isToday
+          ? 'today'
+          : isYesterday
+          ? 'yesterday'
+          : `on ${d.toLocaleDateString([], { month: 'short', day: 'numeric' })}`;
+        const sender = lastReminder.by?.fullName;
+        return `${assigneeStr} was reminded ${dayStr} at ${timeStr}${sender ? ` by ${sender}` : ''}.`;
+      }
+    }
+
+    // When API reminderState has loaded:
+    if (reminderState) {
+      if (isAssigneeYou) {
+        return 'This task is overdue. Change the due date to reschedule.';
+      }
+      if (reminderState.canRemind) {
+        return `Tap Remind to notify ${assigneeStr}.`;
+      }
+      if (reminderState.nextAllowedAt) {
+        return `${assigneeStr} was reminded recently. You can remind them again later.`;
+      }
+      return `${assigneeStr} cannot receive reminders for this task.`;
+    }
+
+    // Default design string when state not yet loaded
+    return `${assigneeStr} was reminded yesterday at 6:00 PM.`;
+  }, [reminderState, liveTaskDetail?.reminder, assigneeStr, isAssigneeYou]);
+
   // ✅ EARLY RETURN is placed AFTER ALL HOOKS HAVE BEEN CALLED
   if (!visible || !currentTask) return null;
 
@@ -152,30 +366,46 @@ const TaskDetailModal: React.FC<TaskDetailModalProps> = ({
       : (currentTask?.comments?.length ?? effectiveComments.length);
 
   const handleSendReminder = async () => {
+    if (!canRemindNow) {
+      if (isAssigneeYou) {
+        Alert.alert(
+          'Cannot Remind',
+          'You are assigned to this task. Reminders can only be sent to other family members.'
+        );
+      } else {
+        Alert.alert(
+          'Cannot Remind',
+          'A reminder cannot be sent for this task right now.'
+        );
+      }
+      return;
+    }
     if (!isUUID(currentTask.id)) {
-      Alert.alert('Reminder Sent', 'A reminder has been sent.');
+      Alert.alert('Reminder Sent', `A reminder notification was sent to ${assigneeStr}.`);
       return;
     }
     try {
+      setRemindLoading(true);
       console.log('[TaskDetailModal] Sending reminder for task:', currentTask.id);
-      await dispatch(remindTask({ taskId: currentTask.id })).unwrap();
-      Alert.alert('Reminder Sent', 'A reminder has been sent.');
+      const res = await dispatch(remindTask({ taskId: currentTask.id })).unwrap();
+      if (res?.reminder) {
+        setReminderState(res.reminder);
+      }
+      Alert.alert('Reminder Sent', `A reminder notification was sent to ${assigneeStr}.`);
     } catch (err: any) {
       console.log('[TaskDetailModal] ❌ Reminder error:', err);
-      Alert.alert('Reminder Cooldown', err || 'Please wait before sending another reminder.');
+      Alert.alert(
+        'Cannot Send Reminder',
+        typeof err === 'string' ? err : err?.message || 'Please wait before sending another reminder.'
+      );
+    } finally {
+      setRemindLoading(false);
     }
   };
-
-  const canRemind = liveTaskDetail?.permissions?.canRemind ?? true;
 
   const markDoneLabel = liveTaskDetail?.permissions?.completesOwnPartOnly
     ? 'Done my part'
     : 'Mark as done';
-
-  const assigneeStr = currentTask.assignee || 'You';
-  const isAssigneeYou =
-    assigneeStr.toLowerCase() === 'you' ||
-    assigneeStr.toLowerCase() === 'priya';
 
   const isRepeating =
     Boolean(currentTask.repeat) &&
@@ -305,46 +535,54 @@ const TaskDetailModal: React.FC<TaskDetailModalProps> = ({
           ]}
         >
           {/* Overdue Alert Banner */}
-          {currentTask.isOverdue && !currentTask.isCompleted && (
+          {isOverdue && !currentTask.isCompleted && (
             <View style={styles.overdueBanner}>
-              <View style={styles.overdueTopRow}>
+              <View style={styles.overdueHeaderRow}>
                 <Feather
                   name="alert-circle"
-                  size={18}
+                  size={20}
                   color="#F06A6A"
                   style={styles.overdueIcon}
                 />
-                <View style={styles.overdueContentCol}>
-                  <Text style={styles.overdueTitle}>
-                    {currentTask.overdueDateText || 'Overdue by 2 days'}
+                <Text style={styles.overdueTitle}>Overdue</Text>
+              </View>
+              <Text style={styles.overdueSubtitle}>
+                {reminderSubtitle}
+              </Text>
+              <View style={styles.overdueActionsCol}>
+                <TouchableOpacity
+                  style={[
+                    styles.bannerActionBtnRemind,
+                    canRemindNow ? styles.bannerActionBtnRemindActive : styles.bannerActionBtnDisabled,
+                    remindLoading && { opacity: 0.7 },
+                  ]}
+                  onPress={handleSendReminder}
+                  disabled={!canRemindNow || remindLoading}
+                  activeOpacity={canRemindNow ? 0.7 : 1}
+                  accessibilityRole="button"
+                  accessibilityLabel={`Remind ${assigneeStr}`}
+                >
+                  <Text
+                    style={[
+                      styles.bannerActionTextRemind,
+                      canRemindNow ? styles.bannerActionTextRemindActive : styles.bannerActionTextDisabled,
+                    ]}
+                  >
+                    {remindLoading ? 'Sending…' : `Remind ${assigneeStr}`}
                   </Text>
-                  <Text style={styles.overdueSubtitle}>
-                    {`${assigneeStr} was reminded yesterday at 6:00 PM.`}
-                  </Text>
-                  <View style={styles.overdueActionsRow}>
-                    <TouchableOpacity
-                      style={[
-                        styles.bannerActionBtn,
-                        !canRemind && { opacity: 0.5 },
-                      ]}
-                      onPress={handleSendReminder}
-                      disabled={!canRemind}
-                      activeOpacity={0.7}
-                    >
-                      <Text style={styles.bannerActionText}>
-                        {`Remind ${assigneeStr}`}
-                      </Text>
-                    </TouchableOpacity>
+                </TouchableOpacity>
 
-                    <TouchableOpacity
-                      style={styles.bannerActionBtn}
-                      onPress={() => setShowDueModal(true)}
-                      activeOpacity={0.7}
-                    >
-                      <Text style={styles.bannerActionText}>Change due date</Text>
-                    </TouchableOpacity>
-                  </View>
-                </View>
+                <TouchableOpacity
+                  style={styles.bannerActionBtnChangeDate}
+                  onPress={() => setShowDueModal(true)}
+                  activeOpacity={0.7}
+                  accessibilityRole="button"
+                  accessibilityLabel="Change due date"
+                >
+                  <Text style={styles.bannerActionTextChangeDate}>
+                    Change due date
+                  </Text>
+                </TouchableOpacity>
               </View>
             </View>
           )}
@@ -543,7 +781,7 @@ const TaskDetailModal: React.FC<TaskDetailModalProps> = ({
                       ]}
                     >
                       {currentTask.assigneeInitial ||
-                        (isAssigneeYou ? 'P' : 'R')}
+                        (isAssigneeYou ? (myName.trim()[0] || 'P').toUpperCase() : 'R')}
                     </Text>
                   </View>
                   <Text style={styles.infoValue}>
@@ -795,7 +1033,10 @@ const TaskDetailModal: React.FC<TaskDetailModalProps> = ({
               assignee: displayName,
               assigneeInitial: displayName === 'You' ? 'P' : displayName[0],
             });
-            onReassign?.(currentTask, newAssigneeId);
+            const resolvedId = isUUID(newAssigneeId)
+              ? newAssigneeId
+              : resolveMemberId(displayName, familyMembers, myMemberId);
+            onReassign?.(currentTask, resolvedId || newAssigneeId);
             setShowReassignModal(false);
           }}
         />
@@ -843,7 +1084,8 @@ const TaskDetailModal: React.FC<TaskDetailModalProps> = ({
                 primaryAssignee === 'You' ? 'P' : primaryAssignee[0],
               viewers: newViewersLabel,
             });
-            onReassign?.(currentTask, primaryAssignee);
+            const resolvedId = resolveMemberId(primaryAssignee, familyMembers, myMemberId);
+            onReassign?.(currentTask, resolvedId || primaryAssignee);
           }}
         />
 
@@ -853,13 +1095,34 @@ const TaskDetailModal: React.FC<TaskDetailModalProps> = ({
           initialDate={currentTask.dueDate || 'Today'}
           initialTime={currentTask.dueTime || '6:00 PM'}
           onClose={() => setShowDueModal(false)}
-          onSave={(newDate, newFormatted, newTime) => {
-            handleUpdate({
+          onSave={async (newDate: string, newFormatted: string, newTime?: string, isoDateStr?: string) => {
+            const updated: Partial<TaskItem> = {
               dueDate: newDate,
               dueFormatted: newFormatted,
               dueTime: newTime,
               isOverdue: false,
-            });
+            };
+            handleUpdate(updated);
+            if (isUUID(currentTask.id)) {
+              try {
+                const finalDueOn = isoDateStr || toIsoDateString(newDate);
+                const finalDueTime = formatTimeTo24Hour(newTime);
+                const payload: any = {
+                  dueOn: finalDueOn,
+                };
+                if (finalDueTime) {
+                  payload.dueTime = finalDueTime;
+                }
+                if (isRepeating) {
+                  payload.scope = 'THIS_ONE';
+                }
+                console.log('[TaskDetailModal] Updating due date/time with payload:', payload);
+                await dispatch(updateTask({ taskId: currentTask.id, payload })).unwrap();
+                console.log('[TaskDetailModal] ✅ Due date & time updated via API:', currentTask.id);
+              } catch (e: any) {
+                console.log('[TaskDetailModal] ❌ Failed to update due date via API:', e?.response?.data || e);
+              }
+            }
           }}
         />
 
@@ -952,12 +1215,18 @@ const styles = StyleSheet.create({
     paddingTop: 12,
   },
   overdueBanner: {
-    backgroundColor: '#23192A',
+    backgroundColor: '#201824',
     borderWidth: 1.5,
-    borderColor: '#6B3A3A',
-    borderRadius: 18,
-    padding: 16,
+    borderColor: '#4A2833',
+    borderRadius: 20,
+    padding: 18,
     marginBottom: 20,
+  },
+  overdueHeaderRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    marginBottom: 8,
   },
   overdueTopRow: {
     flexDirection: 'row',
@@ -965,40 +1234,90 @@ const styles = StyleSheet.create({
     gap: 10,
   },
   overdueIcon: {
-    marginTop: 1,
+    marginTop: 0,
   },
   overdueContentCol: {
     flex: 1,
   },
   overdueTitle: {
-    fontSize: 15,
+    fontSize: 18,
     fontWeight: '700',
     color: '#F06A6A',
-    marginBottom: 4,
   },
   overdueSubtitle: {
-    fontSize: 13,
-    color: '#CDD1D9',
-    marginBottom: 14,
-    lineHeight: 18,
+    fontSize: 15,
+    color: '#CAD4DF',
+    lineHeight: 22,
+    marginBottom: 16,
+  },
+  overdueActionsCol: {
+    flexDirection: 'column',
+    alignItems: 'flex-start',
+    gap: 12,
   },
   overdueActionsRow: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 10,
+    flexDirection: 'column',
+    alignItems: 'flex-start',
+    gap: 12,
   },
-  bannerActionBtn: {
-    height: 36,
-    paddingHorizontal: 14,
-    borderRadius: 18,
+  bannerActionBtnRemind: {
+    height: 42,
+    paddingHorizontal: 20,
+    borderRadius: 21,
     borderWidth: 1.5,
     borderColor: '#F06A6A',
     backgroundColor: 'transparent',
+    alignSelf: 'flex-start',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  bannerActionBtnRemindActive: {
+    borderColor: '#F06A6A',
+  },
+  bannerActionBtnDisabled: {
+    borderColor: '#552B36',
+    opacity: 0.5,
+  },
+  bannerActionTextRemind: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: '#F06A6A',
+  },
+  bannerActionTextRemindActive: {
+    color: '#F06A6A',
+  },
+  bannerActionTextDisabled: {
+    color: '#7D4753',
+  },
+  bannerActionBtnChangeDate: {
+    height: 42,
+    paddingHorizontal: 20,
+    borderRadius: 21,
+    borderWidth: 1.5,
+    borderColor: '#F06A6A',
+    backgroundColor: 'transparent',
+    alignSelf: 'flex-start',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  bannerActionTextChangeDate: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: '#F06A6A',
+  },
+  bannerActionBtn: {
+    height: 42,
+    paddingHorizontal: 20,
+    borderRadius: 21,
+    borderWidth: 1.5,
+    borderColor: '#F06A6A',
+    backgroundColor: 'transparent',
+    alignSelf: 'flex-start',
     justifyContent: 'center',
     alignItems: 'center',
   },
   bannerActionText: {
-    fontSize: 13,
+    fontSize: 15,
     fontWeight: '600',
     color: '#F06A6A',
   },

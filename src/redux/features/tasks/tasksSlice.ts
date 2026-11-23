@@ -2,14 +2,20 @@
 import { createAsyncThunk, createSlice, PayloadAction } from '@reduxjs/toolkit';
 import tasksServices, {
   CreateCommentPayload,
+  CreateTaskCommentResponse,
   CreateTaskPayload,
   CreateTaskResponse,
   ListTasksQueryParams,
   ListTasksResponse,
   ReassignTaskPayload,
   RemindTaskPayload,
+  RemindTaskResponse,
+  TaskCommentItemData,
+  TaskCommentsPagination,
+  TaskCommentsResponse,
   TaskDetailResponse,
   TaskItemData,
+  TaskReminderState,
   TaskWorkloadResponse,
   UpdateTaskPayload,
   WorkloadMemberData,
@@ -42,6 +48,11 @@ export interface TasksState {
     total: number;
     hasNextPage: boolean;
   };
+  taskComments: TaskCommentItemData[];
+  commentsPagination: TaskCommentsPagination;
+  commentsLoading: boolean;
+  commentsLoadingOlder: boolean;
+  commentsError: string | null;
 }
 
 const initialState: TasksState = {
@@ -58,6 +69,16 @@ const initialState: TasksState = {
   workload: [],
   workloadLoading: false,
   pagination: { page: 1, total: 0, hasNextPage: false },
+  taskComments: [],
+  commentsPagination: {
+    limit: 30,
+    total: 0,
+    hasOlder: false,
+    olderCursor: null,
+  },
+  commentsLoading: false,
+  commentsLoadingOlder: false,
+  commentsError: null,
 };
 
 /** 1. Fetch Tasks Thunk (GET /api/v1/tasks) */
@@ -289,14 +310,23 @@ export const reassignTask = reassignTaskThunk;
 
 /** 9. Send Reminder Thunk (POST /api/v1/tasks/:id/remind) */
 export const remindTaskThunk = createAsyncThunk<
-  void,
-  { taskId: string; payload?: RemindTaskPayload },
+  RemindTaskResponse,
+  { taskId: string; payload?: RemindTaskPayload; memberIds?: string[] },
   { rejectValue: string }
->('tasks/remindTask', async ({ taskId, payload }, { rejectWithValue, dispatch }) => {
+>('tasks/remindTask', async ({ taskId, payload, memberIds }, { rejectWithValue, dispatch }) => {
   try {
     console.log('[remindTask API] Reminding Task ID:', taskId);
-    await tasksServices.remindTask(taskId, payload);
+    const hasMemberIds = Array.isArray(memberIds) && memberIds.length > 0;
+    const payloadHasMemberIds =
+      Array.isArray(payload?.memberIds) && payload.memberIds.length > 0;
+    const body = payloadHasMemberIds
+      ? payload
+      : hasMemberIds
+      ? { memberIds }
+      : {};
+    const response = await tasksServices.remindTask(taskId, body);
     dispatch(fetchTaskDetailThunk({ taskId }));
+    return response;
   } catch (error: any) {
     const errorMsg =
       error?.response?.data?.message ||
@@ -313,6 +343,33 @@ export const remindTaskThunk = createAsyncThunk<
   }
 });
 export const remindTask = remindTaskThunk;
+
+/** 9b. Check Reminder State Thunk (GET /api/v1/tasks/:id/reminder) */
+export const fetchReminderStateThunk = createAsyncThunk<
+  TaskReminderState,
+  string,
+  { rejectValue: string }
+>('tasks/fetchReminderState', async (taskId, { rejectWithValue }) => {
+  try {
+    console.log('[fetchReminderState API] Checking reminder state for Task ID:', taskId);
+    const response = await tasksServices.getReminderState(taskId);
+    return response.reminder;
+  } catch (error: any) {
+    const errorMsg =
+      error?.response?.data?.message ||
+      error?.message ||
+      'Failed to fetch reminder state.';
+    console.log('[fetchReminderState API] Error Response:', {
+      status: error?.response?.status,
+      data: error?.response?.data,
+      message: errorMsg,
+    });
+    return rejectWithValue(
+      Array.isArray(errorMsg) ? errorMsg.join(', ') : errorMsg
+    );
+  }
+});
+export const fetchReminderState = fetchReminderStateThunk;
 
 /** 10. Fetch Member Workload Thunk (GET /api/v1/tasks/workload) */
 export const fetchWorkloadThunk = createAsyncThunk<
@@ -344,14 +401,15 @@ export const fetchWorkload = fetchWorkloadThunk;
 
 /** 11. Add Comment Thunk (POST /api/v1/tasks/:id/comments) */
 export const addTaskCommentThunk = createAsyncThunk<
-  void,
+  CreateTaskCommentResponse,
   { taskId: string; payload: CreateCommentPayload },
   { rejectValue: string }
 >('tasks/addComment', async ({ taskId, payload }, { rejectWithValue, dispatch }) => {
   try {
     console.log('[addComment API] Task ID:', taskId, 'Payload:', payload);
-    await tasksServices.addComment(taskId, payload);
+    const response = await tasksServices.addComment(taskId, payload);
     dispatch(fetchTaskDetailThunk({ taskId, today: new Date().toISOString().slice(0, 10) }));
+    return response;
   } catch (error: any) {
     const errorMsg =
       error?.response?.data?.message ||
@@ -371,13 +429,13 @@ export const addTaskComment = addTaskCommentThunk;
 
 /** 12. Fetch Task Comments Thunk (GET /api/v1/tasks/:id/comments) */
 export const fetchTaskCommentsThunk = createAsyncThunk<
-  any,
-  { taskId: string; before?: string; limit?: number },
+  TaskCommentsResponse,
+  { taskId: string; before?: string; limit?: number; isLoadOlder?: boolean },
   { rejectValue: string }
 >('tasks/fetchComments', async ({ taskId, before, limit }, { rejectWithValue }) => {
   try {
     console.log('[fetchComments API] Task ID:', taskId, 'Params:', { before, limit });
-    const response = await tasksServices.getComments(taskId, before, limit);
+    const response = await tasksServices.getComments(taskId, before, limit ?? 30);
     return response;
   } catch (error: any) {
     const errorMsg =
@@ -405,6 +463,18 @@ const tasksSlice = createSlice({
     },
     clearSelectedTask: (state) => {
       state.selectedTask = null;
+    },
+    clearTaskComments: (state) => {
+      state.taskComments = [];
+      state.commentsPagination = {
+        limit: 30,
+        total: 0,
+        hasOlder: false,
+        olderCursor: null,
+      };
+      state.commentsLoading = false;
+      state.commentsLoadingOlder = false;
+      state.commentsError = null;
     },
     resetTasksState: () => initialState,
   },
@@ -501,8 +571,52 @@ const tasksSlice = createSlice({
       .addCase(fetchWorkloadThunk.rejected, (state) => {
         state.workloadLoading = false;
       });
+
+    // 12. Fetch Task Comments (GET /api/v1/tasks/:id/comments)
+    builder
+      .addCase(fetchTaskCommentsThunk.pending, (state, action) => {
+        if (action.meta.arg.isLoadOlder) {
+          state.commentsLoadingOlder = true;
+        } else {
+          state.commentsLoading = true;
+        }
+        state.commentsError = null;
+      })
+      .addCase(fetchTaskCommentsThunk.fulfilled, (state, action) => {
+        state.commentsLoading = false;
+        state.commentsLoadingOlder = false;
+        state.commentsPagination = action.payload.pagination;
+        if (action.meta.arg.isLoadOlder) {
+          const existingIds = new Set(state.taskComments.map((c) => c.id));
+          const newOlder = action.payload.comments.filter((c) => !existingIds.has(c.id));
+          state.taskComments = [...newOlder, ...state.taskComments];
+        } else {
+          state.taskComments = action.payload.comments;
+        }
+      })
+      .addCase(fetchTaskCommentsThunk.rejected, (state, action) => {
+        state.commentsLoading = false;
+        state.commentsLoadingOlder = false;
+        state.commentsError = action.payload || 'Failed to fetch comments.';
+      });
+
+    // 13. Add Task Comment (POST /api/v1/tasks/:id/comments)
+    builder.addCase(addTaskCommentThunk.fulfilled, (state, action) => {
+      if (action.payload?.comment) {
+        const newComment = action.payload.comment;
+        if (!state.taskComments.some((c) => c.id === newComment.id)) {
+          state.taskComments.push(newComment);
+        }
+        state.commentsPagination.total = (state.commentsPagination.total || 0) + 1;
+      }
+    });
   },
 });
 
-export const { clearTasksError, clearSelectedTask, resetTasksState } = tasksSlice.actions;
+export const {
+  clearTasksError,
+  clearSelectedTask,
+  clearTaskComments,
+  resetTasksState,
+} = tasksSlice.actions;
 export default tasksSlice.reducer;

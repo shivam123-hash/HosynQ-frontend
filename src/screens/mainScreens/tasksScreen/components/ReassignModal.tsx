@@ -6,6 +6,8 @@ import Colors from '../../../../units/Colors';
 import Spacing from '../../../../units/Spacing';
 import BorderRadius from '../../../../units/BorderRadius';
 import Typography from '../../../../units/Typography';
+import tasksServices, { WorkloadMemberData } from '../../../../services/tasksServices';
+import { isUUID } from '../taskApiHelpers';
 import { FAMILY_MEMBERS } from '../mockData';
 
 export interface ReassignModalProps {
@@ -50,7 +52,35 @@ const ReassignModal: React.FC<ReassignModalProps> = ({
       []
   );
 
+  const [workloadMembers, setWorkloadMembers] = useState<WorkloadMemberData[]>([]);
+
+  useEffect(() => {
+    if (visible) {
+      tasksServices
+        .getWorkload()
+        .then((res) => {
+          if (res?.members && res.members.length > 0) {
+            setWorkloadMembers(res.members);
+          }
+        })
+        .catch((err) => {
+          console.log('[ReassignModal] Could not fetch workload:', err?.message || err);
+        });
+    }
+  }, [visible]);
+
   const members: ReassignMemberOption[] = useMemo(() => {
+    if (workloadMembers && workloadMembers.length > 0) {
+      return workloadMembers.map((wm) => ({
+        id: wm.memberId,
+        name: wm.fullName,
+        initial: ((wm.fullName || 'M').trim()[0] || 'M').toUpperCase(),
+        avatarBg: wm.avatarColor || Colors.primary,
+        avatarColor: '#FFFFFF',
+        taskCount: wm.activeTasksCount ?? 0,
+        isChild: false,
+      }));
+    }
     if (familyMembers && familyMembers.length > 0) {
       return familyMembers.map((m: any) => ({
         id: m.memberId || m.id,
