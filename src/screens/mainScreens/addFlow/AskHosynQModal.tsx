@@ -755,11 +755,11 @@ const styles = StyleSheet.create({
   headerSparkle: {
     color: Colors.primary,
     fontSize: 16,
-    fontWeight: 'bold',
+    fontFamily: 'Roboto-Bold',
   },
   headerTitle: {
     fontSize: 17,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     color: Colors.white,
   },
   scrollView: {
@@ -790,7 +790,7 @@ const styles = StyleSheet.create({
   },
   initialTitle: {
     fontSize: 24,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     color: Colors.white,
     marginBottom: 10,
     textAlign: 'center',
@@ -806,7 +806,7 @@ const styles = StyleSheet.create({
   trySectionHeading: {
     alignSelf: 'flex-start',
     fontSize: 12,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     color: Colors.textTertiary,
     letterSpacing: 0.8,
     marginBottom: 12,
@@ -846,7 +846,7 @@ const styles = StyleSheet.create({
   userBubbleText: {
     fontSize: 15,
     color: Colors.cardInsetDark,
-    fontWeight: '600',
+    fontFamily: 'Roboto-SemiBold',
     lineHeight: 20,
   },
   botRow: {
@@ -867,7 +867,7 @@ const styles = StyleSheet.create({
   botSparkle: {
     color: Colors.primary,
     fontSize: 14,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
   },
   botBubble: {
     flex: 1,
@@ -920,7 +920,7 @@ const styles = StyleSheet.create({
   thinkingText: {
     fontSize: 13,
     color: Colors.textLightMuted,
-    fontWeight: '500',
+    fontFamily: 'Roboto-Medium',
   },
   skeletonCard: {
     marginLeft: 40,
@@ -964,7 +964,7 @@ const styles = StyleSheet.create({
   },
   clarifyHeading: {
     fontSize: 14,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     color: Colors.white,
     marginBottom: 8,
   },
@@ -989,11 +989,11 @@ const styles = StyleSheet.create({
   },
   chipText: {
     fontSize: 13,
-    fontWeight: '600',
+    fontFamily: 'Roboto-SemiBold',
   },
   chipTextSelected: {
     color: Colors.cardInsetDark,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
   },
   chipTextUnselected: {
     color: Colors.textSubtle,
@@ -1018,19 +1018,19 @@ const styles = StyleSheet.create({
   },
   proposalEventTag: {
     fontSize: 11,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     color: Colors.accentBlue,
     letterSpacing: 0.8,
   },
   proposalReminderTag: {
     fontSize: 11,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     color: Colors.accentPurple,
     letterSpacing: 0.8,
   },
   proposalItemTitle: {
     fontSize: 16,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     color: Colors.white,
     marginBottom: 6,
   },
@@ -1066,7 +1066,7 @@ const styles = StyleSheet.create({
   confirmBtnText: {
     color: Colors.white,
     fontSize: 15,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
   },
   editBtn: {
     backgroundColor: Colors.cardBackground,
@@ -1081,7 +1081,7 @@ const styles = StyleSheet.create({
   editBtnText: {
     color: Colors.white,
     fontSize: 14,
-    fontWeight: '600',
+    fontFamily: 'Roboto-SemiBold',
   },
   cancelTextBtn: {
     paddingVertical: 10,
@@ -1091,7 +1091,7 @@ const styles = StyleSheet.create({
   cancelText: {
     color: Colors.textSubtle,
     fontSize: 14,
-    fontWeight: '600',
+    fontFamily: 'Roboto-SemiBold',
   },
   choiceChipsCol: {
     marginLeft: 40,
@@ -1109,7 +1109,7 @@ const styles = StyleSheet.create({
   },
   choiceChipText: {
     fontSize: 13,
-    fontWeight: '600',
+    fontFamily: 'Roboto-SemiBold',
     color: Colors.textNearWhiteAlt,
   },
   editingFlow: {
@@ -1123,13 +1123,13 @@ const styles = StyleSheet.create({
   },
   editSectionKickerEvent: {
     fontSize: 11,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     color: Colors.accentBlue,
     letterSpacing: 0.8,
   },
   editSectionKickerReminder: {
     fontSize: 11,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     color: Colors.accentPurple,
     letterSpacing: 0.8,
   },
@@ -1162,19 +1162,19 @@ const styles = StyleSheet.create({
     width: 70,
     fontSize: 14,
     color: Colors.textTertiary,
-    fontWeight: '500',
+    fontFamily: 'Roboto-Medium',
   },
   editFieldLabelOrange: {
     width: 50,
     fontSize: 14,
     color: Colors.primary,
-    fontWeight: '600',
+    fontFamily: 'Roboto-SemiBold',
   },
   editFieldInput: {
     flex: 1,
     fontSize: 14,
     color: Colors.white,
-    fontWeight: '600',
+    fontFamily: 'Roboto-SemiBold',
     paddingVertical: 0,
   },
   orangeCursor: {
@@ -1193,7 +1193,7 @@ const styles = StyleSheet.create({
     flex: 1,
     fontSize: 14,
     color: Colors.white,
-    fontWeight: '500',
+    fontFamily: 'Roboto-Medium',
   },
   avatarClusterRow: {
     flex: 1,
@@ -1211,7 +1211,7 @@ const styles = StyleSheet.create({
   avatarSmallTextPriya: {
     fontSize: 10,
     color: Colors.amberLight,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
   },
   avatarSmallRohan: {
     width: 22,
@@ -1225,7 +1225,7 @@ const styles = StyleSheet.create({
   avatarSmallTextRohan: {
     fontSize: 10,
     color: Colors.accentBlueLight,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
   },
   inviteNamesText: {
     fontSize: 13,
@@ -1248,7 +1248,7 @@ const styles = StyleSheet.create({
   },
   confirmAndAddBtnText: {
     fontSize: 16,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     color: Colors.white,
   },
   bottomInputBar: {

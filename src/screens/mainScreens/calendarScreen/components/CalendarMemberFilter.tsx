@@ -133,20 +133,20 @@ const styles = StyleSheet.create({
   },
   avatarInitial: {
     fontSize: 15,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
   },
   memberName: {
     fontSize: 12,
-    fontWeight: '500',
+    fontFamily: 'Roboto-Medium',
     color: '#8A97AB',
     textAlign: 'center',
   },
   everyoneNameActive: {
     color: '#F0923A',
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
   },
   memberNameActive: {
     color: '#FFFFFF',
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
   },
 });

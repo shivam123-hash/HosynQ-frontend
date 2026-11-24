@@ -179,7 +179,7 @@ const styles = StyleSheet.create({
   },
   digitText: {
     fontSize: RFValue(18),
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     color: '#FFFFFF',
     textAlign: 'center',
   },

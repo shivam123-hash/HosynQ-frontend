@@ -1600,7 +1600,7 @@ const styles = StyleSheet.create({
   },
   headerTitle: {
     fontSize: 18,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     color: '#FFFFFF',
     textAlign: 'center',
     letterSpacing: -0.2,
@@ -1656,12 +1656,12 @@ const styles = StyleSheet.create({
   },
   quickPillPrimaryText: {
     fontSize: 14,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     color: '#0E1E34',
   },
   quickPillText: {
     fontSize: 14,
-    fontWeight: '600',
+    fontFamily: 'Roboto-SemiBold',
     color: '#FFFFFF',
   },
   sectionHeaderRow: {
@@ -1672,12 +1672,12 @@ const styles = StyleSheet.create({
   },
   sectionTitle: {
     fontSize: 16,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     color: '#FFFFFF',
   },
   sectionActionText: {
     fontSize: 14,
-    fontWeight: '600',
+    fontFamily: 'Roboto-SemiBold',
     color: '#F0913A',
   },
   memberListScroll: {
@@ -1703,7 +1703,7 @@ const styles = StyleSheet.create({
   },
   memberAvatarInitial: {
     fontSize: 15,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     color: '#FFFFFF',
   },
   memberTextGroup: {
@@ -1711,7 +1711,7 @@ const styles = StyleSheet.create({
   },
   memberLocationName: {
     fontSize: 15,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     color: '#FFFFFF',
     marginBottom: 2,
   },
@@ -1746,7 +1746,7 @@ const styles = StyleSheet.create({
   },
   permissionTitle: {
     fontSize: 22,
-    fontWeight: '800',
+    fontFamily: 'Roboto-Bold',
     color: '#FFFFFF',
     textAlign: 'center',
     marginBottom: 8,
@@ -1792,7 +1792,7 @@ const styles = StyleSheet.create({
   },
   featureHeading: {
     fontSize: 14,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     color: '#FFFFFF',
     marginBottom: 2,
   },
@@ -1835,7 +1835,7 @@ const styles = StyleSheet.create({
   },
   primaryActionText: {
     fontSize: 16,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     color: '#FFFFFF',
   },
   secondaryTextButton: {
@@ -1845,7 +1845,7 @@ const styles = StyleSheet.create({
   },
   secondaryActionText: {
     fontSize: 16,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     color: '#F0913A',
   },
   // Consent Screen (CMP-03)
@@ -1857,7 +1857,7 @@ const styles = StyleSheet.create({
   },
   fieldSectionLabel: {
     fontSize: 12,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     letterSpacing: 0.8,
     color: '#8A9BAE',
     marginBottom: 10,
@@ -1875,7 +1875,7 @@ const styles = StyleSheet.create({
   },
   consentMemberName: {
     fontSize: 15,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     color: '#FFFFFF',
     marginBottom: 2,
   },
@@ -1893,7 +1893,7 @@ const styles = StyleSheet.create({
   },
   statusBadgeGreenText: {
     fontSize: 13,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     color: '#2DD4BF',
   },
   statusBadgeGray: {
@@ -1906,7 +1906,7 @@ const styles = StyleSheet.create({
   },
   statusBadgeGrayText: {
     fontSize: 13,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     color: '#CAD4DF',
   },
   dadiActionGroup: {
@@ -1916,7 +1916,7 @@ const styles = StyleSheet.create({
   },
   askButtonText: {
     fontSize: 14,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     color: '#F0913A',
   },
   securityBox: {
@@ -1971,7 +1971,7 @@ const styles = StyleSheet.create({
   },
   locationOffTitle: {
     fontSize: 20,
-    fontWeight: '800',
+    fontFamily: 'Roboto-Bold',
     color: '#FFFFFF',
     textAlign: 'center',
     marginBottom: 10,
@@ -2008,7 +2008,7 @@ const styles = StyleSheet.create({
   },
   largeAvatarInitial: {
     fontSize: 22,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     color: '#FFFFFF',
   },
   memberSheetHeaderTextGroup: {
@@ -2016,13 +2016,13 @@ const styles = StyleSheet.create({
   },
   memberSheetName: {
     fontSize: 22,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     color: '#FFFFFF',
     marginBottom: 3,
   },
   memberSheetAddress: {
     fontSize: 14,
-    fontWeight: '600',
+    fontFamily: 'Roboto-SemiBold',
     color: '#CAD4DF',
     marginBottom: 2,
   },
@@ -2058,7 +2058,7 @@ const styles = StyleSheet.create({
   },
   detailValue: {
     fontSize: 15,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     color: '#FFFFFF',
   },
   memberActionButtonsRow: {
@@ -2078,7 +2078,7 @@ const styles = StyleSheet.create({
   },
   memberActionBtnText: {
     fontSize: 13,
-    fontWeight: '600',
+    fontFamily: 'Roboto-SemiBold',
     color: '#FFFFFF',
     marginTop: 6,
   },
@@ -2121,7 +2121,7 @@ const styles = StyleSheet.create({
   },
   placeNameText: {
     fontSize: 16,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     color: '#FFFFFF',
     marginBottom: 3,
   },
@@ -2132,7 +2132,7 @@ const styles = StyleSheet.create({
   },
   placeHereText: {
     fontSize: 12,
-    fontWeight: '600',
+    fontFamily: 'Roboto-SemiBold',
     color: '#4CC38A',
   },
   bottomButtonContainer: {
@@ -2147,7 +2147,7 @@ const styles = StyleSheet.create({
   },
   inputFieldLabel: {
     fontSize: 14,
-    fontWeight: '600',
+    fontFamily: 'Roboto-SemiBold',
     color: '#CAD4DF',
     marginTop: 16,
     marginBottom: 8,
@@ -2207,12 +2207,12 @@ const styles = StyleSheet.create({
   },
   typeChipText: {
     fontSize: 14,
-    fontWeight: '600',
+    fontFamily: 'Roboto-SemiBold',
     color: '#CAD4DF',
   },
   typeChipTextSelected: {
     color: '#0B192E',
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
   },
   addressDisplayCard: {
     flexDirection: 'row',
@@ -2255,12 +2255,12 @@ const styles = StyleSheet.create({
   },
   radiusChipText: {
     fontSize: 14,
-    fontWeight: '600',
+    fontFamily: 'Roboto-SemiBold',
     color: '#CAD4DF',
   },
   radiusChipTextSelected: {
     color: '#0B192E',
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
   },
   // Heading Home (CMP-08)
   headingHomeSheetCard: {
@@ -2282,7 +2282,7 @@ const styles = StyleSheet.create({
   },
   headingHomeTitle: {
     fontSize: 26,
-    fontWeight: '800',
+    fontFamily: 'Roboto-Bold',
     color: '#FFFFFF',
     marginBottom: 4,
     letterSpacing: -0.3,
@@ -2312,7 +2312,7 @@ const styles = StyleSheet.create({
     fontSize: 13,
     lineHeight: 18,
     color: '#CAD4DF',
-    fontWeight: '500',
+    fontFamily: 'Roboto-Medium',
   },
   shareEtaRow: {
     flexDirection: 'row',
@@ -2325,7 +2325,7 @@ const styles = StyleSheet.create({
   },
   shareEtaTitle: {
     fontSize: 15,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     color: '#FFFFFF',
     marginBottom: 2,
   },
@@ -2342,7 +2342,7 @@ const styles = StyleSheet.create({
   },
   atHomeLabel: {
     fontSize: 15,
-    fontWeight: '600',
+    fontFamily: 'Roboto-SemiBold',
     color: '#FFFFFF',
   },
   atHomeAvatarsCluster: {
@@ -2360,7 +2360,7 @@ const styles = StyleSheet.create({
   },
   miniAvatarText: {
     fontSize: 12,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     color: '#FFFFFF',
   },
   // Dialog Backdrop (CMP-09, CMP-10)
@@ -2397,7 +2397,7 @@ const styles = StyleSheet.create({
   },
   dialogTitle: {
     fontSize: 18,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     color: '#FFFFFF',
     marginBottom: 8,
     textAlign: 'center',
@@ -2433,7 +2433,7 @@ const styles = StyleSheet.create({
   },
   radioTitle: {
     fontSize: 16,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     color: '#FFFFFF',
     marginBottom: 2,
   },
@@ -2497,12 +2497,12 @@ const styles = StyleSheet.create({
   },
   segmentedTabText: {
     fontSize: 14,
-    fontWeight: '600',
+    fontFamily: 'Roboto-SemiBold',
     color: '#8A9BAE',
   },
   segmentedTabTextActive: {
     color: '#0B192E',
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
   },
   alwaysAllowBanner: {
     flexDirection: 'row',
@@ -2537,7 +2537,7 @@ const styles = StyleSheet.create({
   },
   reminderTitleText: {
     fontSize: 15,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     color: '#FFFFFF',
     flex: 1,
   },
@@ -2552,7 +2552,7 @@ const styles = StyleSheet.create({
   },
   arriveTagText: {
     fontSize: 12,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     color: '#2DD4BF',
   },
   leaveTagBadge: {
@@ -2566,7 +2566,7 @@ const styles = StyleSheet.create({
   },
   leaveTagText: {
     fontSize: 12,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     color: '#F0913A',
   },
   reminderSubtitleText: {
@@ -2604,12 +2604,12 @@ const styles = StyleSheet.create({
   },
   conditionChipText: {
     fontSize: 14,
-    fontWeight: '600',
+    fontFamily: 'Roboto-SemiBold',
     color: '#CAD4DF',
   },
   conditionChipTextActive: {
     color: '#0B192E',
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
   },
   selectorItemRow: {
     flexDirection: 'row',
@@ -2625,7 +2625,7 @@ const styles = StyleSheet.create({
   },
   selectorItemValue: {
     fontSize: 15,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     color: '#FFFFFF',
   },
   avatarWithLabelRow: {
@@ -2635,7 +2635,7 @@ const styles = StyleSheet.create({
   // Smart Actions (CMP-13)
   suggestedNowHeader: {
     fontSize: 12,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     letterSpacing: 0.8,
     color: '#F0913A',
     marginBottom: 10,
@@ -2663,7 +2663,7 @@ const styles = StyleSheet.create({
     flex: 1,
     fontSize: 14,
     lineHeight: 20,
-    fontWeight: '600',
+    fontFamily: 'Roboto-SemiBold',
     color: '#CAD4DF',
   },
   suggestionActionRow: {
@@ -2681,7 +2681,7 @@ const styles = StyleSheet.create({
   },
   confirmSmallBtnText: {
     fontSize: 14,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     color: '#FFFFFF',
   },
   editSmallBtn: {
@@ -2696,7 +2696,7 @@ const styles = StyleSheet.create({
   },
   editSmallBtnText: {
     fontSize: 14,
-    fontWeight: '600',
+    fontFamily: 'Roboto-SemiBold',
     color: '#CAD4DF',
   },
   ignoreSmallBtn: {
@@ -2705,7 +2705,7 @@ const styles = StyleSheet.create({
   },
   ignoreSmallBtnText: {
     fontSize: 14,
-    fontWeight: '600',
+    fontFamily: 'Roboto-SemiBold',
     color: '#8A9BAE',
   },
   shortcutItemRow: {
@@ -2717,7 +2717,7 @@ const styles = StyleSheet.create({
   },
   shortcutTitleText: {
     fontSize: 15,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     color: '#FFFFFF',
     marginBottom: 2,
   },

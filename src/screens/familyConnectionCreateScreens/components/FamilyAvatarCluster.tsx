@@ -78,7 +78,7 @@ const styles = StyleSheet.create({
   },
   sideText: {
     fontSize: RFValue(12.5),
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
   },
   centerAvatar: {
     width: 60,
@@ -93,6 +93,6 @@ const styles = StyleSheet.create({
   },
   centerText: {
     fontSize: RFValue(25),
-    fontWeight: '800',
+    fontFamily: 'Roboto-Bold',
   },
 });

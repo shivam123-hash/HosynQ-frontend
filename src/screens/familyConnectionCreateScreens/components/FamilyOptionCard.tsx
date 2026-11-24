@@ -122,7 +122,7 @@ const styles = StyleSheet.create({
   title: {
     color: '#FFFFFF',
     fontSize: RFValue(15),
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     marginBottom: 6,
   },
   description: {

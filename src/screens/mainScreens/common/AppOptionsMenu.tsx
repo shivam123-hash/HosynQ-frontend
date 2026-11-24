@@ -140,7 +140,7 @@ const styles = StyleSheet.create({
   },
   dropdownItemText: {
     fontSize: 14,
-    fontWeight: '600',
+    fontFamily: 'Roboto-SemiBold',
     color: '#CAD4DF',
   },
   dropdownItemTextDestructive: {

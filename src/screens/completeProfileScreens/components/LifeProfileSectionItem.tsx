@@ -128,7 +128,7 @@ const styles = StyleSheet.create({
   titleText: {
     color: '#FFFFFF',
     fontSize: RFValue(12),
-    fontWeight: '600',
+    fontFamily: 'Roboto-SemiBold',
     lineHeight: RFValue(16.5),
   },
   subtitleText: {
@@ -158,7 +158,7 @@ const styles = StyleSheet.create({
   },
   badgeText: {
     fontSize: RFValue(10),
-    fontWeight: '600',
+    fontFamily: 'Roboto-SemiBold',
   },
   badgeTextDone: {
     color: '#2DD4BF',

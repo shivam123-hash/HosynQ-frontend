@@ -457,7 +457,7 @@ const styles = StyleSheet.create({
   },
   headerTitle: {
     fontSize: 20,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     color: '#FFFFFF',
     letterSpacing: -0.2,
     textAlign: 'center',
@@ -497,14 +497,17 @@ const styles = StyleSheet.create({
   },
   tabButtonTextActive: {
     color: '#0B1A2F',
+    fontFamily: 'Roboto-Bold',
   },
   tabButtonTextInactive: {
-    color: '#CAD4DF',
+    color: '#C8D1DC',
+    fontFamily: 'Roboto-Medium',
   },
   inputLabel: {
-    fontSize: 13,
-    color: '#8A9BAE',
-    fontWeight: '500',
+    fontSize: 14,
+    color: '#CAD4DF',
+    fontFamily: 'Roboto-Medium',
+    marginTop: 20,
     marginBottom: 8,
   },
   inputWrapper: {
@@ -524,7 +527,7 @@ const styles = StyleSheet.create({
   },
   countryCodeText: {
     fontSize: 16,
-    fontWeight: '600',
+    fontFamily: 'Roboto-SemiBold',
     color: '#FFFFFF',
   },
   inputDivider: {
@@ -537,13 +540,13 @@ const styles = StyleSheet.create({
     flex: 1,
     fontSize: 16,
     color: '#FFFFFF',
-    fontWeight: '500',
+    fontFamily: 'Roboto-Medium',
     padding: 0,
   },
   roleSectionLabel: {
     fontSize: 12,
     color: '#8997AB',
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     letterSpacing: 1.2,
     textTransform: 'uppercase',
     marginTop: 6,
@@ -574,11 +577,11 @@ const styles = StyleSheet.create({
   },
   roleChipTextActive: {
     color: '#0B1A2F',
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
   },
   roleChipTextInactive: {
     color: '#C8D1DC',
-    fontWeight: '500',
+    fontFamily: 'Roboto-Medium',
   },
   roleExplanationText: {
     fontSize: 13,
@@ -612,7 +615,7 @@ const styles = StyleSheet.create({
   },
   linkTitle: {
     fontSize: 15,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     color: '#FFFFFF',
   },
   linkSubtitle: {
@@ -636,7 +639,7 @@ const styles = StyleSheet.create({
   },
   sendButtonText: {
     fontSize: 16,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     color: '#FFFFFF',
   },
   buttonDisabled: {

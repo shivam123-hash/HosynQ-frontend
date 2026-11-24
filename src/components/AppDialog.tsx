@@ -156,7 +156,7 @@ const AppDialog: React.FC<AppDialogProps> = ({
         styles.overlay,
         !asModal && styles.overlayAbsolute,
       ]}
-      accessibilityRole="dialog"
+      accessibilityRole="alert"
       accessibilityLabel={accessibilityLabel || title}
     >
       <TouchableOpacity
@@ -314,7 +314,7 @@ const styles = StyleSheet.create({
   },
   title: {
     fontSize: Typography.size.title,
-    fontWeight: Typography.weight.bold,
+    fontFamily: 'Roboto-Bold',
     color: Colors.white,
     textAlign: 'center',
     marginBottom: 8,
@@ -343,14 +343,14 @@ const styles = StyleSheet.create({
   },
   primaryBtnText: {
     fontSize: Typography.size.subtitle,
-    fontWeight: Typography.weight.bold,
+    fontFamily: 'Roboto-Bold',
   },
   brandBtnText: {
     color: Colors.white,
   },
   dangerBtnText: {
     color: '#0B1A2F',
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
   },
   secondaryBtn: {
     width: '100%',
@@ -360,6 +360,6 @@ const styles = StyleSheet.create({
   },
   secondaryBtnText: {
     fontSize: Typography.size.bodyMedium,
-    fontWeight: Typography.weight.semiBold,
+    fontFamily: 'Roboto-SemiBold',
   },
 });

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   View,
   Text,
@@ -10,6 +10,8 @@ import {
   Modal,
   Platform,
   KeyboardAvoidingView,
+  Keyboard,
+  findNodeHandle,
   Switch,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -159,6 +161,39 @@ const PersonalInfoInputScreen: React.FC<PersonalInfoInputScreenProps> = ({
     title: '',
   });
 
+  const [keyboardHeight, setKeyboardHeight] = useState(0);
+  const scrollViewRef = useRef<any>(null);
+
+  useEffect(() => {
+    const showEvent = Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow';
+    const hideEvent = Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide';
+
+    const showSub = Keyboard.addListener(showEvent, (e) => {
+      setKeyboardHeight(e.endCoordinates ? e.endCoordinates.height : 0);
+    });
+    const hideSub = Keyboard.addListener(hideEvent, () => {
+      setKeyboardHeight(0);
+    });
+
+    return () => {
+      showSub.remove();
+      hideSub.remove();
+    };
+  }, []);
+
+  const handleInputFocus = (event: any) => {
+    if (scrollViewRef.current) {
+      const nodeHandle = findNodeHandle(event.target);
+      if (nodeHandle) {
+        setTimeout(() => {
+          (scrollViewRef.current as any)
+            ?.getScrollResponder?.()
+            ?.scrollResponderScrollNativeHandleToKeyboard(nodeHandle, 120, true);
+        }, 120);
+      }
+    }
+  };
+
   const updateField = <K extends keyof PersonalInfoInputFormData>(
     key: K,
     val: PersonalInfoInputFormData[K],
@@ -293,10 +328,17 @@ const PersonalInfoInputScreen: React.FC<PersonalInfoInputScreenProps> = ({
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       >
         <ScrollView
+          ref={scrollViewRef}
           style={styles.scrollContainer}
-          contentContainerStyle={styles.scrollContent}
+          contentContainerStyle={[
+            styles.scrollContent,
+            keyboardHeight > 0
+              ? { paddingBottom: keyboardHeight + 80 }
+              : null,
+          ]}
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
+          onFocus={handleInputFocus}
         >
           {/* ==================================================== */}
           {/* SECTION 1: ABOUT YOU */}
@@ -430,31 +472,95 @@ const PersonalInfoInputScreen: React.FC<PersonalInfoInputScreenProps> = ({
             </TouchableOpacity>
           </View>
 
-          {/* Height and Weight side-by-side */}
+          {/* Height and Weight side-by-side with 2-in-1 Direct Input & Stepper Buttons */}
           <View style={styles.sideBySideRow}>
+            {/* Height */}
             <View style={styles.sideColumn}>
               <Text style={styles.fieldLabel}>Height</Text>
-              <TouchableOpacity
-                activeOpacity={0.7}
-                style={styles.selectorBox}
-                onPress={() => setModalType('height')}
-              >
-                <Text style={styles.selectorText}>{formData.height}</Text>
-                <Feather name="chevron-down" size={18} color="#94A3B8" />
-              </TouchableOpacity>
+              <View style={styles.stepperBox}>
+                <TouchableOpacity
+                  activeOpacity={0.6}
+                  style={styles.stepperBtn}
+                  onPress={() => {
+                    const current = parseInt(formData.height, 10) || 160;
+                    updateField('height', String(Math.max(1, current - 1)));
+                  }}
+                  accessibilityLabel="Decrease height"
+                >
+                  <Feather name="minus" size={14} color="#CBD5E1" />
+                </TouchableOpacity>
+
+                <TextInput
+                  style={styles.stepperInput}
+                  value={formData.height}
+                  onChangeText={(val) => {
+                    const clean = val.replace(/[^0-9]/g, '');
+                    updateField('height', clean);
+                  }}
+                  keyboardType="number-pad"
+                  placeholder="160"
+                  placeholderTextColor="#64748B"
+                  textAlign="center"
+                  maxLength={3}
+                />
+
+                <TouchableOpacity
+                  activeOpacity={0.6}
+                  style={styles.stepperBtn}
+                  onPress={() => {
+                    const current = parseInt(formData.height, 10) || 160;
+                    updateField('height', String(current + 1));
+                  }}
+                  accessibilityLabel="Increase height"
+                >
+                  <Feather name="plus" size={14} color="#CBD5E1" />
+                </TouchableOpacity>
+              </View>
               <Text style={styles.helperText}>cm</Text>
             </View>
 
+            {/* Weight */}
             <View style={styles.sideColumn}>
               <Text style={styles.fieldLabel}>Weight</Text>
-              <TouchableOpacity
-                activeOpacity={0.7}
-                style={styles.selectorBox}
-                onPress={() => setModalType('weight')}
-              >
-                <Text style={styles.selectorText}>{formData.weight}</Text>
-                <Feather name="chevron-down" size={18} color="#94A3B8" />
-              </TouchableOpacity>
+              <View style={styles.stepperBox}>
+                <TouchableOpacity
+                  activeOpacity={0.6}
+                  style={styles.stepperBtn}
+                  onPress={() => {
+                    const current = parseInt(formData.weight, 10) || 60;
+                    updateField('weight', String(Math.max(1, current - 1)));
+                  }}
+                  accessibilityLabel="Decrease weight"
+                >
+                  <Feather name="minus" size={14} color="#CBD5E1" />
+                </TouchableOpacity>
+
+                <TextInput
+                  style={styles.stepperInput}
+                  value={formData.weight}
+                  onChangeText={(val) => {
+                    const clean = val.replace(/[^0-9]/g, '');
+                    updateField('weight', clean);
+                  }}
+                  keyboardType="number-pad"
+                  placeholder="60"
+                  placeholderTextColor="#64748B"
+                  textAlign="center"
+                  maxLength={3}
+                />
+
+                <TouchableOpacity
+                  activeOpacity={0.6}
+                  style={styles.stepperBtn}
+                  onPress={() => {
+                    const current = parseInt(formData.weight, 10) || 60;
+                    updateField('weight', String(current + 1));
+                  }}
+                  accessibilityLabel="Increase weight"
+                >
+                  <Feather name="plus" size={14} color="#CBD5E1" />
+                </TouchableOpacity>
+              </View>
               <Text style={styles.helperText}>kg</Text>
             </View>
           </View>
@@ -1449,7 +1555,7 @@ const styles = StyleSheet.create({
   sectionHeader: {
     color: '#F0913A',
     fontSize: RFValue(11.5),
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     letterSpacing: 0.8,
     marginBottom: 14,
   },
@@ -1459,7 +1565,7 @@ const styles = StyleSheet.create({
   fieldLabel: {
     color: '#94A3B8',
     fontSize: RFValue(12),
-    fontWeight: '500',
+    fontFamily: 'Roboto-Medium',
     marginBottom: 6,
   },
   inputBox: {
@@ -1499,7 +1605,34 @@ const styles = StyleSheet.create({
   selectorText: {
     color: '#FFFFFF',
     fontSize: RFValue(13.5),
-    fontWeight: '500',
+    fontFamily: 'Roboto-Medium',
+  },
+  stepperBox: {
+    height: 50,
+    borderRadius: 14,
+    backgroundColor: '#121C2F',
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.08)',
+    paddingHorizontal: 8,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  stepperBtn: {
+    width: 32,
+    height: 32,
+    borderRadius: 8,
+    backgroundColor: 'rgba(255, 255, 255, 0.06)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  stepperInput: {
+    flex: 1,
+    color: '#FFFFFF',
+    fontSize: RFValue(14),
+    fontFamily: 'Roboto-SemiBold',
+    textAlign: 'center',
+    paddingVertical: 0,
   },
   helperText: {
     color: '#64748B',
@@ -1539,11 +1672,11 @@ const styles = StyleSheet.create({
   pillText: {
     color: '#94A3B8',
     fontSize: RFValue(12.5),
-    fontWeight: '500',
+    fontFamily: 'Roboto-Medium',
   },
   pillTextSelected: {
     color: '#FFFFFF',
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
   },
   sideBySideRow: {
     flexDirection: 'row',
@@ -1604,11 +1737,11 @@ const styles = StyleSheet.create({
   },
   dayTextSelected: {
     color: '#0A111F',
-    fontWeight: '800',
+    fontFamily: 'Roboto-Bold',
   },
   dayTextUnselected: {
     color: '#94A3B8',
-    fontWeight: '600',
+    fontFamily: 'Roboto-SemiBold',
   },
   toggleRowCard: {
     flexDirection: 'row',
@@ -1628,7 +1761,7 @@ const styles = StyleSheet.create({
   toggleRowTitle: {
     color: '#FFFFFF',
     fontSize: RFValue(13),
-    fontWeight: '600',
+    fontFamily: 'Roboto-SemiBold',
   },
   calloutCard: {
     backgroundColor: 'rgba(18, 28, 47, 0.75)',
@@ -1674,7 +1807,7 @@ const styles = StyleSheet.create({
   modalTitle: {
     color: '#FFFFFF',
     fontSize: RFValue(15),
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     marginBottom: 14,
   },
   modalOption: {

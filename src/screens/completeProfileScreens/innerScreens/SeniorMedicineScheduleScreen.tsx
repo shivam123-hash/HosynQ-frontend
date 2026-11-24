@@ -300,7 +300,7 @@ const styles = StyleSheet.create({
     flex: 1,
     color: '#CBD5E1',
     fontSize: RFValue(11.5),
-    fontWeight: '400',
+    fontFamily: 'Roboto-Regular',
   },
   reorderButton: {
     marginLeft: 8,
@@ -308,7 +308,7 @@ const styles = StyleSheet.create({
   reorderButtonText: {
     color: Colors.primary || '#F0913A',
     fontSize: RFValue(12),
-    fontWeight: '600',
+    fontFamily: 'Roboto-SemiBold',
   },
   scrollContainer: {
     flex: 1,
@@ -327,13 +327,13 @@ const styles = StyleSheet.create({
   todayText: {
     color: '#8E9BAE',
     fontSize: RFValue(11),
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     letterSpacing: 1.2,
   },
   takenCountText: {
     color: '#8E9BAE',
     fontSize: RFValue(11),
-    fontWeight: '500',
+    fontFamily: 'Roboto-Medium',
   },
   slotGroup: {
     marginHorizontal: 20,
@@ -342,7 +342,7 @@ const styles = StyleSheet.create({
   timeLabelText: {
     color: Colors.primary || '#F0913A',
     fontSize: RFValue(11.5),
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     letterSpacing: 0.8,
     marginBottom: 8,
   },
@@ -387,7 +387,7 @@ const styles = StyleSheet.create({
   itemNameText: {
     color: '#FFFFFF',
     fontSize: RFValue(13.5),
-    fontWeight: '600',
+    fontFamily: 'Roboto-SemiBold',
   },
   itemDosageText: {
     color: '#8E9BAE',
@@ -410,7 +410,7 @@ const styles = StyleSheet.create({
   },
   statusBadgeText: {
     fontSize: RFValue(11),
-    fontWeight: '600',
+    fontFamily: 'Roboto-SemiBold',
   },
   statusTextTaken: {
     color: '#14B8A6',
@@ -438,7 +438,7 @@ const styles = StyleSheet.create({
   missedDoseTitle: {
     color: '#FFFFFF',
     fontSize: RFValue(13),
-    fontWeight: '600',
+    fontFamily: 'Roboto-SemiBold',
   },
   missedDoseSubtitle: {
     color: '#8E9BAE',

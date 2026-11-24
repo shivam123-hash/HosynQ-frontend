@@ -273,7 +273,7 @@ const styles = StyleSheet.create({
   },
   topBarTitle: {
     fontSize: 20,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     color: '#FFFFFF',
   },
   topBarRightPlaceholder: {
@@ -300,7 +300,7 @@ const styles = StyleSheet.create({
   },
   currentPlanBannerText: {
     fontSize: 14,
-    fontWeight: '500',
+    fontFamily: 'Roboto-Medium',
     color: '#FFFFFF',
     marginLeft: 12,
   },
@@ -332,7 +332,7 @@ const styles = StyleSheet.create({
   },
   planName: {
     fontSize: 16,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     color: '#FFFFFF',
   },
   recommendedBadge: {
@@ -347,7 +347,7 @@ const styles = StyleSheet.create({
   },
   recommendedBadgeText: {
     fontSize: 12,
-    fontWeight: '600',
+    fontFamily: 'Roboto-SemiBold',
     color: '#F0913A',
   },
   currentBadge: {
@@ -362,7 +362,7 @@ const styles = StyleSheet.create({
   },
   currentBadgeText: {
     fontSize: 12,
-    fontWeight: '600',
+    fontFamily: 'Roboto-SemiBold',
     color: '#C8D1DC',
   },
   planSubtitle: {
@@ -410,7 +410,7 @@ const styles = StyleSheet.create({
   },
   confirmBtnText: {
     fontSize: 16,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     color: '#FFFFFF',
   },
 });

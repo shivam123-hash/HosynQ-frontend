@@ -273,7 +273,7 @@ const styles = StyleSheet.create({
   },
   topBarTitle: {
     fontSize: 20,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     color: '#FFFFFF',
   },
   topBarRightPlaceholder: {
@@ -315,7 +315,7 @@ const styles = StyleSheet.create({
   },
   navTitle: {
     fontSize: 15,
-    fontWeight: '600',
+    fontFamily: 'Roboto-SemiBold',
     color: '#FFFFFF',
     marginBottom: 3,
   },
@@ -330,7 +330,7 @@ const styles = StyleSheet.create({
   },
   sectionHeading: {
     fontSize: 13,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     color: '#8A97AB',
     letterSpacing: 1.2,
     textTransform: 'uppercase',
@@ -355,7 +355,7 @@ const styles = StyleSheet.create({
   permTitle: {
     flex: 1,
     fontSize: 15,
-    fontWeight: '600',
+    fontFamily: 'Roboto-SemiBold',
     color: '#FFFFFF',
     marginLeft: 14,
   },
@@ -371,7 +371,7 @@ const styles = StyleSheet.create({
   },
   badgeAllowedText: {
     fontSize: 12,
-    fontWeight: '600',
+    fontFamily: 'Roboto-SemiBold',
     color: '#6FDAA6',
   },
   badgeMuted: {
@@ -380,12 +380,12 @@ const styles = StyleSheet.create({
   },
   badgeMutedText: {
     fontSize: 12,
-    fontWeight: '600',
+    fontFamily: 'Roboto-SemiBold',
     color: '#CCD7E6',
   },
   badgeText: {
     fontSize: 12,
-    fontWeight: '600',
+    fontFamily: 'Roboto-SemiBold',
   },
   infoBanner: {
     flexDirection: 'row',

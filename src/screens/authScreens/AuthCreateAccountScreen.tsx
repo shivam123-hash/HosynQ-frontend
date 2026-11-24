@@ -7,6 +7,8 @@ import {
   TouchableOpacity,
   StatusBar,
   ScrollView,
+  useWindowDimensions,
+  Platform,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Feather from '@react-native-vector-icons/feather';
@@ -14,6 +16,7 @@ import { RFValue } from 'react-native-responsive-fontsize';
 import Colors from '../../units/Colors';
 import ImagePath from '../../units/ImagePath';
 import CommonBtn from '../../components/CommonBtn';
+import { Fonts } from '../../units';
 
 interface AuthCreateAccountScreenProps {
   onBack?: () => void;
@@ -35,31 +38,31 @@ const AuthCreateAccountScreen: React.FC<AuthCreateAccountScreenProps> = ({
   isAppleLoading = false,
 }) => {
   const insets = useSafeAreaInsets();
+  const { width: screenWidth, height: screenHeight } = useWindowDimensions();
+  const isSmallScreen = screenHeight < 700;
+  const logoWidth = Math.min(Math.max(screenWidth * 0.52, 170), 230);
 
   return (
     <View style={[styles.container, { paddingTop: insets.top, paddingBottom: insets.bottom }]}>
       <StatusBar barStyle="light-content" />
-
-      {/* Top Header with Orange Round Back Button */}
-      <View style={styles.header}>
-        <TouchableOpacity
-          onPress={onBack}
-          activeOpacity={0.7}
-          style={styles.backButton}
-        >
-          <Feather name="chevron-left" size={24} color="#FFFFFF" />
-        </TouchableOpacity>
-      </View>
-
       <ScrollView
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
       >
-        {/* Logo and Brand Name */}
-        <View style={styles.logoSection}>
+        <View
+          style={[
+            styles.logoSection,
+          ]}
+        >
           <Image
             source={ImagePath.appIcon}
-            style={styles.logo}
+            style={[
+              styles.logo,
+              {
+                width: logoWidth,
+                marginBottom: isSmallScreen ? 14 : 22,
+              },
+            ]}
             resizeMode="contain"
           />
 
@@ -157,26 +160,27 @@ const styles = StyleSheet.create({
   },
   logoSection: {
     alignItems: 'center',
-    marginTop: 40,
-    marginBottom: 40,
+    justifyContent: 'center',
+    flex: 0.8,
   },
   logo: {
-    width: 220,
-    height: 90,
-    marginBottom: 24,
+    aspectRatio: 4000 / 2232,
+    maxHeight: 160,
   },
   title: {
-    fontSize: RFValue(21),
-    fontWeight: '700',
+    fontSize: Platform.OS === 'android' ? RFValue(18) : RFValue(21),
+    fontFamily: Fonts.medium,
+    
     color: Colors.text,
     textAlign: 'center',
     marginBottom: 10,
   },
   subtitle: {
-    fontSize: RFValue(12.5),
+    fontSize: Platform.OS === 'android' ? RFValue(11) : RFValue(12.5),
+    fontFamily: Fonts.light,
     color: Colors.textSecondary,
     textAlign: 'center',
-    lineHeight: RFValue(18),
+    lineHeight: Platform.OS === 'android' ? RFValue(16) : RFValue(18),
     paddingHorizontal: 16,
   },
   buttonStack: {
@@ -191,7 +195,7 @@ const styles = StyleSheet.create({
   emailLinkText: {
     color: Colors.primary,
     fontSize: RFValue(13.5),
-    fontWeight: '600',
+    fontFamily: 'Roboto-SemiBold',
     textAlign: 'center',
   },
   footerText: {

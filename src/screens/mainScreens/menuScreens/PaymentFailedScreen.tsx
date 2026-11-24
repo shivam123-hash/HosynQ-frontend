@@ -187,7 +187,7 @@ const styles = StyleSheet.create({
   },
   title: {
     fontSize: 26,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     color: '#FFFFFF',
     textAlign: 'center',
     marginBottom: 10,
@@ -222,7 +222,7 @@ const styles = StyleSheet.create({
   reasonValue: {
     flex: 1,
     fontSize: 15,
-    fontWeight: '600',
+    fontFamily: 'Roboto-SemiBold',
     color: '#F7C08E',
     lineHeight: 22,
     paddingRight: 12,
@@ -247,7 +247,7 @@ const styles = StyleSheet.create({
   },
   triedValue: {
     fontSize: 15,
-    fontWeight: '600',
+    fontFamily: 'Roboto-SemiBold',
     color: '#FFFFFF',
     lineHeight: 22,
   },
@@ -268,7 +268,7 @@ const styles = StyleSheet.create({
   },
   primaryBtnText: {
     fontSize: 16,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     color: '#FFFFFF',
   },
   outlineBtn: {
@@ -283,7 +283,7 @@ const styles = StyleSheet.create({
   },
   outlineBtnText: {
     fontSize: 16,
-    fontWeight: '600',
+    fontFamily: 'Roboto-SemiBold',
     color: '#FFFFFF',
   },
   linkBtn: {
@@ -293,7 +293,7 @@ const styles = StyleSheet.create({
   },
   linkBtnText: {
     fontSize: 15,
-    fontWeight: '600',
+    fontFamily: 'Roboto-SemiBold',
     color: '#F0923A',
   },
 });

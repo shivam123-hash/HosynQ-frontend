@@ -301,8 +301,8 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   title: {
-    fontSize: 20,
-    fontWeight: '700',
+    fontSize: 22,
+    fontFamily: 'Roboto-Bold',
     color: '#FFFFFF',
     letterSpacing: -0.2,
     marginBottom: 16,
@@ -328,8 +328,8 @@ const styles = StyleSheet.create({
   },
   roleTitle: {
     fontSize: 16,
-    fontWeight: '700',
-    marginBottom: 4,
+    fontFamily: 'Roboto-SemiBold',
+    letterSpacing: -0.1,
   },
   roleDescription: {
     fontSize: 12.5,
@@ -377,7 +377,7 @@ const styles = StyleSheet.create({
   },
   saveButtonText: {
     fontSize: 16,
-    fontWeight: '700',
+    fontFamily: 'Roboto-SemiBold',
     color: '#FFFFFF',
   },
   buttonDisabled: {

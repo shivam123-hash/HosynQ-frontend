@@ -20,13 +20,24 @@ export const resolveDevHost = (): string => {
     if (scriptURL) {
       const match = scriptURL.match(/^https?:\/\/([^:/]+)/i);
       const host = match?.[1];
-      if (host && host !== 'localhost' && host !== '127.0.0.1') {
+      if (host) {
+        // When Metro is on localhost (standard React Native with adb reverse on Android, or simulator on iOS),
+        // localhost routes directly to Mac with zero Wi-Fi or firewall latency!
+        if (host === 'localhost' || host === '127.0.0.1') {
+          return 'localhost';
+        }
         return host;
       }
     }
   } catch (e) {
     // fallback below
   }
+
+  // On Android, localhost connects via adb reverse tcp:5000 tcp:5000 (or emulator loopback)
+  if (Platform.OS === 'android') {
+    return 'localhost';
+  }
+
   return DEV_MACHINE_IP;
 };
 
@@ -36,6 +47,8 @@ const API_ROUTES = {
   // Auth & Session Endpoints
   AUTH_SEND_OTP: 'auth/send-otp',
   AUTH_VERIFY_OTP: 'auth/verify-otp',
+  AUTH_GOOGLE: 'auth/google',
+  AUTH_APPLE: 'auth/apple',
   AUTH_REFRESH: 'auth/refresh',
   AUTH_EMAIL_SEND_LINK: 'auth/email/send-link',
   AUTH_EMAIL_VERIFY: 'auth/email/verify',

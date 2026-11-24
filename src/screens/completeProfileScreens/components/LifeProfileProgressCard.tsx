@@ -62,12 +62,12 @@ const styles = StyleSheet.create({
   percentageText: {
     color: '#FFFFFF',
     fontSize: RFValue(14),
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
   },
   sectionsCountText: {
     color: Colors.textSecondary,
     fontSize: RFValue(12),
-    fontWeight: '500',
+    fontFamily: 'Roboto-Medium',
   },
   progressBarTrack: {
     height: 6,
@@ -84,7 +84,7 @@ const styles = StyleSheet.create({
   hintText: {
     color: '#94A3B8',
     fontSize: RFValue(12.5),
-    fontWeight: '400',
+    fontFamily: 'Roboto-Light',
   },
 });
 

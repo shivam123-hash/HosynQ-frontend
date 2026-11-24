@@ -350,6 +350,14 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     paddingHorizontal: 20,
     position: 'relative',
+    marginBottom: 8,
+  },
+  headerTitle: {
+    fontSize: 17,
+    fontFamily: 'Roboto-Bold',
+    color: '#FFFFFF',
+    letterSpacing: -0.2,
+    textAlign: 'center',
   },
   backButton: {
     position: 'absolute',
@@ -389,12 +397,12 @@ const styles = StyleSheet.create({
   },
   ownerBadgeText: {
     fontSize: 12,
-    fontWeight: '600',
+    fontFamily: 'Roboto-SemiBold',
     color: '#F06A6D',
   },
   title: {
     fontSize: 22,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     color: '#FFFFFF',
     letterSpacing: -0.3,
     marginBottom: 8,
@@ -406,10 +414,11 @@ const styles = StyleSheet.create({
     marginBottom: 24,
   },
   sectionLabel: {
-    fontSize: 12,
-    fontWeight: '700',
-    color: '#8997AB',
-    letterSpacing: 1.1,
+    fontSize: 11,
+    fontFamily: 'Roboto-Bold',
+    color: '#8A9BAE',
+    letterSpacing: 1.2,
+    textTransform: 'uppercase',
     marginBottom: 10,
   },
   itemsCard: {
@@ -428,14 +437,15 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   itemCross: {
-    fontSize: 13,
+    fontSize: 15,
+    fontFamily: 'Roboto-Bold',
     color: '#F06A6D',
     fontWeight: '800',
   },
   itemText: {
     fontSize: 14.5,
-    color: '#CAD4DF',
-    fontWeight: '500',
+    color: '#E0E7F0',
+    fontFamily: 'Roboto-Medium',
   },
   divider: {
     height: 1,
@@ -443,10 +453,9 @@ const styles = StyleSheet.create({
     marginLeft: 42,
   },
   inputLabel: {
-    fontSize: 12,
-    fontWeight: '700',
-    color: '#8997AB',
-    letterSpacing: 1.1,
+    fontSize: 13,
+    color: '#8A9BAE',
+    fontFamily: 'Roboto-Medium',
     marginBottom: 8,
     textTransform: 'uppercase',
   },
@@ -465,6 +474,7 @@ const styles = StyleSheet.create({
   },
   textInput: {
     fontSize: 15,
+    fontFamily: 'Roboto-SemiBold',
     color: '#FFFFFF',
     fontWeight: '600',
   },
@@ -476,9 +486,9 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
   },
   downloadText: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#F0913A',
+    fontSize: 13.5,
+    fontFamily: 'Roboto-SemiBold',
+    color: '#F0923A',
   },
   bottomBar: {
     position: 'absolute',
@@ -504,7 +514,7 @@ const styles = StyleSheet.create({
   },
   deleteButtonText: {
     fontSize: 15.5,
-    fontWeight: '700',
+    fontFamily: 'Roboto-SemiBold',
     color: '#FFFFFF',
   },
   cancelButton: {
@@ -514,7 +524,7 @@ const styles = StyleSheet.create({
   },
   cancelButtonText: {
     fontSize: 14.5,
-    fontWeight: '500',
+    fontFamily: 'Roboto-Medium',
     color: '#8A9BAE',
   },
 });

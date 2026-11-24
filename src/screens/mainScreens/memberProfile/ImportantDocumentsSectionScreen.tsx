@@ -200,7 +200,7 @@ const styles = StyleSheet.create({
   },
   headerTitle: {
     fontSize: 17,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     color: '#FFFFFF',
     letterSpacing: -0.2,
   },
@@ -241,7 +241,7 @@ const styles = StyleSheet.create({
   },
   bannerText: {
     fontSize: 14,
-    fontWeight: '500',
+    fontFamily: 'Roboto-Medium',
     color: '#FFFFFF',
     flex: 1,
   },
@@ -281,7 +281,7 @@ const styles = StyleSheet.create({
   },
   docTitle: {
     fontSize: 15.5,
-    fontWeight: '600',
+    fontFamily: 'Roboto-SemiBold',
     color: '#FFFFFF',
     marginRight: 8,
   },
@@ -300,7 +300,7 @@ const styles = StyleSheet.create({
   },
   badgeOrangeText: {
     fontSize: 11.5,
-    fontWeight: '600',
+    fontFamily: 'Roboto-SemiBold',
     color: '#F6C08E',
   },
   divider: {
@@ -323,7 +323,7 @@ const styles = StyleSheet.create({
   },
   addButtonText: {
     fontSize: 16,
-    fontWeight: '600',
+    fontFamily: 'Roboto-SemiBold',
     color: '#FFFFFF',
   },
 });

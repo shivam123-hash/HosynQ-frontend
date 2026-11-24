@@ -21,7 +21,7 @@ import {
   fetchMedicinesThunk,
 } from '../../../redux/features/medicine/medicineSlice';
 import { fetchLifeProfileFullThunk } from '../../../redux/features/lifeProfile/lifeProfileSlice';
-import { getMyMemberId } from '../../../units/asyncStorageManager';
+import { getMyMemberId } from '../../../units/AsyncStorageManager';
 
 export interface MedicineDetailsScreenProps {
   medicineId: string;
@@ -495,12 +495,12 @@ const styles = StyleSheet.create({
   headerTitleText: {
     color: '#FFFFFF',
     fontSize: RFValue(15),
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
   },
   headerSubtitleText: {
     color: '#8E9BAE',
     fontSize: RFValue(11),
-    fontWeight: '400',
+    fontFamily: 'Roboto-Regular',
     marginTop: 2,
   },
   headerSpacer: {
@@ -553,7 +553,7 @@ const styles = StyleSheet.create({
   heroNameText: {
     color: '#FFFFFF',
     fontSize: RFValue(18),
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
   },
   heroPurposeText: {
     color: '#8E9BAE',
@@ -575,7 +575,7 @@ const styles = StyleSheet.create({
   chipText: {
     color: '#E2E8F0',
     fontSize: RFValue(11),
-    fontWeight: '600',
+    fontFamily: 'Roboto-SemiBold',
   },
   chipTiming: {
     backgroundColor: 'rgba(240, 145, 58, 0.15)',
@@ -583,7 +583,7 @@ const styles = StyleSheet.create({
   chipTimingText: {
     color: '#F0913A',
     fontSize: RFValue(11),
-    fontWeight: '600',
+    fontFamily: 'Roboto-SemiBold',
   },
   refillBanner: {
     flexDirection: 'row',
@@ -604,7 +604,7 @@ const styles = StyleSheet.create({
   refillTitle: {
     color: '#F0913A',
     fontSize: RFValue(12),
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
   },
   refillSubtitle: {
     color: '#E2E8F0',
@@ -621,14 +621,14 @@ const styles = StyleSheet.create({
   sectionHeaderText: {
     color: '#F0913A',
     fontSize: RFValue(11),
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     letterSpacing: 1.2,
     textTransform: 'uppercase',
   },
   sectionHeaderBadge: {
     color: '#8E9BAE',
     fontSize: RFValue(11),
-    fontWeight: '500',
+    fontFamily: 'Roboto-Medium',
   },
   cardContainer: {
     backgroundColor: '#131F33',
@@ -664,7 +664,7 @@ const styles = StyleSheet.create({
   doseTitle: {
     color: '#FFFFFF',
     fontSize: RFValue(13),
-    fontWeight: '600',
+    fontFamily: 'Roboto-SemiBold',
   },
   doseSubtitle: {
     color: '#8E9BAE',
@@ -682,7 +682,7 @@ const styles = StyleSheet.create({
   timeBadgeText: {
     color: '#FFFFFF',
     fontSize: RFValue(12),
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
   },
   infoRow: {
     flexDirection: 'row',
@@ -705,12 +705,12 @@ const styles = StyleSheet.create({
   infoLabel: {
     color: '#8E9BAE',
     fontSize: RFValue(11),
-    fontWeight: '500',
+    fontFamily: 'Roboto-Medium',
   },
   infoValue: {
     color: '#FFFFFF',
     fontSize: RFValue(13),
-    fontWeight: '600',
+    fontFamily: 'Roboto-SemiBold',
     marginTop: 2,
   },
   deleteButton: {
@@ -731,7 +731,7 @@ const styles = StyleSheet.create({
   deleteButtonText: {
     color: '#EF4444',
     fontSize: RFValue(13),
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
   },
 });
 

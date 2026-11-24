@@ -248,7 +248,7 @@ const styles = StyleSheet.create({
   educationHeader: {
     color: '#8E9BAE',
     fontSize: RFValue(11),
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     letterSpacing: 0.8,
     marginHorizontal: 20,
     marginTop: 22,
@@ -282,7 +282,7 @@ const styles = StyleSheet.create({
   careerTitle: {
     color: '#FFFFFF',
     fontSize: RFValue(14),
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
   },
   careerSubtitle: {
     color: '#8E9BAE',

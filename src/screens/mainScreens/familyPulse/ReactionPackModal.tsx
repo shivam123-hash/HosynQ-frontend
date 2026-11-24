@@ -205,21 +205,21 @@ const styles = StyleSheet.create({
   },
   title: {
     fontSize: 22,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     color: Colors.white,
     textAlign: 'left',
     marginBottom: 4,
   },
   subtitle: {
     fontSize: 14,
-    fontWeight: '500',
+    fontFamily: 'Roboto-Medium',
     color: '#8A97AB',
     textAlign: 'left',
     marginBottom: 20,
   },
   sectionKicker: {
     fontSize: 12,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     color: '#8A97AB',
     letterSpacing: 0.8,
     textAlign: 'left',
@@ -260,12 +260,12 @@ const styles = StyleSheet.create({
   },
   reactionLabel: {
     fontSize: 13,
-    fontWeight: '600',
+    fontFamily: 'Roboto-SemiBold',
     color: '#CAD4DF',
   },
   reactionLabelSelected: {
     color: Colors.white,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
   },
   reactorsRow: {
     flexDirection: 'row',
@@ -293,13 +293,13 @@ const styles = StyleSheet.create({
   },
   avatarDotText: {
     fontSize: 9,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     color: Colors.white,
   },
   reactorsText: {
     fontSize: 13,
     color: '#8A97AB',
-    fontWeight: '500',
+    fontFamily: 'Roboto-Medium',
   },
   removeBtn: {
     alignItems: 'center',
@@ -308,7 +308,7 @@ const styles = StyleSheet.create({
   },
   removeBtnText: {
     fontSize: 14,
-    fontWeight: '600',
+    fontFamily: 'Roboto-SemiBold',
     color: '#8A97AB',
   },
 });

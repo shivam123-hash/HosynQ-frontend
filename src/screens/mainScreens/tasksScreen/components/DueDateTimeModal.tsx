@@ -779,7 +779,7 @@ const styles = StyleSheet.create({
   },
   title: {
     fontSize: 22,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     color: '#FFFFFF',
     textAlign: 'center',
     marginBottom: 16,
@@ -815,12 +815,12 @@ const styles = StyleSheet.create({
   },
   quickChipText: {
     fontSize: 14,
-    fontWeight: '600',
+    fontFamily: 'Roboto-SemiBold',
     color: '#CAD4DF',
   },
   quickChipTextSelected: {
     color: '#0B1A2F',
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
   },
   chipDisabled: {
     opacity: 0.4,
@@ -851,7 +851,7 @@ const styles = StyleSheet.create({
   },
   monthTitle: {
     fontSize: 16,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     color: '#FFFFFF',
   },
   weekHeadersRow: {
@@ -863,7 +863,7 @@ const styles = StyleSheet.create({
     flex: 1,
     textAlign: 'center',
     fontSize: 12,
-    fontWeight: '600',
+    fontFamily: 'Roboto-SemiBold',
     color: '#8A97AB',
   },
   daysGrid: {
@@ -893,7 +893,7 @@ const styles = StyleSheet.create({
   },
   dayText: {
     fontSize: 14,
-    fontWeight: '600',
+    fontFamily: 'Roboto-SemiBold',
     color: '#FFFFFF',
   },
   otherMonthDayText: {
@@ -901,11 +901,11 @@ const styles = StyleSheet.create({
   },
   selectedDayText: {
     color: '#0B1A2F',
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
   },
   sectionHeader: {
     fontSize: 11,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     letterSpacing: 1.2,
     color: '#8A97AB',
     marginBottom: 10,
@@ -916,6 +916,89 @@ const styles = StyleSheet.create({
     gap: 8,
     marginBottom: 8,
   },
+  timePickerCard: {
+    backgroundColor: 'transparent',
+    borderRadius: 16,
+    borderWidth: 1.5,
+    borderColor: '#3A4556',
+    padding: 14,
+    marginBottom: 16,
+  },
+  timePickerTitle: {
+    fontSize: 14,
+    fontFamily: 'Roboto-Bold',
+    color: '#CAD4DF',
+    marginBottom: 8,
+  },
+  timePickerSubLabel: {
+    fontSize: 11,
+    fontFamily: 'Roboto-SemiBold',
+    color: '#8A97AB',
+    marginBottom: 6,
+    textTransform: 'uppercase',
+  },
+  timePickerScrollRow: {
+    flexDirection: 'row',
+    gap: 8,
+    paddingBottom: 10,
+  },
+  minutePeriodRow: {
+    flexDirection: 'row',
+    gap: 16,
+    marginBottom: 10,
+  },
+  minuteColumn: {
+    flex: 2,
+  },
+  minutePillsRow: {
+    flexDirection: 'row',
+    gap: 6,
+  },
+  periodColumn: {
+    flex: 1,
+  },
+  periodPillsRow: {
+    flexDirection: 'row',
+    gap: 6,
+  },
+  timeNumberPill: {
+    height: 34,
+    paddingHorizontal: 12,
+    borderRadius: 8,
+    backgroundColor: 'transparent',
+    borderWidth: 1.5,
+    borderColor: '#3A4556',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  timeNumberPillActive: {
+    backgroundColor: '#F0913A',
+    borderColor: '#F0913A',
+  },
+  timeNumberText: {
+    fontSize: 13,
+    fontFamily: 'Roboto-SemiBold',
+    color: '#CAD4DF',
+  },
+  timeNumberTextActive: {
+    color: '#0B1A2F',
+    fontFamily: 'Roboto-Bold',
+  },
+  applyTimeBtn: {
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: 'transparent',
+    borderWidth: 1.5,
+    borderColor: '#F0913A',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginTop: 6,
+  },
+  applyTimeBtnText: {
+    fontSize: 14,
+    fontFamily: 'Roboto-Bold',
+    color: '#F0913A',
+  },
   switchRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -925,7 +1008,7 @@ const styles = StyleSheet.create({
   },
   switchLabel: {
     fontSize: 16,
-    fontWeight: '600',
+    fontFamily: 'Roboto-SemiBold',
     color: '#FFFFFF',
   },
   doneBtn: {
@@ -938,7 +1021,7 @@ const styles = StyleSheet.create({
   },
   doneBtnText: {
     fontSize: 16,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     color: '#FFFFFF',
   },
 });

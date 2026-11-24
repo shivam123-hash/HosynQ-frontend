@@ -465,7 +465,7 @@ const styles = StyleSheet.create({
   },
   headerTitle: {
     fontSize: 20,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     color: '#FFFFFF',
     letterSpacing: -0.2,
     textAlign: 'center',
@@ -500,9 +500,9 @@ const styles = StyleSheet.create({
   },
   colorPaletteLabel: {
     fontSize: 13,
-    color: '#8A9BAE',
-    marginBottom: 8,
-    fontWeight: '500',
+    color: '#CAD4DF',
+    fontFamily: 'Roboto-Medium',
+    marginBottom: 10,
   },
   dotsRow: {
     flexDirection: 'row',
@@ -520,10 +520,9 @@ const styles = StyleSheet.create({
     transform: [{ scale: 1.15 }],
   },
   inputLabel: {
-    fontSize: 12,
-    fontWeight: '700',
-    color: '#8997AB',
-    letterSpacing: 1.1,
+    fontSize: 14,
+    color: '#CAD4DF',
+    fontFamily: 'Roboto-Medium',
     marginTop: 18,
     marginBottom: 8,
     textTransform: 'uppercase',
@@ -545,15 +544,8 @@ const styles = StyleSheet.create({
     flex: 1,
     fontSize: 15,
     color: '#FFFFFF',
-  },
-  textInputDisplay: {
-    flex: 1,
-    fontSize: 15,
-    color: '#FFFFFF',
-    lineHeight: 20,
-  },
-  placeholderText: {
-    color: '#6E8096',
+    fontFamily: 'Roboto-Medium',
+    padding: 0,
   },
   ageHelperText: {
     fontSize: 12.5,
@@ -563,10 +555,11 @@ const styles = StyleSheet.create({
   },
   roleSectionLabel: {
     fontSize: 12,
-    fontWeight: '700',
     color: '#8997AB',
-    letterSpacing: 1.1,
-    marginTop: 20,
+    fontFamily: 'Roboto-Bold',
+    letterSpacing: 1.2,
+    textTransform: 'uppercase',
+    marginTop: 18,
     marginBottom: 10,
   },
   roleChipsRow: {
@@ -593,10 +586,12 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   roleChipTextActive: {
-    color: '#F0913A',
+    color: '#0B1A2F',
+    fontFamily: 'Roboto-Bold',
   },
   roleChipTextInactive: {
-    color: '#8A9BAE',
+    color: '#C8D1DC',
+    fontFamily: 'Roboto-Medium',
   },
   infoNoticeBox: {
     flexDirection: 'row',
@@ -636,8 +631,8 @@ const styles = StyleSheet.create({
     marginRight: 12,
   },
   toggleTitle: {
-    fontSize: 14.5,
-    fontWeight: '600',
+    fontSize: 15,
+    fontFamily: 'Roboto-Bold',
     color: '#FFFFFF',
   },
   toggleSubtitle: {
@@ -661,11 +656,8 @@ const styles = StyleSheet.create({
   },
   addChildButtonText: {
     fontSize: 16,
-    fontWeight: '700',
-    color: '#0B1A2F',
-  },
-  buttonDisabled: {
-    opacity: 0.7,
+    fontFamily: 'Roboto-Bold',
+    color: '#FFFFFF',
   },
 });
 

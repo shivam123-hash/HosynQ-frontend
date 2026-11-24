@@ -85,11 +85,11 @@ const styles = StyleSheet.create({
     lineHeight: 20,
   },
   activeText: {
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     color: '#0B1A2F',
   },
   inactiveText: {
-    fontWeight: '600',
+    fontFamily: 'Roboto-SemiBold',
     color: '#CAD4DF',
   },
 });

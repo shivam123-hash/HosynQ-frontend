@@ -1,4 +1,9 @@
+import Fonts from './FontsStyle';
+
 export const Typography = {
+  // Font Families
+  family: Fonts,
+
   // Font Sizes
   size: {
     micro: 10,

@@ -175,7 +175,7 @@ const styles = StyleSheet.create({
   },
   topBarTitle: {
     fontSize: 20,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     color: Colors.white,
     letterSpacing: -0.3,
   },
@@ -208,19 +208,19 @@ const styles = StyleSheet.create({
   },
   brandTitleHosyn: {
     fontSize: 32,
-    fontWeight: '800',
+    fontFamily: 'Roboto-Bold',
     color: Colors.white,
     letterSpacing: -0.5,
   },
   brandTitleQ: {
     fontSize: 32,
-    fontWeight: '800',
+    fontFamily: 'Roboto-Bold',
     color: Colors.primary,
     letterSpacing: -0.5,
   },
   brandSubtitle: {
     fontSize: 15,
-    fontWeight: '500',
+    fontFamily: 'Roboto-Medium',
     color: Colors.textSecondaryMuted,
     marginTop: 8,
   },
@@ -270,7 +270,7 @@ const styles = StyleSheet.create({
   },
   rowTitle: {
     fontSize: 15,
-    fontWeight: '600',
+    fontFamily: 'Roboto-SemiBold',
     color: Colors.white,
   },
   divider: {

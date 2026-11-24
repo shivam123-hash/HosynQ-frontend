@@ -63,18 +63,16 @@ const styles = StyleSheet.create({
     height: 18,
   },
   dateText: {
-    fontFamily: 'Roboto',
     fontSize: 13,
     lineHeight: 18,
     color: '#C9D1DC',
-    fontWeight: '500',
+    fontFamily: 'Roboto-Medium',
   },
   updatedText: {
-    fontFamily: 'Roboto',
     fontSize: 13,
     lineHeight: 18,
     color: '#8A97AB',
-    fontWeight: '400',
+    fontFamily: 'Roboto-Regular',
   },
   card: {
     backgroundColor: '#122440',
@@ -84,15 +82,14 @@ const styles = StyleSheet.create({
     padding: 18,
   },
   summaryText: {
-    fontFamily: 'Roboto',
     fontSize: 17,
     lineHeight: 27,
     color: '#E6EBF2',
     letterSpacing: 0.34,
-    fontWeight: '400',
+    fontFamily: 'Roboto-Regular',
   },
   boldText: {
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     color: '#FFFFFF',
   },
 });

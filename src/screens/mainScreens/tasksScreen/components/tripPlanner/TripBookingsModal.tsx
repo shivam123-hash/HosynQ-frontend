@@ -258,7 +258,7 @@ const styles = StyleSheet.create({
   },
   headerTitle: {
     fontSize: 18,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     color: '#FFFFFF',
   },
   headerPlaceholder: {
@@ -271,7 +271,7 @@ const styles = StyleSheet.create({
   },
   subtitle: {
     fontSize: 15,
-    fontWeight: '400',
+    fontFamily: 'Roboto-Light',
     color: '#8A97AB',
     lineHeight: 22,
     marginBottom: 20,
@@ -315,12 +315,12 @@ const styles = StyleSheet.create({
   },
   itemTitle: {
     fontSize: 15,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     color: '#FFFFFF',
   },
   itemSubtitle: {
     fontSize: 13,
-    fontWeight: '500',
+    fontFamily: 'Roboto-Medium',
     color: '#8A97AB',
     marginTop: 2,
   },
@@ -334,7 +334,7 @@ const styles = StyleSheet.create({
   },
   reminderText: {
     fontSize: 12,
-    fontWeight: '500',
+    fontFamily: 'Roboto-Medium',
     color: '#8A97AB',
   },
   rightActionCol: {
@@ -352,7 +352,7 @@ const styles = StyleSheet.create({
   bookedBadgeText: {
     color: '#2DD4BF',
     fontSize: 12,
-    fontWeight: '600',
+    fontFamily: 'Roboto-SemiBold',
   },
   orangeNotBookedBadge: {
     borderWidth: 1,
@@ -365,7 +365,7 @@ const styles = StyleSheet.create({
   orangeNotBookedText: {
     color: '#F0913A',
     fontSize: 12,
-    fontWeight: '600',
+    fontFamily: 'Roboto-SemiBold',
   },
   slateNotBookedBadge: {
     borderWidth: 1,
@@ -378,7 +378,7 @@ const styles = StyleSheet.create({
   slateNotBookedText: {
     color: '#CAD4DF',
     fontSize: 12,
-    fontWeight: '600',
+    fontFamily: 'Roboto-SemiBold',
   },
   markBookedBtn: {
     marginTop: 8,
@@ -387,11 +387,11 @@ const styles = StyleSheet.create({
   markBookedText: {
     color: '#F0913A',
     fontSize: 13,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
   },
   sectionHeader: {
     fontSize: 11,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     color: '#8A97AB',
     letterSpacing: 1.2,
     marginTop: 24,
@@ -408,7 +408,7 @@ const styles = StyleSheet.create({
   checkBadgeText: {
     color: '#CAD4DF',
     fontSize: 12,
-    fontWeight: '600',
+    fontFamily: 'Roboto-SemiBold',
   },
   notNeededBadge: {
     borderWidth: 1,
@@ -421,7 +421,7 @@ const styles = StyleSheet.create({
   notNeededBadgeText: {
     color: '#2DD4BF',
     fontSize: 12,
-    fontWeight: '600',
+    fontFamily: 'Roboto-SemiBold',
   },
   dashedAddBtn: {
     flexDirection: 'row',
@@ -440,7 +440,7 @@ const styles = StyleSheet.create({
   },
   dashedAddText: {
     fontSize: 15,
-    fontWeight: '600',
+    fontFamily: 'Roboto-SemiBold',
     color: '#F0913A',
   },
 });

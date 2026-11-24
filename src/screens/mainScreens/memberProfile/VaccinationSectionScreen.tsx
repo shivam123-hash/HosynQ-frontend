@@ -435,7 +435,7 @@ const styles = StyleSheet.create({
   },
   headerTitle: {
     fontSize: 17,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     color: '#FFFFFF',
     letterSpacing: -0.2,
   },
@@ -483,12 +483,12 @@ const styles = StyleSheet.create({
   },
   segmentText: {
     fontSize: 14.5,
-    fontWeight: '600',
+    fontFamily: 'Roboto-SemiBold',
     color: '#C8D1DC',
   },
   segmentTextActive: {
     color: '#0B1A2F',
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
   },
   urgentCard: {
     flexDirection: 'row',
@@ -509,7 +509,7 @@ const styles = StyleSheet.create({
   },
   urgentTitle: {
     fontSize: 15,
-    fontWeight: '600',
+    fontFamily: 'Roboto-SemiBold',
     color: '#F6C08E',
     marginBottom: 2,
   },
@@ -519,7 +519,7 @@ const styles = StyleSheet.create({
   },
   remindButtonText: {
     fontSize: 14.5,
-    fontWeight: '600',
+    fontFamily: 'Roboto-SemiBold',
     color: '#F6C08E',
   },
   card: {
@@ -556,7 +556,7 @@ const styles = StyleSheet.create({
   },
   vaccineTitle: {
     fontSize: 15.5,
-    fontWeight: '600',
+    fontFamily: 'Roboto-SemiBold',
     color: '#FFFFFF',
     flex: 1,
     marginRight: 10,
@@ -578,7 +578,7 @@ const styles = StyleSheet.create({
   },
   badgeDoneText: {
     fontSize: 11.5,
-    fontWeight: '600',
+    fontFamily: 'Roboto-SemiBold',
     color: '#4CC38A',
     textAlign: 'center',
   },
@@ -594,7 +594,7 @@ const styles = StyleSheet.create({
   },
   badgeOrangeText: {
     fontSize: 11.5,
-    fontWeight: '600',
+    fontFamily: 'Roboto-SemiBold',
     color: '#F6C08E',
     textAlign: 'center',
   },
@@ -610,7 +610,7 @@ const styles = StyleSheet.create({
   },
   badgeSlateText: {
     fontSize: 11.5,
-    fontWeight: '600',
+    fontFamily: 'Roboto-SemiBold',
     color: '#C8D1DC',
     textAlign: 'center',
   },
@@ -641,7 +641,7 @@ const styles = StyleSheet.create({
   },
   addButtonText: {
     fontSize: 16,
-    fontWeight: '600',
+    fontFamily: 'Roboto-SemiBold',
     color: '#FFFFFF',
   },
 });

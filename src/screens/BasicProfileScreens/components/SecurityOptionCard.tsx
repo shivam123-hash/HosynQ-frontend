@@ -148,7 +148,7 @@ const styles = StyleSheet.create({
   },
   titleText: {
     fontSize: RFValue(14.5),
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     color: '#FFFFFF',
   },
   recommendedBadge: {
@@ -161,7 +161,7 @@ const styles = StyleSheet.create({
   recommendedText: {
     color: Colors.primary,
     fontSize: RFValue(9.5),
-    fontWeight: '600',
+    fontFamily: 'Roboto-SemiBold',
   },
   descriptionText: {
     fontSize: RFValue(11.5),

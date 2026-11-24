@@ -66,7 +66,7 @@ const styles = StyleSheet.create({
     color: Colors.textSecondary,
     fontSize: RFValue(11),
     letterSpacing: 1.5,
-    fontWeight: '600',
+    fontFamily: 'Roboto-SemiBold',
     textTransform: 'uppercase',
   },
   roleBadge: {
@@ -78,7 +78,7 @@ const styles = StyleSheet.create({
   roleBadgeText: {
     color: '#FFFFFF',
     fontSize: RFValue(11),
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
   },
   itemsList: {
     gap: 12,

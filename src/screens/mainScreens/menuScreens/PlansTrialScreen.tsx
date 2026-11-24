@@ -278,7 +278,7 @@ const styles = StyleSheet.create({
   },
   topBarTitle: {
     fontSize: 20,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     color: '#FFFFFF',
   },
   topBarRightPlaceholder: {
@@ -312,12 +312,12 @@ const styles = StyleSheet.create({
   },
   segmentText: {
     fontSize: 14,
-    fontWeight: '600',
+    fontFamily: 'Roboto-SemiBold',
     color: '#C8D1DC',
   },
   segmentTextActive: {
     color: '#0A1320',
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
   },
   premiumCard: {
     backgroundColor: '#1A2B47',
@@ -339,7 +339,7 @@ const styles = StyleSheet.create({
   },
   premiumBadgeText: {
     fontSize: 13,
-    fontWeight: '800',
+    fontFamily: 'Roboto-Bold',
     color: '#F0923A',
     letterSpacing: 1.2,
   },
@@ -355,12 +355,12 @@ const styles = StyleSheet.create({
   },
   recommendedBadgeText: {
     fontSize: 12,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     color: '#F0923A',
   },
   premiumPrice: {
     fontSize: 26,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     color: '#FFFFFF',
     marginBottom: 4,
   },
@@ -395,7 +395,7 @@ const styles = StyleSheet.create({
   },
   freeBadgeText: {
     fontSize: 13,
-    fontWeight: '800',
+    fontFamily: 'Roboto-Bold',
     color: '#8A97AB',
     letterSpacing: 1.2,
   },
@@ -411,12 +411,12 @@ const styles = StyleSheet.create({
   },
   currentBadgeText: {
     fontSize: 12,
-    fontWeight: '600',
+    fontFamily: 'Roboto-SemiBold',
     color: '#FFFFFF',
   },
   freePrice: {
     fontSize: 26,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     color: '#FFFFFF',
     marginTop: 4,
     marginBottom: 16,
@@ -447,7 +447,7 @@ const styles = StyleSheet.create({
   },
   trialBtnText: {
     fontSize: 16,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     color: '#FFFFFF',
   },
 });

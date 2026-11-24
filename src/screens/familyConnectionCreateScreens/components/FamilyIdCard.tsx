@@ -42,7 +42,7 @@ const FamilyIdCard: React.FC<FamilyIdCardProps> = ({
         <Text
           style={[
             styles.copyText,
-            copied && { color: '#2DD4BF', fontWeight: '600' },
+            copied && { color: '#2DD4BF', fontFamily: 'Roboto-SemiBold' },
           ]}
         >
           {copied ? 'Copied!' : 'Copy ID'}
@@ -71,13 +71,13 @@ const styles = StyleSheet.create({
     color: Colors.textSecondary,
     fontSize: RFValue(11),
     letterSpacing: 2,
-    fontWeight: '600',
+    fontFamily: 'Roboto-SemiBold',
     textTransform: 'uppercase',
   },
   familyIdText: {
     color: '#FFFFFF',
     fontSize: RFValue(28),
-    fontWeight: '800',
+    fontFamily: 'Roboto-Bold',
     letterSpacing: 3,
     marginVertical: 10,
   },
@@ -93,7 +93,7 @@ const styles = StyleSheet.create({
   copyText: {
     color: Colors.textSecondary,
     fontSize: RFValue(13),
-    fontWeight: '500',
+    fontFamily: 'Roboto-Medium',
   },
 });
 

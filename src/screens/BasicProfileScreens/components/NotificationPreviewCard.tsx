@@ -82,18 +82,18 @@ const styles = StyleSheet.create({
   },
   categoryText: {
     fontSize: RFValue(10.5),
-    fontWeight: '600',
+    fontFamily: 'Roboto-SemiBold',
     color: '#8E9AA8',
     letterSpacing: 0.5,
   },
   timestampText: {
     fontSize: RFValue(10.5),
     color: '#8E9AA8',
-    fontWeight: '500',
+    fontFamily: 'Roboto-Medium',
   },
   titleText: {
     fontSize: RFValue(13.5),
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     color: '#FFFFFF',
     marginBottom: 2,
   },

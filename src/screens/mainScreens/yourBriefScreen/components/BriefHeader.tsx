@@ -79,13 +79,12 @@ const styles = StyleSheet.create({
   sparkleIcon: {
     fontSize: 18,
     color: Colors.primary, // #F0913A
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
   },
   titleText: {
-    fontFamily: 'Roboto',
     fontSize: 19,
     lineHeight: 24,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     color: '#B6B8B8',
   },
 });

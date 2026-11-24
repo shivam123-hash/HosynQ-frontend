@@ -91,10 +91,9 @@ const styles = StyleSheet.create({
     marginTop: 24,
   },
   sectionTitle: {
-    fontFamily: 'Roboto',
     fontSize: 19,
     lineHeight: 24,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     color: '#B6B8B8',
     marginBottom: 12,
   },
@@ -119,12 +118,11 @@ const styles = StyleSheet.create({
   },
   suggestionText: {
     flex: 1,
-    fontFamily: 'Roboto',
     fontSize: 15,
     lineHeight: 22,
     letterSpacing: 0.15,
     color: '#E6EBF2',
-    fontWeight: '400',
+    fontFamily: 'Roboto-Regular',
   },
   buttonsRow: {
     flexDirection: 'row',
@@ -143,10 +141,9 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   confirmText: {
-    fontFamily: 'Roboto',
     fontSize: 15,
     lineHeight: 20,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     color: '#B6B8B8',
   },
   editButton: {
@@ -162,10 +159,9 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   editText: {
-    fontFamily: 'Roboto',
     fontSize: 15,
     lineHeight: 20,
-    fontWeight: '500',
+    fontFamily: 'Roboto-Medium',
     color: '#C9D1DC',
   },
   ignoreButton: {
@@ -177,10 +173,9 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   ignoreText: {
-    fontFamily: 'Roboto',
     fontSize: 15,
     lineHeight: 20,
-    fontWeight: '500',
+    fontFamily: 'Roboto-Medium',
     color: '#8A97AB',
   },
   feedbackRow: {
@@ -189,7 +184,7 @@ const styles = StyleSheet.create({
   feedbackText: {
     fontSize: 13,
     color: Colors.primary,
-    fontWeight: '500',
+    fontFamily: 'Roboto-Medium',
   },
 });
 

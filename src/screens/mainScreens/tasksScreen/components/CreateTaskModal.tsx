@@ -662,7 +662,7 @@ const styles = StyleSheet.create({
   },
   headerTitle: {
     fontSize: 18,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     color: '#CAD4DF',
   },
   spacer: {
@@ -674,7 +674,7 @@ const styles = StyleSheet.create({
   },
   inputLabel: {
     fontSize: 14,
-    fontWeight: '600',
+    fontFamily: 'Roboto-SemiBold',
     color: '#CAD4DF',
     marginBottom: 8,
   },
@@ -690,7 +690,7 @@ const styles = StyleSheet.create({
   },
   titleInput: {
     fontSize: 16,
-    fontWeight: '600',
+    fontFamily: 'Roboto-SemiBold',
     color: '#CAD4DF',
   },
   optionsCard: {
@@ -724,7 +724,7 @@ const styles = StyleSheet.create({
   },
   optionValue: {
     fontSize: 15,
-    fontWeight: '600',
+    fontFamily: 'Roboto-SemiBold',
     color: '#CAD4DF',
   },
   assigneeBadgeRow: {
@@ -742,7 +742,7 @@ const styles = StyleSheet.create({
   },
   assigneeMiniText: {
     fontSize: 11,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     color: '#F0913A',
   },
   badgeRow: {
@@ -757,7 +757,7 @@ const styles = StyleSheet.create({
   },
   notesLabel: {
     fontSize: 14,
-    fontWeight: '600',
+    fontFamily: 'Roboto-SemiBold',
     color: '#CAD4DF',
     marginBottom: 8,
   },
@@ -798,7 +798,7 @@ const styles = StyleSheet.create({
   },
   createButtonText: {
     fontSize: 16,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     color: '#FFFFFF',
   },
 });

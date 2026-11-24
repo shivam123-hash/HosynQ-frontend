@@ -287,7 +287,7 @@ const styles = StyleSheet.create({
   avatarText: {
     color: '#FFFFFF',
     fontSize: 20,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
   },
   profileInfo: {
     flex: 1,
@@ -295,7 +295,7 @@ const styles = StyleSheet.create({
   },
   userName: {
     fontSize: 16,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     color: '#FFFFFF',
     marginBottom: 2,
   },
@@ -323,7 +323,7 @@ const styles = StyleSheet.create({
   },
   premiumTitle: {
     fontSize: 14,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     color: '#FFFFFF',
   },
   premiumSubtitle: {
@@ -333,7 +333,7 @@ const styles = StyleSheet.create({
   },
   premiumManageText: {
     fontSize: 13,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     color: '#F0923A',
     marginLeft: 8,
   },
@@ -356,7 +356,7 @@ const styles = StyleSheet.create({
   menuTitle: {
     flex: 1,
     fontSize: 15,
-    fontWeight: '500',
+    fontFamily: 'Roboto-Medium',
     color: '#FFFFFF',
     marginLeft: 6,
   },
@@ -377,7 +377,7 @@ const styles = StyleSheet.create({
   },
   logoutText: {
     fontSize: 15,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     color: '#F0923A',
     marginLeft: 10,
   },

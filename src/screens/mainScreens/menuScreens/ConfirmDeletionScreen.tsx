@@ -218,7 +218,7 @@ const styles = StyleSheet.create({
   },
   topBarTitle: {
     fontSize: 20,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     color: '#FFFFFF',
     letterSpacing: -0.3,
   },
@@ -255,7 +255,7 @@ const styles = StyleSheet.create({
   },
   otpInput: {
     fontSize: 20,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     color: '#FFFFFF',
     textAlign: 'center',
     width: '100%',
@@ -276,7 +276,7 @@ const styles = StyleSheet.create({
   },
   resendActiveText: {
     fontSize: 14,
-    fontWeight: '600',
+    fontFamily: 'Roboto-SemiBold',
     color: '#F0913A',
   },
   warningBanner: {
@@ -292,7 +292,7 @@ const styles = StyleSheet.create({
   warningText: {
     fontSize: 14,
     color: '#E6EBF2',
-    fontWeight: '500',
+    fontFamily: 'Roboto-Medium',
     marginLeft: 12,
     flex: 1,
   },
@@ -312,7 +312,7 @@ const styles = StyleSheet.create({
   },
   deleteButtonText: {
     fontSize: 16,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     color: '#FFFFFF',
   },
 });

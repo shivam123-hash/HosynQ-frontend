@@ -143,10 +143,10 @@ const styles = StyleSheet.create({
   },
   tabTextActive: {
     color: '#071526',
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
   },
   tabTextInactive: {
     color: '#8E9BAE',
-    fontWeight: '500',
+    fontFamily: 'Roboto-Medium',
   },
 });

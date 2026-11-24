@@ -595,7 +595,7 @@ const styles = StyleSheet.create({
   },
   promptKicker: {
     fontSize: 11,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     color: Colors.textSubtle,
     letterSpacing: 0.8,
     textAlign: 'center',
@@ -603,7 +603,7 @@ const styles = StyleSheet.create({
   },
   promptTitle: {
     fontSize: 17,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     color: Colors.white,
     textAlign: 'center',
     lineHeight: 22,
@@ -627,14 +627,14 @@ const styles = StyleSheet.create({
   },
   hosynqLineKicker: {
     fontSize: 11,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     color: Colors.primary,
     letterSpacing: 0.8,
     marginBottom: 4,
   },
   hosynqLineText: {
     fontSize: 13,
-    fontWeight: '500',
+    fontFamily: 'Roboto-Medium',
     color: Colors.white,
     lineHeight: 18,
   },
@@ -654,17 +654,17 @@ const styles = StyleSheet.create({
   },
   promptActionBlueText: {
     fontSize: 15,
-    fontWeight: '600',
+    fontFamily: 'Roboto-SemiBold',
     color: Colors.accentBlueLight,
   },
   promptActionBoldBlueText: {
     fontSize: 15,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     color: Colors.accentBlueLight,
   },
   promptActionMutedText: {
     fontSize: 14,
-    fontWeight: '500',
+    fontFamily: 'Roboto-Medium',
     color: Colors.textSubtle,
   },
   overlay: {
@@ -693,7 +693,7 @@ const styles = StyleSheet.create({
   },
   systemKicker: {
     fontSize: 11,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     color: Colors.textSubtle,
     letterSpacing: 0.8,
     textAlign: 'center',
@@ -701,7 +701,7 @@ const styles = StyleSheet.create({
   },
   title: {
     fontSize: 22,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     color: Colors.white,
     textAlign: 'center',
     marginBottom: 6,
@@ -726,7 +726,7 @@ const styles = StyleSheet.create({
   },
   systemPlaceholderText: {
     fontSize: 13,
-    fontWeight: '500',
+    fontFamily: 'Roboto-Medium',
     color: Colors.textSubtle,
   },
   quickActionRow: {
@@ -764,7 +764,7 @@ const styles = StyleSheet.create({
   },
   quickActionText: {
     fontSize: 12.5,
-    fontWeight: '600',
+    fontFamily: 'Roboto-SemiBold',
     color: Colors.white,
     flex: 1,
   },
@@ -788,11 +788,11 @@ const styles = StyleSheet.create({
   tabText: {
     fontSize: 12,
     color: Colors.textSubtle,
-    fontWeight: '600',
+    fontFamily: 'Roboto-SemiBold',
   },
   tabTextActive: {
     color: Colors.cardInsetDark,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
   },
   scrollList: {
     maxHeight: 200,
@@ -829,7 +829,7 @@ const styles = StyleSheet.create({
   },
   fileName: {
     fontSize: 14,
-    fontWeight: '600',
+    fontFamily: 'Roboto-SemiBold',
     color: Colors.white,
     marginBottom: 2,
   },
@@ -848,7 +848,7 @@ const styles = StyleSheet.create({
   },
   cancelBtnText: {
     fontSize: 15,
-    fontWeight: '600',
+    fontFamily: 'Roboto-SemiBold',
     color: Colors.white,
   },
   errorScreenContainer: {
@@ -866,7 +866,7 @@ const styles = StyleSheet.create({
   },
   errorHeaderTitle: {
     fontSize: 17,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     color: Colors.white,
   },
   circleBtn: {
@@ -908,7 +908,7 @@ const styles = StyleSheet.create({
   },
   dropzoneTitle: {
     fontSize: 16,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     color: Colors.white,
     marginTop: 14,
   },
@@ -932,7 +932,7 @@ const styles = StyleSheet.create({
   },
   errorFileName: {
     fontSize: 15,
-    fontWeight: '600',
+    fontFamily: 'Roboto-SemiBold',
     color: Colors.white,
   },
   errorFileDetail: {
@@ -956,7 +956,7 @@ const styles = StyleSheet.create({
   },
   errorBannerTitle: {
     fontSize: 15,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     color: Colors.dangerRed,
   },
   errorBannerBody: {
@@ -982,7 +982,7 @@ const styles = StyleSheet.create({
   },
   chooseAnotherBtnText: {
     fontSize: 16,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     color: Colors.white,
   },
   scanCameraBtn: {
@@ -992,7 +992,7 @@ const styles = StyleSheet.create({
   },
   scanCameraText: {
     fontSize: 15,
-    fontWeight: '600',
+    fontFamily: 'Roboto-SemiBold',
     color: Colors.primary,
   },
   mr12: {

@@ -105,7 +105,7 @@ const styles = StyleSheet.create({
   },
   headline: {
     fontSize: 26,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     color: '#CAD4DF',
     textAlign: 'center',
     marginTop: 28,
@@ -131,12 +131,12 @@ const styles = StyleSheet.create({
   },
   addButtonText: {
     fontSize: 16,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     color: '#FFFFFF',
   },
   suggestionEyebrow: {
     fontSize: 11,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     letterSpacing: 1.2,
     color: '#8A97AB',
     marginTop: 36,
@@ -167,7 +167,7 @@ const styles = StyleSheet.create({
   suggestionText: {
     fontSize: 13,
     color: '#CAD4DF',
-    fontWeight: '500',
+    fontFamily: 'Roboto-Medium',
   },
 });
 

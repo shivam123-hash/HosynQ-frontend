@@ -1,5 +1,5 @@
 import axios, { AxiosError, InternalAxiosRequestConfig } from 'axios';
-import { tokenService } from '../units/tokenServices';
+import { tokenService } from '../units/TokenServices';
 import { getStore } from '../redux/storeRegistry';
 import API_ROUTES, { API_BASE_URL } from '../redux/endPoints/endPoints';
 

@@ -235,10 +235,9 @@ const styles = StyleSheet.create({
     height: 34,
   },
   title: {
-    fontFamily: 'Roboto',
     fontSize: 18,
     lineHeight: 24,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     color: '#FFFFFF',
   },
   openBtn: {
@@ -251,10 +250,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   openText: {
-    fontFamily: 'Roboto',
     fontSize: 12,
     lineHeight: 16,
-    fontWeight: '500',
+    fontFamily: 'Roboto-Medium',
     color: '#F0913A',
   },
   safeBanner: {
@@ -268,10 +266,9 @@ const styles = StyleSheet.create({
     gap: 10,
   },
   safeBannerText: {
-    fontFamily: 'Roboto',
     fontSize: 14,
     lineHeight: 18,
-    fontWeight: '500',
+    fontFamily: 'Roboto-Medium',
     color: '#6FD9A6',
   },
   membersRow: {
@@ -293,10 +290,9 @@ const styles = StyleSheet.create({
     position: 'relative',
   },
   initialsText: {
-    fontFamily: 'Roboto',
     fontSize: 15,
     lineHeight: 20,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
   },
   statusDot: {
     position: 'absolute',
@@ -310,17 +306,15 @@ const styles = StyleSheet.create({
     borderColor: '#122440',
   },
   memberName: {
-    fontFamily: 'Roboto',
     fontSize: 12,
     lineHeight: 16,
-    fontWeight: '500',
+    fontFamily: 'Roboto-Medium',
     color: '#CAD4DF',
   },
   memberStatus: {
-    fontFamily: 'Roboto',
     fontSize: 11,
     lineHeight: 15,
-    fontWeight: '400',
+    fontFamily: 'Roboto-Regular',
     color: '#8A97AB',
   },
   metricsRow: {
@@ -340,18 +334,16 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   metricLabel: {
-    fontFamily: 'Roboto',
     fontSize: 11,
     lineHeight: 14,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     color: '#8A97AB',
     letterSpacing: 1.2,
   },
   metricValue: {
-    fontFamily: 'Roboto',
     fontSize: 14,
     lineHeight: 18,
-    fontWeight: '600',
+    fontFamily: 'Roboto-SemiBold',
     color: '#FFFFFF',
   },
   birthdayBanner: {
@@ -367,10 +359,9 @@ const styles = StyleSheet.create({
     height: 44,
   },
   birthdayText: {
-    fontFamily: 'Roboto',
     fontSize: 13.5,
     lineHeight: 18,
-    fontWeight: '500',
+    fontFamily: 'Roboto-Medium',
     color: '#F6C08E',
     flex: 1,
   },
@@ -394,10 +385,9 @@ const styles = StyleSheet.create({
   },
   suggestionText: {
     flex: 1,
-    fontFamily: 'Roboto',
     fontSize: 13.5,
     lineHeight: 20,
-    fontWeight: '400',
+    fontFamily: 'Roboto-Regular',
     letterSpacing: 0.15,
     color: '#E6EBF2',
   },
@@ -416,9 +406,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   confirmBtnText: {
-    fontFamily: 'Roboto',
     fontSize: 13,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     color: '#0B1A2F',
   },
   editBtn: {
@@ -432,9 +421,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   editBtnText: {
-    fontFamily: 'Roboto',
     fontSize: 13,
-    fontWeight: '500',
+    fontFamily: 'Roboto-Medium',
     color: '#C9D1DC',
   },
   ignoreBtn: {
@@ -444,9 +432,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   ignoreBtnText: {
-    fontFamily: 'Roboto',
     fontSize: 13,
-    fontWeight: '500',
+    fontFamily: 'Roboto-Medium',
     color: '#8A97AB',
   },
   feedbackStateRow: {
@@ -461,21 +448,18 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   feedbackSuccessText: {
-    fontFamily: 'Roboto',
     fontSize: 13,
-    fontWeight: '500',
+    fontFamily: 'Roboto-Medium',
     color: '#4CC38A',
   },
   feedbackIgnoredText: {
-    fontFamily: 'Roboto',
     fontSize: 13,
-    fontWeight: '400',
+    fontFamily: 'Roboto-Regular',
     color: '#8A97AB',
   },
   undoText: {
-    fontFamily: 'Roboto',
     fontSize: 13,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     color: '#F0913A',
   },
 });

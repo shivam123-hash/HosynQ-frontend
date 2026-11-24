@@ -289,20 +289,20 @@ const styles = StyleSheet.create({
   },
   vacationEyebrow: {
     fontSize: 11,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     color: '#2DD4BF',
     letterSpacing: 1.2,
     marginBottom: 4,
   },
   vacationTitle: {
     fontSize: 17,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     color: '#FFFFFF',
     marginBottom: 3,
   },
   vacationSubtitle: {
     fontSize: 13,
-    fontWeight: '500',
+    fontFamily: 'Roboto-Medium',
     color: '#8A97AB',
   },
   gridContainer: {
@@ -350,19 +350,19 @@ const styles = StyleSheet.create({
   },
   clusterInitial: {
     fontSize: 10,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     color: '#FFFFFF',
   },
   listCardTitle: {
     fontSize: 15,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     color: '#FFFFFF',
     marginTop: 10,
     lineHeight: 20,
   },
   listCardSubtitle: {
     fontSize: 13,
-    fontWeight: '500',
+    fontFamily: 'Roboto-Medium',
     color: '#8A97AB',
     marginVertical: 6,
   },
@@ -432,7 +432,7 @@ const styles = StyleSheet.create({
   },
   emptyTitle: {
     fontSize: 22,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     color: '#FFFFFF',
     marginBottom: 10,
     textAlign: 'center',
@@ -486,7 +486,7 @@ const styles = StyleSheet.create({
   },
   suggestionText: {
     fontSize: 13,
-    fontWeight: '600',
+    fontFamily: 'Roboto-SemiBold',
     color: '#CAD4DF',
   },
   createBtn: {
@@ -504,7 +504,7 @@ const styles = StyleSheet.create({
   },
   createBtnText: {
     fontSize: 16,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     color: '#FFFFFF',
   },
 });

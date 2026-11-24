@@ -226,7 +226,7 @@ const styles = StyleSheet.create({
   },
   headerTitle: {
     fontSize: 22,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     color: Colors.white,
     letterSpacing: -0.3,
   },
@@ -261,12 +261,12 @@ const styles = StyleSheet.create({
     color: Colors.primary,
     fontSize: 20,
     marginRight: 10,
-    fontWeight: 'bold',
+    fontFamily: 'Roboto-Bold',
   },
   aiPlaceholder: {
     color: Colors.textSubtle,
     fontSize: 15,
-    fontWeight: '500',
+    fontFamily: 'Roboto-Medium',
   },
   micCircle: {
     width: 40,
@@ -336,7 +336,7 @@ const styles = StyleSheet.create({
   },
   cardTitle: {
     fontSize: 15,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     color: Colors.white,
     marginBottom: 4,
     textAlign: 'center',

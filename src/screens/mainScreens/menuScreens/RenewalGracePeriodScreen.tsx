@@ -190,7 +190,7 @@ const styles = StyleSheet.create({
   },
   topBarTitle: {
     fontSize: 20,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     color: '#FFFFFF',
     textAlign: 'center',
   },
@@ -226,12 +226,12 @@ const styles = StyleSheet.create({
   },
   warningTitle: {
     fontSize: 15,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     color: '#F06A6A',
   },
   retryLinkText: {
     fontSize: 14,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     color: '#F0913A',
   },
   warningSubtitle: {
@@ -259,7 +259,7 @@ const styles = StyleSheet.create({
   },
   planBadgeText: {
     fontSize: 12,
-    fontWeight: '800',
+    fontFamily: 'Roboto-Bold',
     color: '#F0913A',
     letterSpacing: 1.1,
   },
@@ -275,12 +275,12 @@ const styles = StyleSheet.create({
   },
   dueBadgeText: {
     fontSize: 11,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     color: '#F06A6A',
   },
   priceText: {
     fontSize: 24,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     color: '#FFFFFF',
     marginBottom: 6,
   },
@@ -307,7 +307,7 @@ const styles = StyleSheet.create({
   },
   detailValue: {
     fontSize: 15,
-    fontWeight: '600',
+    fontFamily: 'Roboto-SemiBold',
     color: '#FFFFFF',
   },
   divider: {
@@ -332,7 +332,7 @@ const styles = StyleSheet.create({
   },
   reasonValue: {
     fontSize: 15,
-    fontWeight: '600',
+    fontFamily: 'Roboto-SemiBold',
     color: '#F0913A',
   },
   bottomContainer: {
@@ -352,7 +352,7 @@ const styles = StyleSheet.create({
   },
   retryBtnText: {
     fontSize: 16,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     color: '#FFFFFF',
   },
   changeMethodBtn: {
@@ -367,7 +367,7 @@ const styles = StyleSheet.create({
   },
   changeMethodBtnText: {
     fontSize: 15,
-    fontWeight: '600',
+    fontFamily: 'Roboto-SemiBold',
     color: '#FFFFFF',
   },
 });

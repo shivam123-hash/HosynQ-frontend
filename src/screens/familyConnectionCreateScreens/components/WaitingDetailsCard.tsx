@@ -79,7 +79,7 @@ const styles = StyleSheet.create({
   value: {
     color: '#FFFFFF',
     fontSize: RFValue(13.5),
-    fontWeight: '600',
+    fontFamily: 'Roboto-SemiBold',
   },
   divider: {
     height: 1,
@@ -106,7 +106,7 @@ const styles = StyleSheet.create({
   statusText: {
     color: Colors.primary,
     fontSize: RFValue(11.5),
-    fontWeight: '600',
+    fontFamily: 'Roboto-SemiBold',
   },
 });
 

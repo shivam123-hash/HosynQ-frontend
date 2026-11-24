@@ -466,7 +466,7 @@ const styles = StyleSheet.create({
   headerTitle: {
     flex: 1,
     fontSize: 20,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     color: Colors.white,
     letterSpacing: -0.3,
     textAlign: 'center',
@@ -484,7 +484,7 @@ const styles = StyleSheet.create({
   },
   sectionHeaderUpper: {
     fontSize: 12,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     color: '#8A97AB',
     letterSpacing: 0.8,
     marginBottom: 12,
@@ -522,21 +522,21 @@ const styles = StyleSheet.create({
   avatarInitial: {
     color: Colors.white,
     fontSize: 16,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
   },
   memberName: {
     fontSize: 12,
-    fontWeight: '500',
+    fontFamily: 'Roboto-Medium',
     color: '#8A97AB',
   },
   memberNameSelected: {
     color: Colors.white,
-    fontWeight: '600',
+    fontFamily: 'Roboto-SemiBold',
   },
   sectionLabel: {
     fontSize: 14,
     color: Colors.textLightMuted,
-    fontWeight: '500',
+    fontFamily: 'Roboto-Medium',
     marginBottom: 8,
   },
   titleInputContainer: {
@@ -555,7 +555,7 @@ const styles = StyleSheet.create({
   titleInput: {
     color: Colors.white,
     fontSize: 15,
-    fontWeight: '500',
+    fontFamily: 'Roboto-Medium',
     padding: 0,
   },
   whenCard: {
@@ -579,12 +579,12 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: '#8A97AB',
     marginBottom: 2,
-    fontWeight: '500',
+    fontFamily: 'Roboto-Medium',
   },
   whenValueText: {
     fontSize: 15,
     color: Colors.white,
-    fontWeight: '600',
+    fontFamily: 'Roboto-SemiBold',
   },
   photosHeaderRow: {
     flexDirection: 'row',
@@ -691,7 +691,7 @@ const styles = StyleSheet.create({
   settingTitle: {
     fontSize: 15,
     color: Colors.white,
-    fontWeight: '600',
+    fontFamily: 'Roboto-SemiBold',
     marginBottom: 3,
   },
   settingSubtitle: {
@@ -727,7 +727,7 @@ const styles = StyleSheet.create({
   },
   sheetTitle: {
     fontSize: 18,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     color: Colors.white,
     marginBottom: 4,
   },
@@ -762,7 +762,7 @@ const styles = StyleSheet.create({
   },
   sheetActionText: {
     fontSize: 13,
-    fontWeight: '600',
+    fontFamily: 'Roboto-SemiBold',
     color: Colors.white,
   },
   sheetCancelBtn: {
@@ -776,7 +776,7 @@ const styles = StyleSheet.create({
   },
   sheetCancelText: {
     fontSize: 15,
-    fontWeight: '600',
+    fontFamily: 'Roboto-SemiBold',
     color: Colors.white,
   },
   bottomBar: {
@@ -798,7 +798,7 @@ const styles = StyleSheet.create({
   saveButtonText: {
     color: Colors.white,
     fontSize: 16,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
   },
 });
 

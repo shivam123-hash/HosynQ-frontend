@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   View,
   Text,
@@ -10,6 +10,8 @@ import {
   KeyboardAvoidingView,
   Platform,
   Alert,
+  Keyboard,
+  findNodeHandle,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Feather from '@react-native-vector-icons/feather';
@@ -18,7 +20,7 @@ import Colors from '../../../units/Colors';
 import CommonBtn from '../../../components/CommonBtn';
 import { useAppDispatch } from '../../../redux';
 import { createMedicineThunk } from '../../../redux/features/medicine/medicineSlice';
-import { getMyMemberId } from '../../../units/asyncStorageManager';
+import { getMyMemberId } from '../../../units/AsyncStorageManager';
 
 export interface AddMedicineFormData {
   name: string;
@@ -63,6 +65,39 @@ const AddMedicineScreen: React.FC<AddMedicineScreenProps> = ({
     initialData?.timing || 'After food',
   );
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
+
+  const scrollViewRef = useRef<any>(null);
+  const [keyboardHeight, setKeyboardHeight] = useState(0);
+
+  useEffect(() => {
+    const showEvent = Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow';
+    const hideEvent = Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide';
+
+    const showSub = Keyboard.addListener(showEvent, (e) => {
+      setKeyboardHeight(e.endCoordinates ? e.endCoordinates.height : 0);
+    });
+    const hideSub = Keyboard.addListener(hideEvent, () => {
+      setKeyboardHeight(0);
+    });
+
+    return () => {
+      showSub.remove();
+      hideSub.remove();
+    };
+  }, []);
+
+  const handleInputFocus = (event: any) => {
+    if (scrollViewRef.current) {
+      const nodeHandle = findNodeHandle(event.target);
+      if (nodeHandle) {
+        setTimeout(() => {
+          (scrollViewRef.current as any)
+            ?.getScrollResponder?.()
+            ?.scrollResponderScrollNativeHandleToKeyboard(nodeHandle, 120, true);
+        }, 120);
+      }
+    }
+  };
 
   const handleIncrement = () => {
     setDoseCount((prev) => prev + 1);
@@ -197,10 +232,17 @@ const AddMedicineScreen: React.FC<AddMedicineScreenProps> = ({
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       >
         <ScrollView
+          ref={scrollViewRef}
           style={styles.scrollContainer}
-          contentContainerStyle={styles.scrollContent}
+          contentContainerStyle={[
+            styles.scrollContent,
+            keyboardHeight > 0
+              ? { paddingBottom: keyboardHeight + 80 }
+              : null,
+          ]}
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
+          onFocus={handleInputFocus}
         >
           {/* Scan Prescription Banner */}
           <TouchableOpacity
@@ -410,7 +452,7 @@ const styles = StyleSheet.create({
   headerTitleText: {
     color: '#FFFFFF',
     fontSize: RFValue(17),
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     textAlign: 'center',
   },
   headerSubtitleText: {
@@ -453,7 +495,7 @@ const styles = StyleSheet.create({
     flex: 1,
     color: '#FFFFFF',
     fontSize: RFValue(13),
-    fontWeight: '500',
+    fontFamily: 'Roboto-Medium',
   },
   fieldGroup: {
     marginHorizontal: 20,
@@ -462,7 +504,7 @@ const styles = StyleSheet.create({
   fieldLabel: {
     color: '#8E9BAE',
     fontSize: RFValue(11.5),
-    fontWeight: '400',
+    fontFamily: 'Roboto-Regular',
     marginBottom: 6,
   },
   inputBox: {
@@ -481,7 +523,7 @@ const styles = StyleSheet.create({
   textInput: {
     color: '#FFFFFF',
     fontSize: RFValue(13.5),
-    fontWeight: '500',
+    fontFamily: 'Roboto-Medium',
     padding: 0,
     margin: 0,
   },
@@ -493,7 +535,7 @@ const styles = StyleSheet.create({
   sectionHeader: {
     color: '#8E9BAE',
     fontSize: RFValue(11),
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     letterSpacing: 1.2,
     textTransform: 'uppercase',
     marginBottom: 10,
@@ -522,11 +564,11 @@ const styles = StyleSheet.create({
   },
   chipTextUnselected: {
     color: '#CBD5E1',
-    fontWeight: '500',
+    fontFamily: 'Roboto-Medium',
   },
   chipTextSelected: {
     color: '#071526',
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
   },
   dosageCard: {
     backgroundColor: '#0B1E36',
@@ -567,13 +609,13 @@ const styles = StyleSheet.create({
   minusText: {
     color: '#FFFFFF',
     fontSize: RFValue(16),
-    fontWeight: '600',
+    fontFamily: 'Roboto-SemiBold',
     lineHeight: 18,
   },
   doseValueText: {
     color: '#FFFFFF',
     fontSize: RFValue(13),
-    fontWeight: '600',
+    fontFamily: 'Roboto-SemiBold',
     marginHorizontal: 12,
   },
   stepperPlusButton: {

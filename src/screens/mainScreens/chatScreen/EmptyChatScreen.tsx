@@ -255,7 +255,7 @@ const styles = StyleSheet.create({
   },
   headerTitle: {
     fontSize: 18,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     color: Colors.white,
     letterSpacing: -0.2,
   },
@@ -293,7 +293,7 @@ const styles = StyleSheet.create({
   },
   title: {
     fontSize: 24,
-    fontWeight: '800',
+    fontFamily: 'Roboto-Bold',
     color: Colors.white,
     letterSpacing: -0.3,
     marginBottom: 12,
@@ -332,7 +332,7 @@ const styles = StyleSheet.create({
   promptChipText: {
     color: Colors.textNearWhite,
     fontSize: 14,
-    fontWeight: '500',
+    fontFamily: 'Roboto-Medium',
   },
   inputBar: {
     flexDirection: 'row',

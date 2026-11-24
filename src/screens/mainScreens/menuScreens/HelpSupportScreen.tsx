@@ -271,7 +271,7 @@ const styles = StyleSheet.create({
   },
   topBarTitle: {
     fontSize: 20,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     color: Colors.white,
     letterSpacing: -0.3,
   },
@@ -302,7 +302,7 @@ const styles = StyleSheet.create({
   },
   sectionLabel: {
     fontSize: 12,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     color: Colors.textSecondaryMuted,
     letterSpacing: 1.2,
     marginTop: 24,
@@ -328,7 +328,7 @@ const styles = StyleSheet.create({
   },
   faqText: {
     fontSize: 15,
-    fontWeight: '600',
+    fontFamily: 'Roboto-SemiBold',
     color: Colors.white,
     flex: 1,
     paddingRight: 12,
@@ -357,7 +357,7 @@ const styles = StyleSheet.create({
   },
   browseTitle: {
     fontSize: 15,
-    fontWeight: '600',
+    fontFamily: 'Roboto-SemiBold',
     color: Colors.white,
   },
   contactCard: {
@@ -378,7 +378,7 @@ const styles = StyleSheet.create({
   },
   contactTitle: {
     fontSize: 15,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     color: Colors.white,
   },
   contactSubtitle: {

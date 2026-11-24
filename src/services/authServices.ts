@@ -1,8 +1,8 @@
 import axios from 'axios';
 import apiClient from './apiClient';
 import API_ROUTES, { API_BASE_URL } from '../redux/endPoints/endPoints';
-import { saveUserData, clearUserData } from '../units/asyncStorageManager';
-import { tokenService } from '../units/tokenServices';
+import { saveUserData, clearUserData } from '../units/AsyncStorageManager';
+import { tokenService } from '../units/TokenServices';
 
 export interface SendOtpPayload {
   phoneNumber: string;
@@ -32,7 +32,46 @@ export interface VerifyOtpResponse {
   accessToken?: string;
   refreshToken?: string;
   inFamily?: boolean;
-  nextStep?: 'BASIC_PROFILE' | 'HOME' | 'CREATE_OR_JOIN_FAMILY' | 'WAITING_FOR_APPROVAL';
+  nextStep?:
+    | 'BASIC_PROFILE'
+    | 'HOME'
+    | 'CREATE_OR_JOIN_FAMILY'
+    | 'FAMILY_SETUP'
+    | 'WAITING_FOR_APPROVAL'
+    | 'FAMILY_PENDING'
+    | string;
+  user?: any;
+}
+
+export interface GoogleLoginPayload {
+  idToken: string;
+  consentAccepted?: boolean;
+  deviceInfo?: string;
+}
+
+export interface AppleLoginPayload {
+  identityToken: string;
+  nonce?: string;
+  fullName?: string;
+  consentAccepted?: boolean;
+  deviceInfo?: string;
+}
+
+export interface SocialLoginResponse {
+  success: boolean;
+  message: string;
+  isNewUser?: boolean;
+  accessToken?: string;
+  refreshToken?: string;
+  inFamily?: boolean;
+  nextStep?:
+    | 'BASIC_PROFILE'
+    | 'HOME'
+    | 'CREATE_OR_JOIN_FAMILY'
+    | 'FAMILY_SETUP'
+    | 'WAITING_FOR_APPROVAL'
+    | 'FAMILY_PENDING'
+    | string;
   user?: any;
 }
 
@@ -127,6 +166,62 @@ export const authServices = {
     try {
       const response = await apiClient.post<VerifyOtpResponse>(
         API_ROUTES.AUTH_VERIFY_OTP,
+        payload
+      );
+
+      const data: any = response.data;
+      const accessToken =
+        data?.accessToken || data?.data?.accessToken;
+      const refreshToken =
+        data?.refreshToken || data?.data?.refreshToken;
+      const user = data?.user || data?.data?.user;
+
+      if (accessToken) {
+        await saveUserData({
+          user,
+          accessToken,
+          refreshToken,
+        });
+      }
+
+      return data;
+    } catch (error) {
+      throw error;
+    }
+  },
+
+  googleLogin: async (payload: GoogleLoginPayload): Promise<SocialLoginResponse> => {
+    try {
+      const response = await apiClient.post<SocialLoginResponse>(
+        API_ROUTES.AUTH_GOOGLE,
+        payload
+      );
+
+      const data: any = response.data;
+      const accessToken =
+        data?.accessToken || data?.data?.accessToken;
+      const refreshToken =
+        data?.refreshToken || data?.data?.refreshToken;
+      const user = data?.user || data?.data?.user;
+
+      if (accessToken) {
+        await saveUserData({
+          user,
+          accessToken,
+          refreshToken,
+        });
+      }
+
+      return data;
+    } catch (error) {
+      throw error;
+    }
+  },
+
+  appleLogin: async (payload: AppleLoginPayload): Promise<SocialLoginResponse> => {
+    try {
+      const response = await apiClient.post<SocialLoginResponse>(
+        API_ROUTES.AUTH_APPLE,
         payload
       );
 

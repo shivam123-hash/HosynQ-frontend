@@ -166,7 +166,7 @@ const styles = StyleSheet.create({
   },
   variantTabText: {
     fontSize: 12,
-    fontWeight: '600',
+    fontFamily: 'Roboto-SemiBold',
     color: '#8A9BAE',
   },
   variantTabTextActive: {

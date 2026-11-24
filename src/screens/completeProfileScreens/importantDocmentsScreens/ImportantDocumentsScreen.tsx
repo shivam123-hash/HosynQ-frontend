@@ -24,7 +24,7 @@ import {
   getMyFamilyThunk,
 } from '../../../redux';
 import lifeProfileServices from '../../../services/lifeProfileServices';
-import { getMyMemberId } from '../../../units/asyncStorageManager';
+import { getMyMemberId } from '../../../units/AsyncStorageManager';
 import {
   PersonalInfoHeader,
   AddDocumentBottomSheet,
@@ -264,19 +264,26 @@ const ImportantDocumentsScreen: React.FC<ImportantDocumentsScreenProps> = ({
     const validMemberIdSet = new Set(
       validFamilyMembers.map((m: any) => m.memberId || m.id).filter(Boolean)
     );
+    if (targetMemberId) {
+      validMemberIdSet.add(targetMemberId);
+    }
 
     if (Array.isArray(payload.remindMemberIds)) {
-      payload.remindMemberIds = payload.remindMemberIds.filter((id: string) =>
-        validMemberIdSet.has(id)
-      );
-    } else if (type === 'PASSPORT' || type === 'VISA' || type === 'DRIVING_LICENCE') {
+      if (validMemberIdSet.size > 0) {
+        payload.remindMemberIds = payload.remindMemberIds.filter((id: string) =>
+          validMemberIdSet.has(id)
+        );
+      }
+    } else if (type === 'PASSPORT' || type === 'VISA' || type === 'DRIVING_LICENCE' || type === 'INSURANCE') {
       payload.remindMemberIds = [];
     }
 
     if (Array.isArray(payload.coveredMemberIds)) {
-      payload.coveredMemberIds = payload.coveredMemberIds.filter((id: string) =>
-        validMemberIdSet.has(id)
-      );
+      if (validMemberIdSet.size > 0) {
+        payload.coveredMemberIds = payload.coveredMemberIds.filter((id: string) =>
+          validMemberIdSet.has(id)
+        );
+      }
     } else if (type === 'INSURANCE') {
       payload.coveredMemberIds = [];
     }
@@ -447,7 +454,7 @@ const ImportantDocumentsScreen: React.FC<ImportantDocumentsScreenProps> = ({
         break;
       }
       case 'VISA': {
-        const mapped = mapDocToVisaFormData(doc);
+        const mapped = mapDocToVisaFormData(doc, rawDocs);
         if (mapped) {
           if (savedVisa?.frontImageUri) {
             mapped.frontImageUri = savedVisa.frontImageUri;
@@ -526,7 +533,7 @@ const ImportantDocumentsScreen: React.FC<ImportantDocumentsScreenProps> = ({
               break;
             }
             case 'VISA': {
-              const fullMapped = mapDocToVisaFormData(mergedDoc);
+              const fullMapped = mapDocToVisaFormData(mergedDoc, rawDocs);
               if (fullMapped) {
                 if (savedVisa?.frontImageUri) {
                   fullMapped.frontImageUri = savedVisa.frontImageUri;
@@ -681,7 +688,7 @@ const ImportantDocumentsScreen: React.FC<ImportantDocumentsScreenProps> = ({
   // 2. Add Visa Screen
   if (currentStep === 'add-visa') {
     const currentDoc = editingDocId ? rawDocs.find((d: any) => d.id === editingDocId) : null;
-    const initialFormData = savedVisa || (currentDoc ? mapDocToVisaFormData(currentDoc) : undefined);
+    const initialFormData = savedVisa || (currentDoc ? mapDocToVisaFormData(currentDoc, rawDocs) : undefined);
 
     return (
       <AddVisaScreen
@@ -810,6 +817,34 @@ const ImportantDocumentsScreen: React.FC<ImportantDocumentsScreenProps> = ({
       rawDocs.find((d: any) => d.type === 'DRIVING_LICENCE');
     const displayDLData = savedDL || (currentDoc ? mapDocToDLFormData(currentDoc) : null);
 
+    const resolvedAssignees = (() => {
+      const ids =
+        displayDLData?.remindMemberIds ||
+        currentDoc?.remindMemberIds;
+      if (Array.isArray(ids) && ids.length > 0) {
+        const familyList: any[] =
+          familyState?.myFamilyData?.family?.members ||
+          familyState?.family?.members ||
+          [];
+        const names = ids
+          .map((id: string) => {
+            const found = familyList.find(
+              (m: any) => (m.memberId || m.id) === id
+            );
+            return found ? (found.fullName || found.name) : null;
+          })
+          .filter(Boolean);
+        if (names.length > 0) {
+          return names.join(', ');
+        }
+      }
+      const raw = displayDLData?.assignees;
+      if (raw && !raw.match(/[0-9a-f]{8}-[0-9a-f]{4}/i)) {
+        return raw;
+      }
+      return userName;
+    })();
+
     return (
       <DrivingLicenceDetailScreen
         userName={userName}
@@ -820,7 +855,17 @@ const ImportantDocumentsScreen: React.FC<ImportantDocumentsScreenProps> = ({
         }
         rawExpiryDate={currentDoc?.expiresOn}
         issuingRTO={displayDLData?.issuingRTO || currentDoc?.issuedAt || 'Gurugram'}
+        reminders={displayDLData?.reminders || ['6 months', '1 month']}
+        remindAssignees={resolvedAssignees}
+        autoRenewalEnabled={displayDLData?.autoRenewal ?? true}
+        isDeleting={isDeleting}
         onBack={() => setCurrentStep('landing')}
+        onRemindAssignPress={() => {
+          if (currentDoc?.id) setEditingDocId(currentDoc.id);
+          if (displayDLData) setSavedDL(displayDLData as any);
+          setReturnStep('details-dl');
+          setCurrentStep('add-driving-licence');
+        }}
         onEditPress={() => {
           if (currentDoc?.id) setEditingDocId(currentDoc.id);
           if (displayDLData) setSavedDL(displayDLData as any);
@@ -836,21 +881,6 @@ const ImportantDocumentsScreen: React.FC<ImportantDocumentsScreenProps> = ({
         onDeletePress={() =>
           handleDeleteDocument(currentDoc?.id || editingDocId)
         }
-        onOptionsPress={() => {
-          Alert.alert(
-            'Document Options',
-            'Select an action for this driving licence',
-            [
-              { text: 'Cancel', style: 'cancel' },
-              {
-                text: 'Delete Driving Licence',
-                style: 'destructive',
-                onPress: () =>
-                  handleDeleteDocument(currentDoc?.id || editingDocId),
-              },
-            ]
-          );
-        }}
       />
     );
   }
@@ -951,21 +981,6 @@ const ImportantDocumentsScreen: React.FC<ImportantDocumentsScreenProps> = ({
           setReturnStep('details-passport');
           setCurrentStep('add-passport');
         }}
-        onOptionsPress={() => {
-          Alert.alert(
-            'Document Options',
-            'Select an action for this passport document',
-            [
-              { text: 'Cancel', style: 'cancel' },
-              {
-                text: 'Delete Passport',
-                style: 'destructive',
-                onPress: () =>
-                  handleDeleteDocument(currentDoc?.id || editingDocId),
-              },
-            ]
-          );
-        }}
         onSave={(remindersData) => {
           if (onContinue) {
             onContinue({
@@ -984,7 +999,7 @@ const ImportantDocumentsScreen: React.FC<ImportantDocumentsScreenProps> = ({
     const currentDoc =
       (editingDocId ? rawDocs.find((d: any) => d.id === editingDocId) : null) ||
       rawDocs.find((d: any) => d.type === 'VISA');
-    const displayVisaData = savedVisa || (currentDoc ? mapDocToVisaFormData(currentDoc) : null);
+    const displayVisaData = savedVisa || (currentDoc ? mapDocToVisaFormData(currentDoc, rawDocs) : null);
 
     const displayFileUri =
       displayVisaData?.frontImageUri ||
@@ -1020,13 +1035,32 @@ const ImportantDocumentsScreen: React.FC<ImportantDocumentsScreenProps> = ({
       return userName;
     })();
 
+    const resolvedLinkedPassport = (() => {
+      const linkedId = displayVisaData?.linkedPassportId || currentDoc?.linkedDocumentId;
+      if (linkedId) {
+        const linkedDoc = rawDocs.find((d: any) => d.id === linkedId);
+        if (linkedDoc) {
+          const num = linkedDoc.number || linkedDoc.passportNumber || linkedDoc.docNumber || '';
+          const last4 = linkedDoc.last4 || (num && num.length >= 4 ? num.slice(-4) : num);
+          if (last4) return `Passport ending ${last4}`;
+        }
+      }
+      if (
+        displayVisaData?.linkedPassport &&
+        !displayVisaData.linkedPassport.includes('Passport ID:')
+      ) {
+        return displayVisaData.linkedPassport;
+      }
+      return linkedId ? 'Passport' : 'None';
+    })();
+
     return (
       <VisaDetailScreen
         userName={userName}
         country={displayVisaData?.country || 'United States'}
         visaType={displayVisaData?.visaType || 'Tourist or business (B1/B2)'}
         visaNumber={displayVisaData?.visaNumber || 'H1234567'}
-        linkedPassport={displayVisaData?.linkedPassport || 'Passport ending 4567'}
+        linkedPassport={resolvedLinkedPassport}
         validFrom={displayVisaData?.validFrom || '—'}
         validUntil={displayVisaData?.validUntil || '—'}
         entries={displayVisaData?.entries || 'Multiple'}
@@ -1046,21 +1080,6 @@ const ImportantDocumentsScreen: React.FC<ImportantDocumentsScreenProps> = ({
         onDeletePress={() =>
           handleDeleteDocument(currentDoc?.id || editingDocId)
         }
-        onOptionsPress={() => {
-          Alert.alert(
-            'Document Options',
-            'Select an option for this visa document',
-            [
-              { text: 'Cancel', style: 'cancel' },
-              {
-                text: 'Delete Visa',
-                style: 'destructive',
-                onPress: () =>
-                  handleDeleteDocument(currentDoc?.id || editingDocId),
-              },
-            ]
-          );
-        }}
         onSave={() => setCurrentStep('landing')}
       />
     );
@@ -1079,6 +1098,10 @@ const ImportantDocumentsScreen: React.FC<ImportantDocumentsScreenProps> = ({
         aadhaarNumber={displayAadhaarData?.aadhaarNumber || '•••• •••• ----'}
         fullName={displayAadhaarData?.fullName || userName}
         isMasked={displayAadhaarData?.keepLastFourOnly ?? true}
+        isDeleting={isDeleting}
+        onDeletePress={() =>
+          handleDeleteDocument(currentDoc?.id || editingDocId)
+        }
         onBack={() => setCurrentStep('landing')}
         onEditPress={() => {
           if (currentDoc?.id) setEditingDocId(currentDoc.id);
@@ -1104,6 +1127,11 @@ const ImportantDocumentsScreen: React.FC<ImportantDocumentsScreenProps> = ({
         panNumber={displayPanData?.panNumber || '—'}
         fullName={displayPanData?.fullName || userName}
         dob={displayPanData?.dob || '—'}
+        buttonTitle="Edit"
+        isDeleting={isDeleting}
+        onDeletePress={() =>
+          handleDeleteDocument(currentDoc?.id || editingDocId)
+        }
         onBack={() => setCurrentStep('landing')}
         onEditPress={() => {
           if (currentDoc?.id) setEditingDocId(currentDoc.id);
@@ -1122,6 +1150,55 @@ const ImportantDocumentsScreen: React.FC<ImportantDocumentsScreenProps> = ({
       rawDocs.find((d: any) => d.type === 'INSURANCE');
     const displayInsuranceData = savedInsurance || (currentDoc ? mapDocToInsuranceFormData(currentDoc) : null);
 
+    const familyList: any[] =
+      familyState?.myFamilyData?.family?.members ||
+      familyState?.family?.members ||
+      [];
+
+    const resolvedCoveredNames = (() => {
+      const ids =
+        displayInsuranceData?.coveredMemberIds ||
+        currentDoc?.coveredMemberIds;
+      if (Array.isArray(ids) && ids.length > 0) {
+        const names = ids
+          .map((id: string) => {
+            const found = familyList.find(
+              (m: any) => (m.memberId || m.id) === id
+            );
+            return found ? (found.fullName || found.name) : null;
+          })
+          .filter(Boolean);
+        if (names.length > 0) {
+          return names.join(', ');
+        }
+      }
+      return (displayInsuranceData as any)?.coveredNames || '';
+    })();
+
+    const resolvedRemindAssignees = (() => {
+      const ids =
+        displayInsuranceData?.remindMemberIds ||
+        currentDoc?.remindMemberIds;
+      if (Array.isArray(ids) && ids.length > 0) {
+        const names = ids
+          .map((id: string) => {
+            const found = familyList.find(
+              (m: any) => (m.memberId || m.id) === id
+            );
+            return found ? (found.fullName || found.name) : null;
+          })
+          .filter(Boolean);
+        if (names.length > 0) {
+          return names.join(', ');
+        }
+      }
+      const raw = displayInsuranceData?.assignees;
+      if (raw && !raw.match(/[0-9a-f]{8}-[0-9a-f]{4}/i)) {
+        return raw;
+      }
+      return userName;
+    })();
+
     return (
       <InsuranceDetailScreen
         type={displayInsuranceData?.type || 'Health'}
@@ -1132,9 +1209,25 @@ const ImportantDocumentsScreen: React.FC<ImportantDocumentsScreenProps> = ({
         premiumPerYear={displayInsuranceData?.premiumPerYear || '—'}
         renewalDate={displayInsuranceData?.renewalDate || '—'}
         saveInFamilyVault={displayInsuranceData?.saveInFamilyVault ?? true}
-        remindRenewal={displayInsuranceData?.remindRenewal ?? true}
+        coveredMemberIds={displayInsuranceData?.coveredMemberIds || currentDoc?.coveredMemberIds || []}
+        coveredMemberNames={resolvedCoveredNames}
+        reminders={displayInsuranceData?.reminders || ['1 month', '1 week']}
+        remindAssignees={resolvedRemindAssignees}
+        familyMembers={familyList}
+        userName={userName}
+        buttonTitle="Edit"
+        isDeleting={isDeleting}
+        onDeletePress={() =>
+          handleDeleteDocument(currentDoc?.id || editingDocId)
+        }
         onBack={() => setCurrentStep('landing')}
         onEditPress={() => {
+          if (currentDoc?.id) setEditingDocId(currentDoc.id);
+          if (displayInsuranceData) setSavedInsurance(displayInsuranceData);
+          setReturnStep('details-insurance');
+          setCurrentStep('add-insurance');
+        }}
+        onRemindAssignPress={() => {
           if (currentDoc?.id) setEditingDocId(currentDoc.id);
           if (displayInsuranceData) setSavedInsurance(displayInsuranceData);
           setReturnStep('details-insurance');
@@ -1299,7 +1392,7 @@ const styles = StyleSheet.create({
   emptyTitle: {
     color: '#FFFFFF',
     fontSize: RFValue(19),
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     textAlign: 'center',
     marginBottom: 10,
   },
@@ -1325,7 +1418,7 @@ const styles = StyleSheet.create({
   scanButtonText: {
     color: '#F0913A',
     fontSize: RFValue(13.5),
-    fontWeight: '600',
+    fontFamily: 'Roboto-SemiBold',
     marginLeft: 8,
   },
   listScrollView: {

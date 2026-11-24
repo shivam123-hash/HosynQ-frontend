@@ -327,7 +327,7 @@ const styles = StyleSheet.create({
   headerTitle: {
     flex: 1,
     fontSize: 20,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     color: Colors.white,
     letterSpacing: -0.3,
     textAlign: 'center',
@@ -362,16 +362,16 @@ const styles = StyleSheet.create({
   closedBadgeText: {
     color: '#BDC6D1',
     fontSize: 12,
-    fontWeight: '600',
+    fontFamily: 'Roboto-SemiBold',
   },
   votedSubtitle: {
     color: '#8A97AB',
     fontSize: 13,
-    fontWeight: '500',
+    fontFamily: 'Roboto-Medium',
   },
   questionTitle: {
     fontSize: 22,
-    fontWeight: '800',
+    fontFamily: 'Roboto-Bold',
     color: Colors.white,
     letterSpacing: -0.3,
     lineHeight: 28,
@@ -396,7 +396,7 @@ const styles = StyleSheet.create({
   mostVotesLabel: {
     color: Colors.primary,
     fontSize: 12,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     letterSpacing: 0.8,
   },
   optionTitleRow: {
@@ -414,7 +414,7 @@ const styles = StyleSheet.create({
   winnerOptionText: {
     color: Colors.white,
     fontSize: 15,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
   },
   checkCircle: {
     marginLeft: 6,
@@ -422,7 +422,7 @@ const styles = StyleSheet.create({
   winnerPercentageText: {
     color: Colors.primary,
     fontSize: 13,
-    fontWeight: '600',
+    fontFamily: 'Roboto-SemiBold',
   },
   progressBarTrack: {
     height: 5,
@@ -462,7 +462,7 @@ const styles = StyleSheet.create({
   voterAvatarText: {
     color: Colors.white,
     fontSize: 9,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
   },
   otherOptionsCard: {
     backgroundColor: '#122440',
@@ -480,12 +480,12 @@ const styles = StyleSheet.create({
   otherOptionName: {
     color: Colors.white,
     fontSize: 14,
-    fontWeight: '600',
+    fontFamily: 'Roboto-SemiBold',
   },
   otherPercentageText: {
     color: '#8FA0B5',
     fontSize: 13,
-    fontWeight: '500',
+    fontFamily: 'Roboto-Medium',
   },
   aiPlanCard: {
     flexDirection: 'row',
@@ -508,7 +508,7 @@ const styles = StyleSheet.create({
     fontSize: 14,
     lineHeight: 20,
     flex: 1,
-    fontWeight: '500',
+    fontFamily: 'Roboto-Medium',
   },
   bottomBar: {
     position: 'absolute',
@@ -538,7 +538,7 @@ const styles = StyleSheet.create({
   calendarButtonText: {
     color: Colors.white,
     fontSize: 16,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
   },
   chatButton: {
     paddingVertical: 8,
@@ -548,7 +548,7 @@ const styles = StyleSheet.create({
   chatButtonText: {
     color: Colors.primary,
     fontSize: 15,
-    fontWeight: '600',
+    fontFamily: 'Roboto-SemiBold',
   },
 });
 

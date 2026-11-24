@@ -375,6 +375,14 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     paddingHorizontal: 20,
     position: 'relative',
+    marginBottom: 8,
+  },
+  headerTitle: {
+    fontSize: 17,
+    fontFamily: 'Roboto-Bold',
+    color: '#FFFFFF',
+    letterSpacing: -0.2,
+    textAlign: 'center',
   },
   backButton: {
     position: 'absolute',
@@ -406,10 +414,11 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   sectionLabel: {
-    fontSize: 12,
-    fontWeight: '700',
-    color: '#8997AB',
-    letterSpacing: 1.1,
+    fontSize: 11,
+    fontFamily: 'Roboto-Bold',
+    color: '#8A9BAE',
+    letterSpacing: 1.2,
+    textTransform: 'uppercase',
     marginBottom: 10,
   },
   candidatesCard: {
@@ -438,15 +447,15 @@ const styles = StyleSheet.create({
   },
   avatarText: {
     fontSize: 16,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
   },
   candidateInfo: {
     flex: 1,
     marginLeft: 14,
   },
   candidateName: {
-    fontSize: 16,
-    fontWeight: '700',
+    fontSize: 15.5,
+    fontFamily: 'Roboto-SemiBold',
     color: '#FFFFFF',
     marginBottom: 3,
   },
@@ -513,7 +522,7 @@ const styles = StyleSheet.create({
   },
   warningTitle: {
     fontSize: 14,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     color: '#F0923A',
   },
   warningBody: {
@@ -550,8 +559,8 @@ const styles = StyleSheet.create({
     backgroundColor: '#3A4B60',
   },
   transferButtonText: {
-    fontSize: 15.5,
-    fontWeight: '700',
+    fontSize: 16,
+    fontFamily: 'Roboto-SemiBold',
     color: '#FFFFFF',
   },
 });

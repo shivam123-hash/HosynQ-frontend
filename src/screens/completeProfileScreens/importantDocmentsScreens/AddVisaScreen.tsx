@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   View,
   Text,
@@ -11,13 +11,21 @@ import {
   KeyboardAvoidingView,
   Switch,
   Modal,
+  Pressable,
+  Keyboard,
+  findNodeHandle,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Feather from '@react-native-vector-icons/feather';
 import { RFValue } from 'react-native-responsive-fontsize';
 import Colors from '../../../units/Colors';
 import CommonBtn from '../../../components/CommonBtn';
-import { useAppDispatch, useAppSelector, getMyFamilyThunk } from '../../../redux';
+import {
+  useAppDispatch,
+  useAppSelector,
+  getMyFamilyThunk,
+  fetchLifeProfileSectionThunk,
+} from '../../../redux';
 import {
   AppDateTimePicker,
   formatDate,
@@ -38,6 +46,7 @@ export interface VisaFormData {
   visaType: string;
   visaNumber: string;
   linkedPassport: string;
+  linkedPassportId?: string;
   validFrom: string;
   validUntil: string;
   entries: 'Single' | 'Multiple';
@@ -67,6 +76,7 @@ export const DEFAULT_VISA_DATA: VisaFormData = {
   visaType: '',
   visaNumber: '',
   linkedPassport: '',
+  linkedPassportId: '',
   validFrom: '',
   validUntil: '',
   entries: 'Multiple',
@@ -138,9 +148,74 @@ const AddVisaScreen: React.FC<AddVisaScreenProps> = ({
       : []
   );
 
+  // Passport Selection Modal State
+  const [showPassportModal, setShowPassportModal] = useState(false);
+
+  const authUser = useAppSelector((state: any) => state.auth?.user);
+  const lifeProfileDocuments = useAppSelector(
+    (state: any) => state.lifeProfile?.documents
+  );
+  const lifeProfileFull = useAppSelector(
+    (state: any) => state.lifeProfile?.fullProfile
+  );
+
+  const resolvedMemberId =
+    memberId ||
+    authUser?.memberId ||
+    authUser?.myMemberId ||
+    authUser?.id ||
+    authUser?._id ||
+    'me';
+
+  // Fetch Family Status and Life Profile Documents on screen mount
   React.useEffect(() => {
     dispatch(getMyFamilyThunk());
-  }, [dispatch]);
+    if (resolvedMemberId) {
+      dispatch(
+        fetchLifeProfileSectionThunk({
+          memberId: resolvedMemberId,
+          section: 'documents',
+        })
+      );
+    }
+  }, [dispatch, resolvedMemberId]);
+
+  // Extract uploaded documents and filter for Passports
+  const documentsData = lifeProfileDocuments?.data || lifeProfileDocuments;
+  const rawDocs: any[] =
+    (Array.isArray(documentsData) ? documentsData : null) ||
+    (Array.isArray(documentsData?.documents) ? documentsData.documents : null) ||
+    (Array.isArray(lifeProfileFull?.data?.documents) ? lifeProfileFull.data.documents : null) ||
+    [];
+
+  const uploadedPassports = rawDocs.filter((d: any) => d.type === 'PASSPORT');
+
+  // Helper to format passport display label
+  const formatPassportLabel = (p: any): string => {
+    const num = p.number || p.passportNumber || p.docNumber || '';
+    const last4 = p.last4 || (num && num.length >= 4 ? num.slice(-4) : num);
+    if (last4) {
+      return `Passport ending ${last4}`;
+    }
+    return p.country ? `${p.country} Passport` : 'Passport';
+  };
+
+  // Synchronize passport label if linkedPassportId is present
+  React.useEffect(() => {
+    if (formData.linkedPassportId && uploadedPassports.length > 0) {
+      const matched = uploadedPassports.find(
+        (p: any) => p.id === formData.linkedPassportId
+      );
+      if (matched) {
+        const label = formatPassportLabel(matched);
+        if (formData.linkedPassport !== label) {
+          setFormData((prev) => ({ ...prev, linkedPassport: label }));
+        }
+      }
+    } else if (formData.linkedPassport && formData.linkedPassport.includes('Passport ID:')) {
+      setFormData((prev) => ({ ...prev, linkedPassport: 'Passport' }));
+    }
+  }, [formData.linkedPassportId, uploadedPassports]);
 
   React.useEffect(() => {
     if (formData.remindMemberIds && Array.isArray(formData.remindMemberIds)) {
@@ -210,6 +285,39 @@ const AddVisaScreen: React.FC<AddVisaScreenProps> = ({
     title: '',
   });
 
+  const scrollViewRef = useRef<any>(null);
+  const [keyboardHeight, setKeyboardHeight] = useState(0);
+
+  useEffect(() => {
+    const showEvent = Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow';
+    const hideEvent = Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide';
+
+    const showSub = Keyboard.addListener(showEvent, (e) => {
+      setKeyboardHeight(e.endCoordinates ? e.endCoordinates.height : 0);
+    });
+    const hideSub = Keyboard.addListener(hideEvent, () => {
+      setKeyboardHeight(0);
+    });
+
+    return () => {
+      showSub.remove();
+      hideSub.remove();
+    };
+  }, []);
+
+  const handleInputFocus = (event: any) => {
+    if (scrollViewRef.current) {
+      const nodeHandle = findNodeHandle(event.target);
+      if (nodeHandle) {
+        setTimeout(() => {
+          (scrollViewRef.current as any)
+            ?.getScrollResponder?.()
+            ?.scrollResponderScrollNativeHandleToKeyboard(nodeHandle, 120, true);
+        }, 120);
+      }
+    }
+  };
+
   const toggleReminder = (rem: string) => {
     setFormData((prev) => {
       const exists = prev.reminders.includes(rem);
@@ -256,10 +364,17 @@ const AddVisaScreen: React.FC<AddVisaScreenProps> = ({
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       >
         <ScrollView
+          ref={scrollViewRef}
           style={styles.scrollContainer}
-          contentContainerStyle={styles.scrollContent}
+          contentContainerStyle={[
+            styles.scrollContent,
+            keyboardHeight > 0
+              ? { paddingBottom: keyboardHeight + 80 }
+              : null,
+          ]}
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
+          onFocus={handleInputFocus}
         >
           {/* Top Field: Upload & Scan Document Photo */}
           <DocumentPhotoUploadField
@@ -399,7 +514,7 @@ const AddVisaScreen: React.FC<AddVisaScreenProps> = ({
           {/* On passport (linked passport) */}
           <TouchableOpacity
             activeOpacity={0.7}
-            onPress={onSelectPassport}
+            onPress={() => setShowPassportModal(true)}
             style={styles.linkedPassportCard}
           >
             <View style={styles.passportIconBox}>
@@ -407,11 +522,16 @@ const AddVisaScreen: React.FC<AddVisaScreenProps> = ({
             </View>
             <View style={styles.passportTextContainer}>
               <Text style={styles.passportLabel}>On passport</Text>
-              <Text style={styles.passportValue}>
-                {formData.linkedPassport}
+              <Text
+                style={[
+                  styles.passportValue,
+                  !formData.linkedPassport && styles.passportPlaceholder,
+                ]}
+              >
+                {formData.linkedPassport || 'None (optional) · Tap to link'}
               </Text>
             </View>
-            <Feather name="chevron-right" size={18} color="#64748B" />
+            <Feather name="chevron-down" size={18} color="#64748B" />
           </TouchableOpacity>
 
           {/* Valid from & Valid until (Side-by-side) */}
@@ -505,8 +625,8 @@ const AddVisaScreen: React.FC<AddVisaScreenProps> = ({
             </View>
           </View>
 
-          {/* REMIND ME BEFORE IT EXPIRES */}
-          <Text style={styles.sectionHeader}>REMIND ME BEFORE IT EXPIRES</Text>
+          {/* REMIND BEFORE IT EXPIRES */}
+          <Text style={styles.sectionHeader}>REMIND BEFORE IT EXPIRES</Text>
           <View style={styles.pillsRow}>
             {REMINDER_OPTIONS.slice(0, 3).map((opt) => {
               const isSelected = formData.reminders.includes(opt);
@@ -742,6 +862,140 @@ const AddVisaScreen: React.FC<AddVisaScreenProps> = ({
           </TouchableOpacity>
         </TouchableOpacity>
       </Modal>
+
+      {/* Linked Passport Selector Modal */}
+      <Modal
+        visible={showPassportModal}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setShowPassportModal(false)}
+      >
+        <TouchableOpacity
+          style={styles.modalBackdrop}
+          activeOpacity={1}
+          onPress={() => setShowPassportModal(false)}
+        >
+          <TouchableOpacity
+            style={styles.modalContent}
+            activeOpacity={1}
+            onPress={(e) => e.stopPropagation()}
+          >
+            <View style={styles.handle} />
+            <Text style={styles.modalTitle}>On passport</Text>
+            <Text style={styles.modalSubtitle}>
+              Select the passport this visa is stamped on
+            </Text>
+
+            {uploadedPassports.length === 0 ? (
+              <View style={styles.emptyPassportContainer}>
+                <View style={styles.emptyPassportIconBox}>
+                  <Feather name="book-open" size={24} color="#64748B" />
+                </View>
+                <Text style={styles.emptyPassportTitle}>No passports found</Text>
+                <Text style={styles.emptyPassportSubtitle}>
+                  You haven't uploaded any passport yet. You can save this visa without linking a passport, or upload a passport first.
+                </Text>
+              </View>
+            ) : (
+              <ScrollView
+                style={{ maxHeight: 300 }}
+                showsVerticalScrollIndicator={false}
+              >
+                {/* Option to clear / No passport */}
+                <TouchableOpacity
+                  activeOpacity={0.7}
+                  onPress={() => {
+                    setFormData((prev) => ({
+                      ...prev,
+                      linkedPassport: '',
+                      linkedPassportId: '',
+                    }));
+                    setShowPassportModal(false);
+                  }}
+                  style={[
+                    styles.passportOptionCard,
+                    !formData.linkedPassportId && styles.passportOptionCardSelected,
+                  ]}
+                >
+                  <View style={styles.passportOptionIconBox}>
+                    <Feather name="slash" size={16} color="#94A3B8" />
+                  </View>
+                  <View style={styles.passportOptionDetails}>
+                    <Text style={styles.passportOptionTitle}>None / Not linked</Text>
+                    <Text style={styles.passportOptionSubtitle}>
+                      Save visa without linking a passport
+                    </Text>
+                  </View>
+                  {!formData.linkedPassportId && (
+                    <View style={styles.checkCircleSelected}>
+                      <Feather name="check" size={14} color="#FFFFFF" />
+                    </View>
+                  )}
+                </TouchableOpacity>
+
+                {/* List of uploaded passports */}
+                {uploadedPassports.map((passport: any) => {
+                  const id = passport.id;
+                  const isSelected = formData.linkedPassportId === id;
+                  const label = formatPassportLabel(passport);
+                  const expiryStr = passport.expiresOn
+                    ? `Expires ${passport.expiresOn.split('T')[0]}`
+                    : '';
+                  const countryStr = passport.country || '';
+
+                  return (
+                    <TouchableOpacity
+                      key={id}
+                      activeOpacity={0.7}
+                      onPress={() => {
+                        setFormData((prev) => ({
+                          ...prev,
+                          linkedPassport: label,
+                          linkedPassportId: id,
+                        }));
+                        setShowPassportModal(false);
+                      }}
+                      style={[
+                        styles.passportOptionCard,
+                        isSelected && styles.passportOptionCardSelected,
+                      ]}
+                    >
+                      <View style={styles.passportOptionIconBox}>
+                        <Feather name="book-open" size={16} color="#38BDF8" />
+                      </View>
+                      <View style={styles.passportOptionDetails}>
+                        <Text style={styles.passportOptionTitle}>{label}</Text>
+                        <Text style={styles.passportOptionSubtitle}>
+                          {[countryStr, expiryStr].filter(Boolean).join(' · ') || 'Uploaded Passport'}
+                        </Text>
+                      </View>
+                      {isSelected ? (
+                        <View style={styles.checkCircleSelected}>
+                          <Feather name="check" size={14} color="#FFFFFF" />
+                        </View>
+                      ) : (
+                        <View style={styles.checkCircleUnselected} />
+                      )}
+                    </TouchableOpacity>
+                  );
+                })}
+              </ScrollView>
+            )}
+
+            <CommonBtn
+              title="Close"
+              onPress={() => setShowPassportModal(false)}
+              backgroundColor="transparent"
+              borderColor="rgba(255, 255, 255, 0.15)"
+              borderWidth={1}
+              textColor="#CAD4DF"
+              height={48}
+              borderRadius={24}
+              marginTop={16}
+            />
+          </TouchableOpacity>
+        </TouchableOpacity>
+      </Modal>
     </View>
   );
 };
@@ -796,7 +1050,7 @@ const styles = StyleSheet.create({
   photoTitle: {
     color: '#FFFFFF',
     fontSize: RFValue(12.5),
-    fontWeight: '600',
+    fontFamily: 'Roboto-SemiBold',
   },
   photoSubtitle: {
     color: '#8E9BAE',
@@ -809,13 +1063,13 @@ const styles = StyleSheet.create({
   fieldLabel: {
     color: '#94A3B8',
     fontSize: RFValue(12),
-    fontWeight: '500',
+    fontFamily: 'Roboto-Medium',
     marginBottom: 6,
   },
   sectionHeader: {
     color: '#8E9BAE',
     fontSize: RFValue(11),
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     letterSpacing: 0.8,
     marginBottom: 10,
   },
@@ -843,7 +1097,7 @@ const styles = StyleSheet.create({
   selectorText: {
     color: '#FFFFFF',
     fontSize: RFValue(13.5),
-    fontWeight: '500',
+    fontFamily: 'Roboto-Medium',
   },
   pillsRow: {
     flexDirection: 'row',
@@ -867,11 +1121,11 @@ const styles = StyleSheet.create({
   pillText: {
     color: '#94A3B8',
     fontSize: RFValue(12),
-    fontWeight: '500',
+    fontFamily: 'Roboto-Medium',
   },
   pillTextSelected: {
     color: '#FFFFFF',
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
   },
   linkedPassportCard: {
     height: 58,
@@ -903,7 +1157,7 @@ const styles = StyleSheet.create({
   passportValue: {
     color: '#FFFFFF',
     fontSize: RFValue(13),
-    fontWeight: '600',
+    fontFamily: 'Roboto-SemiBold',
     marginTop: 2,
   },
   sideBySideRow: {
@@ -935,11 +1189,11 @@ const styles = StyleSheet.create({
   entryText: {
     color: '#94A3B8',
     fontSize: RFValue(13),
-    fontWeight: '600',
+    fontFamily: 'Roboto-SemiBold',
   },
   entryTextSelected: {
     color: '#0A111F',
-    fontWeight: '800',
+    fontFamily: 'Roboto-Bold',
   },
   bottomBar: {
     paddingHorizontal: 20,
@@ -954,7 +1208,7 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     borderWidth: 1,
     borderColor: 'rgba(255, 255, 255, 0.08)',
-    marginTop: 16,
+    marginTop: 20,
     marginBottom: 20,
     overflow: 'hidden',
   },
@@ -987,12 +1241,12 @@ const styles = StyleSheet.create({
   avatarText: {
     color: '#FFFFFF',
     fontSize: RFValue(10.5),
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
   },
   remindAssigneeText: {
     color: '#FFFFFF',
     fontSize: RFValue(13),
-    fontWeight: '600',
+    fontFamily: 'Roboto-SemiBold',
     flex: 1,
     marginRight: 6,
   },
@@ -1015,7 +1269,7 @@ const styles = StyleSheet.create({
   switchTitle: {
     color: '#FFFFFF',
     fontSize: RFValue(13),
-    fontWeight: '600',
+    fontFamily: 'Roboto-SemiBold',
   },
   switchSubtitle: {
     color: '#8E9BAE',
@@ -1047,7 +1301,7 @@ const styles = StyleSheet.create({
   modalTitle: {
     color: '#FFFFFF',
     fontSize: RFValue(17),
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     marginBottom: 4,
   },
   modalSubtitle: {
@@ -1083,7 +1337,7 @@ const styles = StyleSheet.create({
   memberAvatarText: {
     color: '#FFFFFF',
     fontSize: RFValue(14),
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
   },
   memberInfoCol: {
     flex: 1,
@@ -1091,7 +1345,7 @@ const styles = StyleSheet.create({
   memberNameText: {
     color: '#FFFFFF',
     fontSize: RFValue(13.5),
-    fontWeight: '600',
+    fontFamily: 'Roboto-SemiBold',
   },
   memberRoleText: {
     color: '#8E9BAE',
@@ -1110,6 +1364,100 @@ const styles = StyleSheet.create({
   checkboxSquareSelected: {
     borderColor: '#F0913A',
     backgroundColor: '#F0913A',
+  },
+  passportPlaceholder: {
+    color: '#64748B',
+  },
+  emptyPassportContainer: {
+    alignItems: 'center',
+    paddingVertical: 24,
+    paddingHorizontal: 16,
+  },
+  emptyPassportIconBox: {
+    width: 54,
+    height: 54,
+    borderRadius: 27,
+    backgroundColor: 'rgba(255, 255, 255, 0.05)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  emptyPassportTitle: {
+    color: '#FFFFFF',
+    fontSize: RFValue(14.5),
+    fontFamily: 'Roboto-SemiBold',
+    marginBottom: 6,
+  },
+  emptyPassportSubtitle: {
+    color: '#8E9BAE',
+    fontSize: RFValue(12),
+    textAlign: 'center',
+    lineHeight: 18,
+  },
+  passportOptionCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 12,
+    borderRadius: 14,
+    backgroundColor: '#131F35',
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.06)',
+    marginBottom: 8,
+  },
+  passportOptionCardSelected: {
+    borderColor: '#38BDF8',
+    backgroundColor: '#132845',
+  },
+  passportOptionIconBox: {
+    width: 38,
+    height: 38,
+    borderRadius: 10,
+    backgroundColor: 'rgba(56, 189, 248, 0.12)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 12,
+  },
+  passportOptionDetails: {
+    flex: 1,
+  },
+  passportOptionTitle: {
+    color: '#FFFFFF',
+    fontSize: RFValue(13.5),
+    fontFamily: 'Roboto-SemiBold',
+  },
+  passportOptionSubtitle: {
+    color: '#8E9BAE',
+    fontSize: RFValue(11.5),
+    marginTop: 2,
+  },
+  checkCircleSelected: {
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+    backgroundColor: '#38BDF8',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  checkCircleUnselected: {
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+    borderWidth: 1.5,
+    borderColor: '#64748B',
+  },
+  modalCloseBtn: {
+    height: 48,
+    borderRadius: 24,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.15)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginTop: 16,
+  },
+  modalCloseText: {
+    color: '#CAD4DF',
+    fontSize: RFValue(14),
+    fontFamily: 'Roboto-SemiBold',
   },
 });
 

@@ -124,7 +124,7 @@ const styles = StyleSheet.create({
   },
   avatarInitial: {
     fontSize: 16,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     color: Colors.white,
   },
   brandContainer: {
@@ -138,7 +138,7 @@ const styles = StyleSheet.create({
   },
   brandTitle: {
     fontSize: 20,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     color: Colors.white,
     letterSpacing: -0.2,
   },

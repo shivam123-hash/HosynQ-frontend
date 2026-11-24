@@ -273,7 +273,7 @@ const styles = StyleSheet.create({
   },
   title: {
     fontSize: RFValue(18),
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     color: '#FFFFFF',
     textAlign: 'center',
     marginBottom: 4,
@@ -314,7 +314,7 @@ const styles = StyleSheet.create({
   optionTitle: {
     color: '#FFFFFF',
     fontSize: RFValue(14),
-    fontWeight: '600',
+    fontFamily: 'Roboto-SemiBold',
     marginBottom: 2,
   },
   optionSubText: {
@@ -333,7 +333,7 @@ const styles = StyleSheet.create({
   cancelBtnText: {
     color: '#8E9BAE',
     fontSize: RFValue(13.5),
-    fontWeight: '600',
+    fontFamily: 'Roboto-SemiBold',
   },
 });
 

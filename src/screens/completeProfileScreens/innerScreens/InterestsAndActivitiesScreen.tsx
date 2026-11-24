@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   View,
   Text,
@@ -10,6 +10,8 @@ import {
   KeyboardAvoidingView,
   Platform,
   Alert,
+  Keyboard,
+  findNodeHandle,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Feather from '@react-native-vector-icons/feather';
@@ -24,7 +26,7 @@ import {
   updateLifeProfileSectionThunk,
   fetchLifeProfileFullThunk,
 } from '../../../redux';
-import { getMyMemberId } from '../../../units/asyncStorageManager';
+import { getMyMemberId } from '../../../units/AsyncStorageManager';
 import { extractInterestsList } from './InterestsDetailsScreen';
 import {
   PersonalInfoHeader,
@@ -103,6 +105,39 @@ const InterestsAndActivitiesScreen: React.FC<
   const [isSaving, setIsSaving] = useState<boolean>(false);
   const [errorModalVisible, setErrorModalVisible] = useState<boolean>(false);
   const [errorMessage, setErrorMessage] = useState<string>('');
+
+  const scrollViewRef = useRef<any>(null);
+  const [keyboardHeight, setKeyboardHeight] = useState(0);
+
+  useEffect(() => {
+    const showEvent = Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow';
+    const hideEvent = Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide';
+
+    const showSub = Keyboard.addListener(showEvent, (e) => {
+      setKeyboardHeight(e.endCoordinates ? e.endCoordinates.height : 0);
+    });
+    const hideSub = Keyboard.addListener(hideEvent, () => {
+      setKeyboardHeight(0);
+    });
+
+    return () => {
+      showSub.remove();
+      hideSub.remove();
+    };
+  }, []);
+
+  const handleInputFocus = (event: any) => {
+    if (scrollViewRef.current) {
+      const nodeHandle = findNodeHandle(event.target);
+      if (nodeHandle) {
+        setTimeout(() => {
+          (scrollViewRef.current as any)
+            ?.getScrollResponder?.()
+            ?.scrollResponderScrollNativeHandleToKeyboard(nodeHandle, 120, true);
+        }, 120);
+      }
+    }
+  };
 
   const authUser = useAppSelector((state) => state.auth?.user || state.emailAuth?.user);
   const familyState = useAppSelector((state) => (state as any).family);
@@ -277,10 +312,17 @@ const InterestsAndActivitiesScreen: React.FC<
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       >
         <ScrollView
+          ref={scrollViewRef}
           style={styles.scrollContainer}
-          contentContainerStyle={styles.scrollContent}
+          contentContainerStyle={[
+            styles.scrollContent,
+            keyboardHeight > 0
+              ? { paddingBottom: keyboardHeight + 80 }
+              : null,
+          ]}
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
+          onFocus={handleInputFocus}
         >
           {/* Information Banner */}
           <View style={styles.bannerContainer}>
@@ -444,7 +486,7 @@ const styles = StyleSheet.create({
   addSomethingElseText: {
     color: Colors.primary || '#F0913A',
     fontSize: RFValue(13.5),
-    fontWeight: '600',
+    fontFamily: 'Roboto-SemiBold',
   },
   customInputCard: {
     flexDirection: 'row',
@@ -474,7 +516,7 @@ const styles = StyleSheet.create({
   customAddButtonText: {
     color: '#071526',
     fontSize: RFValue(12.5),
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
   },
   bottomBar: {
     paddingHorizontal: 20,

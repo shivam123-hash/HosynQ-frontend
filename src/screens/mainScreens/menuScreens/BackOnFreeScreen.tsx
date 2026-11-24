@@ -163,7 +163,7 @@ const styles = StyleSheet.create({
   },
   topBarTitle: {
     fontSize: 20,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     color: '#FFFFFF',
     textAlign: 'center',
   },
@@ -198,7 +198,7 @@ const styles = StyleSheet.create({
   },
   freeBadgeText: {
     fontSize: 12,
-    fontWeight: '800',
+    fontFamily: 'Roboto-Bold',
     color: '#8A97AB',
     letterSpacing: 1.1,
   },
@@ -212,12 +212,12 @@ const styles = StyleSheet.create({
   },
   pausedBadgeText: {
     fontSize: 11,
-    fontWeight: '600',
+    fontFamily: 'Roboto-SemiBold',
     color: '#CCD7E6',
   },
   statusTitle: {
     fontSize: 20,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     color: '#FFFFFF',
     marginBottom: 6,
   },
@@ -228,7 +228,7 @@ const styles = StyleSheet.create({
   },
   sectionHeading: {
     fontSize: 12,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     color: '#8A97AB',
     letterSpacing: 1.1,
     marginBottom: 12,
@@ -260,7 +260,7 @@ const styles = StyleSheet.create({
   featureText: {
     flex: 1,
     fontSize: 15,
-    fontWeight: '600',
+    fontFamily: 'Roboto-SemiBold',
     color: '#FFFFFF',
   },
   divider: {
@@ -284,7 +284,7 @@ const styles = StyleSheet.create({
   },
   reactivateBtnText: {
     fontSize: 16,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     color: '#FFFFFF',
   },
 });

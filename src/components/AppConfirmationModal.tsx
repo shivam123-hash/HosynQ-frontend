@@ -148,7 +148,7 @@ const styles = StyleSheet.create({
   },
   title: {
     fontSize: RFValue(18),
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     color: '#FFFFFF',
     textAlign: 'center',
   },
@@ -171,7 +171,7 @@ const styles = StyleSheet.create({
   },
   confirmText: {
     fontSize: RFValue(14.5),
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     color: '#FFFFFF',
   },
   cancelBtn: {
@@ -182,7 +182,7 @@ const styles = StyleSheet.create({
   },
   cancelText: {
     fontSize: RFValue(14),
-    fontWeight: '600',
+    fontFamily: 'Roboto-SemiBold',
     color: '#8A97AB',
   },
 });

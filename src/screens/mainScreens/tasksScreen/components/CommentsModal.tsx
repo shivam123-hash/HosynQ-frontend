@@ -375,7 +375,7 @@ const styles = StyleSheet.create({
   },
   headerTitle: {
     fontSize: 18,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     color: '#FFFFFF',
   },
   spacer: {
@@ -413,7 +413,7 @@ const styles = StyleSheet.create({
   },
   taskTitle: {
     fontSize: 15,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     color: '#FFFFFF',
     flex: 1,
   },
@@ -435,7 +435,7 @@ const styles = StyleSheet.create({
   },
   avatarText: {
     fontSize: 15,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
   },
   commentBody: {
     flex: 1,
@@ -448,7 +448,7 @@ const styles = StyleSheet.create({
   },
   authorText: {
     fontSize: 14,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     color: '#CAD4DF',
   },
   timeText: {
@@ -472,7 +472,7 @@ const styles = StyleSheet.create({
   },
   mentionText: {
     color: '#F0913A',
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
   },
   inputBar: {
     flexDirection: 'row',

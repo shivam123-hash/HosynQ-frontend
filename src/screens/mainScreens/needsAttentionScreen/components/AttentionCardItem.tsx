@@ -97,10 +97,9 @@ const styles = StyleSheet.create({
     gap: 3,
   },
   titleText: {
-    fontFamily: 'Roboto',
     fontSize: 15.5,
     lineHeight: 20,
-    fontWeight: '500',
+    fontFamily: 'Roboto-Medium',
     color: '#CAD4DF',
   },
   subtitleText: {
@@ -109,11 +108,11 @@ const styles = StyleSheet.create({
     lineHeight: 18,
   },
   normalSubtitle: {
-    fontWeight: '400',
+    fontFamily: 'Roboto-Regular',
     color: '#8A97AB',
   },
   overdueSubtitle: {
-    fontWeight: '500',
+    fontFamily: 'Roboto-Medium',
     color: Colors.primary, // #F0913A
   },
   remindButton: {
@@ -128,10 +127,9 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   remindButtonText: {
-    fontFamily: 'Roboto',
     fontSize: 13.5,
     lineHeight: 18,
-    fontWeight: '500',
+    fontFamily: 'Roboto-Medium',
     color: '#CAD4DF',
   },
 });

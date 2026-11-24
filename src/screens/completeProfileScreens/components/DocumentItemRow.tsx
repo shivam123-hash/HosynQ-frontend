@@ -125,7 +125,7 @@ const styles = StyleSheet.create({
   titleText: {
     color: '#FFFFFF',
     fontSize: RFValue(13.5),
-    fontWeight: '600',
+    fontFamily: 'Roboto-SemiBold',
   },
   badge: {
     marginLeft: 8,
@@ -139,12 +139,12 @@ const styles = StyleSheet.create({
   badgeText: {
     color: '#F0913A',
     fontSize: RFValue(10),
-    fontWeight: '600',
+    fontFamily: 'Roboto-SemiBold',
   },
   subtitleText: {
     color: '#8E9BAE',
     fontSize: RFValue(11.5),
-    fontWeight: '400',
+    fontFamily: 'Roboto-Light',
   },
   rightContainer: {
     flexDirection: 'row',
@@ -157,7 +157,7 @@ const styles = StyleSheet.create({
   actionText: {
     color: Colors.primary || '#F0913A',
     fontSize: RFValue(13),
-    fontWeight: '600',
+    fontFamily: 'Roboto-SemiBold',
   },
 });
 

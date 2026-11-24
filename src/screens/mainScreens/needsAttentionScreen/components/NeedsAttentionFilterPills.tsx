@@ -86,11 +86,11 @@ const styles = StyleSheet.create({
     lineHeight: 18,
   },
   pillTextActive: {
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     color: '#0B1A2F',
   },
   pillTextInactive: {
-    fontWeight: '500',
+    fontFamily: 'Roboto-Medium',
     color: '#CAD4DF',
   },
 });

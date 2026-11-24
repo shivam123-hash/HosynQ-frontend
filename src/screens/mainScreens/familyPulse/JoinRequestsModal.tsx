@@ -446,7 +446,7 @@ const styles = StyleSheet.create({
   },
   headerTitle: {
     fontSize: 20,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     color: '#FFFFFF',
     letterSpacing: -0.2,
     textAlign: 'center',
@@ -504,8 +504,8 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   avatarText: {
-    fontSize: 17,
-    fontWeight: '700',
+    fontSize: 18,
+    fontFamily: 'Roboto-Bold',
     color: '#FFFFFF',
   },
   avatarTextUnknown: {
@@ -517,7 +517,7 @@ const styles = StyleSheet.create({
   },
   cardName: {
     fontSize: 16,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     color: '#FFFFFF',
     letterSpacing: -0.1,
   },
@@ -590,10 +590,11 @@ const styles = StyleSheet.create({
   },
   roleChipText: {
     fontSize: 13,
-    fontWeight: '600',
+    fontFamily: 'Roboto-SemiBold',
   },
   roleChipTextActive: {
-    color: '#F0913A',
+    color: '#0B1A2F',
+    fontFamily: 'Roboto-Bold',
   },
   roleChipTextInactive: {
     color: '#8A9BAE',
@@ -615,9 +616,9 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   declineButtonText: {
-    fontSize: 14.5,
-    fontWeight: '600',
-    color: '#CAD4DF',
+    fontSize: 15,
+    fontFamily: 'Roboto-SemiBold',
+    color: '#FFFFFF',
   },
   approveButton: {
     flex: 1,
@@ -628,12 +629,9 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   approveButtonText: {
-    fontSize: 14.5,
-    fontWeight: '700',
-    color: '#0B1A2F',
-  },
-  buttonDisabled: {
-    opacity: 0.65,
+    fontSize: 15,
+    fontFamily: 'Roboto-Bold',
+    color: '#FFFFFF',
   },
   footerNotice: {
     fontSize: 12.5,

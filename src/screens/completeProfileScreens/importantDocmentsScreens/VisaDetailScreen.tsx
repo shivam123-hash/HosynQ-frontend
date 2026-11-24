@@ -84,11 +84,7 @@ const VisaDetailScreen: React.FC<VisaDetailScreenProps> = ({
     .filter(Boolean);
 
   const handleOptionsPress = () => {
-    if (onOptionsPress) {
-      onOptionsPress();
-    } else if (onDeletePress) {
-      setIsDeleteModalVisible(true);
-    }
+    setIsDeleteModalVisible(true);
   };
 
   const toggleReminder = (option: string) => {
@@ -136,16 +132,16 @@ const VisaDetailScreen: React.FC<VisaDetailScreenProps> = ({
 
         <TouchableOpacity
           activeOpacity={0.7}
-          onPress={handleOptionsPress}
+          onPress={() => setIsDeleteModalVisible(true)}
           disabled={isDeleting}
           style={styles.headerButton}
           accessibilityRole="button"
-          accessibilityLabel="More options"
+          accessibilityLabel="Delete visa"
         >
           {isDeleting ? (
-            <ThreeDotsLoader color="#F43F5E" size={5} spacing={3} />
+            <ThreeDotsLoader color="#EF4444" size={5} spacing={3} />
           ) : (
-            <Feather name="more-horizontal" size={20} color="#FFFFFF" />
+            <Feather name="trash-2" size={19} color="#EF4444" />
           )}
         </TouchableOpacity>
       </View>
@@ -438,7 +434,7 @@ const styles = StyleSheet.create({
   headerTitleText: {
     color: '#FFFFFF',
     fontSize: RFValue(15),
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
   },
   headerSubtitleText: {
     color: '#8E9BAE',
@@ -478,7 +474,7 @@ const styles = StyleSheet.create({
   alertTitle: {
     color: '#F59E0B',
     fontSize: RFValue(13),
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
   },
   soonBadge: {
     backgroundColor: '#F59E0B',
@@ -489,7 +485,7 @@ const styles = StyleSheet.create({
   soonBadgeText: {
     color: '#0A111F',
     fontSize: RFValue(9),
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
   },
   alertSubtitle: {
     color: '#CBD5E1',
@@ -520,7 +516,7 @@ const styles = StyleSheet.create({
   fileNameText: {
     color: '#FFFFFF',
     fontSize: RFValue(13),
-    fontWeight: '600',
+    fontFamily: 'Roboto-SemiBold',
   },
   fileDetailsText: {
     color: '#8E9BAE',
@@ -560,7 +556,7 @@ const styles = StyleSheet.create({
   detailValue: {
     color: '#FFFFFF',
     fontSize: RFValue(13),
-    fontWeight: '600',
+    fontFamily: 'Roboto-SemiBold',
     marginTop: 3,
   },
   divider: {
@@ -611,12 +607,12 @@ const styles = StyleSheet.create({
   avatarText: {
     color: '#FFFFFF',
     fontSize: RFValue(9),
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
   },
   avatarNamesText: {
     color: '#FFFFFF',
     fontSize: RFValue(12),
-    fontWeight: '500',
+    fontFamily: 'Roboto-Medium',
     marginLeft: 8,
   },
   autoRenewalRow: {
@@ -632,7 +628,7 @@ const styles = StyleSheet.create({
   autoRenewalTitle: {
     color: '#FFFFFF',
     fontSize: RFValue(12.5),
-    fontWeight: '600',
+    fontFamily: 'Roboto-SemiBold',
   },
   autoRenewalSubtitle: {
     color: '#8E9BAE',
@@ -663,7 +659,7 @@ const styles = StyleSheet.create({
   viewerTitle: {
     color: '#FFFFFF',
     fontSize: RFValue(15),
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     flex: 1,
     marginRight: 12,
   },

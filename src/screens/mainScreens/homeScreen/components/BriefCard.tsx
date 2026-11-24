@@ -133,10 +133,9 @@ const styles = StyleSheet.create({
     marginBottom: 14,
   },
   sectionTag: {
-    fontFamily: 'Roboto',
     fontSize: RFValue(11),
     lineHeight: RFValue(15),
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     color: '#F0913A',
     letterSpacing: 0.8,
   },
@@ -170,22 +169,21 @@ const styles = StyleSheet.create({
   },
   activeChipLabel: {
     color: '#0B1A2F',
-    fontWeight: '600',
+    fontFamily: 'Roboto-SemiBold',
   },
   inactiveChipLabel: {
     color: '#C9D1DC',
-    fontWeight: '400',
+    fontFamily: 'Roboto-Regular',
   },
   briefContent: {
-    fontFamily: 'Roboto',
     fontSize: RFValue(13.5),
     lineHeight: RFValue(22),
-    fontWeight: '400',
+    fontFamily: 'Roboto-Regular',
     letterSpacing: 0.2,
     color: '#E6EBF2',
   },
   boldHighlight: {
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     color: '#FFFFFF',
   },
   divider: {
@@ -202,10 +200,9 @@ const styles = StyleSheet.create({
   },
   metaText: {
     flex: 1,
-    fontFamily: 'Roboto',
     fontSize: RFValue(11.5),
     lineHeight: RFValue(16),
-    fontWeight: '400',
+    fontFamily: 'Roboto-Regular',
     color: '#8A97AB',
   },
   readBriefBtn: {
@@ -217,10 +214,9 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   readBriefText: {
-    fontFamily: 'Roboto',
     fontSize: RFValue(11),
     lineHeight: RFValue(15),
-    fontWeight: '500',
+    fontFamily: 'Roboto-Medium',
     color: '#F0913A',
   },
 });

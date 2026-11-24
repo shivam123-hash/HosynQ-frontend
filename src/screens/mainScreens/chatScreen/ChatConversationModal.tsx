@@ -696,7 +696,7 @@ const styles = StyleSheet.create({
   },
   headerTitle: {
     fontSize: 20,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     color: Colors.white,
     letterSpacing: -0.2,
   },
@@ -725,7 +725,7 @@ const styles = StyleSheet.create({
     flex: 1,
     color: Colors.white,
     fontSize: 13,
-    fontWeight: '500',
+    fontFamily: 'Roboto-Medium',
     lineHeight: 18,
   },
   emptyContainer: {
@@ -761,7 +761,7 @@ const styles = StyleSheet.create({
   },
   emptyTitle: {
     fontSize: 24,
-    fontWeight: '800',
+    fontFamily: 'Roboto-Bold',
     color: Colors.white,
     letterSpacing: -0.3,
     marginBottom: 12,
@@ -800,7 +800,7 @@ const styles = StyleSheet.create({
   promptChipText: {
     color: Colors.textNearWhite,
     fontSize: 14,
-    fontWeight: '500',
+    fontFamily: 'Roboto-Medium',
   },
   scrollArea: {
     flex: 1,
@@ -827,7 +827,7 @@ const styles = StyleSheet.create({
   outgoingText: {
     color: Colors.black,
     fontSize: 15,
-    fontWeight: '500',
+    fontFamily: 'Roboto-Medium',
     lineHeight: 20,
   },
   outgoingMetaRow: {
@@ -840,7 +840,7 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: '#8A97AB',
     marginRight: 4,
-    fontWeight: '400',
+    fontFamily: 'Roboto-Regular',
   },
   checkIcon: {
     marginLeft: 2,
@@ -856,19 +856,19 @@ const styles = StyleSheet.create({
   failedText: {
     color: Colors.dangerRed,
     fontSize: 12,
-    fontWeight: '600',
+    fontFamily: 'Roboto-SemiBold',
   },
   retryText: {
     color: Colors.primary,
     fontSize: 12,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
   },
   incomingMessageContainer: {
     alignItems: 'flex-start',
   },
   senderNameLabel: {
     fontSize: 13,
-    fontWeight: '600',
+    fontFamily: 'Roboto-SemiBold',
     marginLeft: 46,
     marginBottom: 4,
   },
@@ -889,7 +889,7 @@ const styles = StyleSheet.create({
   avatarInitial: {
     color: Colors.white,
     fontSize: 14,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
   },
   incomingContentGroup: {
     flex: 1,
@@ -910,7 +910,7 @@ const styles = StyleSheet.create({
     color: '#8A97AB',
     marginTop: 6,
     marginLeft: 2,
-    fontWeight: '400',
+    fontFamily: 'Roboto-Regular',
   },
   imageAttachmentBox: {
     borderRadius: 18,
@@ -986,13 +986,13 @@ const styles = StyleSheet.create({
   },
   sharedTagEvent: {
     fontSize: 11,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     color: Colors.accentBlue,
     letterSpacing: 0.8,
   },
   sharedTagList: {
     fontSize: 11,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     color: Colors.accentTeal,
     letterSpacing: 0.8,
   },
@@ -1004,7 +1004,7 @@ const styles = StyleSheet.create({
   },
   sharedTagTask: {
     fontSize: 11,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     color: Colors.dangerRed,
     letterSpacing: 0.8,
   },
@@ -1018,11 +1018,11 @@ const styles = StyleSheet.create({
   overdueBadgeText: {
     fontSize: 10,
     color: Colors.dangerRed,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
   },
   sharedItemTitle: {
     fontSize: 15,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     color: Colors.white,
     marginBottom: 4,
   },
@@ -1060,7 +1060,7 @@ const styles = StyleSheet.create({
   sharedEventBtnText: {
     color: Colors.white,
     fontSize: 13,
-    fontWeight: '600',
+    fontFamily: 'Roboto-SemiBold',
   },
   openListBtn: {
     height: 40,
@@ -1074,7 +1074,7 @@ const styles = StyleSheet.create({
   openListBtnText: {
     color: Colors.white,
     fontSize: 13,
-    fontWeight: '600',
+    fontFamily: 'Roboto-SemiBold',
   },
   markDoneBtn: {
     height: 40,
@@ -1090,7 +1090,7 @@ const styles = StyleSheet.create({
   markDoneBtnText: {
     color: Colors.white,
     fontSize: 13,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
   },
   inputBar: {
     width: '100%',
