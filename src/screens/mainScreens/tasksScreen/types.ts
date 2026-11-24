@@ -20,6 +20,7 @@ export interface TaskComment {
   time: string;
   text: string;
   isYou?: boolean;
+  rawCreatedAt?: string;
 }
 
 export interface TaskItem {

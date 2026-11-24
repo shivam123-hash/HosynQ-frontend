@@ -422,5 +422,654 @@ describe('TasksScreen', () => {
     expect(texts).toContain('Priya (you)');
     expect(texts).toContain('Let Rohan know');
   });
+
+  it('renders NoTasksEmptyState when initialTasks is [] (no mock data leakage)', async () => {
+    const renderer = await renderWithProvider(<TasksScreen initialTasks={[]} />);
+    expect(renderer.root).toBeTruthy();
+
+    const textNodes = renderer.root.findAllByType(Text);
+    const texts = textNodes.map((n) => n.props.children).flat();
+
+    expect(texts).toContain('No tasks yet');
+    expect(texts).toContain('Add a task');
+    expect(texts).not.toContain('Buy Diwali sweets and diyas');
+  });
+
+  it('renders TaskDetailModal safely with uppercase backend category/priority and partial data', async () => {
+    const uppercaseBackendTask: any = {
+      id: 'backend-task-uuid-1',
+      title: 'Backend Uppercase Task',
+      dueDate: '2026-11-25',
+      category: 'HOUSEHOLD',
+      priority: 'HIGH',
+      isCompleted: false,
+    };
+
+    const renderer = await renderWithProvider(
+      <TaskDetailModal
+        visible={true}
+        task={uppercaseBackendTask}
+        onClose={jest.fn()}
+        onToggleComplete={jest.fn()}
+      />
+    );
+    expect(renderer.root).toBeTruthy();
+
+    const textNodes = renderer.root.findAllByType(Text);
+    const texts = textNodes.map((n) => n.props.children).flat();
+
+    expect(texts).toContain('Backend Uppercase Task');
+    expect(texts).toContain('Household');
+    expect(texts).toContain('High priority');
+  });
+
+  it('preserves hook order when transitioning TaskDetailModal from closed (null task) to open', async () => {
+    let renderer: ReactTestRenderer.ReactTestRenderer;
+    await ReactTestRenderer.act(() => {
+      renderer = ReactTestRenderer.create(
+        <SafeAreaProvider initialMetrics={mockMetrics}>
+          <TaskDetailModal
+            visible={false}
+            task={null}
+            onClose={jest.fn()}
+            onToggleComplete={jest.fn()}
+          />
+        </SafeAreaProvider>
+      );
+    });
+
+    const sampleTask = INITIAL_TASKS[0];
+    await ReactTestRenderer.act(() => {
+      renderer.update(
+        <SafeAreaProvider initialMetrics={mockMetrics}>
+          <TaskDetailModal
+            visible={true}
+            task={sampleTask}
+            onClose={jest.fn()}
+            onToggleComplete={jest.fn()}
+          />
+        </SafeAreaProvider>
+      );
+    });
+
+    expect(renderer!.root).toBeTruthy();
+    const textNodes = renderer!.root.findAllByType(Text);
+    const texts = textNodes.map((n) => n.props.children).flat();
+    expect(texts).toContain(sampleTask.title);
+  });
+
+  it('formats raw ISO dates into friendly human dates (formatTaskDueDate)', () => {
+    const { formatTaskDueDate } = require('../src/screens/mainScreens/tasksScreen/taskApiHelpers');
+    expect(formatTaskDueDate('2026-11-02T00:00:00.000Z')).toBe('Mon, 2 Nov');
+    expect(formatTaskDueDate('2026-11-04T00:00:00.000Z')).toBe('Wed, 4 Nov');
+    expect(formatTaskDueDate('Today')).toBe('Today');
+    expect(formatTaskDueDate(null)).toBe('Today');
+  });
+
+  it('keeps status filter tabs and displays "No completed tasks yet" when completed tab has 0 items', async () => {
+    const renderer = await renderWithProvider(
+      <TasksScreen initialStatus="completed" initialTasks={[]} />
+    );
+    expect(renderer.root).toBeTruthy();
+
+    const textNodes = renderer.root.findAllByType(Text);
+    const texts = textNodes.map((n) => n.props.children).flat();
+
+    // Filter tabs are preserved
+    expect(texts).toContain('Pending 0');
+    expect(texts).toContain('Completed 0');
+    expect(texts).toContain('Everyone');
+
+    // Dedicated completed empty message
+    expect(texts).toContain('No completed tasks yet');
+    expect(texts).toContain('Tasks you complete will show up here.');
+
+    // Global onboarding empty state must NOT show
+    expect(texts).not.toContain('OR START WITH ONE OF THESE');
+  });
+
+  it('sends empty object {} body instead of null in completeTask and reopenTask API calls', async () => {
+    const tasksServices = require('../src/services/tasksServices').default;
+    const apiClient = require('../src/services/apiClient').default;
+
+    const postSpy = jest.spyOn(apiClient, 'post').mockResolvedValueOnce({ data: { success: true } });
+    await tasksServices.completeTask('0045a34e-89ee-4d95-ba3c-eb125e63bf11', '2026-11-20');
+
+    expect(postSpy).toHaveBeenCalledWith(
+      'tasks/0045a34e-89ee-4d95-ba3c-eb125e63bf11/complete',
+      {},
+      { params: { today: '2026-11-20' } }
+    );
+    postSpy.mockRestore();
+
+    const postSpyReopen = jest.spyOn(apiClient, 'post').mockResolvedValueOnce({ data: { success: true } });
+    await tasksServices.reopenTask('0045a34e-89ee-4d95-ba3c-eb125e63bf11');
+
+    expect(postSpyReopen).toHaveBeenCalledWith(
+      'tasks/0045a34e-89ee-4d95-ba3c-eb125e63bf11/reopen',
+      {}
+    );
+    postSpyReopen.mockRestore();
+  });
+
+  it('supports scope param in deleteTask and mentionMemberIds in addComment', async () => {
+    const tasksServices = require('../src/services/tasksServices').default;
+    const apiClient = require('../src/services/apiClient').default;
+
+    const deleteSpy = jest.spyOn(apiClient, 'delete').mockResolvedValueOnce({ data: { success: true } });
+    await tasksServices.deleteTask('0045a34e-89ee-4d95-ba3c-eb125e63bf11', 'THIS_AND_FUTURE');
+
+    expect(deleteSpy).toHaveBeenCalledWith(
+      'tasks/0045a34e-89ee-4d95-ba3c-eb125e63bf11',
+      { params: { scope: 'THIS_AND_FUTURE' } }
+    );
+    deleteSpy.mockRestore();
+
+    const postCommentSpy = jest.spyOn(apiClient, 'post').mockResolvedValueOnce({ data: { success: true } });
+    await tasksServices.addComment('0045a34e-89ee-4d95-ba3c-eb125e63bf11', {
+      body: '@Rupesh please check this',
+      mentionMemberIds: ['ebcb4825-1bd2-471c-b099-de310d6c2e8f'],
+    });
+
+    expect(postCommentSpy).toHaveBeenCalledWith(
+      'tasks/0045a34e-89ee-4d95-ba3c-eb125e63bf11/comments',
+      {
+        body: '@Rupesh please check this',
+        mentionMemberIds: ['ebcb4825-1bd2-471c-b099-de310d6c2e8f'],
+      }
+    );
+    postCommentSpy.mockRestore();
+  });
+
+  it('fetches all comments via tasksServices.getComments when CommentsModal is opened with taskId', async () => {
+    const CommentsModal = require('../src/screens/mainScreens/tasksScreen/components/CommentsModal').default;
+    const tasksServices = require('../src/services/tasksServices').default;
+
+    const mockComments = [
+      { id: '1', body: 'Comment 1', author: { fullName: 'Priya' }, createdAt: '2026-11-20T10:00:00Z' },
+      { id: '2', body: 'Comment 2', author: { fullName: 'Rohan' }, createdAt: '2026-11-20T11:00:00Z' },
+      { id: '3', body: 'Comment 3', author: { fullName: 'Anaya' }, createdAt: '2026-11-20T12:00:00Z' },
+    ];
+
+    const getCommentsSpy = jest.spyOn(tasksServices, 'getComments').mockResolvedValueOnce({
+      comments: mockComments,
+      pagination: { limit: 50, total: 3, hasOlder: false },
+    });
+
+    let renderer: any;
+    await ReactTestRenderer.act(async () => {
+      renderer = ReactTestRenderer.create(
+        <SafeAreaProvider initialMetrics={mockMetrics}>
+          <CommentsModal
+            visible={true}
+            taskId="0045a34e-89ee-4d95-ba3c-eb125e63bf11"
+            taskTitle="Book train tickets to Jaipur"
+            dueDateSubtitle="Due Mon, 2 Nov"
+            comments={[]}
+            onClose={() => {}}
+          />
+        </SafeAreaProvider>
+      );
+    });
+
+    expect(getCommentsSpy).toHaveBeenCalledWith('0045a34e-89ee-4d95-ba3c-eb125e63bf11', undefined, 50);
+    const textNodes = renderer.root.findAllByType(Text);
+    const texts = textNodes.map((n: any) => n.props.children).flat();
+    expect(texts).toContain('Comments · 3');
+    expect(texts).toContain('Comment 1');
+    expect(texts).toContain('Comment 2');
+    expect(texts).toContain('Comment 3');
+
+    getCommentsSpy.mockRestore();
+  });
+
+  it('tasksServices.getComments properly constructs query params and omits undefined/null before', async () => {
+    const tasksServices = require('../src/services/tasksServices').default;
+    const apiClient = require('../src/services/apiClient').default;
+
+    const getSpy = jest.spyOn(apiClient, 'get').mockResolvedValueOnce({
+      data: {
+        success: true,
+        comments: [],
+        pagination: { limit: 30, total: 0, hasOlder: false, olderCursor: null },
+      },
+    });
+
+    await tasksServices.getComments('0045a34e-89ee-4d95-ba3c-eb125e63bf11', undefined, 30);
+    expect(getSpy).toHaveBeenCalledWith(
+      'tasks/0045a34e-89ee-4d95-ba3c-eb125e63bf11/comments',
+      { params: { limit: 30 } }
+    );
+
+    getSpy.mockResolvedValueOnce({
+      data: {
+        success: true,
+        comments: [],
+        pagination: { limit: 10, total: 37, hasOlder: true, olderCursor: 'cursor-uuid' },
+      },
+    });
+
+    await tasksServices.getComments('0045a34e-89ee-4d95-ba3c-eb125e63bf11', '056e359a-9c6f-4384-8e01-c0d5ce47ee91', 10);
+    expect(getSpy).toHaveBeenCalledWith(
+      'tasks/0045a34e-89ee-4d95-ba3c-eb125e63bf11/comments',
+      { params: { limit: 10, before: '056e359a-9c6f-4384-8e01-c0d5ce47ee91' } }
+    );
+
+    getSpy.mockRestore();
+  });
+
+  it('renders strictly 2 options (Edit Task and Delete Task) in TaskDetailModal options menu', async () => {
+    const sampleTask = INITIAL_TASKS[0];
+
+    let renderer: any;
+    await ReactTestRenderer.act(async () => {
+      renderer = ReactTestRenderer.create(
+        <SafeAreaProvider initialMetrics={mockMetrics}>
+          <TaskDetailModal
+            visible={true}
+            task={sampleTask}
+            onClose={() => {}}
+            onToggleComplete={() => {}}
+          />
+        </SafeAreaProvider>
+      );
+    });
+
+    const moreBtn = renderer.root.findByProps({ accessibilityLabel: 'More options' });
+    await ReactTestRenderer.act(async () => {
+      moreBtn.props.onPress();
+    });
+
+    const textNodes = renderer.root.findAllByType(Text);
+    const texts = textNodes.map((n: any) => n.props.children).flat();
+    expect(texts).toContain('Edit Task');
+    expect(texts).toContain('Delete Task');
+    expect(texts).not.toContain('Edit Due Date');
+    expect(texts).not.toContain('Category & Priority');
+  });
+
+  it('DueDateTimeModal defaults to current date and opens time picker on tap of Pick a time', async () => {
+    const AppDateTimePicker = require('../src/components/AppDateTimePicker').default;
+    const onSave = jest.fn();
+
+    let renderer: any;
+    await ReactTestRenderer.act(async () => {
+      renderer = ReactTestRenderer.create(
+        <SafeAreaProvider initialMetrics={mockMetrics}>
+          <DueDateTimeModal
+            visible={true}
+            onClose={() => {}}
+            onSave={onSave}
+          />
+        </SafeAreaProvider>
+      );
+    });
+
+    const textNodes = renderer.root.findAllByType(Text);
+    const texts = textNodes.map((n: any) => n.props.children).flat();
+    expect(texts).toContain('When is it due?');
+    expect(texts).toContain('Today');
+    expect(texts).toContain('Pick a time');
+
+    // Tap "Pick a time"
+    const pickTimeBtn = renderer.root.findByProps({ accessibilityLabel: 'Pick a time' });
+    await ReactTestRenderer.act(async () => {
+      pickTimeBtn.props.onPress();
+    });
+
+    // AppDateTimePicker should now be open
+    const picker = renderer.root.findByType(AppDateTimePicker);
+    expect(picker.props.visible).toBe(true);
+    expect(picker.props.mode).toBe('time');
+
+    // Simulate confirming a time (e.g. 7:30 PM)
+    const testTime = new Date(2026, 10, 23, 19, 30);
+    await ReactTestRenderer.act(async () => {
+      picker.props.onConfirm(testTime);
+    });
+
+    // Picker closes and custom time displays on chip
+    expect(picker.props.visible).toBe(false);
+    const updatedTexts = renderer.root.findAllByType(Text).map((n: any) => n.props.children).flat();
+    expect(updatedTexts).toContain('7:30 PM');
+
+    // Tap Done and verify onSave received the chosen time and current date
+    const doneBtn = renderer.root.findByProps({ accessibilityLabel: 'Done' });
+    await ReactTestRenderer.act(async () => {
+      doneBtn.props.onPress();
+    });
+
+    expect(onSave).toHaveBeenCalledWith(
+      'Today',
+      'Today · by 7:30 PM',
+      '7:30 PM',
+      expect.stringMatching(/^\d{4}-\d{2}-\d{2}$/)
+    );
+  });
+
+  it('CreateTaskModal defaults Due row to current date Today', async () => {
+    let renderer: any;
+    await ReactTestRenderer.act(async () => {
+      renderer = ReactTestRenderer.create(
+        <SafeAreaProvider initialMetrics={mockMetrics}>
+          <CreateTaskModal
+            visible={true}
+            onClose={() => {}}
+            onCreateTask={() => {}}
+          />
+        </SafeAreaProvider>
+      );
+    });
+
+    const textNodes = renderer.root.findAllByType(Text);
+    const texts = textNodes.map((n: any) => n.props.children).flat();
+    expect(texts).toContain('Due');
+    expect(texts).toContain('Today · by 6:00 PM');
+  });
+
+  describe('Overdue task detection & Overdue Alert Banner', () => {
+    const { isTaskOverdue } = require('../src/screens/mainScreens/tasksScreen/taskApiHelpers');
+
+    it('accurately identifies overdue tasks by date and time', () => {
+      const fixedNow = new Date(2026, 10, 23, 11, 0, 0); // 23 Nov 2026, 11:00 AM
+
+      // Case 1: completed task is never overdue
+      expect(isTaskOverdue({ isCompleted: true, dueOn: '2026-11-20' }, fixedNow)).toBe(false);
+
+      // Case 2: task with isOverdue: true
+      expect(isTaskOverdue({ isOverdue: true }, fixedNow)).toBe(true);
+
+      // Case 3: past date (20 Nov vs 23 Nov)
+      expect(isTaskOverdue({ dueOn: '2026-11-20' }, fixedNow)).toBe(true);
+
+      // Case 4: today with past time (09:00 vs 11:00)
+      expect(isTaskOverdue({ dueOn: '2026-11-23', dueTime: '09:00' }, fixedNow)).toBe(true);
+
+      // Case 5: today with future time (18:00 vs 11:00)
+      expect(isTaskOverdue({ dueOn: '2026-11-23', dueTime: '18:00' }, fixedNow)).toBe(false);
+
+      // Case 6: tomorrow is not overdue
+      expect(isTaskOverdue({ dueOn: '2026-11-24' }, fixedNow)).toBe(false);
+
+      // Case 7: yesterday string
+      expect(isTaskOverdue({ dueDate: 'Yesterday' }, fixedNow)).toBe(true);
+
+      // Case 8: today string with past 12-hour time in dueFormatted
+      expect(
+        isTaskOverdue(
+          { dueDate: 'Today', dueFormatted: 'Today · by 9:00 AM' },
+          fixedNow
+        )
+      ).toBe(true);
+    });
+
+    it('renders Overdue Alert Banner matching Figma design with Remind and Change due date buttons', async () => {
+      const overdueTask: any = {
+        id: 'tsk-overdue-1',
+        title: 'Submit quarterly budget',
+        assignee: 'Rupesh Sharma',
+        dueDate: 'Yesterday',
+        dueTime: '6:00 PM',
+        category: 'finance',
+        priority: 'high',
+        isCompleted: false,
+        isOverdue: true,
+      };
+
+      let renderer: any;
+      await ReactTestRenderer.act(async () => {
+        renderer = ReactTestRenderer.create(
+          <SafeAreaProvider initialMetrics={mockMetrics}>
+            <TaskDetailModal
+              visible={true}
+              task={overdueTask}
+              onClose={() => {}}
+              onToggleComplete={() => {}}
+            />
+          </SafeAreaProvider>
+        );
+      });
+
+      const textNodes = renderer.root.findAllByType(Text);
+      const texts = textNodes.map((n: any) => n.props.children).flat();
+
+      // Overdue title and subtitle
+      expect(texts).toContain('Overdue');
+      expect(texts).toContain('Rupesh Sharma was reminded yesterday at 6:00 PM.');
+
+      // Stacked vertical action buttons
+      expect(texts).toContain('Remind Rupesh Sharma');
+      expect(texts).toContain('Change due date');
+
+      // Tapping "Change due date" opens DueDateTimeModal
+      const changeDueBtn = renderer.root.findByProps({
+        accessibilityLabel: 'Change due date',
+      });
+      await ReactTestRenderer.act(async () => {
+        changeDueBtn.props.onPress();
+      });
+
+      const updatedTexts = renderer.root.findAllByType(Text).map((n: any) => n.props.children).flat();
+      expect(updatedTexts).toContain('When is it due?');
+    });
+
+    it('implements getReminderState (GET) and remindTask (POST) APIs with active Remind button', async () => {
+      const tasksServices = require('../src/services/tasksServices').default;
+      const apiClient = require('../src/services/apiClient').default;
+
+      // 1. Verify getReminderState calls GET /api/v1/tasks/:id/reminder
+      const getSpy = jest.spyOn(apiClient, 'get').mockResolvedValueOnce({
+        data: {
+          success: true,
+          reminder: {
+            canRemind: true,
+            remindableMembers: [
+              {
+                memberId: '25bfd6dd-b38e-4757-b77a-77fd4552bf91',
+                fullName: 'Rupesh Sharma',
+                canRemindNow: true,
+                nextAllowedAt: null,
+              },
+            ],
+            nextAllowedAt: null,
+            lastReminder: null,
+          },
+        },
+      });
+
+      const reminderRes = await tasksServices.getReminderState('0045a34e-89ee-4d95-ba3c-eb125e63bf11');
+      expect(getSpy).toHaveBeenCalledWith('tasks/0045a34e-89ee-4d95-ba3c-eb125e63bf11/reminder');
+      expect(reminderRes.reminder.canRemind).toBe(true);
+      getSpy.mockRestore();
+
+      // 2. Verify remindTask calls POST /api/v1/tasks/:id/remind with {}
+      const postSpy = jest.spyOn(apiClient, 'post').mockResolvedValueOnce({
+        data: {
+          success: true,
+          remindedMemberIds: ['25bfd6dd-b38e-4757-b77a-77fd4552bf91'],
+          pushDelivered: true,
+          reminder: {
+            canRemind: false,
+            remindableMembers: [],
+            nextAllowedAt: '2026-11-23T12:15:30.000Z',
+            lastReminder: {
+              at: '2026-11-23T11:15:30.000Z',
+              by: { memberId: '4a6b2cc3', fullName: 'Priya Sharma' },
+              to: [{ memberId: '25bfd6dd', fullName: 'Rupesh Sharma' }],
+            },
+          },
+        },
+      });
+
+      const remindRes = await tasksServices.remindTask('0045a34e-89ee-4d95-ba3c-eb125e63bf11');
+      expect(postSpy).toHaveBeenCalledWith(
+        'tasks/0045a34e-89ee-4d95-ba3c-eb125e63bf11/remind',
+        {}
+      );
+      expect(remindRes.success).toBe(true);
+      postSpy.mockRestore();
+
+      // 3. Verify Remind button is activated and tapping it triggers remindTask
+      const overdueTask: any = {
+        id: '0045a34e-89ee-4d95-ba3c-eb125e63bf11',
+        title: 'Electricity bill payment',
+        assignee: 'Rohan Sharma',
+        dueDate: 'Yesterday',
+        dueTime: '6:00 PM',
+        category: 'finance',
+        priority: 'high',
+        isCompleted: false,
+        isOverdue: true,
+      };
+
+      const getReminderSpy = jest.spyOn(tasksServices, 'getReminderState').mockResolvedValueOnce({
+        success: true,
+        reminder: {
+          canRemind: true,
+          remindableMembers: [
+            {
+              memberId: '25bfd6dd-b38e-4757-b77a-77fd4552bf91',
+              fullName: 'Rohan Sharma',
+              canRemindNow: true,
+              nextAllowedAt: null,
+            },
+          ],
+          nextAllowedAt: null,
+          lastReminder: null,
+        },
+      });
+
+      const remindSpy = jest.spyOn(tasksServices, 'remindTask').mockResolvedValueOnce({
+        success: true,
+        remindedMemberIds: ['25bfd6dd-b38e-4757-b77a-77fd4552bf91'],
+        pushDelivered: true,
+        reminder: {
+          canRemind: false,
+          remindableMembers: [],
+          nextAllowedAt: '2026-11-23T12:15:30.000Z',
+          lastReminder: {
+            at: '2026-11-23T11:15:30.000Z',
+            by: { memberId: '4a6b2cc3', fullName: 'Priya Sharma', avatarColor: '#5C3A21' },
+            to: [],
+          },
+        },
+      });
+
+      let renderer: any;
+      await ReactTestRenderer.act(async () => {
+        renderer = ReactTestRenderer.create(
+          <SafeAreaProvider initialMetrics={mockMetrics}>
+            <TaskDetailModal
+              visible={true}
+              task={overdueTask}
+              onClose={() => {}}
+              onToggleComplete={() => {}}
+            />
+          </SafeAreaProvider>
+        );
+      });
+
+      const remindBtn = renderer.root.findByProps({
+        accessibilityLabel: 'Remind Rohan Sharma',
+      });
+      // The button is not disabled (activated)
+      expect(remindBtn.props.disabled).toBe(false);
+
+      await ReactTestRenderer.act(async () => {
+        remindBtn.props.onPress();
+      });
+
+      expect(remindSpy).toHaveBeenCalledWith('0045a34e-89ee-4d95-ba3c-eb125e63bf11', {});
+      remindSpy.mockRestore();
+      getReminderSpy.mockRestore();
+    });
+  });
+
+  describe('Bug fixes: Task Reassign member UUID & Due Date/Time 24-hr format', () => {
+    const {
+      formatTimeTo24Hour,
+      resolveMemberId,
+      resolveMemberDisplayName,
+    } = require('../src/screens/mainScreens/tasksScreen/taskApiHelpers');
+
+    it('formatTimeTo24Hour converts 12-hr AM/PM, quick chips, and "by" prefixes to valid 24-hour format', () => {
+      expect(formatTimeTo24Hour('6:00 PM')).toBe('18:00');
+      expect(formatTimeTo24Hour('by 6:00 PM')).toBe('18:00');
+      expect(formatTimeTo24Hour('Evening 6:00')).toBe('18:00');
+      expect(formatTimeTo24Hour('Afternoon 2:00')).toBe('14:00');
+      expect(formatTimeTo24Hour('Morning 9:00')).toBe('09:00');
+      expect(formatTimeTo24Hour('9:00 AM')).toBe('09:00');
+      expect(formatTimeTo24Hour('18:00')).toBe('18:00');
+      expect(formatTimeTo24Hour('09:00')).toBe('09:00');
+      expect(formatTimeTo24Hour('12:00 AM')).toBe('00:00');
+      expect(formatTimeTo24Hour('12:00 PM')).toBe('12:00');
+      expect(formatTimeTo24Hour(undefined)).toBeUndefined();
+    });
+
+    it('resolveMemberId resolves member name to member UUID from familyMembers', () => {
+      const mockFamilyMembers = [
+        {
+          memberId: 'a1b2c3d4-e5f6-7a8b-9c0d-1e2f3a4b5c6d',
+          fullName: 'Rupesh Sharma',
+          role: 'ADULT',
+          isYou: false,
+        },
+        {
+          memberId: 'b2c3d4e5-f6a7-8b9c-0d1e-2f3a4b5c6d7e',
+          fullName: 'Priya Sharma',
+          role: 'ADMIN',
+          isYou: true,
+        },
+      ];
+
+      // Resolve by full name
+      expect(resolveMemberId('Rupesh Sharma', mockFamilyMembers)).toBe(
+        'a1b2c3d4-e5f6-7a8b-9c0d-1e2f3a4b5c6d'
+      );
+      // Case-insensitive
+      expect(resolveMemberId('rupesh sharma', mockFamilyMembers)).toBe(
+        'a1b2c3d4-e5f6-7a8b-9c0d-1e2f3a4b5c6d'
+      );
+      // "You" resolves to current user memberId
+      expect(resolveMemberId('You', mockFamilyMembers)).toBe(
+        'b2c3d4e5-f6a7-8b9c-0d1e-2f3a4b5c6d7e'
+      );
+      // "Priya" resolves to current user memberId
+      expect(resolveMemberId('Priya', mockFamilyMembers)).toBe(
+        'b2c3d4e5-f6a7-8b9c-0d1e-2f3a4b5c6d7e'
+      );
+      // Already a UUID returns as-is
+      expect(
+        resolveMemberId('a1b2c3d4-e5f6-7a8b-9c0d-1e2f3a4b5c6d', mockFamilyMembers)
+      ).toBe('a1b2c3d4-e5f6-7a8b-9c0d-1e2f3a4b5c6d');
+      // Unknown name returns null
+      expect(resolveMemberId('Unknown Person', mockFamilyMembers)).toBeNull();
+    });
+
+    it('resolveMemberDisplayName returns human readable name', () => {
+      const mockFamilyMembers = [
+        {
+          memberId: 'a1b2c3d4-e5f6-7a8b-9c0d-1e2f3a4b5c6d',
+          fullName: 'Rupesh Sharma',
+          isYou: false,
+        },
+        {
+          memberId: 'b2c3d4e5-f6a7-8b9c-0d1e-2f3a4b5c6d7e',
+          fullName: 'Priya Sharma',
+          isYou: true,
+        },
+      ];
+
+      expect(
+        resolveMemberDisplayName('a1b2c3d4-e5f6-7a8b-9c0d-1e2f3a4b5c6d', mockFamilyMembers)
+      ).toBe('Rupesh Sharma');
+      expect(
+        resolveMemberDisplayName('b2c3d4e5-f6a7-8b9c-0d1e-2f3a4b5c6d7e', mockFamilyMembers)
+      ).toBe('You');
+      expect(resolveMemberDisplayName('Rupesh Sharma', mockFamilyMembers)).toBe(
+        'Rupesh Sharma'
+      );
+    });
+  });
 });
 

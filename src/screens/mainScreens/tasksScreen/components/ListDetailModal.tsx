@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -11,8 +11,21 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Feather from '@react-native-vector-icons/feather';
 import Ionicons from '@react-native-vector-icons/ionicons';
+import { useAppDispatch, useAppSelector } from '../../../../redux';
+import {
+  fetchListDetail,
+  toggleItemDone,
+  addListItems,
+  updateListItem,
+  updateList,
+  duplicateList,
+  clearDone,
+  deleteList,
+} from '../../../../redux/features/lists/listsSlice';
 import { ListGroup, ListItemEntry, ListType } from '../types';
 import { LIST_TYPE_CONFIG } from '../mockData';
+import { isUUID } from '../taskApiHelpers';
+import { mapApiListDetailToUiList } from '../listApiHelpers';
 
 const renderTypeIcon = (type: ListType, color: string) => {
   switch (type) {
@@ -49,12 +62,28 @@ const ListDetailModal: React.FC<ListDetailModalProps> = ({
   onDeleteList,
 }) => {
   const insets = useSafeAreaInsets();
+  const dispatch = useAppDispatch();
+  const apiSelectedList = useAppSelector((state) => state.lists.selectedList);
+
   const [showAddItems, setShowAddItems] = useState(false);
   const [selectedItemForAssign, setSelectedItemForAssign] =
     useState<ListItemEntry | null>(null);
   const [showShareModal, setShowShareModal] = useState(false);
   const [showOptionsModal, setShowOptionsModal] = useState(false);
   const [showDoneItems, setShowDoneItems] = useState(false);
+
+  useEffect(() => {
+    if (visible && list && isUUID(list.id)) {
+      dispatch(fetchListDetail({ listId: list.id }));
+    }
+  }, [visible, list?.id, dispatch]);
+
+  useEffect(() => {
+    if (visible && list && apiSelectedList && apiSelectedList.id === list.id) {
+      const mapped = mapApiListDetailToUiList(apiSelectedList);
+      onUpdateList(mapped);
+    }
+  }, [apiSelectedList]);
 
   if (!list) return null;
 
@@ -67,29 +96,59 @@ const ListDetailModal: React.FC<ListDetailModalProps> = ({
   const progressPercent = totalCount > 0 ? (doneCount / totalCount) * 100 : 0;
 
   // Toggle single item complete
-  const handleToggleItem = (itemId: string) => {
+  const handleToggleItem = async (itemId: string) => {
+    const item = list.items.find((i) => i.id === itemId);
+    const newDone = !item?.isCompleted;
     const updatedItems = list.items.map((i) =>
-      i.id === itemId ? { ...i, isCompleted: !i.isCompleted } : i
+      i.id === itemId ? { ...i, isCompleted: newDone } : i
     );
     const updated: ListGroup = { ...list, items: updatedItems };
     onUpdateList(updated);
+
+    if (isUUID(list.id) && isUUID(itemId)) {
+      try {
+        await dispatch(toggleItemDone({ listId: list.id, itemId, done: newDone })).unwrap();
+      } catch (e) {
+        console.log('[ListDetailModal] Failed to toggle item via API:', e);
+      }
+    }
   };
 
   // Add items callback
-  const handleAddItems = (newEntries: ListItemEntry[]) => {
+  const handleAddItems = async (newEntries: ListItemEntry[]) => {
+    if (!newEntries || newEntries.length === 0) return;
     const updated: ListGroup = {
       ...list,
       items: [...list.items, ...newEntries],
     };
     onUpdateList(updated);
+
+    if (isUUID(list.id)) {
+      try {
+        await dispatch(
+          addListItems({
+            listId: list.id,
+            payload: {
+              items: newEntries.map((e) => ({
+                name: e.title,
+                note: e.quantity || null,
+              })),
+            },
+          })
+        ).unwrap();
+      } catch (e) {
+        console.log('[ListDetailModal] Failed to add items via API:', e);
+      }
+    }
   };
 
   // Assign item callback
-  const handleAssignItem = (
+  const handleAssignItem = async (
     itemId: string,
     assigneeName?: string,
     initial?: string,
-    bg?: string
+    bg?: string,
+    memberId?: string
   ) => {
     const updatedItems = list.items.map((i) =>
       i.id === itemId
@@ -103,13 +162,28 @@ const ListDetailModal: React.FC<ListDetailModalProps> = ({
     );
     const updated: ListGroup = { ...list, items: updatedItems };
     onUpdateList(updated);
+
+    if (isUUID(list.id) && isUUID(itemId)) {
+      try {
+        await dispatch(
+          updateListItem({
+            listId: list.id,
+            itemId,
+            payload: { assignedMemberId: memberId || null },
+          })
+        ).unwrap();
+      } catch (e) {
+        console.log('[ListDetailModal] Failed to assign item via API:', e);
+      }
+    }
   };
 
   // Share list update callback
-  const handleUpdateShare = (
+  const handleUpdateShare = async (
     listId: string,
     sharedWith: string[],
-    isSharedAll: boolean
+    isSharedAll: boolean,
+    memberIds?: string[]
   ) => {
     const updated: ListGroup = {
       ...list,
@@ -117,16 +191,54 @@ const ListDetailModal: React.FC<ListDetailModalProps> = ({
       isSharedWithAll: isSharedAll,
     };
     onUpdateList(updated);
+
+    if (isUUID(listId)) {
+      try {
+        await dispatch(
+          updateList({
+            listId,
+            payload: {
+              sharedWithAll: isSharedAll,
+              memberIds: isSharedAll ? undefined : memberIds,
+            },
+          })
+        ).unwrap();
+      } catch (e) {
+        console.log('[ListDetailModal] Failed to update share via API:', e);
+      }
+    }
   };
 
   // Rename list callback
-  const handleRenameList = (listId: string, newTitle: string) => {
+  const handleRenameList = async (listId: string, newTitle: string) => {
     const updated: ListGroup = { ...list, title: newTitle };
     onUpdateList(updated);
+
+    if (isUUID(listId)) {
+      try {
+        await dispatch(updateList({ listId, payload: { name: newTitle } })).unwrap();
+      } catch (e) {
+        console.log('[ListDetailModal] Failed to rename list via API:', e);
+      }
+    }
   };
 
   // Duplicate list callback
-  const handleDuplicateList = (sourceList: ListGroup) => {
+  const handleDuplicateList = async (sourceList: ListGroup) => {
+    if (isUUID(sourceList.id)) {
+      try {
+        const res = await dispatch(
+          duplicateList({
+            listId: sourceList.id,
+            name: `${sourceList.title} (Copy)`,
+          })
+        ).unwrap();
+        onUpdateList(mapApiListDetailToUiList(res));
+        return;
+      } catch (e) {
+        console.log('[ListDetailModal] Failed to duplicate list via API:', e);
+      }
+    }
     const duplicated: ListGroup = {
       ...sourceList,
       id: `lst-${Date.now()}`,
@@ -141,25 +253,49 @@ const ListDetailModal: React.FC<ListDetailModalProps> = ({
   };
 
   // Clear completed items
-  const handleClearDoneItems = (_listId: string) => {
+  const handleClearDoneItems = async (listId: string) => {
     const updated: ListGroup = {
       ...list,
       items: list.items.filter((i) => !i.isCompleted),
     };
     onUpdateList(updated);
+
+    if (isUUID(listId)) {
+      try {
+        await dispatch(clearDone(listId)).unwrap();
+      } catch (e) {
+        console.log('[ListDetailModal] Failed to clear done items via API:', e);
+      }
+    }
   };
 
   // Archive list
-  const handleArchiveList = (_listId: string) => {
+  const handleArchiveList = async (listId: string) => {
     const updated: ListGroup = { ...list, isArchived: true };
     onUpdateList(updated);
     onClose();
+
+    if (isUUID(listId)) {
+      try {
+        await dispatch(updateList({ listId, payload: { archived: true } })).unwrap();
+      } catch (e) {
+        console.log('[ListDetailModal] Failed to archive list via API:', e);
+      }
+    }
   };
 
   // Delete list
-  const handleDeleteListConfirmed = (_listId: string) => {
+  const handleDeleteListConfirmed = async (listId: string) => {
     onDeleteList(list.id);
     onClose();
+
+    if (isUUID(listId)) {
+      try {
+        await dispatch(deleteList(listId)).unwrap();
+      } catch (e) {
+        console.log('[ListDetailModal] Failed to delete list via API:', e);
+      }
+    }
   };
 
   const getSectionTitle = () => {
@@ -528,6 +664,7 @@ const ListDetailModal: React.FC<ListDetailModalProps> = ({
         {/* Sub-modals */}
         <AddListItemsModal
           visible={showAddItems}
+          listId={list.id}
           onClose={() => setShowAddItems(false)}
           onAddItems={handleAddItems}
         />

@@ -17,6 +17,7 @@ import FamilyActionConfirmationScreen from '../screens/mainScreens/familyPulse/F
 import TransferOwnershipScreen from '../screens/mainScreens/familyPulse/TransferOwnershipScreen';
 import DeleteFamilyScreen from '../screens/mainScreens/familyPulse/DeleteFamilyScreen';
 import StaffScreen from '../screens/mainScreens/familyPulse/StaffScreen';
+import AddStaffScreen from '../screens/mainScreens/familyPulse/AddStaffScreen';
 import {
   MemberProfileScreen,
   SensitiveDataConsentScreen,
@@ -287,6 +288,14 @@ const RootNavigator: React.FC<RootNavigatorProps> = ({
           <StaffScreen
             {...props}
             onBack={() => props.navigation.navigate('Members')}
+          />
+        )}
+      </Stack.Screen>
+      <Stack.Screen name="AddStaff">
+        {(props) => (
+          <AddStaffScreen
+            {...props}
+            onBack={() => props.navigation.navigate('Staff')}
           />
         )}
       </Stack.Screen>

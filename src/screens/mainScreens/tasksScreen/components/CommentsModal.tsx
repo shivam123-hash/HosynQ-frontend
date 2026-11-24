@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   View,
   Text,
@@ -10,22 +10,47 @@ import {
   KeyboardAvoidingView,
   Platform,
   StatusBar,
+  ActivityIndicator,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Feather from '@react-native-vector-icons/feather';
 import { TaskComment } from '../types';
+import { tasksServices } from '../../../../services';
 
 export interface CommentsModalProps {
   visible: boolean;
+  taskId?: string;
   taskTitle: string;
   dueDateSubtitle: string;
   comments: TaskComment[];
   onClose: () => void;
-  onAddComment?: (text: string) => void;
+  onAddComment?: (text: string) => Promise<void> | void;
 }
+
+const isUUID = (id?: string): boolean =>
+  Boolean(id && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id));
+
+const mapApiCommentToUiComment = (c: any): TaskComment => {
+  const authorName = c.author?.fullName || (c.isMine ? 'You' : 'Member');
+  const authorInitial = ((authorName.trim()[0] || 'M')).toUpperCase();
+  return {
+    id: c.id,
+    author: authorName,
+    authorInitial,
+    avatarBg: c.author?.avatarColor || '#1E3A66',
+    avatarColor: '#8DB8F5',
+    time: c.createdAt
+      ? new Date(c.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+      : 'Just now',
+    text: c.body || '',
+    isYou: Boolean(c.isMine),
+    rawCreatedAt: c.createdAt,
+  };
+};
 
 const CommentsModal: React.FC<CommentsModalProps> = ({
   visible,
+  taskId,
   taskTitle,
   dueDateSubtitle,
   comments,
@@ -34,29 +59,127 @@ const CommentsModal: React.FC<CommentsModalProps> = ({
 }) => {
   const insets = useSafeAreaInsets();
   const [commentList, setCommentList] = useState<TaskComment[]>(comments);
+  const [totalCount, setTotalCount] = useState<number>(comments?.length || 0);
   const [inputText, setInputText] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [loadingOlder, setLoadingOlder] = useState(false);
+  const [hasOlder, setHasOlder] = useState(false);
+  const [olderCursor, setOlderCursor] = useState<string | null>(null);
 
-  React.useEffect(() => {
-    setCommentList(comments);
-  }, [comments, visible]);
+  const fetchAllComments = useCallback(async () => {
+    if (!taskId || !isUUID(taskId)) {
+      setCommentList(comments);
+      setTotalCount(comments?.length || 0);
+      return;
+    }
+    try {
+      setLoading(true);
+      console.log('[CommentsModal] Fetching all comments for task:', taskId);
+      const res = await tasksServices.getComments(taskId, undefined, 50);
+      const rawList = Array.isArray(res) ? res : res?.comments || [];
+      const uiComments: TaskComment[] = rawList.map(mapApiCommentToUiComment);
 
-  const handleSend = () => {
-    if (!inputText.trim()) return;
+      // Sort oldest to newest so conversation reads top to bottom
+      uiComments.sort((a, b) => {
+        const timeA = a.rawCreatedAt ? new Date(a.rawCreatedAt).getTime() : 0;
+        const timeB = b.rawCreatedAt ? new Date(b.rawCreatedAt).getTime() : 0;
+        return timeA - timeB;
+      });
 
-    const newComment: TaskComment = {
+      setCommentList(uiComments);
+      setTotalCount(res?.pagination?.total ?? uiComments.length);
+      setHasOlder(Boolean(res?.pagination?.hasOlder));
+      setOlderCursor(res?.pagination?.olderCursor || null);
+    } catch (err) {
+      console.log('[CommentsModal] ❌ Error fetching comments:', err);
+      if (comments && comments.length > 0) {
+        setCommentList(comments);
+        setTotalCount(comments.length);
+      }
+    } finally {
+      setLoading(false);
+    }
+  }, [taskId]);
+
+  useEffect(() => {
+    if (visible) {
+      fetchAllComments();
+    }
+  }, [visible, fetchAllComments]);
+
+  const handleLoadOlder = async () => {
+    if (!taskId || !olderCursor || loadingOlder) return;
+    try {
+      setLoadingOlder(true);
+      console.log('[CommentsModal] Loading older comments before cursor:', olderCursor);
+      const res = await tasksServices.getComments(taskId, olderCursor, 30);
+      const rawList = Array.isArray(res) ? res : res?.comments || [];
+      const olderComments: TaskComment[] = rawList.map(mapApiCommentToUiComment);
+      olderComments.sort((a, b) => {
+        const timeA = a.rawCreatedAt ? new Date(a.rawCreatedAt).getTime() : 0;
+        const timeB = b.rawCreatedAt ? new Date(b.rawCreatedAt).getTime() : 0;
+        return timeA - timeB;
+      });
+
+      setCommentList((prev) => {
+        const existingIds = new Set(prev.map((c) => c.id));
+        const filteredOlder = olderComments.filter((c) => !existingIds.has(c.id));
+        return [...filteredOlder, ...prev];
+      });
+      setTotalCount(res?.pagination?.total ?? totalCount);
+      setHasOlder(Boolean(res?.pagination?.hasOlder));
+      setOlderCursor(res?.pagination?.olderCursor || null);
+    } catch (err) {
+      console.log('[CommentsModal] Error loading older comments:', err);
+    } finally {
+      setLoadingOlder(false);
+    }
+  };
+
+  const handleSend = async () => {
+    const trimmed = inputText.trim();
+    if (!trimmed) return;
+
+    const tempComment: TaskComment = {
       id: `c-${Date.now()}`,
       author: 'You',
       authorInitial: 'P',
       avatarBg: '#5C3A21',
       avatarColor: '#F0913A',
       time: 'Just now',
-      text: inputText.trim(),
+      text: trimmed,
       isYou: true,
+      rawCreatedAt: new Date().toISOString(),
     };
 
-    setCommentList((prev) => [...prev, newComment]);
-    onAddComment?.(inputText.trim());
+    setCommentList((prev) => [...prev, tempComment]);
+    setTotalCount((prev) => prev + 1);
     setInputText('');
+
+    try {
+      if (onAddComment) {
+        await onAddComment(trimmed);
+      }
+      // Re-fetch all comments from server to sync official IDs and pagination
+      if (taskId && isUUID(taskId)) {
+        const res = await tasksServices.getComments(taskId, undefined, 50);
+        const rawList = Array.isArray(res) ? res : res?.comments || [];
+        if (rawList.length > 0) {
+          const uiComments: TaskComment[] = rawList.map(mapApiCommentToUiComment);
+          uiComments.sort((a, b) => {
+            const timeA = a.rawCreatedAt ? new Date(a.rawCreatedAt).getTime() : 0;
+            const timeB = b.rawCreatedAt ? new Date(b.rawCreatedAt).getTime() : 0;
+            return timeA - timeB;
+          });
+          setCommentList(uiComments);
+          setTotalCount(res?.pagination?.total ?? uiComments.length);
+          setHasOlder(Boolean(res?.pagination?.hasOlder));
+          setOlderCursor(res?.pagination?.olderCursor || null);
+        }
+      }
+    } catch (err) {
+      console.log('[CommentsModal] Error sending comment:', err);
+    }
   };
 
   const renderCommentText = (text: string) => {
@@ -102,7 +225,9 @@ const CommentsModal: React.FC<CommentsModalProps> = ({
           >
             <Feather name="chevron-left" size={22} color="#FFFFFF" />
           </TouchableOpacity>
-          <Text style={styles.headerTitle}>Comments</Text>
+          <Text style={styles.headerTitle}>
+            {totalCount > 0 ? `Comments · ${totalCount}` : 'Comments'}
+          </Text>
           <View style={styles.spacer} />
         </View>
 
@@ -121,42 +246,73 @@ const CommentsModal: React.FC<CommentsModalProps> = ({
             <Text style={styles.dueDateText}>{dueDateSubtitle}</Text>
           </View>
 
-          {/* Comments List */}
-          {commentList.map((c) => (
-            <View key={c.id} style={styles.commentItem}>
-              <View
-                style={[
-                  styles.avatar,
-                  { backgroundColor: c.avatarBg || '#1E3A66' },
-                ]}
-              >
-                <Text
-                  style={[
-                    styles.avatarText,
-                    { color: c.avatarColor || '#8DB8F5' },
-                  ]}
-                >
-                  {c.authorInitial}
-                </Text>
-              </View>
+          {/* Load Older Comments Button */}
+          {hasOlder && (
+            <TouchableOpacity
+              style={styles.loadOlderBtn}
+              onPress={handleLoadOlder}
+              disabled={loadingOlder}
+              activeOpacity={0.7}
+            >
+              {loadingOlder ? (
+                <ActivityIndicator size="small" color="#F0913A" />
+              ) : (
+                <Text style={styles.loadOlderText}>Load older comments</Text>
+              )}
+            </TouchableOpacity>
+          )}
 
-              <View style={styles.commentBody}>
-                <View style={styles.metaRow}>
-                  <Text style={styles.authorText}>{c.author}</Text>
-                  <Text style={styles.timeText}>{c.time}</Text>
-                </View>
-
+          {/* Comments List / Loading / Empty State */}
+          {loading && commentList.length === 0 ? (
+            <View style={styles.loadingContainer}>
+              <ActivityIndicator size="small" color="#F0913A" />
+              <Text style={styles.loadingText}>Loading comments...</Text>
+            </View>
+          ) : commentList.length === 0 ? (
+            <View style={styles.emptyContainer}>
+              <Feather name="message-square" size={32} color="#3A4556" />
+              <Text style={styles.emptyText}>No comments yet</Text>
+              <Text style={styles.emptySubtext}>
+                Start the conversation or ask a question.
+              </Text>
+            </View>
+          ) : (
+            commentList.map((c) => (
+              <View key={c.id} style={styles.commentItem}>
                 <View
                   style={[
-                    styles.bubble,
-                    c.isYou && styles.bubbleYou,
+                    styles.avatar,
+                    { backgroundColor: c.avatarBg || '#1E3A66' },
                   ]}
                 >
-                  {renderCommentText(c.text)}
+                  <Text
+                    style={[
+                      styles.avatarText,
+                      { color: c.avatarColor || '#8DB8F5' },
+                    ]}
+                  >
+                    {c.authorInitial}
+                  </Text>
+                </View>
+
+                <View style={styles.commentBody}>
+                  <View style={styles.metaRow}>
+                    <Text style={styles.authorText}>{c.author}</Text>
+                    <Text style={styles.timeText}>{c.time}</Text>
+                  </View>
+
+                  <View
+                    style={[
+                      styles.bubble,
+                      c.isYou && styles.bubbleYou,
+                    ]}
+                  >
+                    {renderCommentText(c.text)}
+                  </View>
                 </View>
               </View>
-            </View>
-          ))}
+            ))
+          )}
         </ScrollView>
 
         {/* Input Bar */}
@@ -351,6 +507,45 @@ const styles = StyleSheet.create({
   sendIcon: {
     marginRight: 1,
     marginTop: 1,
+  },
+  loadOlderBtn: {
+    alignSelf: 'center',
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+    borderRadius: 16,
+    backgroundColor: '#122440',
+    borderWidth: 1,
+    borderColor: '#1F3352',
+    marginBottom: 16,
+  },
+  loadOlderText: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#8DB8F5',
+  },
+  loadingContainer: {
+    paddingVertical: 32,
+    alignItems: 'center',
+    gap: 8,
+  },
+  loadingText: {
+    fontSize: 13,
+    color: '#8A97AB',
+  },
+  emptyContainer: {
+    paddingVertical: 48,
+    alignItems: 'center',
+    gap: 8,
+  },
+  emptyText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#CAD4DF',
+  },
+  emptySubtext: {
+    fontSize: 13,
+    color: '#8A97AB',
+    textAlign: 'center',
   },
 });
 

@@ -69,7 +69,7 @@ describe('myMemberId persistence and family state', () => {
       },
     };
 
-    const state = familyReducer(initialState, action);
+    const state = familyReducer(initialState as any, action);
     expect(state.family?.familyCode).toBe('HSQ-YEGVNT');
     expect(state.myMemberId).toBe('91688c1c-c33f-4739-a142-e77c36843f4a');
     expect(state.family?.myMemberId).toBe('91688c1c-c33f-4739-a142-e77c36843f4a');
@@ -100,7 +100,7 @@ describe('myMemberId persistence and family state', () => {
     };
 
     const state = familyReducer(
-      initialState,
+      initialState as any,
       setMyMemberId('test-manual-id-123')
     );
     expect(state.myMemberId).toBe('test-manual-id-123');

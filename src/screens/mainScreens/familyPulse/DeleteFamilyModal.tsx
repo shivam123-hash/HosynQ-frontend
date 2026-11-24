@@ -10,9 +10,12 @@ import {
   Alert,
   Modal,
   Platform,
+  ActivityIndicator,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Feather from '@react-native-vector-icons/feather';
+import { useAppDispatch, useAppSelector, RootState } from '../../../redux/store';
+import { deleteFamilyThunk } from '../../../redux/features/family/familySlice';
 
 export interface DeleteFamilyModalProps {
   visible?: boolean;
@@ -113,29 +116,52 @@ export const DeleteFamilyModal: React.FC<DeleteFamilyModalProps> = ({
   onDeleteFamily,
 }) => {
   const insets = useSafeAreaInsets();
-  const [confirmText, setConfirmText] = useState('DELETE');
+  const dispatch = useAppDispatch();
+  const { actionLoading } = useAppSelector((state) => state.family);
+
+  const [confirmText, setConfirmText] = useState('');
   const [isInputFocused, setIsInputFocused] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   const isDeleteEnabled = confirmText.trim().toUpperCase() === 'DELETE';
 
   const handleDelete = () => {
     if (!isDeleteEnabled) {
-      Alert.alert('Confirmation Required', 'Please type DELETE to confirm family deletion.');
+      Alert.alert(
+        'Confirmation Required',
+        'Please type DELETE to confirm family deletion.'
+      );
       return;
     }
 
     Alert.alert(
       'Final Confirmation',
-      `Are you absolutely sure you want to permanently delete ${familyName}? All data will be lost.`,
+      `Are you absolutely sure you want to permanently delete ${familyName}? All data will be permanently wiped.`,
       [
         {
           text: 'Permanently Delete',
           style: 'destructive',
-          onPress: () => {
-            if (onDeleteFamily) {
-              onDeleteFamily();
+          onPress: async () => {
+            setIsDeleting(true);
+            try {
+              await dispatch(deleteFamilyThunk()).unwrap();
+              setIsDeleting(false);
+              Alert.alert(
+                'Family Deleted',
+                `Deleted "${familyName}". You can now create or join another family.`
+              );
+              if (onDeleteFamily) {
+                onDeleteFamily();
+              }
+              onClose();
+            } catch (err: any) {
+              setIsDeleting(false);
+              Alert.alert(
+                'Cannot Delete Family',
+                err ||
+                  'You can only delete the family once you are the last remaining member.'
+              );
             }
-            onClose();
           },
         },
         { text: 'Cancel', style: 'cancel' },
@@ -149,6 +175,8 @@ export const DeleteFamilyModal: React.FC<DeleteFamilyModalProps> = ({
       `An archive of ${familyName}’s tasks, calendar, photos and vaults is being prepared and will be sent to your email.`
     );
   };
+
+  const isBusy = isDeleting || actionLoading;
 
   const topPadding = Math.max(
     insets.top,
@@ -229,8 +257,8 @@ export const DeleteFamilyModal: React.FC<DeleteFamilyModalProps> = ({
             placeholder="Type DELETE"
             placeholderTextColor="#6E8096"
             autoCapitalize="characters"
-            selectionColor="#F0923A"
-            cursorColor="#F0923A"
+            selectionColor="#F0913A"
+            cursorColor="#F0913A"
             onFocus={() => setIsInputFocused(true)}
             onBlur={() => setIsInputFocused(false)}
             accessibilityLabel="Type DELETE to confirm"
@@ -245,37 +273,45 @@ export const DeleteFamilyModal: React.FC<DeleteFamilyModalProps> = ({
           accessibilityRole="button"
           accessibilityLabel="Download your family’s data first"
         >
-          <Feather name="download" size={16} color="#F0923A" />
+          <Feather name="download" size={16} color="#F0913A" />
           <Text style={styles.downloadText}>
             Download your family’s data first
           </Text>
         </TouchableOpacity>
       </ScrollView>
 
-      {/* Pinned Bottom Actions */}
+      {/* Pinned Bottom CTA */}
       <View
         style={[
           styles.bottomBar,
-          { paddingBottom: Math.max(insets.bottom, 16) + 6 },
+          { paddingBottom: Math.max(insets.bottom, 16) + 8 },
         ]}
       >
         <TouchableOpacity
           style={[
             styles.deleteButton,
-            !isDeleteEnabled && styles.deleteButtonDisabled,
+            (!isDeleteEnabled || isBusy) && styles.deleteButtonDisabled,
           ]}
           onPress={handleDelete}
-          disabled={!isDeleteEnabled}
+          disabled={!isDeleteEnabled || isBusy}
           activeOpacity={0.85}
           accessibilityRole="button"
-          accessibilityLabel="Delete family"
+          accessibilityLabel="Delete this family forever"
         >
-          <Text style={styles.deleteButtonText}>Delete family</Text>
+          {isDeleting ? (
+            <ActivityIndicator size="small" color="#FFFFFF" />
+          ) : (
+            <Text style={styles.deleteButtonText}>
+              Delete this family forever
+            </Text>
+          )}
         </TouchableOpacity>
 
+        {/* Cancel Button */}
         <TouchableOpacity
           style={styles.cancelButton}
           onPress={onClose}
+          disabled={isBusy}
           activeOpacity={0.7}
           accessibilityRole="button"
           accessibilityLabel="Cancel"
@@ -326,7 +362,6 @@ const styles = StyleSheet.create({
   backButton: {
     position: 'absolute',
     left: 20,
-    top: 6,
     width: 40,
     height: 40,
     borderRadius: 20,
@@ -335,23 +370,29 @@ const styles = StyleSheet.create({
     borderColor: '#1F3352',
     alignItems: 'center',
     justifyContent: 'center',
-    zIndex: 2,
+  },
+  headerTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: '#FFFFFF',
+    letterSpacing: -0.2,
+    textAlign: 'center',
   },
   content: {
     paddingHorizontal: 20,
-    paddingTop: 8,
+    paddingTop: 16,
   },
   ownerBadge: {
+    alignSelf: 'flex-start',
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
-    alignSelf: 'flex-start',
-    backgroundColor: 'transparent',
-    borderWidth: 1,
-    borderColor: 'rgba(240, 106, 109, 0.45)',
-    borderRadius: 14,
     paddingHorizontal: 10,
-    paddingVertical: 4.5,
+    paddingVertical: 5,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: 'rgba(240, 106, 109, 0.4)',
+    backgroundColor: 'rgba(240, 106, 109, 0.08)',
     marginBottom: 14,
   },
   ownerBadgeText: {
@@ -368,9 +409,9 @@ const styles = StyleSheet.create({
   },
   subtitle: {
     fontSize: 14,
-    lineHeight: 20,
     color: '#8A9BAE',
-    marginBottom: 22,
+    lineHeight: 20,
+    marginBottom: 24,
   },
   sectionLabel: {
     fontSize: 11,
@@ -381,25 +422,25 @@ const styles = StyleSheet.create({
     marginBottom: 10,
   },
   itemsCard: {
-    backgroundColor: '#122440',
-    borderRadius: 16,
+    backgroundColor: '#11223A',
+    borderRadius: 20,
     borderWidth: 1,
     borderColor: '#1F3352',
     overflow: 'hidden',
-    marginBottom: 20,
+    marginBottom: 24,
   },
   itemRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 14,
     paddingHorizontal: 16,
+    paddingVertical: 14,
     gap: 12,
   },
   itemCross: {
     fontSize: 15,
     fontFamily: 'Roboto-Bold',
     color: '#F06A6D',
-    width: 18,
+    fontWeight: '800',
   },
   itemText: {
     fontSize: 14.5,
@@ -408,42 +449,41 @@ const styles = StyleSheet.create({
   },
   divider: {
     height: 1,
-    backgroundColor: '#1F3352',
-    width: '100%',
+    backgroundColor: '#192C45',
+    marginLeft: 42,
   },
   inputLabel: {
     fontSize: 13,
     color: '#8A9BAE',
     fontFamily: 'Roboto-Medium',
     marginBottom: 8,
+    textTransform: 'uppercase',
   },
   inputWrapper: {
-    height: 52,
-    borderRadius: 26,
-    backgroundColor: '#122440',
-    borderWidth: 1,
+    backgroundColor: '#11223A',
+    borderRadius: 16,
+    borderWidth: 1.2,
     borderColor: '#1F3352',
-    paddingHorizontal: 20,
+    height: 52,
+    paddingHorizontal: 16,
     justifyContent: 'center',
+    marginBottom: 20,
   },
   inputWrapperFocused: {
-    borderColor: '#F0923A',
-    borderWidth: 1.5,
+    borderColor: '#F0913A',
   },
   textInput: {
     fontSize: 15,
     fontFamily: 'Roboto-SemiBold',
     color: '#FFFFFF',
-    letterSpacing: 1,
-    padding: 0,
+    fontWeight: '600',
   },
   downloadRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     gap: 8,
-    marginTop: 18,
-    paddingVertical: 6,
+    paddingVertical: 10,
   },
   downloadText: {
     fontSize: 13.5,
@@ -469,7 +509,8 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   deleteButtonDisabled: {
-    opacity: 0.5,
+    opacity: 0.45,
+    backgroundColor: '#3A4B60',
   },
   deleteButtonText: {
     fontSize: 15.5,

@@ -1,10 +1,13 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Switch } from 'react-native';
+import { useAppSelector } from '../../../../redux';
 import AppBottomSheet from '../../../../components/AppBottomSheet';
 import Colors from '../../../../units/Colors';
 import Spacing from '../../../../units/Spacing';
 import BorderRadius from '../../../../units/BorderRadius';
 import Typography from '../../../../units/Typography';
+import tasksServices, { WorkloadMemberData } from '../../../../services/tasksServices';
+import { isUUID } from '../taskApiHelpers';
 import { FAMILY_MEMBERS } from '../mockData';
 
 export interface ReassignModalProps {
@@ -12,7 +15,7 @@ export interface ReassignModalProps {
   taskTitle: string;
   currentAssignee?: string;
   onClose: () => void;
-  onSelectAssignee: (name: string) => void;
+  onSelectAssignee: (memberId: string, memberName?: string) => void;
 }
 
 const MEMBER_ORDER = ['priya', 'rohan', 'dadi', 'anaya', 'aarav'];
@@ -25,6 +28,16 @@ const AVATAR_COLORS: Record<string, { bg: string; text: string }> = {
   aarav: { bg: Colors.avatarOlive, text: Colors.avatarOliveText },
 };
 
+export interface ReassignMemberOption {
+  id: string;
+  name: string;
+  initial: string;
+  avatarBg: string;
+  avatarColor: string;
+  taskCount: number;
+  isChild: boolean;
+}
+
 const ReassignModal: React.FC<ReassignModalProps> = ({
   visible,
   taskTitle,
@@ -32,21 +45,101 @@ const ReassignModal: React.FC<ReassignModalProps> = ({
   onClose,
   onSelectAssignee,
 }) => {
-  const rawMembers = FAMILY_MEMBERS.filter((m) => m.id !== 'everyone');
-  const members = [...rawMembers].sort((a, b) => {
-    const idxA = MEMBER_ORDER.indexOf(a.id);
-    const idxB = MEMBER_ORDER.indexOf(b.id);
-    return (idxA === -1 ? 99 : idxA) - (idxB === -1 ? 99 : idxB);
-  });
+  const familyMembers = useAppSelector(
+    (state) =>
+      ((state.family.myFamilyData?.family as any)?.members as any[]) ||
+      ((state.family.myFamilyData as any)?.members as any[]) ||
+      []
+  );
 
-  const [selectedId, setSelectedId] = useState('rohan');
+  const [workloadMembers, setWorkloadMembers] = useState<WorkloadMemberData[]>([]);
+
+  useEffect(() => {
+    if (visible) {
+      tasksServices
+        .getWorkload()
+        .then((res) => {
+          if (res?.members && res.members.length > 0) {
+            setWorkloadMembers(res.members);
+          }
+        })
+        .catch((err) => {
+          console.log('[ReassignModal] Could not fetch workload:', err?.message || err);
+        });
+    }
+  }, [visible]);
+
+  const members: ReassignMemberOption[] = useMemo(() => {
+    if (workloadMembers && workloadMembers.length > 0) {
+      return workloadMembers.map((wm) => ({
+        id: wm.memberId,
+        name: wm.fullName,
+        initial: ((wm.fullName || 'M').trim()[0] || 'M').toUpperCase(),
+        avatarBg: wm.avatarColor || Colors.primary,
+        avatarColor: '#FFFFFF',
+        taskCount: wm.activeTasksCount ?? 0,
+        isChild: false,
+      }));
+    }
+    if (familyMembers && familyMembers.length > 0) {
+      return familyMembers.map((m: any) => ({
+        id: m.memberId || m.id,
+        name: m.fullName || m.name || 'Member',
+        initial: ((m.fullName || m.name || 'M').trim()[0] || 'M').toUpperCase(),
+        avatarBg: m.avatarColor || Colors.primary,
+        avatarColor: '#FFFFFF',
+        taskCount: 1,
+        isChild:
+          m.role === 'CHILD' ||
+          m.relationship === 'DAUGHTER' ||
+          m.relationship === 'SON' ||
+          m.relationship === 'CHILD',
+      }));
+    }
+    const rawMembers = FAMILY_MEMBERS.filter((m) => m.id !== 'everyone');
+    const sorted = [...rawMembers].sort((a, b) => {
+      const idxA = MEMBER_ORDER.indexOf(a.id);
+      const idxB = MEMBER_ORDER.indexOf(b.id);
+      return (idxA === -1 ? 99 : idxA) - (idxB === -1 ? 99 : idxB);
+    });
+    return sorted.map((m) => ({
+      id: m.id,
+      name: m.name,
+      initial: m.initial,
+      avatarBg: m.avatarBg,
+      avatarColor: m.avatarColor,
+      taskCount: m.taskCount || 1,
+      isChild: m.id === 'anaya' || m.id === 'aarav',
+    }));
+  }, [familyMembers]);
+
+  const [selectedId, setSelectedId] = useState<string>(() => {
+    const rohan = members.find((m: ReassignMemberOption) => m.name.toLowerCase() === 'rohan' || m.id === 'rohan');
+    return rohan?.id || members.find((m: ReassignMemberOption) => m.name.toLowerCase() !== currentAssignee.toLowerCase())?.id || members[0]?.id || 'rohan';
+  });
   const [notifyAssignee, setNotifyAssignee] = useState(true);
 
+  useEffect(() => {
+    if (members.length > 0 && !members.some((m: ReassignMemberOption) => m.id === selectedId)) {
+      const rohan = members.find((m: ReassignMemberOption) => m.name.toLowerCase() === 'rohan' || m.id === 'rohan');
+      setSelectedId(rohan?.id || members[0].id);
+    }
+  }, [members, selectedId]);
+
   const selectedMember =
-    members.find((m) => m.id === selectedId) || members[0];
+    members.find((m: ReassignMemberOption) => m.id === selectedId) ||
+    members[0] || {
+      id: 'rohan',
+      name: 'Rohan',
+      initial: 'R',
+      avatarBg: Colors.avatarNavy,
+      avatarColor: Colors.avatarNavyText,
+      taskCount: 1,
+      isChild: false,
+    };
 
   const handleConfirm = () => {
-    onSelectAssignee(selectedMember.name);
+    onSelectAssignee(selectedMember.id, selectedMember.name);
     onClose();
   };
 
@@ -63,7 +156,7 @@ const ReassignModal: React.FC<ReassignModalProps> = ({
     >
       {/* Family Members List Card */}
       <View style={styles.membersCard}>
-        {members.map((m, index) => {
+        {members.map((m: ReassignMemberOption, index: number) => {
           const isSelected = selectedId === m.id;
           const isLast = index === members.length - 1;
           const isCurrentlyAssigned =

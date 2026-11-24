@@ -8,9 +8,9 @@ import {
   ViewStyle,
   TextStyle,
   DimensionValue,
+  ActivityIndicator,
 } from 'react-native';
 import Colors from '../units/Colors';
-import ThreeDotsLoader from './ThreeDotsLoader';
 
 export interface CommonBtnProps {
   title: string;
@@ -63,7 +63,7 @@ const CommonBtn: React.FC<CommonBtnProps> = ({
       style={[
         styles.button,
         {
-          backgroundColor: disabled ? '#3A4B60' : backgroundColor,
+          backgroundColor: disabled && !loading ? '#3A4B60' : backgroundColor,
           borderColor: borderColor,
           borderWidth: borderWidth ?? (borderColor ? 1.5 : 0),
           height,
@@ -76,7 +76,9 @@ const CommonBtn: React.FC<CommonBtnProps> = ({
       ]}
     >
       {loading ? (
-        <ThreeDotsLoader color={textColor} />
+        <View style={styles.loaderContainer}>
+          <ActivityIndicator size="small" color={textColor || '#FFFFFF'} />
+        </View>
       ) : (
         <View style={styles.content}>
           {leftComponent}
@@ -111,6 +113,10 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  loaderContainer: {
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   text: {
     fontFamily: 'Roboto-SemiBold',

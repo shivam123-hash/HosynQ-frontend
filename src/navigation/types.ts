@@ -168,6 +168,7 @@ export type RootStackParamList = {
   TransferOwnership: undefined;
   DeleteFamily: undefined;
   Staff: undefined;
+  AddStaff: undefined;
   MemberProfile: { memberId?: string; memberName?: string; isHealthConsentGranted?: boolean } | undefined;
   SensitiveDataConsent: { memberId?: string; memberName?: string } | undefined;
   MemberPersonalInfo: { memberId?: string; memberName?: string } | undefined;

@@ -25,6 +25,9 @@ import AppConfirmationModal, {
   AppConfirmationModalProps,
 } from './AppConfirmationModal';
 import AppErrorModal, { AppErrorModalProps } from './AppErrorModal';
+import AppCalendarDatePickerModal, {
+  AppCalendarDatePickerModalProps,
+} from './AppCalendarDatePickerModal';
 import QrCodeScannerModal, {
   QrCodeScannerModalProps,
 } from './QrCodeScannerModal';
@@ -38,6 +41,7 @@ export {
   ThreeDotsLoader,
   QRCodeView,
   AppDateTimePicker,
+  AppCalendarDatePickerModal,
   AppImagePickerBottomSheet,
   AppConfirmationModal,
   AppErrorModal,
@@ -64,6 +68,7 @@ export type {
   QRCodeViewProps,
   AppDateTimePickerProps,
   DateTimePickerMode,
+  AppCalendarDatePickerModalProps,
   AppDialogProps,
   AppDialogType,
   AppBottomSheetProps,

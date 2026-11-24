@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -10,10 +10,13 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Feather from '@react-native-vector-icons/feather';
+import listsServices from '../../../../services/listsServices';
+import { isUUID } from '../taskApiHelpers';
 import { ListItemEntry } from '../types';
 
 export interface AddListItemsModalProps {
   visible: boolean;
+  listId?: string;
   onClose: () => void;
   onAddItems: (newItems: ListItemEntry[]) => void;
 }
@@ -31,6 +34,7 @@ const PAST_SUGGESTIONS = [
 
 const AddListItemsModal: React.FC<AddListItemsModalProps> = ({
   visible,
+  listId,
   onClose,
   onAddItems,
 }) => {
@@ -38,6 +42,22 @@ const AddListItemsModal: React.FC<AddListItemsModalProps> = ({
   const [itemName, setItemName] = useState<string>('');
   const [quantity, setQuantity] = useState<string>('');
   const [addedItems, setAddedItems] = useState<ListItemEntry[]>([]);
+  const [suggestions, setSuggestions] = useState<string[]>(PAST_SUGGESTIONS);
+
+  useEffect(() => {
+    if (visible && listId && isUUID(listId)) {
+      listsServices
+        .getSuggestions(listId)
+        .then((res) => {
+          if (res?.suggestions && res.suggestions.length > 0) {
+            setSuggestions(res.suggestions.map((s) => s.name));
+          }
+        })
+        .catch((err) => {
+          console.log('[AddListItemsModal] Could not fetch suggestions:', err?.message || err);
+        });
+    }
+  }, [visible, listId]);
 
   const handleAddItem = () => {
     const trimmed = itemName.trim();
@@ -69,8 +89,18 @@ const AddListItemsModal: React.FC<AddListItemsModalProps> = ({
   };
 
   const handleDone = () => {
-    if (addedItems.length > 0) {
-      onAddItems(addedItems);
+    let finalItems = [...addedItems];
+    const trimmed = itemName.trim();
+    if (trimmed) {
+      finalItems.push({
+        id: `li-new-${Date.now()}-${Math.random()}`,
+        title: trimmed,
+        quantity: quantity.trim() || undefined,
+        isCompleted: false,
+      });
+    }
+    if (finalItems.length > 0) {
+      onAddItems(finalItems);
     }
     setAddedItems([]);
     setItemName('');
@@ -147,7 +177,7 @@ const AddListItemsModal: React.FC<AddListItemsModalProps> = ({
           {/* Past Suggestions */}
           <Text style={styles.sectionEyebrow}>FROM YOUR PAST LISTS</Text>
           <View style={styles.suggestionsWrap}>
-            {PAST_SUGGESTIONS.map((item, idx) => (
+            {suggestions.map((item, idx) => (
               <TouchableOpacity
                 key={idx}
                 style={styles.suggestionChip}

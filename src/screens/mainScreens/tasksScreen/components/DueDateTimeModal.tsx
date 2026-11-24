@@ -10,13 +10,19 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Feather from '@react-native-vector-icons/feather';
+import { AppDateTimePicker, parseDateTimeString } from '../../../../components';
 
 export interface DueDateTimeModalProps {
   visible: boolean;
   initialDate?: string;
   initialTime?: string;
   onClose: () => void;
-  onSave: (dueDate: string, dueFormatted: string, dueTime?: string) => void;
+  onSave: (
+    dueDate: string,
+    dueFormatted: string,
+    dueTime?: string,
+    isoDate?: string
+  ) => void;
 }
 
 const MONTH_NAMES = [
@@ -52,38 +58,29 @@ const MONTHS_SHORT = [
 const DAYS_SHORT = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 const WEEKDAY_HEADERS = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
 
-// Baseline reference date aligned with app mock date (Friday, 30 October 2026)
-const APP_TODAY = new Date(2026, 9, 30);
+const getToday = (): Date => {
+  const now = new Date();
+  return new Date(now.getFullYear(), now.getMonth(), now.getDate());
+};
 
 const parseInitialDate = (dateStr?: string): Date => {
-  if (!dateStr) return new Date(2026, 10, 2);
+  const today = getToday();
+  if (!dateStr) return today;
 
   const s = dateStr.toLowerCase().trim();
-  if (s.includes('today')) {
-    return new Date(APP_TODAY);
+  if (s === 'today' || s.includes('today')) {
+    return today;
   }
-  if (s.includes('tomorrow')) {
-    const d = new Date(APP_TODAY);
+  if (s === 'tomorrow' || s.includes('tomorrow')) {
+    const d = new Date(today);
     d.setDate(d.getDate() + 1);
     return d;
   }
   if (s.includes('weekend')) {
-    const d = new Date(APP_TODAY);
+    const d = new Date(today);
     const daysUntilSat = (6 - d.getDay() + 7) % 7 || 7;
     d.setDate(d.getDate() + daysUntilSat);
     return d;
-  }
-
-  for (let m = 0; m < 12; m++) {
-    const shortName = MONTHS_SHORT[m].toLowerCase();
-    const fullName = MONTH_NAMES[m].toLowerCase();
-    if (s.includes(shortName) || s.includes(fullName)) {
-      const match = s.match(/\b(\d{1,2})\b/);
-      const day = match ? parseInt(match[1], 10) : 1;
-      const yearMatch = s.match(/\b(20\d\d)\b/);
-      const year = yearMatch ? parseInt(yearMatch[1], 10) : 2026;
-      return new Date(year, m, day);
-    }
   }
 
   const isoMatch = dateStr.match(/^(\d{4})-(\d{2})-(\d{2})/);
@@ -95,7 +92,19 @@ const parseInitialDate = (dateStr?: string): Date => {
     );
   }
 
-  return new Date(2026, 10, 2);
+  for (let m = 0; m < 12; m++) {
+    const shortName = MONTHS_SHORT[m].toLowerCase();
+    const fullName = MONTH_NAMES[m].toLowerCase();
+    if (s.includes(shortName) || s.includes(fullName)) {
+      const match = s.match(/\b(\d{1,2})\b/);
+      const day = match ? parseInt(match[1], 10) : 1;
+      const yearMatch = s.match(/\b(20\d\d)\b/);
+      const year = yearMatch ? parseInt(yearMatch[1], 10) : today.getFullYear();
+      return new Date(year, m, day);
+    }
+  }
+
+  return today;
 };
 
 const formatDisplayDate = (d: Date): string => {
@@ -123,12 +132,9 @@ interface CalendarCell {
   isSelected: boolean;
 }
 
-const CUSTOM_HOURS = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12];
-const CUSTOM_MINUTES = ['00', '15', '30', '45'];
-
 const DueDateTimeModal: React.FC<DueDateTimeModalProps> = ({
   visible,
-  initialDate = 'Mon, 2 Nov',
+  initialDate = 'Today',
   initialTime = '6:00 PM',
   onClose,
   onSave,
@@ -153,11 +159,8 @@ const DueDateTimeModal: React.FC<DueDateTimeModalProps> = ({
   const [selectedTimeStr, setSelectedTimeStr] = useState<string>(initialTime);
   const [noSpecificTime, setNoSpecificTime] = useState<boolean>(false);
 
-  // Custom Time Picker state
-  const [showTimePicker, setShowTimePicker] = useState<boolean>(false);
-  const [customHour, setCustomHour] = useState<number>(8);
-  const [customMinute, setCustomMinute] = useState<string>('00');
-  const [customPeriod, setCustomPeriod] = useState<'AM' | 'PM'>('PM');
+  // Wheel/Modal Time Picker state
+  const [isTimePickerVisible, setIsTimePickerVisible] = useState<boolean>(false);
 
   // Sync state on open
   React.useEffect(() => {
@@ -167,36 +170,49 @@ const DueDateTimeModal: React.FC<DueDateTimeModalProps> = ({
       setDisplayedYear(parsed.getFullYear());
       setDisplayedMonth(parsed.getMonth());
 
-      if (initialTime.includes('9:00')) {
+      const timeNorm = (initialTime || '').trim().toLowerCase();
+      if (
+        timeNorm.includes('9:00') &&
+        (timeNorm.includes('am') || timeNorm.includes('morning') || !timeNorm.includes('pm'))
+      ) {
         setSelectedTimeId('morning');
         setSelectedTimeStr('9:00 AM');
-      } else if (initialTime.includes('2:00')) {
+      } else if (
+        timeNorm.includes('2:00') &&
+        (timeNorm.includes('pm') || timeNorm.includes('afternoon'))
+      ) {
         setSelectedTimeId('afternoon');
         setSelectedTimeStr('2:00 PM');
-      } else if (initialTime.includes('6:00')) {
+      } else if (
+        timeNorm.includes('6:00') &&
+        (timeNorm.includes('pm') || timeNorm.includes('evening'))
+      ) {
         setSelectedTimeId('evening');
         setSelectedTimeStr('6:00 PM');
-      } else {
+      } else if (initialTime) {
         setSelectedTimeId('custom');
         setSelectedTimeStr(initialTime);
+      } else {
+        setSelectedTimeId('evening');
+        setSelectedTimeStr('6:00 PM');
       }
-      setShowTimePicker(false);
+      setIsTimePickerVisible(false);
     }
   }, [initialDate, initialTime, visible]);
 
-  // Compute reference dates for quick chips
-  const todayDate = useMemo(() => new Date(APP_TODAY), []);
+  // Compute reference dates for quick chips based on actual current date
+  const todayDate = useMemo(() => getToday(), [visible]);
   const tomorrowDate = useMemo(() => {
-    const d = new Date(APP_TODAY);
+    const d = getToday();
     d.setDate(d.getDate() + 1);
     return d;
-  }, []);
+  }, [visible]);
   const weekendDate = useMemo(() => {
-    const d = new Date(APP_TODAY);
+    const d = getToday();
     const daysUntilSat = (6 - d.getDay() + 7) % 7 || 7;
     d.setDate(d.getDate() + daysUntilSat);
     return d;
-  }, []);
+  }, [visible]);
 
   const isSelectedToday = isSameDay(selectedDate, todayDate);
   const isSelectedTomorrow = isSameDay(selectedDate, tomorrowDate);
@@ -224,7 +240,7 @@ const DueDateTimeModal: React.FC<DueDateTimeModalProps> = ({
         month: prevMonth,
         day,
         isCurrentMonth: false,
-        isToday: isSameDay(cellDate, APP_TODAY),
+        isToday: isSameDay(cellDate, todayDate),
         isSelected: isSameDay(cellDate, selectedDate),
       });
     }
@@ -238,7 +254,7 @@ const DueDateTimeModal: React.FC<DueDateTimeModalProps> = ({
         month: displayedMonth,
         day,
         isCurrentMonth: true,
-        isToday: isSameDay(cellDate, APP_TODAY),
+        isToday: isSameDay(cellDate, todayDate),
         isSelected: isSameDay(cellDate, selectedDate),
       });
     }
@@ -257,13 +273,13 @@ const DueDateTimeModal: React.FC<DueDateTimeModalProps> = ({
         month: nextMonth,
         day,
         isCurrentMonth: false,
-        isToday: isSameDay(cellDate, APP_TODAY),
+        isToday: isSameDay(cellDate, todayDate),
         isSelected: isSameDay(cellDate, selectedDate),
       });
     }
 
     return cells;
-  }, [displayedYear, displayedMonth, selectedDate]);
+  }, [displayedYear, displayedMonth, selectedDate, todayDate]);
 
   // Calendar Navigation
   const handlePrevMonth = useCallback(() => {
@@ -325,20 +341,27 @@ const DueDateTimeModal: React.FC<DueDateTimeModalProps> = ({
     setSelectedTimeId(id);
     setSelectedTimeStr(timeString);
     setNoSpecificTime(false);
-    setShowTimePicker(false);
+    setIsTimePickerVisible(false);
   };
 
   const handleOpenTimePicker = () => {
-    setSelectedTimeId('custom');
-    setShowTimePicker(true);
+    setIsTimePickerVisible(true);
     setNoSpecificTime(false);
   };
 
-  const handleApplyCustomTime = () => {
-    const formattedTime = `${customHour}:${customMinute} ${customPeriod}`;
-    setSelectedTimeStr(formattedTime);
+  const handleConfirmCustomTime = (pickedDate: Date) => {
+    setIsTimePickerVisible(false);
+    let hours = pickedDate.getHours();
+    const minutes = pickedDate.getMinutes();
+    const ampm = hours >= 12 ? 'PM' : 'AM';
+    hours = hours % 12;
+    hours = hours ? hours : 12;
+    const strMinutes = minutes < 10 ? `0${minutes}` : `${minutes}`;
+    const formatted = `${hours}:${strMinutes} ${ampm}`;
+
+    setSelectedTimeStr(formatted);
     setSelectedTimeId('custom');
-    setShowTimePicker(false);
+    setNoSpecificTime(false);
   };
 
   const handleDone = () => {
@@ -357,7 +380,8 @@ const DueDateTimeModal: React.FC<DueDateTimeModalProps> = ({
       finalFormatted = `${dateLabel} · by ${finalTimeStr}`;
     }
 
-    onSave(dateLabel, finalFormatted, finalTimeStr);
+    const isoDate = `${selectedDate.getFullYear()}-${String(selectedDate.getMonth() + 1).padStart(2, '0')}-${String(selectedDate.getDate()).padStart(2, '0')}`;
+    onSave(dateLabel, finalFormatted, finalTimeStr, isoDate);
     onClose();
   };
 
@@ -676,118 +700,6 @@ const DueDateTimeModal: React.FC<DueDateTimeModalProps> = ({
                 </Text>
               </TouchableOpacity>
             </View>
-
-            {/* Interactive Custom Time Picker Drawer */}
-            {showTimePicker && !noSpecificTime && (
-              <View style={styles.timePickerCard}>
-                <Text style={styles.timePickerTitle}>Select Custom Time</Text>
-
-                {/* Hours Row */}
-                <Text style={styles.timePickerSubLabel}>Hour</Text>
-                <ScrollView
-                  horizontal
-                  showsHorizontalScrollIndicator={false}
-                  contentContainerStyle={styles.timePickerScrollRow}
-                >
-                  {CUSTOM_HOURS.map((hr) => {
-                    const isHrActive = customHour === hr;
-                    return (
-                      <TouchableOpacity
-                        key={hr}
-                        style={[
-                          styles.timeNumberPill,
-                          isHrActive && styles.timeNumberPillActive,
-                        ]}
-                        onPress={() => setCustomHour(hr)}
-                        activeOpacity={0.7}
-                      >
-                        <Text
-                          style={[
-                            styles.timeNumberText,
-                            isHrActive && styles.timeNumberTextActive,
-                          ]}
-                        >
-                          {hr}
-                        </Text>
-                      </TouchableOpacity>
-                    );
-                  })}
-                </ScrollView>
-
-                {/* Minutes & AM/PM Row */}
-                <View style={styles.minutePeriodRow}>
-                  <View style={styles.minuteColumn}>
-                    <Text style={styles.timePickerSubLabel}>Minute</Text>
-                    <View style={styles.minutePillsRow}>
-                      {CUSTOM_MINUTES.map((min) => {
-                        const isMinActive = customMinute === min;
-                        return (
-                          <TouchableOpacity
-                            key={min}
-                            style={[
-                              styles.timeNumberPill,
-                              isMinActive && styles.timeNumberPillActive,
-                            ]}
-                            onPress={() => setCustomMinute(min)}
-                            activeOpacity={0.7}
-                          >
-                            <Text
-                              style={[
-                                styles.timeNumberText,
-                                isMinActive && styles.timeNumberTextActive,
-                              ]}
-                            >
-                              :{min}
-                            </Text>
-                          </TouchableOpacity>
-                        );
-                      })}
-                    </View>
-                  </View>
-
-                  <View style={styles.periodColumn}>
-                    <Text style={styles.timePickerSubLabel}>Period</Text>
-                    <View style={styles.periodPillsRow}>
-                      {(['AM', 'PM'] as const).map((p) => {
-                        const isPeriodActive = customPeriod === p;
-                        return (
-                          <TouchableOpacity
-                            key={p}
-                            style={[
-                              styles.timeNumberPill,
-                              isPeriodActive && styles.timeNumberPillActive,
-                            ]}
-                            onPress={() => setCustomPeriod(p)}
-                            activeOpacity={0.7}
-                          >
-                            <Text
-                              style={[
-                                styles.timeNumberText,
-                                isPeriodActive && styles.timeNumberTextActive,
-                              ]}
-                            >
-                              {p}
-                            </Text>
-                          </TouchableOpacity>
-                        );
-                      })}
-                    </View>
-                  </View>
-                </View>
-
-                {/* Set Custom Time Button */}
-                <TouchableOpacity
-                  style={styles.applyTimeBtn}
-                  onPress={handleApplyCustomTime}
-                  activeOpacity={0.8}
-                >
-                  <Text style={styles.applyTimeBtnText}>
-                    Set {customHour}:{customMinute} {customPeriod}
-                  </Text>
-                </TouchableOpacity>
-              </View>
-            )}
-
           </ScrollView>
 
           {/* Toggle: No specific time */}
@@ -812,6 +724,21 @@ const DueDateTimeModal: React.FC<DueDateTimeModalProps> = ({
             <Text style={styles.doneBtnText}>Done</Text>
           </TouchableOpacity>
         </View>
+
+        {/* Integrated Native Wheel Time Picker */}
+        <AppDateTimePicker
+          visible={isTimePickerVisible}
+          mode="time"
+          title="Pick a time"
+          confirmText="Confirm"
+          cancelText="Cancel"
+          theme="dark"
+          buttonColor="#F0913A"
+          dividerColor="#1F3352"
+          date={parseDateTimeString(selectedTimeStr, 'time')}
+          onConfirm={handleConfirmCustomTime}
+          onCancel={() => setIsTimePickerVisible(false)}
+        />
       </View>
     </Modal>
   );

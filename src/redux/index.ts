@@ -9,4 +9,5 @@ export * from './features/baseProfileSet/baseProfileSlice';
 export * from './features/family/familySlice';
 export * from './features/lifeProfile/lifeProfileSlice';
 export * from './features/medicine/medicineSlice';
+export * from './features/tasks/tasksSlice';
 

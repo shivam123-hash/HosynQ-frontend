@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -9,9 +9,17 @@ import {
   StatusBar,
   Alert,
   Platform,
+  ActivityIndicator,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Feather from '@react-native-vector-icons/feather';
+import { useAppDispatch, useAppSelector, RootState } from '../../../redux/store';
+import {
+  fetchJoinRequestsThunk,
+  approveJoinRequestThunk,
+  rejectJoinRequestThunk,
+} from '../../../redux/features/family/familySlice';
+import { JoinRequestsSkeleton } from '../../../components/SkeletonLoader';
 
 export type RequestRole = 'Adult' | 'Admin';
 
@@ -33,6 +41,7 @@ export interface JoinRequestsModalProps {
   onApprove?: (item: JoinRequestItem) => void;
   onDecline?: (item: JoinRequestItem) => void;
   isScreen?: boolean;
+  initialRequests?: JoinRequestItem[];
 }
 
 const INITIAL_REQUESTS: JoinRequestItem[] = [
@@ -65,34 +74,122 @@ export const JoinRequestsModal: React.FC<JoinRequestsModalProps> = ({
   onApprove,
   onDecline,
   isScreen = false,
+  initialRequests,
 }) => {
   const insets = useSafeAreaInsets();
-  const [requests, setRequests] = useState<JoinRequestItem[]>(INITIAL_REQUESTS);
+  const dispatch = useAppDispatch();
+
+  const {
+    pendingRequests,
+    requestsLoading,
+    family,
+    myFamilyData,
+  } = useAppSelector((state) => state.family);
+
+  const [selectedRoles, setSelectedRoles] = useState<Record<string, RequestRole>>({});
+  const [approvingId, setApprovingId] = useState<string | null>(null);
+  const [rejectingId, setRejectingId] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (visible || isScreen) {
+      dispatch(fetchJoinRequestsThunk());
+    }
+  }, [visible, isScreen, dispatch]);
+
+  const familyCode =
+    myFamilyData?.family?.familyCode || family?.familyCode || 'HSQ-FAMILY';
 
   const handleRoleSelect = (id: string, role: RequestRole) => {
-    setRequests((prev) =>
-      prev.map((r) => (r.id === id ? { ...r, role } : r))
-    );
+    setSelectedRoles((prev) => ({ ...prev, [id]: role }));
   };
 
-  const handleApprove = (item: JoinRequestItem) => {
+  const handleApprove = async (item: JoinRequestItem) => {
     if (onApprove) {
       onApprove(item);
-    } else {
+      return;
+    }
+
+    setApprovingId(item.id);
+    const assignedRole = item.role === 'Admin' ? 'FAMILY_ADMIN' : 'ADULT_MEMBER';
+    try {
+      await dispatch(
+        approveJoinRequestThunk({ requestId: item.id, role: assignedRole })
+      ).unwrap();
       Alert.alert(
         'Request Approved',
         `${item.name} has been approved as an ${item.role}.`
       );
+    } catch (err: any) {
+      Alert.alert('Approval Failed', err || 'Could not approve join request.');
+    } finally {
+      setApprovingId(null);
     }
   };
 
-  const handleDecline = (item: JoinRequestItem) => {
+  const handleDecline = async (item: JoinRequestItem) => {
     if (onDecline) {
       onDecline(item);
-    } else {
+      return;
+    }
+
+    setRejectingId(item.id);
+    try {
+      await dispatch(rejectJoinRequestThunk(item.id)).unwrap();
       Alert.alert('Request Declined', `Declined join request from ${item.name}.`);
+    } catch (err: any) {
+      Alert.alert('Decline Failed', err || 'Could not decline join request.');
+    } finally {
+      setRejectingId(null);
     }
   };
+
+  const effectiveRequests =
+    pendingRequests && pendingRequests.length > 0
+      ? pendingRequests
+      : (initialRequests || INITIAL_REQUESTS);
+
+  const requests: JoinRequestItem[] = effectiveRequests.map((req: any, index: number) => {
+    const role = selectedRoles[req.id] || req.role || 'Adult';
+    const initial = req.initial || (req.fullName
+      ? req.fullName.trim().charAt(0).toUpperCase()
+      : '?');
+    const isUnknown = req.isUnknown !== undefined
+      ? req.isUnknown
+      : (!req.fullName || req.fullName.toLowerCase().includes('unknown'));
+
+    let formattedTime = req.time || 'Recently';
+    if (req.createdAt) {
+      if (typeof req.createdAt === 'string' && (req.createdAt.includes('ago') || req.createdAt.includes('Yesterday'))) {
+        formattedTime = req.createdAt;
+      } else {
+        try {
+          const d = new Date(req.createdAt);
+          if (!isNaN(d.getTime())) {
+            formattedTime = d.toLocaleDateString(undefined, {
+              month: 'short',
+              day: 'numeric',
+            });
+          }
+        } catch (e) {
+          formattedTime = req.createdAt;
+        }
+      }
+    }
+
+    const requestId = req.id || req.requestId || req._id || `request-${index}`;
+
+    return {
+      id: String(requestId),
+      name: req.fullName || req.name || 'Unknown Applicant',
+      phone: req.phoneNumber || req.phone || 'No phone provided',
+      time: formattedTime,
+      note: req.message || req.note || undefined,
+      isUnknown,
+      role,
+      avatarBg: req.avatarBg || req.avatarColor || '#215C33',
+      initial,
+    };
+  });
 
   const topPadding =
     Math.max(
@@ -119,157 +216,190 @@ export const JoinRequestsModal: React.FC<JoinRequestsModalProps> = ({
         <Text style={styles.headerTitle}>Join requests</Text>
       </View>
 
-      {/* Scroll Content */}
-      <ScrollView
-        style={styles.scrollArea}
-        contentContainerStyle={[
-          styles.scrollContent,
-          { paddingBottom: Math.max(insets.bottom, 16) + 16 },
-        ]}
-        showsVerticalScrollIndicator={false}
-      >
-        {/* Subtitle Description */}
-        <Text style={styles.subtitleDescription}>
-          These people asked to join using your family ID HSQ-4821.
-        </Text>
+      {/* Loading Skeleton */}
+      {requestsLoading && requests.length === 0 ? (
+        <JoinRequestsSkeleton />
+      ) : (
+        /* Scroll Content */
+        <ScrollView
+          style={styles.scrollArea}
+          contentContainerStyle={[
+            styles.scrollContent,
+            { paddingBottom: Math.max(insets.bottom, 16) + 16 },
+          ]}
+          showsVerticalScrollIndicator={false}
+        >
+          {/* Subtitle Description */}
+          <Text style={styles.subtitleDescription}>
+            {`These people asked to join using your family ID ${familyCode}.`}
+          </Text>
 
-        {/* Request Cards */}
-        {requests.map((item) => (
-          <View key={item.id} style={styles.requestCard}>
-            {/* Header: Avatar, Name, Phone & Time */}
-            <View style={styles.cardHeaderRow}>
-              <View
-                style={[
-                  styles.avatarCircle,
-                  { backgroundColor: item.avatarBg },
-                ]}
-              >
-                <Text
-                  style={[
-                    styles.avatarText,
-                    item.isUnknown && styles.avatarTextUnknown,
-                  ]}
-                >
-                  {item.initial}
-                </Text>
-              </View>
-
-              <View style={styles.cardInfo}>
-                <Text style={styles.cardName}>{item.name}</Text>
-                <Text style={styles.cardSubtext}>
-                  {`${item.phone} · ${item.time}`}
-                </Text>
-              </View>
+          {requests.length === 0 ? (
+            <View style={styles.emptyContainer}>
+              <Feather name="check-circle" size={42} color="#10B981" />
+              <Text style={styles.emptyTitle}>All caught up!</Text>
+              <Text style={styles.emptySubtitle}>
+                There are no pending join requests to review right now.
+              </Text>
             </View>
+          ) : (
+            /* Request Cards */
+            requests.map((item, index) => {
+              const isApproving = approvingId === item.id;
+              const isRejecting = rejectingId === item.id;
+              const isBusy = isApproving || isRejecting;
 
-            {/* Note Box if provided */}
-            {item.note && (
-              <View style={styles.noteContainer}>
-                <Text style={styles.noteText}>
-                  {`“${item.note.replace(/^["“]|["”]$/g, '')}”`}
-                </Text>
-              </View>
-            )}
+              return (
+                <View key={item.id || `request-card-${index}`} style={styles.requestCard}>
+                  {/* Header: Avatar, Name, Phone & Time */}
+                  <View style={styles.cardHeaderRow}>
+                    <View
+                      style={[
+                        styles.avatarCircle,
+                        { backgroundColor: item.avatarBg },
+                      ]}
+                    >
+                      <Text
+                        style={[
+                          styles.avatarText,
+                          item.isUnknown && styles.avatarTextUnknown,
+                        ]}
+                      >
+                        {item.initial}
+                      </Text>
+                    </View>
 
-            {/* Warning Box if unknown */}
-            {item.isUnknown && (
-              <View style={styles.warningContainer}>
-                <Feather
-                  name="alert-circle"
-                  size={18}
-                  color="#F0913A"
-                  style={styles.warningIcon}
-                />
-                <Text style={styles.warningText}>
-                  We don't recognise this number. Check with your family before
-                  approving.
-                </Text>
-              </View>
-            )}
+                    <View style={styles.cardInfo}>
+                      <Text style={styles.cardName}>{item.name}</Text>
+                      <Text style={styles.cardSubtext}>
+                        {`${item.phone} · ${item.time}`}
+                      </Text>
+                    </View>
+                  </View>
 
-            {/* Join As Role Selection */}
-            <View style={styles.roleSelectionRow}>
-              <Text style={styles.joinAsLabel}>Join as</Text>
+                  {/* Note Box if provided */}
+                  {item.note && (
+                    <View style={styles.noteContainer}>
+                      <Text style={styles.noteText}>
+                        {`“${item.note.replace(/^["“]|["”]$/g, '')}”`}
+                      </Text>
+                    </View>
+                  )}
 
-              <TouchableOpacity
-                style={[
-                  styles.roleChip,
-                  item.role === 'Adult'
-                    ? styles.roleChipActive
-                    : styles.roleChipInactive,
-                ]}
-                onPress={() => handleRoleSelect(item.id, 'Adult')}
-                activeOpacity={0.7}
-                accessibilityRole="button"
-                accessibilityLabel={`Join as Adult for ${item.name}`}
-              >
-                <Text
-                  style={[
-                    styles.roleChipText,
-                    item.role === 'Adult'
-                      ? styles.roleChipTextActive
-                      : styles.roleChipTextInactive,
-                  ]}
-                >
-                  Adult
-                </Text>
-              </TouchableOpacity>
+                  {/* Warning Box if unknown */}
+                  {item.isUnknown && (
+                    <View style={styles.warningContainer}>
+                      <Feather
+                        name="alert-circle"
+                        size={18}
+                        color="#F0913A"
+                        style={styles.warningIcon}
+                      />
+                      <Text style={styles.warningText}>
+                        We don't recognise this number. Check with your family before
+                        approving.
+                      </Text>
+                    </View>
+                  )}
 
-              <TouchableOpacity
-                style={[
-                  styles.roleChip,
-                  item.role === 'Admin'
-                    ? styles.roleChipActive
-                    : styles.roleChipInactive,
-                ]}
-                onPress={() => handleRoleSelect(item.id, 'Admin')}
-                activeOpacity={0.7}
-                accessibilityRole="button"
-                accessibilityLabel={`Join as Admin for ${item.name}`}
-              >
-                <Text
-                  style={[
-                    styles.roleChipText,
-                    item.role === 'Admin'
-                      ? styles.roleChipTextActive
-                      : styles.roleChipTextInactive,
-                  ]}
-                >
-                  Admin
-                </Text>
-              </TouchableOpacity>
-            </View>
+                  {/* Join As Role Selection */}
+                  <View style={styles.roleSelectionRow}>
+                    <Text style={styles.joinAsLabel}>Join as</Text>
 
-            {/* Action Buttons: Decline & Approve */}
-            <View style={styles.actionsRow}>
-              <TouchableOpacity
-                style={styles.declineButton}
-                onPress={() => handleDecline(item)}
-                activeOpacity={0.8}
-                accessibilityRole="button"
-                accessibilityLabel={`Decline ${item.name}`}
-              >
-                <Text style={styles.declineButtonText}>Decline</Text>
-              </TouchableOpacity>
+                    <TouchableOpacity
+                      style={[
+                        styles.roleChip,
+                        item.role === 'Adult'
+                          ? styles.roleChipActive
+                          : styles.roleChipInactive,
+                      ]}
+                      onPress={() => handleRoleSelect(item.id, 'Adult')}
+                      disabled={isBusy}
+                      activeOpacity={0.7}
+                      accessibilityRole="button"
+                      accessibilityLabel={`Join as Adult for ${item.name}`}
+                    >
+                      <Text
+                        style={[
+                          styles.roleChipText,
+                          item.role === 'Adult'
+                            ? styles.roleChipTextActive
+                            : styles.roleChipTextInactive,
+                        ]}
+                      >
+                        Adult
+                      </Text>
+                    </TouchableOpacity>
 
-              <TouchableOpacity
-                style={styles.approveButton}
-                onPress={() => handleApprove(item)}
-                activeOpacity={0.85}
-                accessibilityRole="button"
-                accessibilityLabel={`Approve ${item.name}`}
-              >
-                <Text style={styles.approveButtonText}>Approve</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        ))}
+                    <TouchableOpacity
+                      style={[
+                        styles.roleChip,
+                        item.role === 'Admin'
+                          ? styles.roleChipActive
+                          : styles.roleChipInactive,
+                      ]}
+                      onPress={() => handleRoleSelect(item.id, 'Admin')}
+                      disabled={isBusy}
+                      activeOpacity={0.7}
+                      accessibilityRole="button"
+                      accessibilityLabel={`Join as Admin for ${item.name}`}
+                    >
+                      <Text
+                        style={[
+                          styles.roleChipText,
+                          item.role === 'Admin'
+                            ? styles.roleChipTextActive
+                            : styles.roleChipTextInactive,
+                        ]}
+                      >
+                        Admin
+                      </Text>
+                    </TouchableOpacity>
+                  </View>
 
-        {/* Footer Notice */}
-        <Text style={styles.footerNotice}>
-          Only the Owner and Admins can approve requests.
-        </Text>
-      </ScrollView>
+                  {/* Action Buttons: Decline & Approve */}
+                  <View style={styles.actionsRow}>
+                    <TouchableOpacity
+                      style={[styles.declineButton, isBusy && styles.buttonDisabled]}
+                      onPress={() => handleDecline(item)}
+                      disabled={isBusy}
+                      activeOpacity={0.8}
+                      accessibilityRole="button"
+                      accessibilityLabel={`Decline ${item.name}`}
+                    >
+                      {isRejecting ? (
+                        <ActivityIndicator size="small" color="#FFFFFF" />
+                      ) : (
+                        <Text style={styles.declineButtonText}>Decline</Text>
+                      )}
+                    </TouchableOpacity>
+
+                    <TouchableOpacity
+                      style={[styles.approveButton, isBusy && styles.buttonDisabled]}
+                      onPress={() => handleApprove(item)}
+                      disabled={isBusy}
+                      activeOpacity={0.85}
+                      accessibilityRole="button"
+                      accessibilityLabel={`Approve ${item.name}`}
+                    >
+                      {isApproving ? (
+                        <ActivityIndicator size="small" color="#0B1A2F" />
+                      ) : (
+                        <Text style={styles.approveButtonText}>Approve</Text>
+                      )}
+                    </TouchableOpacity>
+                  </View>
+                </View>
+              );
+            })
+          )}
+
+          {/* Footer Notice */}
+          <Text style={styles.footerNotice}>
+            Only the Owner and Admins can approve requests.
+          </Text>
+        </ScrollView>
+      )}
     </View>
   );
 
@@ -335,6 +465,25 @@ const styles = StyleSheet.create({
     marginTop: 6,
     marginBottom: 16,
   },
+  emptyContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 48,
+    paddingHorizontal: 20,
+  },
+  emptyTitle: {
+    fontSize: 17,
+    fontWeight: '700',
+    color: '#FFFFFF',
+    marginTop: 16,
+    marginBottom: 6,
+  },
+  emptySubtitle: {
+    fontSize: 14,
+    color: '#8A9BAE',
+    textAlign: 'center',
+    lineHeight: 20,
+  },
   requestCard: {
     backgroundColor: '#11223A',
     borderRadius: 20,
@@ -375,63 +524,69 @@ const styles = StyleSheet.create({
   cardSubtext: {
     fontSize: 13,
     color: '#8A9BAE',
-    marginTop: 2,
+    marginTop: 3,
   },
   noteContainer: {
-    backgroundColor: '#0C182A',
+    backgroundColor: '#14253E',
     borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#233754',
     paddingHorizontal: 14,
-    paddingVertical: 12,
+    paddingVertical: 10,
     marginTop: 14,
   },
   noteText: {
-    fontSize: 14,
-    color: '#CAD4DF',
-    lineHeight: 20,
+    fontSize: 13,
+    color: '#C8D1DC',
+    fontStyle: 'italic',
+    lineHeight: 18,
   },
   warningContainer: {
-    backgroundColor: 'rgba(240, 145, 58, 0.08)',
-    borderWidth: 1,
-    borderColor: '#633B18',
-    borderRadius: 12,
-    paddingHorizontal: 12,
-    paddingVertical: 12,
-    marginTop: 14,
     flexDirection: 'row',
     alignItems: 'center',
+    backgroundColor: 'rgba(240, 145, 58, 0.08)',
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: 'rgba(240, 145, 58, 0.25)',
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    marginTop: 12,
+    gap: 10,
   },
   warningIcon: {
-    marginRight: 10,
+    flexShrink: 0,
   },
   warningText: {
     flex: 1,
-    fontSize: 13,
-    color: '#CAD4DF',
-    lineHeight: 18,
+    fontSize: 12.5,
+    color: '#F0913A',
+    lineHeight: 17,
   },
   roleSelectionRow: {
     flexDirection: 'row',
     alignItems: 'center',
     marginTop: 16,
+    gap: 10,
   },
   joinAsLabel: {
-    fontSize: 13,
-    color: '#CAD4DF',
-    marginRight: 10,
+    fontSize: 13.5,
+    fontWeight: '600',
+    color: '#8A9BAE',
+    marginRight: 4,
   },
   roleChip: {
-    borderRadius: 16,
     paddingHorizontal: 16,
-    paddingVertical: 6,
-    marginRight: 8,
+    paddingVertical: 8,
+    borderRadius: 18,
+    borderWidth: 1.2,
   },
   roleChipActive: {
-    backgroundColor: '#F0913A',
+    backgroundColor: 'rgba(240, 145, 58, 0.12)',
+    borderColor: '#F0913A',
   },
   roleChipInactive: {
-    backgroundColor: '#11223A',
-    borderWidth: 1,
-    borderColor: '#1F3352',
+    backgroundColor: '#14253E',
+    borderColor: '#233754',
   },
   roleChipText: {
     fontSize: 13,
@@ -442,21 +597,21 @@ const styles = StyleSheet.create({
     fontFamily: 'Roboto-Bold',
   },
   roleChipTextInactive: {
-    color: '#CAD4DF',
+    color: '#8A9BAE',
   },
   actionsRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 10,
     marginTop: 16,
+    gap: 12,
   },
   declineButton: {
     flex: 1,
-    height: 46,
-    borderRadius: 23,
+    height: 44,
+    borderRadius: 22,
     borderWidth: 1,
-    borderColor: '#24364D',
-    backgroundColor: '#13243B',
+    borderColor: '#3A4556',
+    backgroundColor: '#14253E',
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -467,8 +622,8 @@ const styles = StyleSheet.create({
   },
   approveButton: {
     flex: 1,
-    height: 46,
-    borderRadius: 23,
+    height: 44,
+    borderRadius: 22,
     backgroundColor: '#F0913A',
     alignItems: 'center',
     justifyContent: 'center',
@@ -479,11 +634,11 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
   },
   footerNotice: {
-    fontSize: 12,
-    color: '#8A9BAE',
+    fontSize: 12.5,
+    color: '#637488',
     textAlign: 'center',
-    marginTop: 14,
-    marginBottom: 20,
+    marginTop: 20,
+    marginBottom: 8,
   },
 });
 

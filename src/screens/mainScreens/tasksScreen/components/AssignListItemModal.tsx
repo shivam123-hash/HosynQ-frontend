@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import {
   View,
   Text,
@@ -9,13 +9,20 @@ import {
   ScrollView,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useAppSelector } from '../../../../redux';
 import { ListItemEntry } from '../types';
 
 export interface AssignListItemModalProps {
   visible: boolean;
   item: ListItemEntry | null;
   onClose: () => void;
-  onAssign: (itemId: string, assigneeName?: string, initial?: string, bg?: string) => void;
+  onAssign: (
+    itemId: string,
+    assigneeName?: string,
+    initial?: string,
+    bg?: string,
+    memberId?: string
+  ) => void;
 }
 
 interface AssigneeChoice {
@@ -64,12 +71,36 @@ const AssignListItemModal: React.FC<AssignListItemModalProps> = ({
   onAssign,
 }) => {
   const insets = useSafeAreaInsets();
+  const familyMembers = useAppSelector(
+    (state) =>
+      ((state.family.myFamilyData?.family as any)?.members as any[]) ||
+      ((state.family.myFamilyData as any)?.members as any[]) ||
+      []
+  );
+
+  const members: AssigneeChoice[] = useMemo(() => {
+    if (familyMembers && familyMembers.length > 0) {
+      return familyMembers.map((m: any) => {
+        const rawName = m.fullName || m.name || 'Member';
+        const name = m.isYou ? `${rawName} (you)` : rawName;
+        return {
+          id: m.memberId || m.id,
+          name,
+          roleSubtitle: m.isYou ? 'You' : m.role || 'Family Member',
+          initial: (rawName.trim()[0] || 'M').toUpperCase(),
+          avatarBg: m.avatarColor || '#1E3A8A',
+        };
+      });
+    }
+    return MEMBERS;
+  }, [familyMembers]);
+
   const [selectedId, setSelectedId] = useState<string>('rohan');
   const [anyoneCanPick, setAnyoneCanPick] = useState<boolean>(false);
 
   React.useEffect(() => {
     if (item && item.assignedTo) {
-      const match = MEMBERS.find(
+      const match = members.find(
         (m) => m.name.toLowerCase().includes(item.assignedTo!.toLowerCase())
       );
       if (match) {
@@ -77,24 +108,25 @@ const AssignListItemModal: React.FC<AssignListItemModalProps> = ({
         setAnyoneCanPick(false);
       }
     } else {
-      setSelectedId('rohan');
+      setSelectedId(members[0]?.id || 'rohan');
       setAnyoneCanPick(!item?.assignedTo);
     }
-  }, [item, visible]);
+  }, [item, visible, members]);
 
   if (!item) return null;
 
-  const selectedMember = MEMBERS.find((m) => m.id === selectedId);
+  const selectedMember = members.find((m) => m.id === selectedId) || members[0];
 
   const handleConfirm = () => {
     if (anyoneCanPick) {
-      onAssign(item.id, undefined, undefined, undefined);
+      onAssign(item.id, undefined, undefined, undefined, undefined);
     } else if (selectedMember) {
       onAssign(
         item.id,
         selectedMember.name.replace(' (you)', ''),
         selectedMember.initial,
-        selectedMember.avatarBg
+        selectedMember.avatarBg,
+        selectedMember.id
       );
     }
     onClose();
@@ -138,7 +170,7 @@ const AssignListItemModal: React.FC<AssignListItemModalProps> = ({
           >
             {/* Members Card */}
             <View style={styles.membersCard}>
-              {MEMBERS.map((member, idx) => {
+              {members.map((member, idx) => {
                 const isSelected = !anyoneCanPick && selectedId === member.id;
 
                 return (

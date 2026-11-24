@@ -16,6 +16,7 @@ export interface FamilyActionConfirmationModalProps {
   memberName?: string;
   memberGender?: 'female' | 'male' | 'other';
   familyName?: string;
+  loading?: boolean;
   onClose: () => void;
   onConfirm?: () => void;
   onSecondary?: () => void;
@@ -120,6 +121,7 @@ export const FamilyActionConfirmationModal: React.FC<
   primaryButtonText,
   primaryButtonColor,
   secondaryButtonText,
+  loading = false,
   isScreen = false,
 }) => {
   // Determine pronoun: default to 'she' for common female names/relations, else 'they'
@@ -229,6 +231,7 @@ export const FamilyActionConfirmationModal: React.FC<
       primaryButtonText={computedPrimaryText}
       primaryButtonColor={computedPrimaryColor}
       primaryButtonAccessibilityLabel={computedPrimaryText}
+      primaryButtonLoading={loading}
       onPrimaryPress={handleConfirm}
       secondaryButtonText={computedSecondaryText}
       secondaryButtonColor="#8A9BAE"

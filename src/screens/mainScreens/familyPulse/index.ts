@@ -30,3 +30,5 @@ export { default as DeleteFamilyModal } from './DeleteFamilyModal';
 export { default as DeleteFamilyScreen } from './DeleteFamilyScreen';
 export { default as StaffModal } from './StaffModal';
 export { default as StaffScreen } from './StaffScreen';
+export { default as AddStaffModal } from './AddStaffModal';
+export { default as AddStaffScreen } from './AddStaffScreen';
