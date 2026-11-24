@@ -36,8 +36,6 @@ export interface FamilyData {
   myMemberId?: string;
   createdAt?: string;
   members?: FamilyMemberData[];
-  createdAt: string;
-  members?: any[];
 }
 
 export interface CreateFamilyResponse {
@@ -289,6 +287,8 @@ export interface TransferOwnershipResponse {
 export interface DeleteFamilyResponse {
   success: boolean;
   message: string;
+}
+
 export interface AddChildMemberPayload {
   role: 'DEPENDENT_CHILD_PROFILE' | string;
   personal: {

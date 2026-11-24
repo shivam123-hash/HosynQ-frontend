@@ -231,6 +231,8 @@ export const MonthView: React.FC<MonthViewProps> = ({
               activeOpacity={0.7}
               accessibilityRole="button"
               accessibilityLabel="Go to today"
+              testID="month-today-btn"
+              hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
             >
               <Text style={styles.todayPillText}>Today</Text>
             </TouchableOpacity>
@@ -241,6 +243,8 @@ export const MonthView: React.FC<MonthViewProps> = ({
               activeOpacity={0.7}
               accessibilityRole="button"
               accessibilityLabel="Previous month"
+              testID="month-prev-btn"
+              hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
             >
               <Feather name="chevron-left" size={18} color="#CAD4DF" />
             </TouchableOpacity>
@@ -251,6 +255,8 @@ export const MonthView: React.FC<MonthViewProps> = ({
               activeOpacity={0.7}
               accessibilityRole="button"
               accessibilityLabel="Next month"
+              testID="month-next-btn"
+              hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
             >
               <Feather name="chevron-right" size={18} color="#CAD4DF" />
             </TouchableOpacity>

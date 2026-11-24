@@ -15,6 +15,7 @@ import {
   cancelCalendarEvent,
   respondToCalendarEvent,
   fetchImportantDates,
+  deleteImportantDate,
 } from '../../../redux/features/calendar/calendarSlice';
 import { getMyFamilyThunk } from '../../../redux/features/family/familySlice';
 import calendarServices from '../../../services/calendarServices';
@@ -133,18 +134,69 @@ export const CalendarScreen: React.FC<CalendarScreenProps> = ({
     initialDateParts[1] !== undefined ? initialDateParts[1] - 1 : (isTestEnv ? 9 : new Date().getMonth())
   );
 
-  // Automatically keep selectedYear and selectedMonth in sync with selectedDate
+  // Automatically keep selectedYear and selectedMonth in sync when selectedDate changes
   useEffect(() => {
     const parts = selectedDate.split('-').map(Number);
     if (parts[0] && parts[1] !== undefined) {
       const yr = parts[0];
       const mo = parts[1] - 1;
-      if (yr !== selectedYear || mo !== selectedMonth) {
-        setSelectedYear(yr);
-        setSelectedMonth(mo);
-      }
+      setSelectedYear((prevYr) => (prevYr !== yr ? yr : prevYr));
+      setSelectedMonth((prevMo) => (prevMo !== mo ? mo : prevMo));
     }
-  }, [selectedDate, selectedYear, selectedMonth]);
+  }, [selectedDate]);
+
+  // Month navigation handlers
+  const handlePrevMonth = () => {
+    let newYear = selectedYear;
+    let newMonth = selectedMonth - 1;
+    if (newMonth < 0) {
+      newMonth = 11;
+      newYear -= 1;
+    }
+    const parts = selectedDate.split('-').map(Number);
+    const day = parts[2] || 1;
+    const maxDays = new Date(newYear, newMonth + 1, 0).getDate();
+    const clampedDay = Math.min(day, maxDays);
+    const newDateStr = `${newYear}-${String(newMonth + 1).padStart(2, '0')}-${String(clampedDay).padStart(2, '0')}`;
+
+    setSelectedYear(newYear);
+    setSelectedMonth(newMonth);
+    setSelectedDate(newDateStr);
+  };
+
+  const handleNextMonth = () => {
+    let newYear = selectedYear;
+    let newMonth = selectedMonth + 1;
+    if (newMonth > 11) {
+      newMonth = 0;
+      newYear += 1;
+    }
+    const parts = selectedDate.split('-').map(Number);
+    const day = parts[2] || 1;
+    const maxDays = new Date(newYear, newMonth + 1, 0).getDate();
+    const clampedDay = Math.min(day, maxDays);
+    const newDateStr = `${newYear}-${String(newMonth + 1).padStart(2, '0')}-${String(clampedDay).padStart(2, '0')}`;
+
+    setSelectedYear(newYear);
+    setSelectedMonth(newMonth);
+    setSelectedDate(newDateStr);
+  };
+
+  const handleGoToToday = () => {
+    if (isTestEnv) {
+      setSelectedYear(2026);
+      setSelectedMonth(9);
+      setSelectedDate('2026-10-30');
+    } else {
+      const now = new Date();
+      const yr = now.getFullYear();
+      const mo = now.getMonth();
+      const todayStr = toIsoDateString(now);
+      setSelectedYear(yr);
+      setSelectedMonth(mo);
+      setSelectedDate(todayStr);
+    }
+  };
 
   // Filter state
   const [selectedMemberId, setSelectedMemberId] = useState<string>('everyone');
@@ -460,6 +512,30 @@ export const CalendarScreen: React.FC<CalendarScreenProps> = ({
     }
   };
 
+  const handleDeleteImportantDate = async (item: ImportantDateItem) => {
+    if (
+      item.type === 'birthday' ||
+      item.type === 'document' ||
+      (typeof item.id === 'string' &&
+        (item.id.startsWith('birthday:') || item.id.startsWith('document:')))
+    ) {
+      Alert.alert(
+        'Protected Milestone',
+        'Birthdays and document renewals are automatically synced from member profiles and the document vault and cannot be deleted here.'
+      );
+      return;
+    }
+
+    setImportantDates((prev) => prev.filter((d) => d.id !== item.id));
+    setSelectedImportantDate(null);
+    try {
+      await dispatch(deleteImportantDate(item.id)).unwrap();
+      dispatch(fetchImportantDates());
+    } catch (err) {
+      console.log('Failed to delete important date API:', err);
+    }
+  };
+
   const hasActiveFilters =
     filters.member !== 'everyone' ||
     filters.categories.length > 0 ||
@@ -592,34 +668,9 @@ export const CalendarScreen: React.FC<CalendarScreenProps> = ({
               selectedMonth={selectedMonth}
               selectedDate={selectedDate}
               onSelectDate={setSelectedDate}
-              onPrevMonth={() => {
-                if (selectedMonth === 0) {
-                  setSelectedMonth(11);
-                  setSelectedYear((y) => y - 1);
-                } else {
-                  setSelectedMonth((m) => m - 1);
-                }
-              }}
-              onNextMonth={() => {
-                if (selectedMonth === 11) {
-                  setSelectedMonth(0);
-                  setSelectedYear((y) => y + 1);
-                } else {
-                  setSelectedMonth((m) => m + 1);
-                }
-              }}
-              onGoToToday={() => {
-                if (isTestEnv) {
-                  setSelectedYear(2026);
-                  setSelectedMonth(9);
-                  setSelectedDate('2026-10-30');
-                } else {
-                  const now = new Date();
-                  setSelectedYear(now.getFullYear());
-                  setSelectedMonth(now.getMonth());
-                  setSelectedDate(now.toISOString().slice(0, 10));
-                }
-              }}
+              onPrevMonth={handlePrevMonth}
+              onNextMonth={handleNextMonth}
+              onGoToToday={handleGoToToday}
               events={filteredEvents}
               tasksDue={filteredTasks}
               onOpenDayView={(d) => {
@@ -716,6 +767,7 @@ export const CalendarScreen: React.FC<CalendarScreenProps> = ({
         onAddTask={(item) => {
           Alert.alert('Renewal Task Added', `Added task for ${item.title} to your family tasks list.`);
         }}
+        onDeleteDate={handleDeleteImportantDate}
       />
 
       {/* Task Detail Modal */}

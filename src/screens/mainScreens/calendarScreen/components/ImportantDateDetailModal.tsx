@@ -19,6 +19,7 @@ export interface ImportantDateDetailModalProps {
   onClose: () => void;
   onEditDate?: (item: ImportantDateItem) => void;
   onAddTask?: (item: ImportantDateItem) => void;
+  onDeleteDate?: (item: ImportantDateItem) => void;
 }
 
 export const ImportantDateDetailModal: React.FC<ImportantDateDetailModalProps> = ({
@@ -27,6 +28,7 @@ export const ImportantDateDetailModal: React.FC<ImportantDateDetailModalProps> =
   onClose,
   onEditDate,
   onAddTask,
+  onDeleteDate,
 }) => {
   const insets = useSafeAreaInsets();
   const [aiSuggestionState, setAiSuggestionState] = useState<
@@ -115,28 +117,44 @@ export const ImportantDateDetailModal: React.FC<ImportantDateDetailModalProps> =
               label: 'Add Task',
               iconName: 'check-square',
               onPress: () => onAddTask?.(item),
-              showDividerAfter: true,
+              showDividerAfter: !(
+                item.type === 'birthday' ||
+                item.type === 'document' ||
+                (typeof item.id === 'string' &&
+                  (item.id.startsWith('birthday:') || item.id.startsWith('document:')))
+              ),
             },
-            {
-              id: 'delete',
-              label: 'Delete Date',
-              iconName: 'trash-2',
-              destructive: true,
-              onPress: () => {
-                Alert.alert(
-                  'Delete date?',
-                  `Are you sure you want to delete ${item.title}?`,
-                  [
-                    { text: 'Keep', style: 'cancel' },
-                    {
-                      text: 'Delete',
-                      style: 'destructive',
-                      onPress: onClose,
+            // ISS-07: Backend rejects deleting birthdays and document renewals (protected milestones)
+            ...(item.type === 'birthday' ||
+            item.type === 'document' ||
+            (typeof item.id === 'string' &&
+              (item.id.startsWith('birthday:') || item.id.startsWith('document:')))
+              ? []
+              : [
+                  {
+                    id: 'delete',
+                    label: 'Delete Date',
+                    iconName: 'trash-2',
+                    destructive: true,
+                    onPress: () => {
+                      Alert.alert(
+                        'Delete date?',
+                        `Are you sure you want to delete ${item.title}?`,
+                        [
+                          { text: 'Keep', style: 'cancel' },
+                          {
+                            text: 'Delete',
+                            style: 'destructive',
+                            onPress: () => {
+                              onDeleteDate?.(item);
+                              onClose();
+                            },
+                          },
+                        ]
+                      );
                     },
-                  ]
-                );
-              },
-            },
+                  },
+                ]),
           ]}
         />
 

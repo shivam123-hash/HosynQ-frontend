@@ -712,6 +712,7 @@ const familySlice = createSlice({
       state.actionLoading = false;
       state.actionError = null;
       state.actionSuccess = null;
+    },
     clearAddMemberError: (state) => {
       state.addMemberError = null;
     },

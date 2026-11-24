@@ -88,6 +88,85 @@ describe('CalendarScreen - Full Calendar Experience', () => {
     expect(texts).toContain('Task due');
   });
 
+  it('navigates across months using prev, next, and Today buttons in Month view', async () => {
+    const renderer = await renderScreen(<CalendarScreen />);
+
+    // Switch to Month View
+    const monthTab = renderer.root
+      .findAllByType(TouchableOpacity)
+      .find((t) => t.props.accessibilityLabel === 'Month view');
+    expect(monthTab).toBeTruthy();
+
+    await ReactTestRenderer.act(() => {
+      monthTab?.props.onPress();
+    });
+
+    let texts = renderer.root
+      .findAllByType(Text)
+      .map((n) => n.props.children)
+      .flat();
+    expect(texts).toContain('October 2026');
+
+    // Tap Next Month (October -> November)
+    const nextBtn = renderer.root
+      .findAllByType(TouchableOpacity)
+      .find((t) => t.props.testID === 'month-next-btn' || t.props.accessibilityLabel === 'Next month');
+    expect(nextBtn).toBeTruthy();
+
+    await ReactTestRenderer.act(() => {
+      nextBtn?.props.onPress();
+    });
+
+    texts = renderer.root
+      .findAllByType(Text)
+      .map((n) => n.props.children)
+      .flat();
+    expect(texts).toContain('November 2026');
+
+    // Tap Prev Month (November -> October)
+    const prevBtn = renderer.root
+      .findAllByType(TouchableOpacity)
+      .find((t) => t.props.testID === 'month-prev-btn' || t.props.accessibilityLabel === 'Previous month');
+    expect(prevBtn).toBeTruthy();
+
+    await ReactTestRenderer.act(() => {
+      prevBtn?.props.onPress();
+    });
+
+    texts = renderer.root
+      .findAllByType(Text)
+      .map((n) => n.props.children)
+      .flat();
+    expect(texts).toContain('October 2026');
+
+    // Tap Prev Month again (October -> September)
+    await ReactTestRenderer.act(() => {
+      prevBtn?.props.onPress();
+    });
+
+    texts = renderer.root
+      .findAllByType(Text)
+      .map((n) => n.props.children)
+      .flat();
+    expect(texts).toContain('September 2026');
+
+    // Tap Today button (returns to October 2026 in test env)
+    const todayBtn = renderer.root
+      .findAllByType(TouchableOpacity)
+      .find((t) => t.props.testID === 'month-today-btn' || t.props.accessibilityLabel === 'Go to today');
+    expect(todayBtn).toBeTruthy();
+
+    await ReactTestRenderer.act(() => {
+      todayBtn?.props.onPress();
+    });
+
+    texts = renderer.root
+      .findAllByType(Text)
+      .map((n) => n.props.children)
+      .flat();
+    expect(texts).toContain('October 2026');
+  });
+
   it('opens event detail modal when an event is pressed', async () => {
     const renderer = await renderScreen(<CalendarScreen />);
 

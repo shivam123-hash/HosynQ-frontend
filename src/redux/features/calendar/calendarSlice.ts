@@ -141,6 +141,34 @@ export const fetchImportantDatesThunk = createAsyncThunk(
 );
 export const fetchImportantDates = fetchImportantDatesThunk;
 
+// 8. Delete Important Date Thunk (DELETE /api/v1/calendar/important-dates/:key)
+export const deleteImportantDateThunk = createAsyncThunk(
+  'calendar/deleteImportantDate',
+  async (key: string, { rejectWithValue }) => {
+    try {
+      const res = await calendarServices.deleteImportantDate(key);
+      return { key, ...res };
+    } catch (err: any) {
+      return rejectWithValue(err?.response?.data?.message || 'Failed to delete important date');
+    }
+  }
+);
+export const deleteImportantDate = deleteImportantDateThunk;
+
+// 9. Create Important Date Thunk (POST /api/v1/calendar/important-dates)
+export const createImportantDateThunk = createAsyncThunk(
+  'calendar/createImportantDate',
+  async (payload: CreateImportantDatePayload, { rejectWithValue }) => {
+    try {
+      const res = await calendarServices.createImportantDate(payload);
+      return res;
+    } catch (err: any) {
+      return rejectWithValue(err?.response?.data?.message || 'Failed to create important date');
+    }
+  }
+);
+export const createImportantDate = createImportantDateThunk;
+
 const calendarSlice = createSlice({
   name: 'calendar',
   initialState,
@@ -197,6 +225,18 @@ const calendarSlice = createSlice({
     builder.addCase(fetchImportantDatesThunk.fulfilled, (state, action) => {
       state.importantDatesList = action.payload.dates || [];
       state.importantDateCounts = action.payload.counts || {};
+    });
+
+    builder.addCase(deleteImportantDateThunk.fulfilled, (state, action) => {
+      state.importantDatesList = state.importantDatesList.filter(
+        (d) => d.key !== action.payload.key && d.id !== action.payload.key
+      );
+    });
+
+    builder.addCase(createImportantDateThunk.fulfilled, (state, action) => {
+      if (action.payload?.date) {
+        state.importantDatesList = [action.payload.date, ...state.importantDatesList];
+      }
     });
   },
 });

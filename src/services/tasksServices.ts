@@ -350,9 +350,14 @@ const tasksServices = {
     payload?: RemindTaskPayload
   ): Promise<RemindTaskResponse> => {
     try {
+      // Backend validates @ArrayNotEmpty() on memberIds. If empty or undefined, send empty object to remind all eligible members.
+      const body =
+        payload && Array.isArray(payload.memberIds) && payload.memberIds.length > 0
+          ? { memberIds: payload.memberIds }
+          : {};
       const response = await apiClient.post<RemindTaskResponse>(
         API_ROUTES.TASK_REMIND(taskId),
-        payload || {}
+        body
       );
       return response.data;
     } catch (error) {
