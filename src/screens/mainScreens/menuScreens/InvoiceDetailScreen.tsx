@@ -200,7 +200,7 @@ const styles = StyleSheet.create({
   },
   topBarTitle: {
     fontSize: 20,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     color: '#FFFFFF',
     textAlign: 'center',
   },
@@ -229,7 +229,7 @@ const styles = StyleSheet.create({
   },
   invoiceNumber: {
     fontSize: 18,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     color: '#FFFFFF',
     marginBottom: 4,
   },
@@ -249,7 +249,7 @@ const styles = StyleSheet.create({
   },
   paidBadgeText: {
     fontSize: 12,
-    fontWeight: '600',
+    fontFamily: 'Roboto-SemiBold',
     color: '#58AC8C',
   },
   divider: {
@@ -269,7 +269,7 @@ const styles = StyleSheet.create({
   },
   itemValue: {
     fontSize: 14,
-    fontWeight: '600',
+    fontFamily: 'Roboto-SemiBold',
     color: '#FFFFFF',
   },
   totalRow: {
@@ -280,12 +280,12 @@ const styles = StyleSheet.create({
   },
   totalLabel: {
     fontSize: 15,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     color: '#FFFFFF',
   },
   totalValue: {
     fontSize: 16,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     color: '#FFFFFF',
   },
   metaRow: {
@@ -298,7 +298,7 @@ const styles = StyleSheet.create({
   },
   metaValue: {
     fontSize: 15,
-    fontWeight: '600',
+    fontFamily: 'Roboto-SemiBold',
     color: '#FFFFFF',
   },
   bottomContainer: {
@@ -318,7 +318,7 @@ const styles = StyleSheet.create({
   },
   downloadBtnText: {
     fontSize: 16,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     color: '#FFFFFF',
   },
   emailBtn: {
@@ -329,7 +329,7 @@ const styles = StyleSheet.create({
   },
   emailBtnText: {
     fontSize: 15,
-    fontWeight: '600',
+    fontFamily: 'Roboto-SemiBold',
     color: '#F0913A',
   },
 });

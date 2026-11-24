@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   View,
   Text,
@@ -10,6 +10,8 @@ import {
   Switch,
   Platform,
   KeyboardAvoidingView,
+  Keyboard,
+  findNodeHandle,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Feather from '@react-native-vector-icons/feather';
@@ -73,6 +75,39 @@ const AddAadhaarScreen: React.FC<AddAadhaarScreenProps> = ({
 
   const [showNumber, setShowNumber] = useState(false);
 
+  const scrollViewRef = useRef<any>(null);
+  const [keyboardHeight, setKeyboardHeight] = useState(0);
+
+  useEffect(() => {
+    const showEvent = Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow';
+    const hideEvent = Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide';
+
+    const showSub = Keyboard.addListener(showEvent, (e) => {
+      setKeyboardHeight(e.endCoordinates ? e.endCoordinates.height : 0);
+    });
+    const hideSub = Keyboard.addListener(hideEvent, () => {
+      setKeyboardHeight(0);
+    });
+
+    return () => {
+      showSub.remove();
+      hideSub.remove();
+    };
+  }, []);
+
+  const handleInputFocus = (event: any) => {
+    if (scrollViewRef.current) {
+      const nodeHandle = findNodeHandle(event.target);
+      if (nodeHandle) {
+        setTimeout(() => {
+          (scrollViewRef.current as any)
+            ?.getScrollResponder?.()
+            ?.scrollResponderScrollNativeHandleToKeyboard(nodeHandle, 120, true);
+        }, 120);
+      }
+    }
+  };
+
   const isFormValid = Boolean(
     formData.aadhaarNumber?.replace(/[^0-9]/g, '').length >= 4 &&
     formData.fullName?.trim()
@@ -106,10 +141,17 @@ const AddAadhaarScreen: React.FC<AddAadhaarScreenProps> = ({
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       >
         <ScrollView
+          ref={scrollViewRef}
           style={styles.scrollContainer}
-          contentContainerStyle={styles.scrollContent}
+          contentContainerStyle={[
+            styles.scrollContent,
+            keyboardHeight > 0
+              ? { paddingBottom: keyboardHeight + 80 }
+              : null,
+          ]}
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
+          onFocus={handleInputFocus}
         >
           {/* Top Info Banner */}
           <View style={styles.infoBanner}>
@@ -310,7 +352,7 @@ const styles = StyleSheet.create({
   photoTitle: {
     color: '#FFFFFF',
     fontSize: RFValue(12.5),
-    fontWeight: '600',
+    fontFamily: 'Roboto-SemiBold',
   },
   photoSubtitle: {
     color: '#8E9BAE',
@@ -323,7 +365,7 @@ const styles = StyleSheet.create({
   fieldLabel: {
     color: '#94A3B8',
     fontSize: RFValue(12),
-    fontWeight: '500',
+    fontFamily: 'Roboto-Medium',
     marginBottom: 6,
   },
   inputBox: {
@@ -376,7 +418,7 @@ const styles = StyleSheet.create({
   toggleTitle: {
     color: '#FFFFFF',
     fontSize: RFValue(13),
-    fontWeight: '600',
+    fontFamily: 'Roboto-SemiBold',
   },
   toggleSubtitle: {
     color: '#8E9BAE',

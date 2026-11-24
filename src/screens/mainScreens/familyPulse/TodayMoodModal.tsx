@@ -229,7 +229,7 @@ const styles = StyleSheet.create({
   },
   title: {
     fontSize: 24,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     letterSpacing: -0.3,
     color: Colors.white,
     textAlign: 'left',
@@ -268,12 +268,12 @@ const styles = StyleSheet.create({
   },
   moodLabel: {
     fontSize: 13.5,
-    fontWeight: '500',
+    fontFamily: 'Roboto-Medium',
     color: Colors.textSecondary,
   },
   moodLabelSelected: {
     color: Colors.white,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
   },
   statusRow: {
     flexDirection: 'row',
@@ -301,7 +301,7 @@ const styles = StyleSheet.create({
   },
   addNoteText: {
     fontSize: 16,
-    fontWeight: '600',
+    fontFamily: 'Roboto-SemiBold',
     color: Colors.primary,
   },
   noteInputContainer: {
@@ -325,7 +325,7 @@ const styles = StyleSheet.create({
   },
   saveNoteBtnText: {
     fontSize: 14,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     color: Colors.primary,
   },
 });

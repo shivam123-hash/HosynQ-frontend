@@ -14,7 +14,7 @@ export interface ReminderPillsSelectorProps {
 const DEFAULT_OPTIONS = ['6 months', '3 months', '1 month', '1 week'];
 
 const ReminderPillsSelector: React.FC<ReminderPillsSelectorProps> = ({
-  sectionTitle = 'REMIND ME BEFORE IT EXPIRES',
+  sectionTitle = 'REMIND BEFORE IT EXPIRES',
   options = DEFAULT_OPTIONS,
   selectedOptions = ['6 months', '1 month'],
   onToggleOption,
@@ -71,11 +71,12 @@ const styles = StyleSheet.create({
   container: {
     marginHorizontal: 20,
     marginTop: 24,
+    marginBottom: 20,
   },
   sectionHeader: {
     color: '#8E9BAE',
     fontSize: RFValue(11),
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     letterSpacing: 1.2,
     textTransform: 'uppercase',
     marginBottom: 12,
@@ -104,11 +105,11 @@ const styles = StyleSheet.create({
   },
   chipTextUnselected: {
     color: '#CBD5E1',
-    fontWeight: '500',
+    fontFamily: 'Roboto-Medium',
   },
   chipTextSelected: {
     color: '#071526',
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
   },
 });
 

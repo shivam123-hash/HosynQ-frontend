@@ -1,6 +1,6 @@
 import apiClient from './apiClient';
 import API_ROUTES from '../redux/endPoints/endPoints';
-import { saveMyMemberId } from '../units/asyncStorageManager';
+import { saveMyMemberId } from '../units/AsyncStorageManager';
 
 export interface CreateFamilyPayload {
   name: string;
@@ -36,6 +36,8 @@ export interface FamilyData {
   myMemberId?: string;
   createdAt?: string;
   members?: FamilyMemberData[];
+  createdAt: string;
+  members?: any[];
 }
 
 export interface CreateFamilyResponse {
@@ -287,6 +289,19 @@ export interface TransferOwnershipResponse {
 export interface DeleteFamilyResponse {
   success: boolean;
   message: string;
+export interface AddChildMemberPayload {
+  role: 'DEPENDENT_CHILD_PROFILE' | string;
+  personal: {
+    fullName: string;
+    birthDate: string;
+    familyRole: string;
+  };
+}
+
+export interface AddChildMemberResponse {
+  success: boolean;
+  message?: string;
+  member?: any;
 }
 
 /** Helper to map UI dropdown family type to backend enum/string */
@@ -546,6 +561,21 @@ const familyServices = {
       await saveMyMemberId(myMemberId);
     }
     return response.data;
+  },
+
+  /** Add a child profile member to family (POST /api/v1/family/members) */
+  addFamilyMember: async (
+    payload: AddChildMemberPayload
+  ): Promise<AddChildMemberResponse> => {
+    try {
+      const response = await apiClient.post<AddChildMemberResponse>(
+        API_ROUTES.FAMILY_MEMBERS,
+        payload
+      );
+      return response.data;
+    } catch (error) {
+      throw error;
+    }
   },
 };
 

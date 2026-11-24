@@ -300,7 +300,7 @@ const styles = StyleSheet.create({
   },
   title: {
     fontSize: RFValue(19),
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     color: '#FFFFFF',
     textAlign: 'center',
     marginBottom: 6,
@@ -337,7 +337,7 @@ const styles = StyleSheet.create({
   actionButtonText: {
     color: '#FFFFFF',
     fontSize: RFValue(13),
-    fontWeight: '600',
+    fontFamily: 'Roboto-SemiBold',
   },
   dividerRow: {
     flexDirection: 'row',
@@ -352,7 +352,7 @@ const styles = StyleSheet.create({
   dividerText: {
     color: '#657B96',
     fontSize: RFValue(10.5),
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     letterSpacing: 1,
     marginHorizontal: 12,
   },
@@ -391,7 +391,7 @@ const styles = StyleSheet.create({
   initialText: {
     color: '#FFFFFF',
     fontSize: RFValue(16),
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
   },
   cancelButton: {
     alignSelf: 'center',
@@ -402,6 +402,6 @@ const styles = StyleSheet.create({
   cancelText: {
     color: Colors.textSecondary,
     fontSize: RFValue(13),
-    fontWeight: '500',
+    fontFamily: 'Roboto-Medium',
   },
 });

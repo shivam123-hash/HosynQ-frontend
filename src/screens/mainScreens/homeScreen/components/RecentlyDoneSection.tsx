@@ -69,10 +69,9 @@ const styles = StyleSheet.create({
     gap: 10,
   },
   title: {
-    fontFamily: 'Roboto',
     fontSize: 18,
     lineHeight: 24,
-    fontWeight: '600',
+    fontFamily: 'Roboto-SemiBold',
     color: '#CAD4DF',
   },
   list: {
@@ -103,19 +102,17 @@ const styles = StyleSheet.create({
     gap: 2,
   },
   itemTitle: {
-    fontFamily: 'Roboto',
     fontSize: 13.5,
     lineHeight: 18,
-    fontWeight: '400',
+    fontFamily: 'Roboto-Regular',
     letterSpacing: 0.14,
     textDecorationLine: 'line-through',
     color: '#8A97AB',
   },
   itemMeta: {
-    fontFamily: 'Roboto',
     fontSize: 12,
     lineHeight: 16,
-    fontWeight: '400',
+    fontFamily: 'Roboto-Regular',
     color: '#6E7C92',
   },
   reopenTouch: {
@@ -123,10 +120,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: 6,
   },
   reopenText: {
-    fontFamily: 'Roboto',
     fontSize: 13,
     lineHeight: 16,
-    fontWeight: '500',
+    fontFamily: 'Roboto-Medium',
     color: '#F0913A',
   },
 });

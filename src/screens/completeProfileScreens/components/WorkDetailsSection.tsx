@@ -146,7 +146,7 @@ const styles = StyleSheet.create({
   sectionHeader: {
     color: '#8E9BAE',
     fontSize: RFValue(11),
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     letterSpacing: 1.2,
     textTransform: 'uppercase',
     marginHorizontal: 20,
@@ -159,7 +159,7 @@ const styles = StyleSheet.create({
   fieldLabel: {
     color: '#8E9BAE',
     fontSize: RFValue(11.5),
-    fontWeight: '400',
+    fontFamily: 'Roboto-Regular',
     marginBottom: 6,
   },
   inputBox: {
@@ -184,7 +184,7 @@ const styles = StyleSheet.create({
   textInput: {
     color: '#FFFFFF',
     fontSize: RFValue(13.5),
-    fontWeight: '500',
+    fontFamily: 'Roboto-Medium',
     padding: 0,
     margin: 0,
   },
@@ -214,12 +214,12 @@ const styles = StyleSheet.create({
   workHoursLabel: {
     color: '#8E9BAE',
     fontSize: RFValue(11),
-    fontWeight: '400',
+    fontFamily: 'Roboto-Regular',
   },
   workHoursValue: {
     color: '#FFFFFF',
     fontSize: RFValue(13.5),
-    fontWeight: '600',
+    fontFamily: 'Roboto-SemiBold',
     marginTop: 2,
   },
   helperNote: {

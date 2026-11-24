@@ -100,13 +100,13 @@ const styles = StyleSheet.create({
   heightLabel: {
     color: '#8E9BAE',
     fontSize: RFValue(10.5),
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     letterSpacing: 1.2,
   },
   heightValue: {
     color: '#FFFFFF',
     fontSize: RFValue(24),
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     marginTop: 2,
   },
   measuredDate: {
@@ -193,7 +193,7 @@ const styles = StyleSheet.create({
   metricValue: {
     color: '#FFFFFF',
     fontSize: RFValue(13),
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     textAlign: 'center',
   },
 });

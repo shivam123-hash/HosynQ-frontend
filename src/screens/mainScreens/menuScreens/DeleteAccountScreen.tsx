@@ -249,7 +249,7 @@ const styles = StyleSheet.create({
   },
   topBarTitle: {
     fontSize: 20,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     color: '#FFFFFF',
     letterSpacing: -0.3,
   },
@@ -262,7 +262,7 @@ const styles = StyleSheet.create({
   },
   heading: {
     fontSize: 26,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     color: '#FFFFFF',
     letterSpacing: -0.4,
     marginBottom: 8,
@@ -291,12 +291,12 @@ const styles = StyleSheet.create({
   },
   ownerTitle: {
     fontSize: 15,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     color: '#F6C08E',
   },
   transferText: {
     fontSize: 14,
-    fontWeight: '600',
+    fontFamily: 'Roboto-SemiBold',
     color: '#F6C08E',
   },
   ownerSubtitle: {
@@ -307,7 +307,7 @@ const styles = StyleSheet.create({
   },
   sectionLabel: {
     fontSize: 12,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     color: '#8A97AB',
     letterSpacing: 1.2,
     marginTop: 24,
@@ -332,7 +332,7 @@ const styles = StyleSheet.create({
   consequenceText: {
     fontSize: 15,
     color: '#FFFFFF',
-    fontWeight: '500',
+    fontFamily: 'Roboto-Medium',
     flex: 1,
     lineHeight: 20,
   },
@@ -356,7 +356,7 @@ const styles = StyleSheet.create({
   },
   continueButtonText: {
     fontSize: 16,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     color: '#FFFFFF',
   },
   keepAccountButton: {
@@ -367,7 +367,7 @@ const styles = StyleSheet.create({
   },
   keepAccountText: {
     fontSize: 16,
-    fontWeight: '600',
+    fontFamily: 'Roboto-SemiBold',
     color: '#F0913A',
   },
 });

@@ -297,7 +297,7 @@ const styles = StyleSheet.create({
   },
   iconText: {
     fontSize: 16,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
   },
 });
 

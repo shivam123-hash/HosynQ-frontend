@@ -164,7 +164,7 @@ const styles = StyleSheet.create({
   },
   title: {
     fontSize: RFValue(21),
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     color: Colors.text,
     textAlign: 'center',
     marginBottom: 10,
@@ -183,7 +183,7 @@ const styles = StyleSheet.create({
   timerLabel: {
     color: Colors.textSecondary,
     fontSize: RFValue(10.5),
-    fontWeight: '600',
+    fontFamily: 'Roboto-SemiBold',
     letterSpacing: 1.5,
     textTransform: 'uppercase',
     marginBottom: 6,
@@ -191,7 +191,7 @@ const styles = StyleSheet.create({
   timerText: {
     color: Colors.primary,
     fontSize: RFValue(26),
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     letterSpacing: 0.5,
   },
   actionSection: {
@@ -206,7 +206,7 @@ const styles = StyleSheet.create({
   supportText: {
     color: Colors.primary,
     fontSize: RFValue(13.5),
-    fontWeight: '600',
+    fontFamily: 'Roboto-SemiBold',
     textAlign: 'center',
   },
 });

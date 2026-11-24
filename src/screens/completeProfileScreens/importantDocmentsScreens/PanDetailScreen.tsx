@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
   View,
   Text,
@@ -12,6 +12,7 @@ import Feather from '@react-native-vector-icons/feather';
 import { RFValue } from 'react-native-responsive-fontsize';
 import Colors from '../../../units/Colors';
 import CommonBtn from '../../../components/CommonBtn';
+import { AppConfirmationModal, ThreeDotsLoader } from '../../../components';
 
 export interface PanDetailScreenProps {
   userName?: string;
@@ -20,8 +21,11 @@ export interface PanDetailScreenProps {
   dob?: string;
   fileName?: string;
   fileDetails?: string;
+  buttonTitle?: string;
+  isDeleting?: boolean;
   onBack?: () => void;
   onOptionsPress?: () => void;
+  onDeletePress?: () => void;
   onViewFile?: () => void;
   onEditPress?: () => void;
 }
@@ -33,12 +37,16 @@ const PanDetailScreen: React.FC<PanDetailScreenProps> = ({
   dob = '8 Aug 1988',
   fileName = 'PAN_Card_Priya.pdf',
   fileDetails = '1 page · Added 12 Oct 2026',
+  buttonTitle = 'Edit',
+  isDeleting = false,
   onBack,
   onOptionsPress,
+  onDeletePress,
   onViewFile,
   onEditPress,
 }) => {
   const insets = useSafeAreaInsets();
+  const [isDeleteModalVisible, setIsDeleteModalVisible] = useState(false);
 
   return (
     <View
@@ -68,12 +76,17 @@ const PanDetailScreen: React.FC<PanDetailScreenProps> = ({
 
         <TouchableOpacity
           activeOpacity={0.7}
-          onPress={onOptionsPress || onEditPress}
+          onPress={() => setIsDeleteModalVisible(true)}
+          disabled={isDeleting}
           style={styles.headerButton}
           accessibilityRole="button"
-          accessibilityLabel="More options"
+          accessibilityLabel="Delete PAN"
         >
-          <Feather name="more-horizontal" size={20} color="#FFFFFF" />
+          {isDeleting ? (
+            <ThreeDotsLoader color="#EF4444" size={5} spacing={3} />
+          ) : (
+            <Feather name="trash-2" size={19} color="#EF4444" />
+          )}
         </TouchableOpacity>
       </View>
 
@@ -180,14 +193,31 @@ const PanDetailScreen: React.FC<PanDetailScreenProps> = ({
       {/* Bottom Button */}
       <View style={styles.bottomBar}>
         <CommonBtn
-          title="Done"
-          onPress={onBack}
+          title={buttonTitle}
+          onPress={onEditPress || onBack}
           backgroundColor={Colors.primary || '#F0913A'}
           textColor="#FFFFFF"
           height={52}
           borderRadius={26}
         />
       </View>
+
+      {/* Delete PAN Confirmation Modal */}
+      <AppConfirmationModal
+        visible={isDeleteModalVisible}
+        title="Delete PAN Card?"
+        message="Are you sure you want to delete this PAN card? This action cannot be undone."
+        confirmText="Delete"
+        cancelText="Cancel"
+        isDestructive={true}
+        loading={isDeleting}
+        iconName="trash-2"
+        onConfirm={() => {
+          setIsDeleteModalVisible(false);
+          onDeletePress?.();
+        }}
+        onCancel={() => setIsDeleteModalVisible(false)}
+      />
     </View>
   );
 };
@@ -221,7 +251,7 @@ const styles = StyleSheet.create({
   headerTitleText: {
     color: '#FFFFFF',
     fontSize: RFValue(15),
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
   },
   headerSubtitleText: {
     color: '#8E9BAE',
@@ -255,7 +285,7 @@ const styles = StyleSheet.create({
   infoTitle: {
     color: '#60A5FA',
     fontSize: RFValue(13),
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
   },
   infoSubtitle: {
     color: '#CBD5E1',
@@ -285,7 +315,7 @@ const styles = StyleSheet.create({
   fileNameText: {
     color: '#FFFFFF',
     fontSize: RFValue(13),
-    fontWeight: '600',
+    fontFamily: 'Roboto-SemiBold',
   },
   fileDetailsText: {
     color: '#8E9BAE',
@@ -325,7 +355,7 @@ const styles = StyleSheet.create({
   detailValue: {
     color: '#FFFFFF',
     fontSize: RFValue(13),
-    fontWeight: '600',
+    fontFamily: 'Roboto-SemiBold',
     marginTop: 3,
   },
   divider: {

@@ -7,12 +7,14 @@ export interface LifeProfileHeaderProps {
   title?: string;
   onBack?: () => void;
   onEdit?: () => void;
+  showEdit?: boolean;
 }
 
 const LifeProfileHeader: React.FC<LifeProfileHeaderProps> = ({
   title = 'My Life Profile',
   onBack,
   onEdit,
+  showEdit = false,
 }) => {
   return (
     <View style={styles.headerContainer}>
@@ -20,19 +22,27 @@ const LifeProfileHeader: React.FC<LifeProfileHeaderProps> = ({
         activeOpacity={0.7}
         onPress={onBack}
         style={styles.iconButton}
+        accessibilityRole="button"
+        accessibilityLabel="Go back"
       >
         <Feather name="chevron-left" size={22} color="#FFFFFF" />
       </TouchableOpacity>
 
       <Text style={styles.titleText}>{title}</Text>
 
-      <TouchableOpacity
-        activeOpacity={0.7}
-        onPress={onEdit}
-        style={styles.iconButton}
-      >
-        <Feather name="edit-2" size={17} color="#FFFFFF" />
-      </TouchableOpacity>
+      {showEdit ? (
+        <TouchableOpacity
+          activeOpacity={0.7}
+          onPress={onEdit}
+          style={styles.iconButton}
+          accessibilityRole="button"
+          accessibilityLabel="Edit profile"
+        >
+          <Feather name="edit-2" size={17} color="#FFFFFF" />
+        </TouchableOpacity>
+      ) : (
+        <View style={styles.placeholder} />
+      )}
     </View>
   );
 };
@@ -60,8 +70,12 @@ const styles = StyleSheet.create({
   titleText: {
     color: '#FFFFFF',
     fontSize: RFValue(17),
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     textAlign: 'center',
+  },
+  placeholder: {
+    width: 40,
+    height: 40,
   },
 });
 

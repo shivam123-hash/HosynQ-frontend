@@ -580,7 +580,7 @@ const styles = StyleSheet.create({
   },
   headerTitle: {
     fontSize: 17,
-    fontWeight: '600',
+    fontFamily: 'Roboto-SemiBold',
     color: '#FFFFFF',
   },
   headerPlaceholder: {
@@ -611,7 +611,7 @@ const styles = StyleSheet.create({
   },
   nameInput: {
     fontSize: 16,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     color: '#FFFFFF',
     padding: 0,
   },
@@ -632,20 +632,20 @@ const styles = StyleSheet.create({
   },
   timeCardSubheader: {
     fontSize: 12,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     color: '#7D8B9B',
     letterSpacing: 1,
     marginBottom: 4,
   },
   timeCardDate: {
     fontSize: 16,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     color: '#FFFFFF',
     marginBottom: 2,
   },
   timeCardTime: {
     fontSize: 16,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     color: '#F0913A',
   },
   allDayRow: {
@@ -657,7 +657,7 @@ const styles = StyleSheet.create({
   },
   allDayLabel: {
     fontSize: 15,
-    fontWeight: '600',
+    fontFamily: 'Roboto-SemiBold',
     color: '#FFFFFF',
   },
   unifiedCard: {
@@ -693,7 +693,7 @@ const styles = StyleSheet.create({
   },
   whereInput: {
     fontSize: 15,
-    fontWeight: '600',
+    fontFamily: 'Roboto-SemiBold',
     color: '#FFFFFF',
     padding: 0,
   },
@@ -719,11 +719,11 @@ const styles = StyleSheet.create({
   },
   avatarDotText: {
     fontSize: 10,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
   },
   inviteValueText: {
     fontSize: 15,
-    fontWeight: '600',
+    fontFamily: 'Roboto-SemiBold',
     color: '#FFFFFF',
   },
   categoryValueRow: {
@@ -739,12 +739,12 @@ const styles = StyleSheet.create({
   },
   categoryValueText: {
     fontSize: 15,
-    fontWeight: '600',
+    fontFamily: 'Roboto-SemiBold',
     color: '#FFFFFF',
   },
   rowValueText: {
     fontSize: 15,
-    fontWeight: '600',
+    fontFamily: 'Roboto-SemiBold',
     color: '#FFFFFF',
     marginTop: 2,
   },
@@ -768,7 +768,7 @@ const styles = StyleSheet.create({
   },
   cancelLinkText: {
     fontSize: 15,
-    fontWeight: '600',
+    fontFamily: 'Roboto-SemiBold',
     color: '#F06A6A',
   },
   bottomBar: {
@@ -792,7 +792,7 @@ const styles = StyleSheet.create({
   },
   submitBtnText: {
     fontSize: 16,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     color: '#FFFFFF',
   },
 });

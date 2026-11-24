@@ -279,7 +279,7 @@ const styles = StyleSheet.create({
   },
   sheetTitle: {
     fontSize: 20,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     color: '#FFFFFF',
     textAlign: 'center',
     marginBottom: 18,
@@ -289,7 +289,7 @@ const styles = StyleSheet.create({
   },
   sectionHeader: {
     fontSize: 11,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     color: '#8A97AB',
     letterSpacing: 1.2,
     marginBottom: 10,
@@ -317,12 +317,12 @@ const styles = StyleSheet.create({
   },
   filterChipText: {
     fontSize: 14,
-    fontWeight: '600',
+    fontFamily: 'Roboto-SemiBold',
     color: '#CAD4DF',
   },
   filterChipTextSelected: {
     color: '#0B1A2F',
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
   },
   categoryChip: {
     flexDirection: 'row',
@@ -346,12 +346,12 @@ const styles = StyleSheet.create({
   },
   categoryChipText: {
     fontSize: 13,
-    fontWeight: '600',
+    fontFamily: 'Roboto-SemiBold',
     color: '#CAD4DF',
   },
   categoryChipTextSelected: {
     color: '#0B1A2F',
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
   },
   actionsRow: {
     flexDirection: 'row',
@@ -371,7 +371,7 @@ const styles = StyleSheet.create({
   },
   resetBtnText: {
     fontSize: 15,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     color: '#CAD4DF',
   },
   applyBtn: {
@@ -384,7 +384,7 @@ const styles = StyleSheet.create({
   },
   applyBtnText: {
     fontSize: 15,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     color: '#FFFFFF',
   },
 });

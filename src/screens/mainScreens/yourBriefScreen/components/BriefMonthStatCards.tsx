@@ -61,24 +61,21 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-start',
   },
   valueText: {
-    fontFamily: 'Roboto',
     fontSize: 28,
     lineHeight: 34,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     color: '#B6B8B8',
   },
   labelText: {
-    fontFamily: 'Roboto',
     fontSize: 13,
     lineHeight: 18,
-    fontWeight: '500',
+    fontFamily: 'Roboto-Medium',
     color: '#B6B8B8',
   },
   metaText: {
-    fontFamily: 'Roboto',
     fontSize: 13,
     lineHeight: 18,
-    fontWeight: '400',
+    fontFamily: 'Roboto-Regular',
   },
   positiveText: {
     color: '#6FD9A6',

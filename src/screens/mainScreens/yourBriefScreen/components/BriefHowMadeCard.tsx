@@ -99,18 +99,16 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   eyebrow: {
-    fontFamily: 'Roboto',
     fontSize: 12,
     lineHeight: 16,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     color: '#8A97AB',
     letterSpacing: 1.44,
   },
   description: {
-    fontFamily: 'Roboto',
     fontSize: 13,
     lineHeight: 18,
-    fontWeight: '400',
+    fontFamily: 'Roboto-Light',
     color: '#C9D1DC',
   },
   feedbackRow: {
@@ -120,10 +118,9 @@ const styles = StyleSheet.create({
     height: 35,
   },
   feedbackPrompt: {
-    fontFamily: 'Roboto',
     fontSize: 13,
     lineHeight: 18,
-    fontWeight: '500',
+    fontFamily: 'Roboto-Medium',
     color: '#B6B8B8',
   },
   buttonsContainer: {
@@ -151,15 +148,14 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(240, 145, 58, 0.15)',
   },
   feedbackBtnText: {
-    fontFamily: 'Roboto',
     fontSize: 14,
     lineHeight: 18,
-    fontWeight: '400',
+    fontFamily: 'Roboto-Regular',
     color: '#C9D1DC',
   },
   feedbackBtnTextActive: {
     color: '#F0913A',
-    fontWeight: '600',
+    fontFamily: 'Roboto-SemiBold',
   },
 });
 

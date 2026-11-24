@@ -1,6 +1,6 @@
 import axios from 'axios';
 import apiClient from '../src/services/apiClient';
-import { tokenService } from '../src/units/tokenServices';
+import { tokenService } from '../src/units/TokenServices';
 
 jest.mock('axios', () => {
   const actualAxios = jest.requireActual('axios');

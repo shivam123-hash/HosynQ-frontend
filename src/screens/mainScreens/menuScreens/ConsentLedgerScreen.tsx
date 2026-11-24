@@ -255,7 +255,7 @@ const styles = StyleSheet.create({
   },
   topBarTitle: {
     fontSize: 20,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     color: '#FFFFFF',
   },
   topBarRightPlaceholder: {
@@ -294,12 +294,12 @@ const styles = StyleSheet.create({
   },
   filterChipText: {
     fontSize: 14,
-    fontWeight: '600',
+    fontFamily: 'Roboto-SemiBold',
     color: '#C8D1DC',
   },
   filterChipTextActive: {
     color: '#0A1320',
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
   },
   card: {
     backgroundColor: '#122440',
@@ -321,7 +321,7 @@ const styles = StyleSheet.create({
   },
   rowTitle: {
     fontSize: 15,
-    fontWeight: '600',
+    fontFamily: 'Roboto-SemiBold',
     color: '#FFFFFF',
     marginBottom: 4,
   },
@@ -331,7 +331,7 @@ const styles = StyleSheet.create({
   },
   withdrawBtnText: {
     fontSize: 14,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     color: '#F0923A',
   },
   badgeActive: {
@@ -346,7 +346,7 @@ const styles = StyleSheet.create({
   },
   badgeActiveText: {
     fontSize: 13,
-    fontWeight: '600',
+    fontFamily: 'Roboto-SemiBold',
     color: '#6FD9A6',
   },
   badgeWithdrawn: {
@@ -361,7 +361,7 @@ const styles = StyleSheet.create({
   },
   badgeWithdrawnText: {
     fontSize: 13,
-    fontWeight: '600',
+    fontFamily: 'Roboto-SemiBold',
     color: '#C8D1DC',
   },
   divider: {
@@ -392,7 +392,7 @@ const styles = StyleSheet.create({
   },
   downloadBtnText: {
     fontSize: 16,
-    fontWeight: '600',
+    fontFamily: 'Roboto-SemiBold',
     color: '#FFFFFF',
   },
 });

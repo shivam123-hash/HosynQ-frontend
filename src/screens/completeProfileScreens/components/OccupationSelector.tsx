@@ -81,7 +81,7 @@ const styles = StyleSheet.create({
   sectionHeader: {
     color: '#8E9BAE',
     fontSize: RFValue(11),
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     letterSpacing: 1.2,
     textTransform: 'uppercase',
     marginBottom: 14,
@@ -89,7 +89,7 @@ const styles = StyleSheet.create({
   questionHeader: {
     color: '#94A3B8',
     fontSize: RFValue(13),
-    fontWeight: '500',
+    fontFamily: 'Roboto-Medium',
     marginBottom: 12,
   },
   chipsContainer: {
@@ -116,11 +116,11 @@ const styles = StyleSheet.create({
   },
   chipTextUnselected: {
     color: '#CBD5E1',
-    fontWeight: '500',
+    fontFamily: 'Roboto-Medium',
   },
   chipTextSelected: {
     color: '#071526',
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
   },
 });
 

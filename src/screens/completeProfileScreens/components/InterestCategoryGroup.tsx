@@ -63,7 +63,7 @@ const styles = StyleSheet.create({
   categoryTitle: {
     color: '#8E9BAE',
     fontSize: RFValue(11),
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     letterSpacing: 1.2,
     textTransform: 'uppercase',
     marginBottom: 10,
@@ -92,11 +92,11 @@ const styles = StyleSheet.create({
   },
   chipTextUnselected: {
     color: '#CBD5E1',
-    fontWeight: '500',
+    fontFamily: 'Roboto-Medium',
   },
   chipTextSelected: {
     color: '#071526',
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
   },
 });
 

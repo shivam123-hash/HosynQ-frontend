@@ -8,7 +8,7 @@ import {
   fetchLifeProfileFullThunk,
   fetchMedicinesThunk,
 } from '../../../redux';
-import { getMyMemberId } from '../../../units/asyncStorageManager';
+import { getMyMemberId } from '../../../units/AsyncStorageManager';
 import HealthProfileInputScreen, {
   HealthProfileFormValues,
   DEFAULT_HEALTH_FORM_VALUES,

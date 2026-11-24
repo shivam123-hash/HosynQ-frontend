@@ -404,7 +404,7 @@ const styles = StyleSheet.create({
   },
   headerTitle: {
     fontSize: 17,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     color: '#FFFFFF',
   },
   scrollContent: {
@@ -432,12 +432,12 @@ const styles = StyleSheet.create({
   },
   categoryPillText: {
     fontSize: 13,
-    fontWeight: '600',
+    fontFamily: 'Roboto-SemiBold',
     color: '#CAD4DF',
   },
   titleText: {
     fontSize: 24,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     color: '#FFFFFF',
     marginBottom: 18,
     lineHeight: 30,
@@ -459,13 +459,13 @@ const styles = StyleSheet.create({
   },
   daysLeftNumber: {
     fontSize: 38,
-    fontWeight: '800',
+    fontFamily: 'Roboto-Bold',
     color: '#F0913A',
     lineHeight: 44,
   },
   daysLeftLabel: {
     fontSize: 11,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     color: '#F0913A',
     letterSpacing: 0.8,
     marginTop: 2,
@@ -481,7 +481,7 @@ const styles = StyleSheet.create({
   },
   countdownDateHeader: {
     fontSize: 15,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     color: '#FFFFFF',
   },
   countdownDesc: {
@@ -514,7 +514,7 @@ const styles = StyleSheet.create({
   },
   docTitle: {
     fontSize: 15,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     color: '#FFFFFF',
   },
   docPath: {
@@ -524,7 +524,7 @@ const styles = StyleSheet.create({
   },
   openLink: {
     fontSize: 14,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     color: '#F0913A',
     marginLeft: 12,
   },
@@ -560,7 +560,7 @@ const styles = StyleSheet.create({
   },
   rowValueText: {
     fontSize: 14,
-    fontWeight: '600',
+    fontFamily: 'Roboto-SemiBold',
     color: '#FFFFFF',
   },
   personRow: {
@@ -578,7 +578,7 @@ const styles = StyleSheet.create({
   },
   personAvatarText: {
     fontSize: 12,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     color: '#8DB8F5',
   },
   whoSeesRow: {
@@ -602,7 +602,7 @@ const styles = StyleSheet.create({
   },
   miniAvatarText: {
     fontSize: 11,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
   },
   avatarRohanBg: {
     backgroundColor: '#1E3A66',
@@ -631,7 +631,7 @@ const styles = StyleSheet.create({
   aiSparkle: {
     fontSize: 14,
     color: '#F0913A',
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
   },
   aiSuggestionText: {
     flex: 1,
@@ -654,7 +654,7 @@ const styles = StyleSheet.create({
   },
   aiConfirmText: {
     fontSize: 13.5,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     color: '#FFFFFF',
   },
   aiEditBtn: {
@@ -670,7 +670,7 @@ const styles = StyleSheet.create({
   },
   aiEditText: {
     fontSize: 13.5,
-    fontWeight: '600',
+    fontFamily: 'Roboto-SemiBold',
     color: '#FFFFFF',
   },
   aiIgnoreBtn: {
@@ -698,7 +698,7 @@ const styles = StyleSheet.create({
   confirmedText: {
     fontSize: 13.5,
     color: '#2DD4BF',
-    fontWeight: '600',
+    fontFamily: 'Roboto-SemiBold',
     marginLeft: 8,
   },
   bottomBar: {
@@ -722,7 +722,7 @@ const styles = StyleSheet.create({
   },
   editDateBtnText: {
     fontSize: 15,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     color: '#FFFFFF',
   },
   addRenewalTaskBtn: {
@@ -740,7 +740,7 @@ const styles = StyleSheet.create({
   },
   addRenewalTaskBtnText: {
     fontSize: 15,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     color: '#FFFFFF',
   },
 });

@@ -153,13 +153,13 @@ const styles = StyleSheet.create({
   labelText: {
     color: '#8E9BAE',
     fontSize: RFValue(11),
-    fontWeight: '400',
+    fontFamily: 'Roboto-Regular',
     marginBottom: 2,
   },
   valueText: {
     color: '#FFFFFF',
     fontSize: RFValue(14),
-    fontWeight: '600',
+    fontFamily: 'Roboto-SemiBold',
   },
 });
 

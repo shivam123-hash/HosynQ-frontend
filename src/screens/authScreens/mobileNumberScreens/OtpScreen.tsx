@@ -313,7 +313,7 @@ const styles = StyleSheet.create({
   },
   title: {
     fontSize: RFValue(21),
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     color: Colors.text,
     textAlign: 'center',
     marginBottom: 8,
@@ -326,7 +326,7 @@ const styles = StyleSheet.create({
   },
   mobileHighlight: {
     color: Colors.text,
-    fontWeight: '600',
+    fontFamily: 'Roboto-SemiBold',
   },
   changeNumberLink: {
     marginTop: 6,
@@ -335,7 +335,7 @@ const styles = StyleSheet.create({
   changeNumberText: {
     color: Colors.primary,
     fontSize: RFValue(12.5),
-    fontWeight: '600',
+    fontFamily: 'Roboto-SemiBold',
   },
   otpSection: {
     width: '100%',
@@ -376,7 +376,7 @@ const styles = StyleSheet.create({
   resendLinkText: {
     color: Colors.textSecondary,
     fontSize: RFValue(13),
-    fontWeight: '500',
+    fontFamily: 'Roboto-Medium',
   },
   resendDisabledText: {
     color: '#666666',
@@ -402,6 +402,6 @@ const styles = StyleSheet.create({
   },
   devOtpCode: {
     color: Colors.primary,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
   },
 });

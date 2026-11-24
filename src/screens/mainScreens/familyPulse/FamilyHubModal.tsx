@@ -736,7 +736,7 @@ const styles = StyleSheet.create({
   },
   headerTitle: {
     fontSize: 26,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     color: Colors.white,
     letterSpacing: -0.4,
   },
@@ -775,7 +775,7 @@ const styles = StyleSheet.create({
   familyAvatarText: {
     color: Colors.black,
     fontSize: 19,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
   },
   familyTextGroup: {
     flex: 1,
@@ -783,14 +783,14 @@ const styles = StyleSheet.create({
   },
   familyName: {
     fontSize: 17,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     color: Colors.white,
     letterSpacing: -0.2,
     marginBottom: 3,
   },
   familyMeta: {
     fontSize: 13,
-    fontWeight: '400',
+    fontFamily: 'Roboto-Regular',
     color: Colors.textSubtle,
   },
   familyIdBadge: {
@@ -806,7 +806,7 @@ const styles = StyleSheet.create({
   familyIdText: {
     color: Colors.white,
     fontSize: 13,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     letterSpacing: 0.2,
     marginRight: 6,
   },
@@ -839,7 +839,7 @@ const styles = StyleSheet.create({
   },
   memberAvatarInitial: {
     fontSize: 17,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
   },
   statusDot: {
     width: 13,
@@ -859,14 +859,14 @@ const styles = StyleSheet.create({
   },
   memberNameText: {
     fontSize: 12.5,
-    fontWeight: '600',
+    fontFamily: 'Roboto-SemiBold',
     color: Colors.white,
     marginBottom: 2,
     textAlign: 'center',
   },
   memberLocationText: {
     fontSize: 11.5,
-    fontWeight: '400',
+    fontFamily: 'Roboto-Regular',
     color: Colors.textSubtle,
     textAlign: 'center',
   },
@@ -885,7 +885,7 @@ const styles = StyleSheet.create({
   },
   addMemberText: {
     fontSize: 12.5,
-    fontWeight: '600',
+    fontFamily: 'Roboto-SemiBold',
     color: Colors.primary,
     marginBottom: 2,
     textAlign: 'center',
@@ -967,11 +967,11 @@ const styles = StyleSheet.create({
   counterBadgeText: {
     color: Colors.black,
     fontSize: 13,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
   },
   gridCardTitle: {
     fontSize: 16,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     color: Colors.white,
     marginBottom: 4,
   },
@@ -1008,14 +1008,14 @@ const styles = StyleSheet.create({
   },
   vaultTitle: {
     fontSize: 17,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     color: Colors.white,
     letterSpacing: -0.2,
     marginBottom: 4,
   },
   vaultSubtitle: {
     fontSize: 13,
-    fontWeight: '400',
+    fontFamily: 'Roboto-Regular',
     color: Colors.textSubtle,
     lineHeight: 18,
   },
@@ -1030,7 +1030,7 @@ const styles = StyleSheet.create({
   },
   moodSectionTitle: {
     fontSize: 17,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     color: Colors.white,
     letterSpacing: -0.2,
     marginBottom: 14,
@@ -1062,11 +1062,11 @@ const styles = StyleSheet.create({
   },
   moodChipTextActive: {
     color: Colors.black,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
   },
   moodChipTextInactive: {
     color: Colors.white,
-    fontWeight: '500',
+    fontFamily: 'Roboto-Medium',
   },
   pendingRequestCard: {
     backgroundColor: Colors.cardBackground,

@@ -97,11 +97,11 @@ const styles = StyleSheet.create({
   },
   activePillText: {
     color: '#0B1A2F',
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
   },
   inactivePillText: {
     color: '#CAD4DF',
-    fontWeight: '500',
+    fontFamily: 'Roboto-Medium',
   },
 });
 

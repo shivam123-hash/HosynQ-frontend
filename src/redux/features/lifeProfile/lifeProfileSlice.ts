@@ -7,7 +7,7 @@ import lifeProfileServices, {
 import {
   saveCachedLifeProfile,
   getCachedLifeProfile,
-} from '../../../units/asyncStorageManager';
+} from '../../../units/AsyncStorageManager';
 
 export interface LifeProfileState {
   full: any | null;

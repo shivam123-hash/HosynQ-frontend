@@ -163,7 +163,7 @@ const styles = StyleSheet.create({
   },
   topBarTitle: {
     fontSize: 20,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     color: Colors.white,
     letterSpacing: -0.3,
   },
@@ -209,7 +209,7 @@ const styles = StyleSheet.create({
   },
   rowTitle: {
     fontSize: 15,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     color: Colors.white,
   },
   rowSubtitle: {

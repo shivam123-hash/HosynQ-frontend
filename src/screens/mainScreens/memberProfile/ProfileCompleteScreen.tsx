@@ -282,7 +282,7 @@ const styles = StyleSheet.create({
   },
   heading: {
     fontSize: 24,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     color: '#FFFFFF',
     textAlign: 'center',
     letterSpacing: -0.3,
@@ -299,7 +299,7 @@ const styles = StyleSheet.create({
   sectionHeading: {
     width: '100%',
     fontSize: 11.5,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     color: '#8A97AB',
     letterSpacing: 1.2,
     textTransform: 'uppercase',
@@ -333,7 +333,7 @@ const styles = StyleSheet.create({
   },
   reminderTitle: {
     fontSize: 15.5,
-    fontWeight: '600',
+    fontFamily: 'Roboto-SemiBold',
     color: '#FFFFFF',
     marginBottom: 3,
   },
@@ -361,7 +361,7 @@ const styles = StyleSheet.create({
   },
   doneButtonText: {
     fontSize: 16,
-    fontWeight: '600',
+    fontFamily: 'Roboto-SemiBold',
     color: '#FFFFFF',
   },
   nextMemberButton: {
@@ -376,7 +376,7 @@ const styles = StyleSheet.create({
   },
   nextMemberButtonText: {
     fontSize: 16,
-    fontWeight: '600',
+    fontFamily: 'Roboto-SemiBold',
     color: '#FFFFFF',
   },
 });

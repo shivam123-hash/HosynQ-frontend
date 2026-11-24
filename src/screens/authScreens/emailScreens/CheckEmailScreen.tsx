@@ -25,8 +25,8 @@ import {
 import { fetchLifeProfileFullThunk } from '../../../redux/features/lifeProfile/lifeProfileSlice';
 import { getMyFamilyThunk } from '../../../redux/features/family/familySlice';
 import { authServices } from '../../../services';
-import { saveMyMemberId } from '../../../units/asyncStorageManager';
-import { getDeviceInfo } from '../../../units/deviceInfo';
+import { saveMyMemberId } from '../../../units/AsyncStorageManager';
+import { getDeviceInfo } from '../../../units/DeviceInfo';
 import type {
   AuthNavigationProp,
   RootNavigationProp,
@@ -452,7 +452,7 @@ const styles = StyleSheet.create({
   },
   title: {
     fontSize: RFValue(21),
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     color: Colors.text,
     textAlign: 'center',
     marginBottom: 10,
@@ -476,12 +476,12 @@ const styles = StyleSheet.create({
   differentEmailText: {
     color: Colors.primary,
     fontSize: RFValue(13.5),
-    fontWeight: '600',
+    fontFamily: 'Roboto-SemiBold',
     textAlign: 'center',
   },
   emailHighlight: {
     color: Colors.text,
-    fontWeight: '600',
+    fontFamily: 'Roboto-SemiBold',
   },
   pollingStatusRow: {
     flexDirection: 'row',
@@ -528,6 +528,6 @@ const styles = StyleSheet.create({
   devSimulateText: {
     color: Colors.primary,
     fontSize: RFValue(11.5),
-    fontWeight: '600',
+    fontFamily: 'Roboto-SemiBold',
   },
 });

@@ -660,7 +660,7 @@ const styles = StyleSheet.create({
   },
   headerTitle: {
     fontSize: 20,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     color: Colors.white,
     letterSpacing: -0.3,
   },
@@ -703,7 +703,7 @@ const styles = StyleSheet.create({
   },
   emptyTitle: {
     fontSize: 24,
-    fontWeight: '800',
+    fontFamily: 'Roboto-Bold',
     color: Colors.white,
     letterSpacing: -0.3,
     marginBottom: 12,
@@ -729,7 +729,7 @@ const styles = StyleSheet.create({
   emptyPrimaryBtnText: {
     color: Colors.white,
     fontSize: 16,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
   },
   emptySecondaryBtn: {
     height: 52,
@@ -744,7 +744,7 @@ const styles = StyleSheet.create({
   emptySecondaryBtnText: {
     color: Colors.white,
     fontSize: 16,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
   },
   btnIcon: {
     marginRight: 8,
@@ -757,7 +757,7 @@ const styles = StyleSheet.create({
   emptyTertiaryBtnText: {
     color: Colors.primary,
     fontSize: 15,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
   },
   scrollArea: {
     flex: 1,
@@ -784,13 +784,13 @@ const styles = StyleSheet.create({
   moodCardHeaderTitle: {
     color: Colors.primary,
     fontSize: 11.5,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     letterSpacing: 0.8,
   },
   moodCardHeaderCount: {
     color: Colors.textSubtle,
     fontSize: 12.5,
-    fontWeight: '400',
+    fontFamily: 'Roboto-Regular',
   },
   membersMoodRow: {
     flexDirection: 'row',
@@ -813,11 +813,11 @@ const styles = StyleSheet.create({
   },
   memberAvatarInitial: {
     fontSize: 17,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
   },
   memberMoodName: {
     fontSize: 12.5,
-    fontWeight: '600',
+    fontFamily: 'Roboto-SemiBold',
     color: Colors.white,
     marginBottom: 4,
   },
@@ -830,12 +830,12 @@ const styles = StyleSheet.create({
   },
   moodStatusText: {
     fontSize: 12,
-    fontWeight: '600',
+    fontFamily: 'Roboto-SemiBold',
   },
   notYetText: {
     fontSize: 12,
     color: Colors.textSubtle,
-    fontWeight: '400',
+    fontFamily: 'Roboto-Regular',
   },
   actionButtonsRow: {
     flexDirection: 'row',
@@ -881,7 +881,7 @@ const styles = StyleSheet.create({
   actionBtnText: {
     color: Colors.white,
     fontSize: 13.5,
-    fontWeight: '600',
+    fontFamily: 'Roboto-SemiBold',
     textAlign: 'center',
   },
   sectionHeaderRow: {
@@ -892,14 +892,14 @@ const styles = StyleSheet.create({
   },
   sectionTitle: {
     fontSize: 20,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     color: Colors.white,
     letterSpacing: -0.3,
   },
   seeAllText: {
     color: Colors.primary,
     fontSize: 14,
-    fontWeight: '600',
+    fontFamily: 'Roboto-SemiBold',
   },
   previewCard: {
     backgroundColor: Colors.cardBackground,
@@ -930,7 +930,7 @@ const styles = StyleSheet.create({
   },
   smallAvatarText: {
     fontSize: 13,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
   },
   smallChevron: {
     marginHorizontal: 6,
@@ -939,13 +939,13 @@ const styles = StyleSheet.create({
     marginLeft: 8,
     color: Colors.white,
     fontSize: 15,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     flexShrink: 1,
   },
   previewTimeText: {
     color: Colors.textSecondary,
     fontSize: 13,
-    fontWeight: '500',
+    fontFamily: 'Roboto-Medium',
   },
   previewMessage: {
     color: Colors.textNearWhite,
@@ -971,7 +971,7 @@ const styles = StyleSheet.create({
   previewReactionTextActive: {
     color: Colors.primary,
     fontSize: 13,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
   },
   previewReactionPill: {
     flexDirection: 'row',
@@ -987,11 +987,11 @@ const styles = StyleSheet.create({
   previewReactionText: {
     color: Colors.white,
     fontSize: 13,
-    fontWeight: '600',
+    fontFamily: 'Roboto-SemiBold',
   },
   pollPreviewQuestion: {
     fontSize: 16,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     color: Colors.white,
     lineHeight: 22,
     marginBottom: 16,
@@ -1012,7 +1012,7 @@ const styles = StyleSheet.create({
   pollOptionName: {
     color: Colors.white,
     fontSize: 15,
-    fontWeight: '600',
+    fontFamily: 'Roboto-SemiBold',
   },
   checkIcon: {
     marginLeft: 8,
@@ -1020,12 +1020,12 @@ const styles = StyleSheet.create({
   pollOptionPercent: {
     color: Colors.textSubtle,
     fontSize: 14.5,
-    fontWeight: '600',
+    fontFamily: 'Roboto-SemiBold',
   },
   pollOptionPercentActive: {
     color: Colors.primary,
     fontSize: 14.5,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
   },
   pollTrack: {
     height: 6,
@@ -1049,7 +1049,7 @@ const styles = StyleSheet.create({
     color: Colors.textSubtle,
     fontSize: 13,
     marginTop: 2,
-    fontWeight: '400',
+    fontFamily: 'Roboto-Regular',
   },
   milestoneCategoryRow: {
     flexDirection: 'row',
@@ -1062,12 +1062,12 @@ const styles = StyleSheet.create({
   milestoneCategoryText: {
     color: Colors.primary,
     fontSize: 11,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     letterSpacing: 0.6,
   },
   milestoneTitle: {
     fontSize: 15,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     color: Colors.white,
     marginBottom: 4,
   },

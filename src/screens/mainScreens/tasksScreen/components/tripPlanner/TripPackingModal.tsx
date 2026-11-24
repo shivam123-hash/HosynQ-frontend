@@ -359,11 +359,11 @@ const styles = StyleSheet.create({
   categoryPillText: {
     color: '#2DD4BF',
     fontSize: 13,
-    fontWeight: '600',
+    fontFamily: 'Roboto-SemiBold',
   },
   titleText: {
     fontSize: 26,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     color: '#FFFFFF',
     marginTop: 12,
   },
@@ -386,7 +386,7 @@ const styles = StyleSheet.create({
   },
   progressLabel: {
     fontSize: 13,
-    fontWeight: '500',
+    fontFamily: 'Roboto-Medium',
     color: '#CAD4DF',
     marginLeft: 12,
   },
@@ -410,16 +410,16 @@ const styles = StyleSheet.create({
   },
   filterChipText: {
     fontSize: 13,
-    fontWeight: '600',
+    fontFamily: 'Roboto-SemiBold',
     color: '#CAD4DF',
   },
   filterChipTextActive: {
     color: '#0B1A2F',
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
   },
   sectionHeader: {
     fontSize: 11,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     color: '#8A97AB',
     letterSpacing: 1.2,
     marginTop: 10,
@@ -463,7 +463,7 @@ const styles = StyleSheet.create({
   },
   itemTitle: {
     fontSize: 15,
-    fontWeight: '600',
+    fontFamily: 'Roboto-SemiBold',
     color: '#FFFFFF',
   },
   itemTitleDone: {
@@ -472,7 +472,7 @@ const styles = StyleSheet.create({
   },
   itemSubtitle: {
     fontSize: 13,
-    fontWeight: '400',
+    fontFamily: 'Roboto-Regular',
     color: '#8A97AB',
     marginTop: 2,
   },
@@ -489,7 +489,7 @@ const styles = StyleSheet.create({
   assigneeInitial: {
     color: '#FFFFFF',
     fontSize: 11,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
   },
   itemDivider: {
     height: 1,

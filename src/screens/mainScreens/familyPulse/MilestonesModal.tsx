@@ -296,7 +296,7 @@ const styles = StyleSheet.create({
   headerTitle: {
     flex: 1,
     fontSize: 20,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     color: Colors.white,
     letterSpacing: -0.3,
     textAlign: 'center',
@@ -334,11 +334,11 @@ const styles = StyleSheet.create({
   },
   filterChipTextActive: {
     color: '#0B1A2F',
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
   },
   filterChipTextInactive: {
     color: '#CAD4DF',
-    fontWeight: '500',
+    fontFamily: 'Roboto-Medium',
   },
   scrollArea: {
     flex: 1,
@@ -351,7 +351,7 @@ const styles = StyleSheet.create({
   },
   monthHeader: {
     fontSize: 12,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     color: '#8A97AB',
     letterSpacing: 0.8,
     marginBottom: 12,
@@ -414,12 +414,12 @@ const styles = StyleSheet.create({
   categoryTagText: {
     color: Colors.primary,
     fontSize: 12,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     letterSpacing: 0.8,
   },
   featuredTitle: {
     fontSize: 17,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     color: Colors.white,
     marginBottom: 6,
     letterSpacing: -0.2,
@@ -427,7 +427,7 @@ const styles = StyleSheet.create({
   featuredSubtext: {
     fontSize: 13,
     color: '#8A97AB',
-    fontWeight: '500',
+    fontFamily: 'Roboto-Medium',
   },
   standardRow: {
     flexDirection: 'row',
@@ -463,14 +463,14 @@ const styles = StyleSheet.create({
   },
   standardTitle: {
     fontSize: 15,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     color: Colors.white,
     marginBottom: 4,
   },
   standardSubtitle: {
     fontSize: 13,
     color: '#8A97AB',
-    fontWeight: '500',
+    fontFamily: 'Roboto-Medium',
   },
   bottomBar: {
     position: 'absolute',
@@ -497,7 +497,7 @@ const styles = StyleSheet.create({
   addMilestoneBtnText: {
     color: Colors.white,
     fontSize: 16,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
   },
 });
 

@@ -139,7 +139,7 @@ const styles = StyleSheet.create({
   },
   optionTitle: {
     fontSize: 15,
-    fontWeight: '600',
+    fontFamily: 'Roboto-SemiBold',
     color: Colors.textLightMutedAlt,
   },
   optionSubtitle: {

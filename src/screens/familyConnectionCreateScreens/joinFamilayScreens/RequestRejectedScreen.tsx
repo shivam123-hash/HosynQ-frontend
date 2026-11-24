@@ -113,7 +113,7 @@ const styles = StyleSheet.create({
   },
   title: {
     fontSize: RFValue(22),
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     color: '#FFFFFF',
     textAlign: 'center',
     lineHeight: RFValue(28),
@@ -144,7 +144,7 @@ const styles = StyleSheet.create({
   createOwnText: {
     color: '#FFFFFF',
     fontSize: RFValue(14.5),
-    fontWeight: '600',
+    fontFamily: 'Roboto-SemiBold',
   },
 });
 

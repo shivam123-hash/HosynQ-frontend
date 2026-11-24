@@ -185,7 +185,7 @@ const styles = StyleSheet.create({
   },
   topBarTitle: {
     fontSize: 18,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     color: Colors.white,
   },
   topBarRightPlaceholder: {
@@ -251,7 +251,7 @@ const styles = StyleSheet.create({
   },
   title: {
     fontSize: 26,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     color: Colors.white,
     textAlign: 'center',
     lineHeight: 34,
@@ -290,7 +290,7 @@ const styles = StyleSheet.create({
   },
   planCardTitle: {
     fontSize: 16,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     color: Colors.white,
     marginBottom: 3,
   },
@@ -315,7 +315,7 @@ const styles = StyleSheet.create({
   },
   primaryBtnText: {
     fontSize: 16,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     color: Colors.white,
   },
   secondaryBtn: {
@@ -325,7 +325,7 @@ const styles = StyleSheet.create({
   },
   secondaryBtnText: {
     fontSize: 15,
-    fontWeight: '600',
+    fontFamily: 'Roboto-SemiBold',
     color: Colors.primary,
   },
 });

@@ -88,7 +88,7 @@ const styles = StyleSheet.create({
   title: {
     color: '#FFFFFF',
     fontSize: RFValue(13.5),
-    fontWeight: '600',
+    fontFamily: 'Roboto-SemiBold',
     marginBottom: 2,
   },
   subtitle: {

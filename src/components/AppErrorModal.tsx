@@ -112,7 +112,7 @@ const styles = StyleSheet.create({
   titleText: {
     color: '#FFFFFF',
     fontSize: RFValue(17),
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     textAlign: 'center',
     marginBottom: 8,
   },

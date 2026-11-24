@@ -43,7 +43,7 @@ const styles = StyleSheet.create({
   titleText: {
     color: '#F87171',
     fontSize: RFValue(13.5),
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     marginLeft: 8,
   },
   messageText: {

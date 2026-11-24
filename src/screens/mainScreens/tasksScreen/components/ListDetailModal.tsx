@@ -742,11 +742,11 @@ const styles = StyleSheet.create({
   },
   categoryPillText: {
     fontSize: 13,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
   },
   listTitle: {
     fontSize: 28,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     color: '#FFFFFF',
     marginBottom: 10,
     letterSpacing: -0.4,
@@ -775,12 +775,12 @@ const styles = StyleSheet.create({
   },
   clusterInitial: {
     fontSize: 10,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     color: '#FFFFFF',
   },
   sharedText: {
     fontSize: 14,
-    fontWeight: '500',
+    fontFamily: 'Roboto-Medium',
     color: '#8A97AB',
   },
   progressRow: {
@@ -808,7 +808,7 @@ const styles = StyleSheet.create({
   },
   progressText: {
     fontSize: 14,
-    fontWeight: '600',
+    fontFamily: 'Roboto-SemiBold',
     color: '#CAD4DF',
   },
   celebrationCard: {
@@ -834,7 +834,7 @@ const styles = StyleSheet.create({
   },
   celebrationTitle: {
     fontSize: 18,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     color: '#6FDAA6',
     marginBottom: 8,
     textAlign: 'center',
@@ -863,7 +863,7 @@ const styles = StyleSheet.create({
   },
   addItemText: {
     fontSize: 16,
-    fontWeight: '500',
+    fontFamily: 'Roboto-Medium',
     color: '#8A97AB',
   },
   itemsSection: {
@@ -871,7 +871,7 @@ const styles = StyleSheet.create({
   },
   sectionHeader: {
     fontSize: 12,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     letterSpacing: 1.2,
     color: '#8A97AB',
     marginBottom: 12,
@@ -916,7 +916,7 @@ const styles = StyleSheet.create({
   },
   itemTitle: {
     fontSize: 16,
-    fontWeight: '600',
+    fontFamily: 'Roboto-SemiBold',
     color: '#FFFFFF',
     marginBottom: 3,
   },
@@ -940,7 +940,7 @@ const styles = StyleSheet.create({
   },
   assignedInitial: {
     fontSize: 12,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     color: '#FFFFFF',
   },
   unassignedBadge: {
@@ -965,7 +965,7 @@ const styles = StyleSheet.create({
   },
   showAllText: {
     fontSize: 14,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     color: '#F0913A',
   },
   moreDoneBtn: {
@@ -975,7 +975,7 @@ const styles = StyleSheet.create({
   },
   moreDoneText: {
     fontSize: 14,
-    fontWeight: '600',
+    fontFamily: 'Roboto-SemiBold',
     color: '#8A97AB',
   },
   allDoneBottomBar: {
@@ -1003,7 +1003,7 @@ const styles = StyleSheet.create({
   },
   clearListText: {
     fontSize: 16,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     color: '#FFFFFF',
   },
   archiveListBtn: {
@@ -1020,7 +1020,7 @@ const styles = StyleSheet.create({
   },
   archiveListText: {
     fontSize: 16,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     color: '#FFFFFF',
   },
 });

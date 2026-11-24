@@ -34,9 +34,13 @@ import {
   resetFamilyState,
   resetLifeProfileState,
 } from '../../../redux';
+<<<<<<< HEAD
 import { fetchTasks } from '../../../redux/features/tasks/tasksSlice';
 import { fetchCalendarFeed } from '../../../redux/features/calendar/calendarSlice';
 import { clearUserData } from '../../../units/asyncStorageManager';
+=======
+import { clearUserData } from '../../../units/AsyncStorageManager';
+>>>>>>> 6ab0bfadb2ae5506a9bb0ff92d4fa0201fc048b2
 
 export interface MainTabScreenProps {
   initialTab?: NavigationTab;
@@ -447,7 +451,7 @@ const styles = StyleSheet.create({
   },
   chatAvatarText: {
     fontSize: 18,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     color: '#0B1A2F',
   },
   chatThreadInfo: {
@@ -455,7 +459,7 @@ const styles = StyleSheet.create({
   },
   chatThreadName: {
     fontSize: 16,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     color: '#CAD4DF',
     marginBottom: 2,
   },

@@ -61,10 +61,9 @@ const styles = StyleSheet.create({
     marginTop: 24,
   },
   sectionTitle: {
-    fontFamily: 'Roboto',
     fontSize: 19,
     lineHeight: 24,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     color: '#B6B8B8',
     marginBottom: 12,
   },
@@ -102,17 +101,15 @@ const styles = StyleSheet.create({
     gap: 3,
   },
   itemTitle: {
-    fontFamily: 'Roboto',
     fontSize: 15.5,
     lineHeight: 20,
-    fontWeight: '500',
+    fontFamily: 'Roboto-Medium',
     color: '#B6B8B8',
   },
   itemSubtitle: {
-    fontFamily: 'Roboto',
     fontSize: 13,
     lineHeight: 18,
-    fontWeight: '400',
+    fontFamily: 'Roboto-Regular',
     color: '#8A97AB',
   },
 });

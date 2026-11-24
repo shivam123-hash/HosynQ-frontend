@@ -57,7 +57,7 @@ const styles = StyleSheet.create({
   text: {
     color: '#FFFFFF',
     fontSize: RFValue(14),
-    fontWeight: '600',
+    fontFamily: 'Roboto-SemiBold',
   },
 });
 

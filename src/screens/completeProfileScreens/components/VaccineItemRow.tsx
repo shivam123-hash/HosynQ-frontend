@@ -143,7 +143,7 @@ const styles = StyleSheet.create({
   nameText: {
     color: '#FFFFFF',
     fontSize: RFValue(13.5),
-    fontWeight: '600',
+    fontFamily: 'Roboto-SemiBold',
   },
   detailsText: {
     color: '#8E9BAE',
@@ -176,7 +176,7 @@ const styles = StyleSheet.create({
   },
   badgeText: {
     fontSize: RFValue(10.5),
-    fontWeight: '600',
+    fontFamily: 'Roboto-SemiBold',
   },
   badgeTextTeal: {
     color: '#14B8A6',

@@ -172,7 +172,7 @@ const styles = StyleSheet.create({
   },
   dialogTitle: {
     fontSize: 20,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     color: '#FFFFFF',
     textAlign: 'center',
     marginBottom: 8,
@@ -197,13 +197,13 @@ const styles = StyleSheet.create({
   },
   lossText: {
     fontSize: 14,
-    fontWeight: '500',
+    fontFamily: 'Roboto-Medium',
     color: '#FFFFFF',
     flex: 1,
   },
   reassuranceText: {
     fontSize: 13,
-    fontWeight: '600',
+    fontFamily: 'Roboto-SemiBold',
     color: '#6FD9A6',
     textAlign: 'center',
     marginBottom: 22,
@@ -218,7 +218,7 @@ const styles = StyleSheet.create({
   },
   keepBtnText: {
     fontSize: 16,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     color: '#FFFFFF',
   },
   switchFreeBtn: {
@@ -228,7 +228,7 @@ const styles = StyleSheet.create({
   },
   switchFreeBtnText: {
     fontSize: 15,
-    fontWeight: '600',
+    fontFamily: 'Roboto-SemiBold',
     color: '#F06A6A',
   },
 });

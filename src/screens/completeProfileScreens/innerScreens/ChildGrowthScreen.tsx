@@ -197,7 +197,7 @@ const styles = StyleSheet.create({
   emptyTitle: {
     color: '#FFFFFF',
     fontSize: RFValue(15),
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     textAlign: 'center',
     marginBottom: 8,
   },
@@ -220,7 +220,7 @@ const styles = StyleSheet.create({
   emptyActionBtnText: {
     color: '#FFFFFF',
     fontSize: RFValue(12.5),
-    fontWeight: '600',
+    fontFamily: 'Roboto-SemiBold',
   },
   bottomBar: {
     paddingHorizontal: 20,

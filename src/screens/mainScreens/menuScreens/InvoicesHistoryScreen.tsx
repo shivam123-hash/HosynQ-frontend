@@ -271,7 +271,7 @@ const styles = StyleSheet.create({
   },
   topBarTitle: {
     fontSize: 20,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     color: '#FFFFFF',
   },
   topBarRightPlaceholder: {
@@ -301,7 +301,7 @@ const styles = StyleSheet.create({
   },
   yearChipText: {
     fontSize: 14,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
   },
   yearChipTextActive: {
     color: '#0B1A2F',
@@ -356,7 +356,7 @@ const styles = StyleSheet.create({
   },
   invoiceTitle: {
     fontSize: 15,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     color: '#FFFFFF',
     marginBottom: 4,
   },
@@ -382,12 +382,12 @@ const styles = StyleSheet.create({
   },
   failedBadgeText: {
     fontSize: 12,
-    fontWeight: '600',
+    fontFamily: 'Roboto-SemiBold',
     color: '#F06A6A',
   },
   invoiceAmount: {
     fontSize: 15,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     color: '#FFFFFF',
   },
   divider: {
@@ -416,7 +416,7 @@ const styles = StyleSheet.create({
   },
   billingDetailsTitle: {
     fontSize: 15,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     color: '#FFFFFF',
     marginBottom: 3,
   },

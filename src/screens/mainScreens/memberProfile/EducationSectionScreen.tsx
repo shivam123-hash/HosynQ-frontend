@@ -218,7 +218,7 @@ const styles = StyleSheet.create({
   },
   headerTitle: {
     fontSize: 17,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     color: '#FFFFFF',
     letterSpacing: -0.2,
   },
@@ -270,7 +270,7 @@ const styles = StyleSheet.create({
   },
   fieldValue: {
     fontSize: 15,
-    fontWeight: '600',
+    fontFamily: 'Roboto-SemiBold',
     color: '#FFFFFF',
   },
   divider: {
@@ -299,7 +299,7 @@ const styles = StyleSheet.create({
   },
   toggleLabel: {
     fontSize: 14.5,
-    fontWeight: '600',
+    fontFamily: 'Roboto-SemiBold',
     color: '#FFFFFF',
     flex: 1,
   },
@@ -326,7 +326,7 @@ const styles = StyleSheet.create({
   },
   saveButtonText: {
     fontSize: 16,
-    fontWeight: '600',
+    fontFamily: 'Roboto-SemiBold',
     color: '#FFFFFF',
   },
 });

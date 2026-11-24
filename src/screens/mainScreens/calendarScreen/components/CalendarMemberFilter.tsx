@@ -147,20 +147,25 @@ const styles = StyleSheet.create({
   },
   avatarInitial: {
     fontSize: 15,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
   },
   memberName: {
     fontSize: 12,
-    fontWeight: '500',
+    fontFamily: 'Roboto-Medium',
     color: '#8A97AB',
     textAlign: 'center',
   },
   everyoneNameActive: {
     color: '#F0923A',
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
   },
   memberNameActive: {
+<<<<<<< HEAD
     color: '#F0923A',
     fontWeight: '700',
+=======
+    color: '#FFFFFF',
+    fontFamily: 'Roboto-Bold',
+>>>>>>> 6ab0bfadb2ae5506a9bb0ff92d4fa0201fc048b2
   },
 });

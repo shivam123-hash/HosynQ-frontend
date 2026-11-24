@@ -80,11 +80,11 @@ const styles = StyleSheet.create({
   },
   activeSegmentText: {
     color: '#0B1A2F',
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
   },
   inactiveSegmentText: {
     color: '#C9D1DC',
-    fontWeight: '400',
+    fontFamily: 'Roboto-Regular',
   },
 });
 

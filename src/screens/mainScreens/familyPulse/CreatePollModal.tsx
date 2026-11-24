@@ -646,7 +646,7 @@ const styles = StyleSheet.create({
   },
   headerTitle: {
     fontSize: 20,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     color: Colors.white,
     letterSpacing: -0.3,
     textAlign: 'center',
@@ -666,7 +666,7 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: Colors.textSecondary,
     marginBottom: 8,
-    fontWeight: '500',
+    fontFamily: 'Roboto-Medium',
   },
   questionInputContainer: {
     backgroundColor: Colors.cardBackground,
@@ -685,7 +685,7 @@ const styles = StyleSheet.create({
   questionInput: {
     color: Colors.white,
     fontSize: 15,
-    fontWeight: '500',
+    fontFamily: 'Roboto-Medium',
     padding: 0,
     paddingVertical: 0,
     textAlignVertical: 'center',
@@ -699,7 +699,7 @@ const styles = StyleSheet.create({
   },
   sectionHeaderUpper: {
     fontSize: 12,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     color: Colors.textSecondary,
     letterSpacing: 0.6,
   },
@@ -725,7 +725,7 @@ const styles = StyleSheet.create({
   optionText: {
     color: Colors.white,
     fontSize: 15,
-    fontWeight: '500',
+    fontFamily: 'Roboto-Medium',
     flex: 1,
     marginRight: 10,
   },
@@ -752,7 +752,7 @@ const styles = StyleSheet.create({
   addOptionText: {
     color: Colors.primary,
     fontSize: 15,
-    fontWeight: '600',
+    fontFamily: 'Roboto-SemiBold',
   },
   addOptionInputRow: {
     flexDirection: 'row',
@@ -781,7 +781,7 @@ const styles = StyleSheet.create({
   },
   saveOptionText: {
     color: Colors.black,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     fontSize: 13,
   },
   settingsCard: {
@@ -803,7 +803,7 @@ const styles = StyleSheet.create({
   settingTitle: {
     fontSize: 15,
     color: Colors.white,
-    fontWeight: '500',
+    fontFamily: 'Roboto-Medium',
   },
   settingActionRow: {
     flexDirection: 'row',
@@ -827,13 +827,13 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: '#8FA0B5',
     marginBottom: 3,
-    fontWeight: '400',
+    fontFamily: 'Roboto-Regular',
     lineHeight: 16,
   },
   settingValueText: {
     fontSize: 15,
     color: Colors.white,
-    fontWeight: '600',
+    fontFamily: 'Roboto-SemiBold',
     lineHeight: 20,
   },
   settingChevronWrapper: {
@@ -867,7 +867,7 @@ const styles = StyleSheet.create({
   postButtonText: {
     color: Colors.white,
     fontSize: 16,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
   },
   modalOverlay: {
     flex: 1,
@@ -900,7 +900,7 @@ const styles = StyleSheet.create({
   },
   sheetTitle: {
     fontSize: 22,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     color: Colors.white,
     marginBottom: 4,
   },
@@ -929,11 +929,11 @@ const styles = StyleSheet.create({
   filterChipText: {
     fontSize: 13,
     color: '#C5D2E0',
-    fontWeight: '500',
+    fontFamily: 'Roboto-Medium',
   },
   filterChipTextActive: {
     color: Colors.primary,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
   },
   sheetCard: {
     backgroundColor: Colors.cardBackground,
@@ -963,7 +963,7 @@ const styles = StyleSheet.create({
   },
   sheetRowTitle: {
     fontSize: 15,
-    fontWeight: '600',
+    fontFamily: 'Roboto-SemiBold',
     color: Colors.white,
   },
   sheetRowSub: {
@@ -976,7 +976,7 @@ const styles = StyleSheet.create({
   },
   sheetRowCustomText: {
     fontSize: 15,
-    fontWeight: '600',
+    fontFamily: 'Roboto-SemiBold',
     color: Colors.primary,
     flex: 1,
   },
@@ -1011,14 +1011,14 @@ const styles = StyleSheet.create({
   },
   voterAvatarText: {
     fontSize: 15,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
   },
   voterInfoCol: {
     flex: 1,
   },
   voterName: {
     fontSize: 15,
-    fontWeight: '600',
+    fontFamily: 'Roboto-SemiBold',
     color: Colors.white,
   },
   voterRole: {
@@ -1036,7 +1036,7 @@ const styles = StyleSheet.create({
   sheetDoneBtnText: {
     color: Colors.white,
     fontSize: 16,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
   },
 });
 

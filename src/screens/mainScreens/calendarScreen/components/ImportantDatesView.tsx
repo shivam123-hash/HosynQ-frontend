@@ -267,7 +267,7 @@ const styles = StyleSheet.create({
   },
   topNavTitle: {
     fontSize: 18,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     color: '#FFFFFF',
   },
   backPlaceholder: {
@@ -296,12 +296,12 @@ const styles = StyleSheet.create({
   },
   filterPillText: {
     fontSize: 13,
-    fontWeight: '600',
+    fontFamily: 'Roboto-SemiBold',
     color: '#CAD4DF',
   },
   filterPillTextActive: {
     color: '#0B1A2F',
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
   },
   scrollContent: {
     paddingHorizontal: 20,
@@ -312,7 +312,7 @@ const styles = StyleSheet.create({
   },
   sectionHeader: {
     fontSize: 11,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     color: '#8A97AB',
     letterSpacing: 1.2,
     marginBottom: 10,
@@ -347,7 +347,7 @@ const styles = StyleSheet.create({
   },
   dateTitle: {
     fontSize: 15,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     color: '#FFFFFF',
     marginBottom: 2,
   },
@@ -360,7 +360,7 @@ const styles = StyleSheet.create({
   },
   dateFormattedText: {
     fontSize: 14,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     color: '#FFFFFF',
     marginBottom: 2,
   },
@@ -389,7 +389,7 @@ const styles = StyleSheet.create({
   },
   addBtnText: {
     fontSize: 15,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     color: '#F0913A',
   },
   emptyContainer: {

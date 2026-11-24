@@ -71,7 +71,7 @@ const styles = StyleSheet.create({
   stepText: {
     color: Colors.textSecondary,
     fontSize: RFValue(12.5),
-    fontWeight: '500',
+    fontFamily: 'Roboto-Medium',
   },
   progressContainer: {
     flexDirection: 'row',
@@ -95,7 +95,7 @@ const styles = StyleSheet.create({
     color: Colors.textSecondary,
     fontSize: RFValue(12),
     marginLeft: 12,
-    fontWeight: '500',
+    fontFamily: 'Roboto-Medium',
     minWidth: 32,
     textAlign: 'right',
   },

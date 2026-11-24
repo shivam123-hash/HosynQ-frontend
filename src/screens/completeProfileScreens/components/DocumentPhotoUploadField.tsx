@@ -22,7 +22,7 @@ import {
   AppConfirmationModal,
 } from '../../../components';
 import { useAppDispatch, useAppSelector, scanDocumentThunk } from '../../../redux';
-import { getMyMemberId } from '../../../units/asyncStorageManager';
+import { getMyMemberId } from '../../../units/AsyncStorageManager';
 
 const MONTH_NAMES = [
   'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
@@ -690,7 +690,7 @@ const styles = StyleSheet.create({
   },
   sectionLabel: {
     fontSize: RFValue(11),
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     color: '#8E9BAE',
     letterSpacing: 1,
     marginBottom: 8,
@@ -726,7 +726,7 @@ const styles = StyleSheet.create({
   fieldTitle: {
     color: '#FFFFFF',
     fontSize: RFValue(13.5),
-    fontWeight: '600',
+    fontFamily: 'Roboto-SemiBold',
   },
   fieldSubtitle: {
     color: '#8E9BAE',
@@ -759,7 +759,7 @@ const styles = StyleSheet.create({
   modalTitle: {
     color: '#FFFFFF',
     fontSize: RFValue(17),
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     marginBottom: 4,
   },
   modalSubtitle: {
@@ -810,7 +810,7 @@ const styles = StyleSheet.create({
   uploadPhotoTitle: {
     color: '#FFFFFF',
     fontSize: RFValue(12),
-    fontWeight: '600',
+    fontFamily: 'Roboto-SemiBold',
   },
   uploadPhotoSub: {
     color: '#8E9BAE',
@@ -830,7 +830,7 @@ const styles = StyleSheet.create({
   scanningText: {
     color: '#F0913A',
     fontSize: RFValue(13),
-    fontWeight: '600',
+    fontFamily: 'Roboto-SemiBold',
   },
   skipButton: {
     alignSelf: 'center',
@@ -871,7 +871,7 @@ const styles = StyleSheet.create({
   pickerOptionTitle: {
     color: '#FFFFFF',
     fontSize: RFValue(14),
-    fontWeight: '600',
+    fontFamily: 'Roboto-SemiBold',
     marginBottom: 2,
   },
   pickerOptionSub: {
@@ -891,6 +891,6 @@ const styles = StyleSheet.create({
   cancelPickerText: {
     color: '#8E9BAE',
     fontSize: RFValue(13.5),
-    fontWeight: '600',
+    fontFamily: 'Roboto-SemiBold',
   },
 });

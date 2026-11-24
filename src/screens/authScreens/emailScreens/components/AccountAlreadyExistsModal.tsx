@@ -128,7 +128,7 @@ const styles = StyleSheet.create({
   },
   title: {
     fontSize: RFValue(17.5),
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     color: '#FFFFFF',
     textAlign: 'center',
     marginBottom: 10,
@@ -152,7 +152,7 @@ const styles = StyleSheet.create({
   differentNumberText: {
     color: '#8E9AA8',
     fontSize: RFValue(13.5),
-    fontWeight: '500',
+    fontFamily: 'Roboto-Medium',
     textAlign: 'center',
   },
 });

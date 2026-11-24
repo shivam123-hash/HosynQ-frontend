@@ -13,6 +13,7 @@ import Feather from '@react-native-vector-icons/feather';
 import { RFValue } from 'react-native-responsive-fontsize';
 import Colors from '../../../units/Colors';
 import CommonBtn from '../../../components/CommonBtn';
+import { AppConfirmationModal, ThreeDotsLoader } from '../../../components';
 
 export interface AadhaarDetailScreenProps {
   userName?: string;
@@ -21,8 +22,10 @@ export interface AadhaarDetailScreenProps {
   isMasked?: boolean;
   fileName?: string;
   fileDetails?: string;
+  isDeleting?: boolean;
   onBack?: () => void;
   onOptionsPress?: () => void;
+  onDeletePress?: () => void;
   onViewFile?: () => void;
   onEditPress?: () => void;
   onSave?: (data: any) => void;
@@ -35,13 +38,16 @@ const AadhaarDetailScreen: React.FC<AadhaarDetailScreenProps> = ({
   isMasked = true,
   fileName = 'Aadhaar_Priya.pdf',
   fileDetails = '2 pages (Front & Back) · Added 12 Oct 2026',
+  isDeleting = false,
   onBack,
   onOptionsPress,
+  onDeletePress,
   onViewFile,
   onEditPress,
   onSave,
 }) => {
   const insets = useSafeAreaInsets();
+  const [isDeleteModalVisible, setIsDeleteModalVisible] = useState(false);
   const [maskState, setMaskState] = useState(isMasked);
 
   const handleSave = () => {
@@ -76,12 +82,17 @@ const AadhaarDetailScreen: React.FC<AadhaarDetailScreenProps> = ({
 
         <TouchableOpacity
           activeOpacity={0.7}
-          onPress={onOptionsPress || onEditPress}
+          onPress={() => setIsDeleteModalVisible(true)}
+          disabled={isDeleting}
           style={styles.headerButton}
           accessibilityRole="button"
-          accessibilityLabel="More options"
+          accessibilityLabel="Delete Aadhaar"
         >
-          <Feather name="more-horizontal" size={20} color="#FFFFFF" />
+          {isDeleting ? (
+            <ThreeDotsLoader color="#EF4444" size={5} spacing={3} />
+          ) : (
+            <Feather name="trash-2" size={19} color="#EF4444" />
+          )}
         </TouchableOpacity>
       </View>
 
@@ -214,6 +225,23 @@ const AadhaarDetailScreen: React.FC<AadhaarDetailScreenProps> = ({
           borderRadius={26}
         />
       </View>
+
+      {/* Delete Aadhaar Confirmation Modal */}
+      <AppConfirmationModal
+        visible={isDeleteModalVisible}
+        title="Delete Aadhaar?"
+        message="Are you sure you want to delete this Aadhaar document? This action cannot be undone."
+        confirmText="Delete"
+        cancelText="Cancel"
+        isDestructive={true}
+        loading={isDeleting}
+        iconName="trash-2"
+        onConfirm={() => {
+          setIsDeleteModalVisible(false);
+          onDeletePress?.();
+        }}
+        onCancel={() => setIsDeleteModalVisible(false)}
+      />
     </View>
   );
 };
@@ -247,7 +275,7 @@ const styles = StyleSheet.create({
   headerTitleText: {
     color: '#FFFFFF',
     fontSize: RFValue(15),
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
   },
   headerSubtitleText: {
     color: '#8E9BAE',
@@ -281,7 +309,7 @@ const styles = StyleSheet.create({
   securityTitle: {
     color: '#10B981',
     fontSize: RFValue(13),
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
   },
   securitySubtitle: {
     color: '#CBD5E1',
@@ -311,7 +339,7 @@ const styles = StyleSheet.create({
   fileNameText: {
     color: '#FFFFFF',
     fontSize: RFValue(13),
-    fontWeight: '600',
+    fontFamily: 'Roboto-SemiBold',
   },
   fileDetailsText: {
     color: '#8E9BAE',
@@ -351,7 +379,7 @@ const styles = StyleSheet.create({
   detailValue: {
     color: '#FFFFFF',
     fontSize: RFValue(13),
-    fontWeight: '600',
+    fontFamily: 'Roboto-SemiBold',
     marginTop: 3,
   },
   divider: {
@@ -377,7 +405,7 @@ const styles = StyleSheet.create({
   privacyTitle: {
     color: '#FFFFFF',
     fontSize: RFValue(13),
-    fontWeight: '600',
+    fontFamily: 'Roboto-SemiBold',
   },
   privacySubtitle: {
     color: '#8E9BAE',

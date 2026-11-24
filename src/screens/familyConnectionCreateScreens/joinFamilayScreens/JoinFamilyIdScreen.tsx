@@ -12,6 +12,7 @@ import Colors from '../../../units/Colors';
 import CommonBtn from '../../../components/CommonBtn';
 import CommonInput from '../../../components/CommonInput';
 import KeyboardAvoidingWrapper from '../../../components/KeyboardAvoidingWrapper';
+import QrCodeScannerModal from '../../../components/QrCodeScannerModal';
 import { useAppDispatch, useAppSelector } from '../../../redux';
 import {
   requestJoinFamilyThunk,
@@ -23,6 +24,39 @@ import {
   ScanQrCodeButton,
   InviteLinkInfoCard,
 } from '../components';
+
+export const extractFamilyCode = (raw: string): string => {
+  if (!raw) return '';
+  const trimmed = raw.trim();
+
+  // If it's a URL like http://.../invite/HSQ-4821 or https://.../invite/4821
+  if (trimmed.includes('/invite/')) {
+    const parts = trimmed.split('/invite/');
+    if (parts[1]) {
+      const codePart = parts[1].split('?')[0].split('#')[0].trim();
+      return codePart.toUpperCase().replace(/\s+/g, '');
+    }
+  }
+
+  // If it contains JSON
+  try {
+    const parsed = JSON.parse(trimmed);
+    if (parsed.familyCode || parsed.familyId) {
+      return String(parsed.familyCode || parsed.familyId)
+        .toUpperCase()
+        .replace(/\s+/g, '');
+    }
+  } catch {}
+
+  // If it matches pattern HSQ-\d+ or HSQ\d+
+  const hsqMatch = trimmed.match(/HSQ-?\s*([A-Za-z0-9]+)/i);
+  if (hsqMatch) {
+    return `HSQ-${hsqMatch[1].toUpperCase()}`;
+  }
+
+  // Fallback: return cleaned string
+  return trimmed.toUpperCase().replace(/\s+/g, '');
+};
 
 export interface JoinFamilyRequestResult {
   familyId: string;
@@ -53,9 +87,10 @@ const JoinFamilyIdScreen: React.FC<JoinFamilyIdScreenProps> = ({
   const [familyId, setFamilyId] = useState(initialFamilyId);
   const [showError, setShowError] = useState(initialShowError);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [isScannerOpen, setIsScannerOpen] = useState(false);
 
-  const handleSendRequest = async () => {
-    const cleanedCode = familyId.trim().toUpperCase().replace(/\s+/g, '');
+  const executeJoinRequest = async (targetCode: string) => {
+    const cleanedCode = targetCode.trim().toUpperCase().replace(/\s+/g, '');
 
     // If ID is completely empty, trigger error state
     if (!cleanedCode) {
@@ -89,6 +124,21 @@ const JoinFamilyIdScreen: React.FC<JoinFamilyIdScreenProps> = ({
           ? err
           : "We couldn't find that Family ID. Check the code with your family.";
       setErrorMessage(msg);
+    }
+  };
+
+  const handleSendRequest = () => {
+    executeJoinRequest(familyId);
+  };
+
+  const handleScanSuccess = (scannedRaw: string) => {
+    setIsScannerOpen(false);
+    const parsedCode = extractFamilyCode(scannedRaw);
+    console.log('[JoinFamilyIdScreen] Extracted family code from QR:', parsedCode);
+    if (parsedCode) {
+      setFamilyId(parsedCode);
+      // Automatically send join request with the scanned family code!
+      executeJoinRequest(parsedCode);
     }
   };
 
@@ -168,7 +218,14 @@ const JoinFamilyIdScreen: React.FC<JoinFamilyIdScreenProps> = ({
           </View>
 
           {/* Scan QR Code Button */}
-          <ScanQrCodeButton onPress={onScanQrCode} />
+          <ScanQrCodeButton
+            onPress={() => {
+              if (onScanQrCode) {
+                onScanQrCode();
+              }
+              setIsScannerOpen(true);
+            }}
+          />
 
           {/* Invite Link Info Card */}
           <InviteLinkInfoCard />
@@ -189,6 +246,13 @@ const JoinFamilyIdScreen: React.FC<JoinFamilyIdScreenProps> = ({
           />
         </View>
       </KeyboardAvoidingWrapper>
+
+      {/* QR Code Camera Scanner Modal */}
+      <QrCodeScannerModal
+        visible={isScannerOpen}
+        onClose={() => setIsScannerOpen(false)}
+        onScanSuccess={handleScanSuccess}
+      />
     </View>
   );
 };
@@ -216,7 +280,7 @@ const styles = StyleSheet.create({
   },
   title: {
     fontSize: RFValue(24),
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     color: '#FFFFFF',
     lineHeight: RFValue(32),
     marginBottom: 8,
@@ -248,7 +312,7 @@ const styles = StyleSheet.create({
   orText: {
     color: Colors.textSecondary,
     fontSize: RFValue(11),
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     letterSpacing: 1.5,
     marginHorizontal: 16,
   },

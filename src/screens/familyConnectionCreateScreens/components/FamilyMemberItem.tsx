@@ -76,7 +76,7 @@ const styles = StyleSheet.create({
   avatarText: {
     color: '#FFFFFF',
     fontSize: RFValue(17),
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
   },
   details: {
     flex: 1,
@@ -85,7 +85,7 @@ const styles = StyleSheet.create({
   nameText: {
     color: '#FFFFFF',
     fontSize: RFValue(14),
-    fontWeight: '600',
+    fontFamily: 'Roboto-SemiBold',
     marginBottom: 3,
   },
   roleText: {
@@ -103,7 +103,7 @@ const styles = StyleSheet.create({
   badgeText: {
     color: Colors.primary,
     fontSize: RFValue(11),
-    fontWeight: '600',
+    fontFamily: 'Roboto-SemiBold',
   },
 });
 

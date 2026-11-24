@@ -236,7 +236,7 @@ const styles = StyleSheet.create({
   },
   navWeekTitle: {
     fontSize: 22,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     color: '#FFFFFF',
     letterSpacing: -0.3,
   },
@@ -279,7 +279,7 @@ const styles = StyleSheet.create({
   },
   dayLabelText: {
     fontSize: 12,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     color: '#8A97AB',
     letterSpacing: 0.8,
   },
@@ -314,12 +314,12 @@ const styles = StyleSheet.create({
   },
   eventTimeText: {
     fontSize: 13,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     marginRight: 10,
   },
   eventTitleText: {
     fontSize: 14,
-    fontWeight: '600',
+    fontFamily: 'Roboto-SemiBold',
     color: '#FFFFFF',
     flex: 1,
   },
@@ -344,7 +344,7 @@ const styles = StyleSheet.create({
   },
   taskTitleText: {
     fontSize: 14,
-    fontWeight: '600',
+    fontFamily: 'Roboto-SemiBold',
     color: '#F0913A',
     flex: 1,
   },

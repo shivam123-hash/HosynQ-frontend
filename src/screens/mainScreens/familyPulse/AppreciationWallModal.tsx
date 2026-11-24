@@ -410,7 +410,7 @@ const styles = StyleSheet.create({
   },
   headerTitle: {
     fontSize: 20,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     color: Colors.white,
     letterSpacing: -0.3,
     textAlign: 'center',
@@ -444,11 +444,11 @@ const styles = StyleSheet.create({
   },
   filterChipTextActive: {
     color: '#0B1A2F',
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
   },
   filterChipTextInactive: {
     color: '#99A3B1',
-    fontWeight: '500',
+    fontFamily: 'Roboto-Medium',
   },
   scrollArea: {
     flex: 1,
@@ -486,7 +486,7 @@ const styles = StyleSheet.create({
   avatarInitial: {
     color: Colors.white,
     fontSize: 13,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
   },
   actorChevron: {
     marginHorizontal: 6,
@@ -498,17 +498,17 @@ const styles = StyleSheet.create({
     flexShrink: 1,
   },
   actorNameBold: {
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     color: Colors.white,
   },
   thankedText: {
-    fontWeight: '400',
+    fontFamily: 'Roboto-Regular',
     color: Colors.white,
   },
   timeText: {
     color: Colors.textSecondary,
     fontSize: 13,
-    fontWeight: '500',
+    fontFamily: 'Roboto-Medium',
   },
   messageText: {
     color: '#C5D2E0',
@@ -540,12 +540,12 @@ const styles = StyleSheet.create({
   reactionCountText: {
     color: Colors.white,
     fontSize: 12.5,
-    fontWeight: '600',
+    fontFamily: 'Roboto-SemiBold',
   },
   reactionCountTextActive: {
     color: Colors.primary,
     fontSize: 12.5,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
   },
   plusButton: {
     width: 32,
@@ -583,7 +583,7 @@ const styles = StyleSheet.create({
   writeButtonText: {
     color: Colors.white,
     fontSize: 16,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
   },
 });
 

@@ -295,7 +295,7 @@ const styles = StyleSheet.create({
   },
   title: {
     fontSize: 22,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     color: '#CAD4DF',
     textAlign: 'center',
   },
@@ -338,7 +338,7 @@ const styles = StyleSheet.create({
   },
   avatarInitial: {
     fontSize: 18,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
   },
   checkBadge: {
     position: 'absolute',
@@ -356,15 +356,15 @@ const styles = StyleSheet.create({
   memberName: {
     fontSize: 13,
     color: '#8A97AB',
-    fontWeight: '500',
+    fontFamily: 'Roboto-Medium',
   },
   memberNameSelected: {
     color: '#F0913A',
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
   },
   sectionHeader: {
     fontSize: 11,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     letterSpacing: 1.2,
     color: '#8A97AB',
     marginBottom: 12,
@@ -398,7 +398,7 @@ const styles = StyleSheet.create({
   },
   viewerTitle: {
     fontSize: 15,
-    fontWeight: '600',
+    fontFamily: 'Roboto-SemiBold',
     color: '#CAD4DF',
   },
   viewerSubtitle: {
@@ -433,7 +433,7 @@ const styles = StyleSheet.create({
   },
   doneBtnText: {
     fontSize: 16,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     color: '#FFFFFF',
   },
 });

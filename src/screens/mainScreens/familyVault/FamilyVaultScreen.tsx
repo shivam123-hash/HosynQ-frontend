@@ -259,7 +259,7 @@ const styles = StyleSheet.create({
   },
   headerTitle: {
     fontSize: 20,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     color: '#FFFFFF',
     letterSpacing: -0.3,
   },
@@ -282,13 +282,13 @@ const styles = StyleSheet.create({
     flex: 1,
     color: '#F7C08E',
     fontSize: 14,
-    fontWeight: '500',
+    fontFamily: 'Roboto-Medium',
     marginHorizontal: 10,
   },
   alertAction: {
     color: '#F7C08E',
     fontSize: 14,
-    fontWeight: '600',
+    fontFamily: 'Roboto-SemiBold',
   },
   grid: {
     flexDirection: 'row',
@@ -322,7 +322,7 @@ const styles = StyleSheet.create({
   },
   cardTitle: {
     fontSize: 15.5,
-    fontWeight: '600',
+    fontFamily: 'Roboto-SemiBold',
     color: '#FFFFFF',
     lineHeight: 20,
     marginBottom: 4,
@@ -334,7 +334,7 @@ const styles = StyleSheet.create({
   },
   sectionHeading: {
     fontSize: 11.5,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     color: '#8A97AB',
     letterSpacing: 1.2,
     textTransform: 'uppercase',
@@ -360,7 +360,7 @@ const styles = StyleSheet.create({
   },
   recentTitle: {
     fontSize: 15,
-    fontWeight: '600',
+    fontFamily: 'Roboto-SemiBold',
     color: '#FFFFFF',
     marginBottom: 3,
   },
@@ -393,7 +393,7 @@ const styles = StyleSheet.create({
   },
   addButtonText: {
     fontSize: 16,
-    fontWeight: '600',
+    fontFamily: 'Roboto-SemiBold',
     color: '#FFFFFF',
   },
 });

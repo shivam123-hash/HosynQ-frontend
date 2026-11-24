@@ -258,17 +258,15 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   title: {
-    fontFamily: 'Roboto',
     fontSize: 18,
     lineHeight: 24,
-    fontWeight: '600',
+    fontFamily: 'Roboto-SemiBold',
     color: '#CAD4DF',
   },
   taskCounter: {
-    fontFamily: 'Roboto',
     fontSize: 15,
     lineHeight: 20,
-    fontWeight: '500',
+    fontFamily: 'Roboto-Medium',
     color: '#8A97AB',
   },
   allTasksBtn: {
@@ -281,10 +279,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   allTasksText: {
-    fontFamily: 'Roboto',
     fontSize: 12,
     lineHeight: 16,
-    fontWeight: '500',
+    fontFamily: 'Roboto-Medium',
     color: '#F0913A',
   },
   filterPillsRow: {
@@ -322,11 +319,11 @@ const styles = StyleSheet.create({
   },
   activeFilterPillText: {
     color: '#0B1A2F',
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
   },
   inactiveFilterPillText: {
     color: '#C9D1DC',
-    fontWeight: '400',
+    fontFamily: 'Roboto-Regular',
   },
   taskCard: {
     backgroundColor: '#122440',
@@ -356,10 +353,9 @@ const styles = StyleSheet.create({
     borderRadius: 4,
   },
   categoryHeaderText: {
-    fontFamily: 'Roboto',
     fontSize: 11.5,
     lineHeight: 16,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     color: '#7E8F9F',
     letterSpacing: 1.2,
   },
@@ -397,10 +393,9 @@ const styles = StyleSheet.create({
     gap: 3,
   },
   taskTitle: {
-    fontFamily: 'Roboto',
     fontSize: 13.5,
     lineHeight: 18,
-    fontWeight: '500',
+    fontFamily: 'Roboto-Medium',
     color: '#CAD4DF',
   },
   taskTitleCompleted: {
@@ -414,11 +409,11 @@ const styles = StyleSheet.create({
   },
   normalDate: {
     color: '#7E8F9F',
-    fontWeight: '400',
+    fontFamily: 'Roboto-Regular',
   },
   overdueDate: {
     color: '#F0913A',
-    fontWeight: '500',
+    fontFamily: 'Roboto-Medium',
   },
   priorityDot: {
     width: 8,
@@ -455,10 +450,9 @@ const styles = StyleSheet.create({
     gap: 10,
   },
   collapsibleTitle: {
-    fontFamily: 'Roboto',
     fontSize: 13.5,
     lineHeight: 18,
-    fontWeight: '400',
+    fontFamily: 'Roboto-Regular',
     color: '#CAD4DF',
   },
   collapsibleRight: {
@@ -467,10 +461,9 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   collapsibleCount: {
-    fontFamily: 'Roboto',
     fontSize: 13,
     lineHeight: 18,
-    fontWeight: '400',
+    fontFamily: 'Roboto-Regular',
     color: '#7E8F9F',
   },
 });

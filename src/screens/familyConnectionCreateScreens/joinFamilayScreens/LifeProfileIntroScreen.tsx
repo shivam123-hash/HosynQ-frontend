@@ -187,7 +187,7 @@ const styles = StyleSheet.create({
   },
   title: {
     fontSize: RFValue(22),
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     color: '#FFFFFF',
     textAlign: 'center',
   },
@@ -213,12 +213,12 @@ const styles = StyleSheet.create({
   progressCountText: {
     color: Colors.textSecondary,
     fontSize: RFValue(12),
-    fontWeight: '500',
+    fontFamily: 'Roboto-Medium',
   },
   progressPercentText: {
     color: '#F0963C',
     fontSize: RFValue(12),
-    fontWeight: '600',
+    fontFamily: 'Roboto-SemiBold',
   },
   progressTrack: {
     height: 4,
@@ -256,7 +256,7 @@ const styles = StyleSheet.create({
   laterText: {
     color: '#F0963C',
     fontSize: RFValue(14),
-    fontWeight: '600',
+    fontFamily: 'Roboto-SemiBold',
     textAlign: 'center',
   },
 });

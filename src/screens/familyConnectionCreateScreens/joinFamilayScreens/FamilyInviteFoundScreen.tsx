@@ -218,7 +218,7 @@ const styles = StyleSheet.create({
   },
   title: {
     fontSize: RFValue(22),
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     color: '#FFFFFF',
     textAlign: 'center',
     lineHeight: RFValue(28),
@@ -261,7 +261,7 @@ const styles = StyleSheet.create({
   errorText: {
     color: '#EF4444',
     fontSize: RFValue(12),
-    fontWeight: '500',
+    fontFamily: 'Roboto-Medium',
     textAlign: 'center',
   },
   adminApprovalNote: {
@@ -279,7 +279,7 @@ const styles = StyleSheet.create({
   notMyFamilyText: {
     color: '#FFFFFF',
     fontSize: RFValue(14),
-    fontWeight: '600',
+    fontFamily: 'Roboto-SemiBold',
     textAlign: 'center',
   },
 });

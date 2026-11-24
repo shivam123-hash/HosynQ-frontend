@@ -298,14 +298,14 @@ const styles = StyleSheet.create({
   },
   sheetTitle: {
     fontSize: 20,
-    fontWeight: '800',
+    fontFamily: 'Roboto-Bold',
     color: Colors.white,
     letterSpacing: -0.3,
     marginBottom: 16,
   },
   sectionHeaderUpper: {
     fontSize: 12,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     color: Colors.textSecondary,
     letterSpacing: 0.6,
     marginBottom: 10,
@@ -327,7 +327,7 @@ const styles = StyleSheet.create({
   replyChipText: {
     color: Colors.white,
     fontSize: 14,
-    fontWeight: '500',
+    fontFamily: 'Roboto-Medium',
   },
   turnIntoHeaderRow: {
     flexDirection: 'row',
@@ -339,7 +339,7 @@ const styles = StyleSheet.create({
   },
   turnIntoLabel: {
     fontSize: 12,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     color: Colors.primary,
     letterSpacing: 0.8,
   },
@@ -379,7 +379,7 @@ const styles = StyleSheet.create({
   },
   turnIntoTitle: {
     fontSize: 14,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     color: Colors.white,
     marginBottom: 2,
   },
@@ -419,7 +419,7 @@ const styles = StyleSheet.create({
   actionButtonText: {
     color: Colors.white,
     fontSize: 15,
-    fontWeight: '600',
+    fontFamily: 'Roboto-SemiBold',
   },
 });
 

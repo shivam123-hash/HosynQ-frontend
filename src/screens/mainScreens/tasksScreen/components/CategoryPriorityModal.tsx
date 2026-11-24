@@ -196,14 +196,14 @@ const styles = StyleSheet.create({
   },
   title: {
     fontSize: 22,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     color: '#CAD4DF',
     textAlign: 'center',
     marginBottom: 20,
   },
   sectionHeader: {
     fontSize: 11,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     letterSpacing: 1.2,
     color: '#8A97AB',
     marginBottom: 12,
@@ -236,12 +236,12 @@ const styles = StyleSheet.create({
   },
   categoryChipText: {
     fontSize: 14,
-    fontWeight: '600',
+    fontFamily: 'Roboto-SemiBold',
     color: '#CAD4DF',
   },
   categoryChipTextSelected: {
     color: '#0B1A2F',
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
   },
   priorityCardsRow: {
     flexDirection: 'row',
@@ -271,7 +271,7 @@ const styles = StyleSheet.create({
   },
   priorityTitle: {
     fontSize: 16,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     color: '#FFFFFF',
     marginBottom: 4,
   },
@@ -289,7 +289,7 @@ const styles = StyleSheet.create({
   },
   doneBtnText: {
     fontSize: 16,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     color: '#FFFFFF',
   },
 });

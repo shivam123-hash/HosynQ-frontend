@@ -13,6 +13,8 @@ import Feather from '@react-native-vector-icons/feather';
 import { RFValue } from 'react-native-responsive-fontsize';
 import Colors from '../../../units/Colors';
 import CommonBtn from '../../../components/CommonBtn';
+import { AppConfirmationModal, ThreeDotsLoader } from '../../../components';
+import ReminderPillsSelector from '../components/ReminderPillsSelector';
 
 export interface InsuranceDetailScreenProps {
   type?: string;
@@ -24,14 +26,24 @@ export interface InsuranceDetailScreenProps {
   renewalDate?: string;
   saveInFamilyVault?: boolean;
   remindRenewal?: boolean;
+  coveredMemberIds?: string[];
+  coveredMemberNames?: string;
+  reminders?: string[];
+  remindAssignees?: string;
+  familyMembers?: any[];
+  userName?: string;
   fileName?: string;
   fileDetails?: string;
+  buttonTitle?: string;
+  isDeleting?: boolean;
   onBack?: () => void;
   onOptionsPress?: () => void;
+  onDeletePress?: () => void;
   onViewFile?: () => void;
   onRenewPress?: () => void;
   onEditPress?: () => void;
   onSave?: (data: any) => void;
+  onRemindAssignPress?: () => void;
 }
 
 const FAMILY_MEMBERS = [
@@ -52,23 +64,45 @@ const InsuranceDetailScreen: React.FC<InsuranceDetailScreenProps> = ({
   renewalDate = '12 Mar 2027',
   saveInFamilyVault = true,
   remindRenewal = true,
+  coveredMemberIds = [],
+  coveredMemberNames,
+  reminders = ['1 month', '1 week'],
+  remindAssignees,
+  familyMembers = [],
+  userName = 'Priya',
   fileName = 'Star_Health_Policy.pdf',
   fileDetails = 'Policy document · Added 12 Oct 2026',
+  buttonTitle = 'Edit',
+  isDeleting = false,
   onBack,
   onOptionsPress,
+  onDeletePress,
   onViewFile,
   onRenewPress,
   onEditPress,
   onSave,
+  onRemindAssignPress,
 }) => {
   const insets = useSafeAreaInsets();
+  const [isDeleteModalVisible, setIsDeleteModalVisible] = useState(false);
   const [vaultToggle, setVaultToggle] = useState(saveInFamilyVault);
-  const [remindToggle, setRemindToggle] = useState(remindRenewal);
+  const [selectedReminders] = useState<string[]>(reminders || ['1 month', '1 week']);
+
+  const coveredList =
+    familyMembers.length > 0 && coveredMemberIds.length > 0
+      ? familyMembers.filter((m: any) => coveredMemberIds.includes(m.memberId || m.id))
+      : familyMembers.length > 0
+      ? familyMembers
+      : [{ id: '1', name: userName, fullName: userName, avatarColor: '#B45309' }];
+
+  const assigneeNames = (remindAssignees || userName)
+    .split(',')
+    .map((s) => s.trim())
+    .filter(Boolean);
 
   const handleSave = () => {
     onSave?.({
       saveInFamilyVault: vaultToggle,
-      remindRenewal: remindToggle,
     });
   };
 
@@ -102,12 +136,17 @@ const InsuranceDetailScreen: React.FC<InsuranceDetailScreenProps> = ({
 
         <TouchableOpacity
           activeOpacity={0.7}
-          onPress={onOptionsPress || onEditPress}
+          onPress={() => setIsDeleteModalVisible(true)}
+          disabled={isDeleting}
           style={styles.headerButton}
           accessibilityRole="button"
-          accessibilityLabel="More options"
+          accessibilityLabel="Delete insurance"
         >
-          <Feather name="more-horizontal" size={20} color="#FFFFFF" />
+          {isDeleting ? (
+            <ThreeDotsLoader color="#EF4444" size={5} spacing={3} />
+          ) : (
+            <Feather name="trash-2" size={19} color="#EF4444" />
+          )}
         </TouchableOpacity>
       </View>
 
@@ -233,26 +272,85 @@ const InsuranceDetailScreen: React.FC<InsuranceDetailScreenProps> = ({
         <View style={styles.coversCard}>
           <Text style={styles.coversSectionHeader}>WHO IT COVERS</Text>
           <View style={styles.coversRow}>
-            {FAMILY_MEMBERS.map((m) => (
+            {coveredList.map((m: any, idx: number) => (
               <View
-                key={m.id}
-                style={[styles.memberCircle, { backgroundColor: m.color }]}
+                key={m.memberId || m.id || idx}
+                style={[
+                  styles.memberCircle,
+                  {
+                    backgroundColor:
+                      m.avatarColor ||
+                      ['#B45309', '#1D4ED8', '#9333EA', '#CA8A04', '#15803D'][idx % 5],
+                  },
+                ]}
               >
-                <Text style={styles.memberText}>{m.label}</Text>
+                <Text style={styles.memberText}>
+                  {(m.fullName || m.name || 'U').charAt(0).toUpperCase()}
+                </Text>
               </View>
             ))}
-            <Text style={styles.allCoveredBadge}>All 5 covered</Text>
+            <Text style={styles.allCoveredBadge}>
+              {coveredList.length > 0 ? `${coveredList.length} Covered` : 'Covered'}
+            </Text>
           </View>
+          {coveredMemberNames ? (
+            <Text style={styles.coveredNamesDetailText} numberOfLines={1}>
+              {coveredMemberNames}
+            </Text>
+          ) : null}
         </View>
 
-        {/* Vault & Reminder Toggles */}
-        <View style={styles.toggleCardContainer}>
-          <View style={styles.toggleRow}>
-            <View style={styles.toggleTextContainer}>
-              <Text style={styles.toggleTitle}>
+        {/* Remind Me Before It Expires Pills (Read-only on Details screen) */}
+        <ReminderPillsSelector
+          selectedOptions={selectedReminders}
+          disabled={true}
+        />
+
+        {/* Reminder Settings Card */}
+        <View style={styles.reminderSettingsCard}>
+          <TouchableOpacity
+            activeOpacity={0.7}
+            onPress={onRemindAssignPress || onEditPress}
+            style={styles.remindWhoRow}
+          >
+            <View style={styles.bellIconBox}>
+              <Feather name="bell" size={17} color="#8E9BAE" />
+            </View>
+            <View style={styles.remindWhoContent}>
+              <Text style={styles.remindWhoLabel}>Remind</Text>
+              <View style={styles.avatarsRow}>
+                {assigneeNames.slice(0, 2).map((name, idx) => (
+                  <View
+                    key={idx}
+                    style={[
+                      styles.avatarCircle,
+                      {
+                        backgroundColor: idx === 0 ? '#78350F' : '#1E40AF',
+                        marginLeft: idx > 0 ? 4 : 0,
+                      },
+                    ]}
+                  >
+                    <Text style={styles.avatarText}>
+                      {name.charAt(0).toUpperCase()}
+                    </Text>
+                  </View>
+                ))}
+                <Text style={styles.avatarNamesText} numberOfLines={1}>
+                  {remindAssignees || userName}
+                </Text>
+              </View>
+            </View>
+            <Feather name="chevron-right" size={18} color="#64748B" />
+          </TouchableOpacity>
+
+          <View style={styles.divider} />
+
+          <View style={styles.autoRenewalRow}>
+            <View style={styles.autoRenewalTextContainer}>
+              <Text style={styles.autoRenewalTitle}>
                 Saved in Family Vault › Insurance
               </Text>
-              <Text style={styles.toggleSubtitle}>
+              <Text style={styles.autoRenewalSubtitle}>
                 Accessible by authorized family members
               </Text>
             </View>
@@ -263,37 +361,37 @@ const InsuranceDetailScreen: React.FC<InsuranceDetailScreenProps> = ({
               thumbColor="#FFFFFF"
             />
           </View>
-
-          <View style={styles.divider} />
-
-          <View style={styles.toggleRow}>
-            <View style={styles.toggleTextContainer}>
-              <Text style={styles.toggleTitle}>Remind before renewal</Text>
-              <Text style={styles.toggleSubtitle}>
-                1 month and 1 week before renewal date
-              </Text>
-            </View>
-            <Switch
-              value={remindToggle}
-              onValueChange={setRemindToggle}
-              trackColor={{ false: '#334155', true: '#F0913A' }}
-              thumbColor="#FFFFFF"
-            />
-          </View>
         </View>
       </ScrollView>
 
       {/* Bottom Button */}
       <View style={styles.bottomBar}>
         <CommonBtn
-          title="Done"
-          onPress={handleSave || onBack}
+          title={buttonTitle || 'Edit'}
+          onPress={onEditPress || handleSave || onBack}
           backgroundColor={Colors.primary || '#F0913A'}
           textColor="#FFFFFF"
           height={52}
           borderRadius={26}
         />
       </View>
+
+      {/* Delete Insurance Confirmation Modal */}
+      <AppConfirmationModal
+        visible={isDeleteModalVisible}
+        title="Delete Insurance Policy?"
+        message="Are you sure you want to delete this insurance policy? This action cannot be undone."
+        confirmText="Delete"
+        cancelText="Cancel"
+        isDestructive={true}
+        loading={isDeleting}
+        iconName="trash-2"
+        onConfirm={() => {
+          setIsDeleteModalVisible(false);
+          onDeletePress?.();
+        }}
+        onCancel={() => setIsDeleteModalVisible(false)}
+      />
     </View>
   );
 };
@@ -327,7 +425,7 @@ const styles = StyleSheet.create({
   headerTitleText: {
     color: '#FFFFFF',
     fontSize: RFValue(15),
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
   },
   headerSubtitleText: {
     color: '#8E9BAE',
@@ -367,7 +465,7 @@ const styles = StyleSheet.create({
   renewalTitle: {
     color: '#60A5FA',
     fontSize: RFValue(13),
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
   },
   renewAction: {
     backgroundColor: '#3B82F6',
@@ -378,7 +476,7 @@ const styles = StyleSheet.create({
   renewActionText: {
     color: '#FFFFFF',
     fontSize: RFValue(10.5),
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
   },
   renewalSubtitle: {
     color: '#CBD5E1',
@@ -409,7 +507,7 @@ const styles = StyleSheet.create({
   fileNameText: {
     color: '#FFFFFF',
     fontSize: RFValue(13),
-    fontWeight: '600',
+    fontFamily: 'Roboto-SemiBold',
   },
   fileDetailsText: {
     color: '#8E9BAE',
@@ -449,7 +547,7 @@ const styles = StyleSheet.create({
   detailValue: {
     color: '#FFFFFF',
     fontSize: RFValue(13),
-    fontWeight: '600',
+    fontFamily: 'Roboto-SemiBold',
     marginTop: 3,
   },
   divider: {
@@ -466,7 +564,7 @@ const styles = StyleSheet.create({
   coversSectionHeader: {
     color: '#F0913A',
     fontSize: RFValue(10.5),
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     letterSpacing: 1,
     textTransform: 'uppercase',
     marginBottom: 12,
@@ -486,13 +584,96 @@ const styles = StyleSheet.create({
   memberText: {
     color: '#FFFFFF',
     fontSize: RFValue(11),
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
   },
   allCoveredBadge: {
     color: '#8E9BAE',
     fontSize: RFValue(11.5),
-    fontWeight: '600',
+    fontFamily: 'Roboto-SemiBold',
     marginLeft: 4,
+  },
+  coveredNamesDetailText: {
+    color: '#CBD5E1',
+    fontSize: RFValue(12),
+    fontFamily: 'Roboto-Medium',
+    marginTop: 8,
+  },
+  reminderSettingsCard: {
+    backgroundColor: '#131F35',
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: '#1E293B',
+    marginTop: 14,
+    marginBottom: 20,
+    overflow: 'hidden',
+  },
+  remindWhoRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+  },
+  bellIconBox: {
+    width: 36,
+    height: 36,
+    borderRadius: 10,
+    backgroundColor: 'rgba(255, 255, 255, 0.05)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 12,
+  },
+  remindWhoContent: {
+    flex: 1,
+  },
+  remindWhoLabel: {
+    color: '#8E9BAE',
+    fontSize: RFValue(11),
+    fontFamily: 'Roboto-Medium',
+    marginBottom: 4,
+  },
+  avatarsRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  avatarCircle: {
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  avatarText: {
+    color: '#FFFFFF',
+    fontSize: RFValue(10),
+    fontFamily: 'Roboto-Bold',
+  },
+  avatarNamesText: {
+    color: '#FFFFFF',
+    fontSize: RFValue(13),
+    fontFamily: 'Roboto-SemiBold',
+    marginLeft: 8,
+    flex: 1,
+  },
+  autoRenewalRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+  },
+  autoRenewalTextContainer: {
+    flex: 1,
+    paddingRight: 12,
+  },
+  autoRenewalTitle: {
+    color: '#FFFFFF',
+    fontSize: RFValue(13),
+    fontFamily: 'Roboto-SemiBold',
+    marginBottom: 2,
+  },
+  autoRenewalSubtitle: {
+    color: '#64748B',
+    fontSize: RFValue(11),
   },
   toggleCardContainer: {
     backgroundColor: '#152033',
@@ -514,7 +695,7 @@ const styles = StyleSheet.create({
   toggleTitle: {
     color: '#FFFFFF',
     fontSize: RFValue(12.5),
-    fontWeight: '600',
+    fontFamily: 'Roboto-SemiBold',
   },
   toggleSubtitle: {
     color: '#8E9BAE',

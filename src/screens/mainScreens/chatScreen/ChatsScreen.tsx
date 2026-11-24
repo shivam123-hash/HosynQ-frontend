@@ -292,7 +292,7 @@ const styles = StyleSheet.create({
   },
   screenTitle: {
     fontSize: 32,
-    fontWeight: '800',
+    fontFamily: 'Roboto-Bold',
     color: Colors.white,
     letterSpacing: -0.4,
     marginBottom: 20,
@@ -358,7 +358,7 @@ const styles = StyleSheet.create({
   },
   threadTitle: {
     fontSize: 16,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     color: Colors.white,
     marginRight: 8,
   },
@@ -373,7 +373,7 @@ const styles = StyleSheet.create({
   privatePillText: {
     color: '#A884F0',
     fontSize: 12,
-    fontWeight: '600',
+    fontFamily: 'Roboto-SemiBold',
   },
   threadSubtitle: {
     fontSize: 13,
@@ -388,7 +388,7 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: '#8A97AB',
     marginBottom: 6,
-    fontWeight: '500',
+    fontFamily: 'Roboto-Medium',
   },
   unreadBadge: {
     width: 22,
@@ -401,7 +401,7 @@ const styles = StyleSheet.create({
   unreadBadgeText: {
     color: '#0B1A2F',
     fontSize: 12,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
   },
   divider: {
     height: 1,
@@ -431,13 +431,13 @@ const styles = StyleSheet.create({
   },
   sectionTitle: {
     fontSize: 18,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     color: Colors.white,
   },
   seeAllText: {
     color: Colors.primary,
     fontSize: 14,
-    fontWeight: '600',
+    fontFamily: 'Roboto-SemiBold',
   },
   sharedItemsCard: {
     backgroundColor: Colors.cardBackground,
@@ -465,7 +465,7 @@ const styles = StyleSheet.create({
   },
   sharedItemTitle: {
     fontSize: 15,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     color: Colors.white,
     marginBottom: 2,
   },

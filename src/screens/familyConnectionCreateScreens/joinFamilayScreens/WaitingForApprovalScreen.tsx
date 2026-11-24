@@ -249,7 +249,7 @@ const styles = StyleSheet.create({
   refreshText: {
     color: Colors.primary,
     fontSize: RFValue(11.5),
-    fontWeight: '600',
+    fontFamily: 'Roboto-SemiBold',
   },
   scrollContent: {
     flexGrow: 1,
@@ -263,7 +263,7 @@ const styles = StyleSheet.create({
   },
   title: {
     fontSize: RFValue(22),
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     color: '#FFFFFF',
     textAlign: 'center',
     marginTop: 18,
@@ -301,7 +301,7 @@ const styles = StyleSheet.create({
   remindText: {
     color: Colors.primary,
     fontSize: RFValue(14.5),
-    fontWeight: '600',
+    fontFamily: 'Roboto-SemiBold',
   },
   cancelButton: {
     paddingVertical: 14,
@@ -310,6 +310,6 @@ const styles = StyleSheet.create({
   cancelText: {
     color: Colors.textSecondary,
     fontSize: RFValue(13.5),
-    fontWeight: '600',
+    fontFamily: 'Roboto-SemiBold',
   },
 });

@@ -273,7 +273,7 @@ const styles = StyleSheet.create({
   },
   headerTitle: {
     fontSize: 18,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     color: '#FFFFFF',
   },
   headerPlaceholder: {
@@ -286,7 +286,7 @@ const styles = StyleSheet.create({
   },
   subtitle: {
     fontSize: 15,
-    fontWeight: '400',
+    fontFamily: 'Roboto-Light',
     color: '#8A97AB',
     lineHeight: 22,
     marginBottom: 20,
@@ -319,12 +319,12 @@ const styles = StyleSheet.create({
   },
   dayNumberText: {
     fontSize: 11,
-    fontWeight: '600',
+    fontFamily: 'Roboto-SemiBold',
     color: '#8A97AB',
   },
   dayNumberBest: {
     color: '#2DD4BF',
-    fontWeight: '800',
+    fontFamily: 'Roboto-Bold',
   },
   memberRow: {
     flexDirection: 'row',
@@ -342,7 +342,7 @@ const styles = StyleSheet.create({
   memberInitial: {
     color: '#FFFFFF',
     fontSize: 11,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
   },
   heatmapCell: {
     width: '85%',
@@ -377,12 +377,12 @@ const styles = StyleSheet.create({
   },
   legendText: {
     fontSize: 12,
-    fontWeight: '500',
+    fontFamily: 'Roboto-Medium',
     color: '#8A97AB',
   },
   sectionHeader: {
     fontSize: 11,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     color: '#8A97AB',
     letterSpacing: 1.2,
     marginTop: 24,
@@ -411,18 +411,18 @@ const styles = StyleSheet.create({
   },
   optionTitle: {
     fontSize: 16,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     color: '#FFFFFF',
   },
   optionSubtitle: {
     fontSize: 13,
-    fontWeight: '500',
+    fontFamily: 'Roboto-Medium',
     color: '#8A97AB',
     marginTop: 3,
   },
   optionSubtitleAlert: {
     fontSize: 13,
-    fontWeight: '500',
+    fontFamily: 'Roboto-Medium',
     color: '#F0913A',
     marginTop: 3,
   },
@@ -459,7 +459,7 @@ const styles = StyleSheet.create({
   bottomButtonText: {
     color: '#FFFFFF',
     fontSize: 16,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
   },
 });
 export default FindCommonDatesModal;

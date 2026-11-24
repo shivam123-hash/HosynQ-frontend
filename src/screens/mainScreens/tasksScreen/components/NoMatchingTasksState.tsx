@@ -80,7 +80,7 @@ const styles = StyleSheet.create({
   filtersLabel: {
     fontSize: 14,
     color: '#8A97AB',
-    fontWeight: '500',
+    fontFamily: 'Roboto-Medium',
   },
   tagsContainer: {
     flexDirection: 'row',
@@ -98,7 +98,7 @@ const styles = StyleSheet.create({
   },
   tagText: {
     fontSize: 13,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     color: '#0B1A2F',
   },
   outerCircle: {
@@ -140,7 +140,7 @@ const styles = StyleSheet.create({
   },
   headline: {
     fontSize: 24,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     color: '#CAD4DF',
     textAlign: 'center',
     marginTop: 28,

@@ -51,7 +51,7 @@ const styles = StyleSheet.create({
     color: '#94A3B8',
     fontSize: RFValue(11.5),
     lineHeight: RFValue(17),
-    fontWeight: '400',
+    fontFamily: 'Roboto-Regular',
   },
 });
 

@@ -585,7 +585,7 @@ const styles = StyleSheet.create({
   },
   headerTitle: {
     fontSize: 18,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     color: '#FFFFFF',
   },
   scrollContent: {
@@ -604,12 +604,12 @@ const styles = StyleSheet.create({
   heroTag: {
     color: '#2DD4BF',
     fontSize: 11,
-    fontWeight: '800',
+    fontFamily: 'Roboto-Bold',
     letterSpacing: 1.2,
   },
   destinationTitle: {
     fontSize: 24,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     color: '#FFFFFF',
     marginTop: 6,
   },
@@ -623,7 +623,7 @@ const styles = StyleSheet.create({
   },
   dateText: {
     fontSize: 14,
-    fontWeight: '500',
+    fontFamily: 'Roboto-Medium',
     color: '#CAD4DF',
   },
   avatarRow: {
@@ -651,11 +651,11 @@ const styles = StyleSheet.create({
   avatarInitial: {
     color: '#FFFFFF',
     fontSize: 10,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
   },
   membersGoingText: {
     fontSize: 13,
-    fontWeight: '500',
+    fontFamily: 'Roboto-Medium',
     color: '#8A97AB',
   },
   progressRow: {
@@ -692,13 +692,13 @@ const styles = StyleSheet.create({
   },
   progressLabel: {
     fontSize: 13,
-    fontWeight: '600',
+    fontFamily: 'Roboto-SemiBold',
     color: '#2DD4BF',
     marginLeft: 12,
   },
   sectionHeader: {
     fontSize: 11,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     color: '#8A97AB',
     letterSpacing: 1.2,
     marginTop: 24,
@@ -740,7 +740,7 @@ const styles = StyleSheet.create({
   stepNumberTextOrange: {
     color: '#F0913A',
     fontSize: 14,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
   },
   stepNumberCircleMuted: {
     width: 32,
@@ -756,25 +756,25 @@ const styles = StyleSheet.create({
   stepNumberTextMuted: {
     color: '#8A97AB',
     fontSize: 14,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
   },
   stepInfo: {
     flex: 1,
   },
   stepTitle: {
     fontSize: 15,
-    fontWeight: '600',
+    fontFamily: 'Roboto-SemiBold',
     color: '#FFFFFF',
   },
   stepSubtitle: {
     fontSize: 13,
-    fontWeight: '500',
+    fontFamily: 'Roboto-Medium',
     color: '#8A97AB',
     marginTop: 2,
   },
   stepSubtitleOrange: {
     fontSize: 13,
-    fontWeight: '500',
+    fontFamily: 'Roboto-Medium',
     color: '#F0913A',
     marginTop: 2,
   },
@@ -789,7 +789,7 @@ const styles = StyleSheet.create({
   doneBadgeText: {
     color: '#2DD4BF',
     fontSize: 12,
-    fontWeight: '600',
+    fontFamily: 'Roboto-SemiBold',
   },
   orangeBadge: {
     borderWidth: 1,
@@ -802,7 +802,7 @@ const styles = StyleSheet.create({
   orangeBadgeText: {
     color: '#F0913A',
     fontSize: 12,
-    fontWeight: '600',
+    fontFamily: 'Roboto-SemiBold',
   },
   startedBadge: {
     backgroundColor: '#1A2C46',
@@ -813,7 +813,7 @@ const styles = StyleSheet.create({
   startedBadgeText: {
     color: '#8A97AB',
     fontSize: 12,
-    fontWeight: '600',
+    fontFamily: 'Roboto-SemiBold',
   },
   stepDivider: {
     height: 1,
@@ -840,7 +840,7 @@ const styles = StyleSheet.create({
     fontSize: 13,
     lineHeight: 19,
     color: '#CAD4DF',
-    fontWeight: '400',
+    fontFamily: 'Roboto-Regular',
   },
   bottomBar: {
     paddingHorizontal: 20,
@@ -860,7 +860,7 @@ const styles = StyleSheet.create({
   ctaButtonText: {
     color: '#FFFFFF',
     fontSize: 16,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
   },
 });
 export default TripPlannerModal;

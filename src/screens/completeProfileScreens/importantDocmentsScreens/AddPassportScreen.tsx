@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   View,
   Text,
@@ -11,6 +11,8 @@ import {
   Modal,
   Platform,
   KeyboardAvoidingView,
+  Keyboard,
+  findNodeHandle,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Feather from '@react-native-vector-icons/feather';
@@ -197,6 +199,39 @@ const AddPassportScreen: React.FC<AddPassportScreenProps> = ({
     title: '',
   });
 
+  const scrollViewRef = useRef<any>(null);
+  const [keyboardHeight, setKeyboardHeight] = useState(0);
+
+  useEffect(() => {
+    const showEvent = Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow';
+    const hideEvent = Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide';
+
+    const showSub = Keyboard.addListener(showEvent, (e) => {
+      setKeyboardHeight(e.endCoordinates ? e.endCoordinates.height : 0);
+    });
+    const hideSub = Keyboard.addListener(hideEvent, () => {
+      setKeyboardHeight(0);
+    });
+
+    return () => {
+      showSub.remove();
+      hideSub.remove();
+    };
+  }, []);
+
+  const handleInputFocus = (event: any) => {
+    if (scrollViewRef.current) {
+      const nodeHandle = findNodeHandle(event.target);
+      if (nodeHandle) {
+        setTimeout(() => {
+          (scrollViewRef.current as any)
+            ?.getScrollResponder?.()
+            ?.scrollResponderScrollNativeHandleToKeyboard(nodeHandle, 120, true);
+        }, 120);
+      }
+    }
+  };
+
   const toggleReminder = (rem: string) => {
     setFormData((prev) => {
       const exists = prev.reminders.includes(rem);
@@ -243,10 +278,17 @@ const AddPassportScreen: React.FC<AddPassportScreenProps> = ({
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       >
         <ScrollView
+          ref={scrollViewRef}
           style={styles.scrollContainer}
-          contentContainerStyle={styles.scrollContent}
+          contentContainerStyle={[
+            styles.scrollContent,
+            keyboardHeight > 0
+              ? { paddingBottom: keyboardHeight + 80 }
+              : null,
+          ]}
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
+          onFocus={handleInputFocus}
         >
           {/* Top Field: Upload & Scan Document Photo */}
           <DocumentPhotoUploadField
@@ -413,8 +455,8 @@ const AddPassportScreen: React.FC<AddPassportScreenProps> = ({
             />
           </View>
 
-          {/* REMIND ME BEFORE IT EXPIRES */}
-          <Text style={styles.sectionHeader}>REMIND ME BEFORE IT EXPIRES</Text>
+          {/* REMIND BEFORE IT EXPIRES */}
+          <Text style={styles.sectionHeader}>REMIND BEFORE IT EXPIRES</Text>
 
           {/* Reminders Pills */}
           <View style={styles.pillsRow}>
@@ -680,7 +722,7 @@ const styles = StyleSheet.create({
   fieldLabel: {
     color: '#94A3B8',
     fontSize: RFValue(12),
-    fontWeight: '500',
+    fontFamily: 'Roboto-Medium',
     marginBottom: 6,
   },
   inputBox: {
@@ -740,12 +782,12 @@ const styles = StyleSheet.create({
   selectorText: {
     color: '#FFFFFF',
     fontSize: RFValue(13.5),
-    fontWeight: '500',
+    fontFamily: 'Roboto-Medium',
   },
   sectionHeader: {
     color: '#8E9BAE',
     fontSize: RFValue(11),
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     letterSpacing: 0.8,
     marginTop: 10,
     marginBottom: 12,
@@ -771,18 +813,19 @@ const styles = StyleSheet.create({
   pillText: {
     color: '#94A3B8',
     fontSize: RFValue(12),
-    fontWeight: '600',
+    fontFamily: 'Roboto-SemiBold',
   },
   pillTextSelected: {
     color: '#FFFFFF',
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
   },
   cardContainer: {
     backgroundColor: '#121C2F',
     borderRadius: 16,
     borderWidth: 1,
     borderColor: 'rgba(255, 255, 255, 0.08)',
-    marginTop: 18,
+    marginTop: 20,
+    marginBottom: 20,
     overflow: 'hidden',
   },
   remindRow: {
@@ -813,12 +856,12 @@ const styles = StyleSheet.create({
   avatarText: {
     color: '#FFFFFF',
     fontSize: RFValue(9.5),
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
   },
   remindAssigneeText: {
     color: '#FFFFFF',
     fontSize: RFValue(13),
-    fontWeight: '600',
+    fontFamily: 'Roboto-SemiBold',
     marginRight: 6,
   },
   cardDivider: {
@@ -839,7 +882,7 @@ const styles = StyleSheet.create({
   switchTitle: {
     color: '#FFFFFF',
     fontSize: RFValue(13),
-    fontWeight: '600',
+    fontFamily: 'Roboto-SemiBold',
   },
   switchSubtitle: {
     color: '#8E9BAE',
@@ -880,7 +923,7 @@ const styles = StyleSheet.create({
   modalTitle: {
     color: '#FFFFFF',
     fontSize: RFValue(17),
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     marginBottom: 4,
   },
   modalSubtitle: {
@@ -924,7 +967,7 @@ const styles = StyleSheet.create({
   uploadPhotoTitle: {
     color: '#FFFFFF',
     fontSize: RFValue(12.5),
-    fontWeight: '600',
+    fontFamily: 'Roboto-SemiBold',
   },
   uploadPhotoSub: {
     color: '#8E9BAE',
@@ -969,7 +1012,7 @@ const styles = StyleSheet.create({
   memberAvatarText: {
     color: '#FFFFFF',
     fontSize: RFValue(13),
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
   },
   memberInfoCol: {
     flex: 1,
@@ -977,7 +1020,7 @@ const styles = StyleSheet.create({
   memberNameText: {
     color: '#FFFFFF',
     fontSize: RFValue(13.5),
-    fontWeight: '600',
+    fontFamily: 'Roboto-SemiBold',
   },
   memberRoleText: {
     color: '#8E9BAE',

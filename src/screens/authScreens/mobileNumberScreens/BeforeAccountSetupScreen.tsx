@@ -201,7 +201,7 @@ const styles = StyleSheet.create({
   },
   title: {
     fontSize: RFValue(22),
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     color: '#FFFFFF',
     textAlign: 'center',
     lineHeight: RFValue(28),
@@ -243,7 +243,7 @@ const styles = StyleSheet.create({
   },
   itemTitle: {
     fontSize: RFValue(13.5),
-    fontWeight: '600',
+    fontFamily: 'Roboto-SemiBold',
     color: '#FFFFFF',
     marginBottom: 2,
   },
@@ -286,7 +286,7 @@ const styles = StyleSheet.create({
   },
   linkText: {
     color: Colors.primary,
-    fontWeight: '600',
+    fontFamily: 'Roboto-SemiBold',
   },
   bottomSection: {
     marginTop: 32,

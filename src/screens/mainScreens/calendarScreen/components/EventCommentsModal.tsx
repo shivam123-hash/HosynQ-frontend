@@ -260,7 +260,7 @@ const styles = StyleSheet.create({
   },
   headerTitle: {
     fontSize: 17,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     color: '#FFFFFF',
   },
   headerPlaceholder: {
@@ -285,13 +285,13 @@ const styles = StyleSheet.create({
   },
   capsuleTime: {
     fontSize: 14.5,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     color: '#5B9BF0',
     marginRight: 8,
   },
   capsuleTitle: {
     fontSize: 14.5,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     color: '#FFFFFF',
   },
   capsuleDate: {
@@ -318,7 +318,7 @@ const styles = StyleSheet.create({
   },
   avatarInitial: {
     fontSize: 14,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
   },
   initialRohan: {
     color: '#8DB8F5',
@@ -349,7 +349,7 @@ const styles = StyleSheet.create({
   },
   authorName: {
     fontSize: 14,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     color: '#FFFFFF',
   },
   commentTime: {
@@ -377,7 +377,7 @@ const styles = StyleSheet.create({
   },
   mentionText: {
     color: '#F0913A',
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
   },
   bottomBar: {
     flexDirection: 'row',

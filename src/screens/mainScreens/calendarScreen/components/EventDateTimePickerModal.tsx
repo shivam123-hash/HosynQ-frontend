@@ -671,7 +671,7 @@ const styles = StyleSheet.create({
   },
   sheetTitle: {
     fontSize: 20,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     color: '#FFFFFF',
   },
   sheetSubtitle: {
@@ -710,11 +710,11 @@ const styles = StyleSheet.create({
   chipText: {
     fontSize: 13,
     color: '#CAD4DF',
-    fontWeight: '600',
+    fontFamily: 'Roboto-SemiBold',
   },
   chipTextActive: {
     color: '#FFFFFF',
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
   },
   calendarCard: {
     backgroundColor: '#0B1A2F',
@@ -732,7 +732,7 @@ const styles = StyleSheet.create({
   },
   monthTitle: {
     fontSize: 16,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     color: '#FFFFFF',
   },
   monthNavBtns: {
@@ -758,7 +758,7 @@ const styles = StyleSheet.create({
     width: 36,
     textAlign: 'center',
     fontSize: 12,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     color: '#78869A',
   },
   daysGrid: {
@@ -779,7 +779,7 @@ const styles = StyleSheet.create({
   },
   dayCellText: {
     fontSize: 14,
-    fontWeight: '600',
+    fontFamily: 'Roboto-SemiBold',
     color: '#FFFFFF',
   },
   dayCellTextOtherMonth: {
@@ -787,18 +787,18 @@ const styles = StyleSheet.create({
   },
   dayCellTextSelected: {
     color: '#FFFFFF',
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
   },
   dayCellTextToday: {
     color: '#F0913A',
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
   },
   timeSection: {
     marginBottom: 20,
   },
   sectionHeader: {
     fontSize: 11,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     color: '#78869A',
     letterSpacing: 0.8,
     marginBottom: 10,
@@ -823,11 +823,11 @@ const styles = StyleSheet.create({
   timeChipText: {
     fontSize: 13,
     color: '#CAD4DF',
-    fontWeight: '600',
+    fontFamily: 'Roboto-SemiBold',
   },
   timeChipTextActive: {
     color: '#FFFFFF',
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
   },
   timePickerCard: {
     backgroundColor: '#0B1A2F',
@@ -839,7 +839,7 @@ const styles = StyleSheet.create({
   subLabel: {
     fontSize: 12,
     color: '#78869A',
-    fontWeight: '600',
+    fontFamily: 'Roboto-SemiBold',
     marginBottom: 8,
   },
   selectorRow: {
@@ -860,12 +860,12 @@ const styles = StyleSheet.create({
   },
   numPillText: {
     fontSize: 14,
-    fontWeight: '600',
+    fontFamily: 'Roboto-SemiBold',
     color: '#CAD4DF',
   },
   numPillTextSelected: {
     color: '#FFFFFF',
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
   },
   minPeriodRow: {
     flexDirection: 'row',
@@ -897,12 +897,12 @@ const styles = StyleSheet.create({
   },
   periodBtnText: {
     fontSize: 13,
-    fontWeight: '600',
+    fontFamily: 'Roboto-SemiBold',
     color: '#8A97AB',
   },
   periodBtnTextActive: {
     color: '#FFFFFF',
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
   },
   doneBtn: {
     height: 48,
@@ -914,7 +914,7 @@ const styles = StyleSheet.create({
   },
   doneBtnText: {
     fontSize: 16,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     color: '#FFFFFF',
   },
 });

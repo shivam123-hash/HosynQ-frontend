@@ -175,7 +175,7 @@ const styles = StyleSheet.create({
   },
   title: {
     fontSize: 26,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     color: '#FFFFFF',
     textAlign: 'center',
     marginBottom: 10,
@@ -208,7 +208,7 @@ const styles = StyleSheet.create({
   },
   detailValue: {
     fontSize: 16,
-    fontWeight: '600',
+    fontFamily: 'Roboto-SemiBold',
     color: '#FFFFFF',
   },
   divider: {
@@ -232,7 +232,7 @@ const styles = StyleSheet.create({
   },
   primaryBtnText: {
     fontSize: 16,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     color: '#FFFFFF',
   },
   secondaryBtn: {
@@ -242,7 +242,7 @@ const styles = StyleSheet.create({
   },
   secondaryBtnText: {
     fontSize: 15,
-    fontWeight: '600',
+    fontFamily: 'Roboto-SemiBold',
     color: '#F0923A',
   },
 });

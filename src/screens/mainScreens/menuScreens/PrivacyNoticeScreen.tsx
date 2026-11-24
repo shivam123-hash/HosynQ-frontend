@@ -226,7 +226,7 @@ const styles = StyleSheet.create({
   },
   topBarTitle: {
     fontSize: 20,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     color: '#FFFFFF',
   },
   scrollView: {
@@ -255,7 +255,7 @@ const styles = StyleSheet.create({
   },
   versionTitle: {
     fontSize: 18,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     color: '#FFFFFF',
     marginBottom: 4,
   },
@@ -280,7 +280,7 @@ const styles = StyleSheet.create({
   },
   currentBadgeText: {
     fontSize: 12,
-    fontWeight: '600',
+    fontFamily: 'Roboto-SemiBold',
     color: '#6FD9A6',
     textAlign: 'center',
   },
@@ -289,7 +289,7 @@ const styles = StyleSheet.create({
   },
   olderVersionsText: {
     fontSize: 14,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     color: '#F0923A',
   },
   changelogCard: {
@@ -311,7 +311,7 @@ const styles = StyleSheet.create({
   },
   changelogTitle: {
     fontSize: 15,
-    fontWeight: '600',
+    fontFamily: 'Roboto-SemiBold',
     color: '#FFFFFF',
     marginBottom: 4,
   },
@@ -342,19 +342,19 @@ const styles = StyleSheet.create({
   },
   langButtonText: {
     fontSize: 15,
-    fontWeight: '600',
+    fontFamily: 'Roboto-SemiBold',
     color: '#C8D1DC',
   },
   langButtonTextActive: {
     color: '#0A1320',
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
   },
   contentSection: {
     paddingHorizontal: 2,
   },
   sectionHeading: {
     fontSize: 16,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     color: '#FFFFFF',
     marginBottom: 8,
   },

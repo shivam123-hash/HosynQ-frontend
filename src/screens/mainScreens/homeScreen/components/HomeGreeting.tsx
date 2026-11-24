@@ -32,17 +32,15 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   dateText: {
-    fontFamily: 'Roboto',
     fontSize: 13,
     lineHeight: 18,
-    fontWeight: '400',
+    fontFamily: 'Roboto-Regular',
     color: '#8A97AB',
   },
   greetingText: {
-    fontFamily: 'Roboto',
     fontSize: 22,
     lineHeight: 30,
-    fontWeight: '500',
+    fontFamily: 'Roboto-Medium',
     color: '#CAD4DF',
   },
 });

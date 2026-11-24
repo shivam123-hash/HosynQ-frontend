@@ -73,12 +73,12 @@ const styles = StyleSheet.create({
   initialText: {
     color: '#F0913A',
     fontSize: RFValue(26),
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
   },
   nameText: {
     color: '#FFFFFF',
     fontSize: RFValue(20),
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     marginTop: 10,
     textAlign: 'center',
   },

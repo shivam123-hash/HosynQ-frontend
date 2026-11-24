@@ -21,7 +21,7 @@ import {
   sendEmailLink,
   clearEmailError,
 } from '../../../redux/features/emailFlow/authSlice';
-import { getDeviceInfo } from '../../../units/deviceInfo';
+import { getDeviceInfo } from '../../../units/DeviceInfo';
 import type { AuthNavigationProp } from '../../../navigation/types';
 
 interface EmailScreenProps {
@@ -145,16 +145,16 @@ const EmailScreen: React.FC<EmailScreenProps> = ({
           />
         </View>
 
-        {/* Heading and Subtitle */}
-        <View style={styles.textSection}>
-          <Text style={styles.title}>Continue with email</Text>
-          <Text style={styles.subtitle}>
-            We'll email you a sign-in link. No password needed.
-          </Text>
-        </View>
+        {/* Content Section: Heading, Input & Action Button */}
+        <View style={styles.contentSection}>
+          <View style={styles.textSection}>
+            <Text style={styles.title}>Continue with email</Text>
+            <Text style={styles.subtitle}>
+              We'll email you a sign-in link. No password needed.
+            </Text>
+          </View>
 
-        {/* Input & Action Button Section */}
-        <View style={styles.formSection}>
+          {/* Email Input */}
           <CommonInput
             value={email}
             onChangeText={handleEmailChange}
@@ -168,6 +168,7 @@ const EmailScreen: React.FC<EmailScreenProps> = ({
             inactiveBorderColor={errorMessage ? '#E03137' : Colors.border}
             textColor={Colors.text}
             placeholderTextColor={Colors.textSecondary}
+            containerStyle={styles.inputWrapperCustom}
             inputContainerStyle={styles.inputContainerCustom}
           />
 
@@ -221,7 +222,7 @@ const styles = StyleSheet.create({
   scrollContent: {
     paddingHorizontal: 24,
     paddingBottom: 32,
-    justifyContent: 'space-between',
+    justifyContent: 'space-around',
   },
   illustrationWrapper: {
     width: '100%',
@@ -229,19 +230,22 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     marginTop: 10,
-    marginBottom: 20,
+    // marginBottom: 20,
   },
   illustration: {
     width: '100%',
     height: '100%',
   },
+  contentSection: {
+    width: '100%',
+  },
   textSection: {
     alignItems: 'center',
-    marginBottom: 24,
+    marginBottom: 12,
   },
   title: {
     fontSize: RFValue(21),
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     color: Colors.text,
     textAlign: 'center',
     marginBottom: 8,
@@ -252,9 +256,10 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     lineHeight: RFValue(18),
   },
-  formSection: {
+  inputWrapperCustom: {
+    marginVertical: 0,
+    marginTop: 4,
     width: '100%',
-    marginTop: 'auto',
   },
   inputContainerCustom: {
     height: 56,

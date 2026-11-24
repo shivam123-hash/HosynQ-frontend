@@ -232,7 +232,7 @@ const styles = StyleSheet.create({
   },
   headerTitle: {
     fontSize: 20,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     color: '#FFFFFF',
     letterSpacing: -0.3,
   },
@@ -242,7 +242,7 @@ const styles = StyleSheet.create({
   },
   sectionHeading: {
     fontSize: 11.5,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     color: '#8A97AB',
     letterSpacing: 1.2,
     textTransform: 'uppercase',
@@ -277,7 +277,7 @@ const styles = StyleSheet.create({
   },
   rowTitle: {
     fontSize: 15,
-    fontWeight: '600',
+    fontFamily: 'Roboto-SemiBold',
     color: '#FFFFFF',
     marginBottom: 3,
   },
@@ -294,12 +294,12 @@ const styles = StyleSheet.create({
   },
   badgeDueText: {
     fontSize: 12,
-    fontWeight: '600',
+    fontFamily: 'Roboto-SemiBold',
     color: '#F06A6A',
   },
   payText: {
     fontSize: 14,
-    fontWeight: '600',
+    fontFamily: 'Roboto-SemiBold',
     color: '#F0923A',
   },
   badgePaid: {
@@ -311,7 +311,7 @@ const styles = StyleSheet.create({
   },
   badgePaidText: {
     fontSize: 12,
-    fontWeight: '600',
+    fontFamily: 'Roboto-SemiBold',
     color: '#6FD9A6',
   },
   badgeEndsSoon: {
@@ -323,7 +323,7 @@ const styles = StyleSheet.create({
   },
   badgeEndsSoonText: {
     fontSize: 12,
-    fontWeight: '600',
+    fontFamily: 'Roboto-SemiBold',
     color: '#F7C08E',
   },
   divider: {
@@ -351,7 +351,7 @@ const styles = StyleSheet.create({
   },
   addButtonText: {
     fontSize: 16,
-    fontWeight: '600',
+    fontFamily: 'Roboto-SemiBold',
     color: '#FFFFFF',
   },
 });

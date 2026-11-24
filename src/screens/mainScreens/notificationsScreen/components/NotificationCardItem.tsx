@@ -164,7 +164,7 @@ const styles = StyleSheet.create({
   },
   symbolText: {
     fontSize: 18,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
   },
   avatarCircle: {
     width: 40,
@@ -175,7 +175,7 @@ const styles = StyleSheet.create({
   },
   avatarText: {
     fontSize: 16,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
   },
   contentContainer: {
     flex: 1,
@@ -183,7 +183,7 @@ const styles = StyleSheet.create({
   },
   titleText: {
     fontSize: 15,
-    fontWeight: '600',
+    fontFamily: 'Roboto-SemiBold',
     color: '#CAD4DF',
     lineHeight: 20,
   },
@@ -209,7 +209,7 @@ const styles = StyleSheet.create({
   },
   approveButtonText: {
     color: '#0B1A2F',
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     fontSize: 13,
   },
   declineButton: {
@@ -224,7 +224,7 @@ const styles = StyleSheet.create({
   },
   declineButtonText: {
     color: '#CAD4DF',
-    fontWeight: '600',
+    fontFamily: 'Roboto-SemiBold',
     fontSize: 13,
   },
   rightContainer: {

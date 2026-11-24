@@ -102,10 +102,9 @@ const styles = StyleSheet.create({
     height: 34,
   },
   title: {
-    fontFamily: 'Roboto',
     fontSize: 18,
     lineHeight: 24,
-    fontWeight: '600',
+    fontFamily: 'Roboto-SemiBold',
     color: '#CAD4DF',
   },
   viewAllBtn: {
@@ -118,10 +117,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   viewAllText: {
-    fontFamily: 'Roboto',
     fontSize: 12,
     lineHeight: 16,
-    fontWeight: '500',
+    fontFamily: 'Roboto-Medium',
     color: '#F0913A',
   },
   card: {
@@ -162,10 +160,9 @@ const styles = StyleSheet.create({
     gap: 3,
   },
   itemTitle: {
-    fontFamily: 'Roboto',
     fontSize: 13.5,
     lineHeight: 18,
-    fontWeight: '500',
+    fontFamily: 'Roboto-Medium',
     color: '#CAD4DF',
   },
   itemSubtitle: {
@@ -174,11 +171,11 @@ const styles = StyleSheet.create({
     lineHeight: 16,
   },
   overdueSubtitle: {
-    fontWeight: '500',
+    fontFamily: 'Roboto-Medium',
     color: '#F0913A',
   },
   normalSubtitle: {
-    fontWeight: '400',
+    fontFamily: 'Roboto-Regular',
     color: '#8A97AB',
   },
 });

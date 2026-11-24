@@ -346,7 +346,7 @@ const styles = StyleSheet.create({
   },
   headerTitle: {
     fontSize: 20,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     color: '#FFFFFF',
     letterSpacing: -0.3,
   },
@@ -384,7 +384,7 @@ const styles = StyleSheet.create({
   },
   docTitle: {
     fontSize: 15,
-    fontWeight: '600',
+    fontFamily: 'Roboto-SemiBold',
     color: '#FFFFFF',
     marginBottom: 4,
   },
@@ -421,7 +421,7 @@ const styles = StyleSheet.create({
   },
   fieldValue: {
     fontSize: 15,
-    fontWeight: '600',
+    fontFamily: 'Roboto-SemiBold',
     color: '#FFFFFF',
   },
   alertRow: {
@@ -438,7 +438,7 @@ const styles = StyleSheet.create({
   },
   alertValue: {
     fontSize: 15,
-    fontWeight: '600',
+    fontFamily: 'Roboto-SemiBold',
     color: '#F7C08E',
   },
   holderRow: {
@@ -457,7 +457,7 @@ const styles = StyleSheet.create({
   },
   holderAvatarText: {
     fontSize: 11,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     color: '#5B9BF1',
   },
   divider: {
@@ -485,7 +485,7 @@ const styles = StyleSheet.create({
   },
   optionTitle: {
     fontSize: 15,
-    fontWeight: '600',
+    fontFamily: 'Roboto-SemiBold',
     color: '#FFFFFF',
     marginBottom: 3,
   },
@@ -520,7 +520,7 @@ const styles = StyleSheet.create({
   },
   shareBtnText: {
     fontSize: 16,
-    fontWeight: '600',
+    fontFamily: 'Roboto-SemiBold',
     color: '#FFFFFF',
   },
   renewBtn: {
@@ -533,7 +533,7 @@ const styles = StyleSheet.create({
   },
   renewBtnText: {
     fontSize: 16,
-    fontWeight: '600',
+    fontFamily: 'Roboto-SemiBold',
     color: '#FFFFFF',
   },
 });

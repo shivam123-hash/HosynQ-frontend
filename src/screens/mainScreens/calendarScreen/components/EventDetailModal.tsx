@@ -468,7 +468,7 @@ const styles = StyleSheet.create({
   },
   headerTitle: {
     fontSize: 17,
-    fontWeight: '600',
+    fontFamily: 'Roboto-SemiBold',
     color: '#FFFFFF',
   },
   menuBackdrop: {
@@ -506,12 +506,12 @@ const styles = StyleSheet.create({
   },
   dropdownItemText: {
     fontSize: 14,
-    fontWeight: '600',
+    fontFamily: 'Roboto-SemiBold',
     color: '#CAD4DF',
   },
   dropdownItemTextDestructive: {
     fontSize: 14,
-    fontWeight: '600',
+    fontFamily: 'Roboto-SemiBold',
     color: '#EF4444',
   },
   dropdownDivider: {
@@ -548,7 +548,7 @@ const styles = StyleSheet.create({
   },
   categoryBadgeText: {
     fontSize: 12,
-    fontWeight: '600',
+    fontFamily: 'Roboto-SemiBold',
   },
   todayBadge: {
     flexDirection: 'row',
@@ -569,12 +569,12 @@ const styles = StyleSheet.create({
   },
   todayBadgeText: {
     fontSize: 12,
-    fontWeight: '600',
+    fontFamily: 'Roboto-SemiBold',
     color: '#F0913A',
   },
   eventTitle: {
     fontSize: 28,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     color: '#FFFFFF',
     letterSpacing: -0.5,
     marginBottom: 6,
@@ -616,12 +616,12 @@ const styles = StyleSheet.create({
   },
   rowValue: {
     fontSize: 15,
-    fontWeight: '600',
+    fontFamily: 'Roboto-SemiBold',
     color: '#FFFFFF',
   },
   mapLink: {
     fontSize: 14,
-    fontWeight: '600',
+    fontFamily: 'Roboto-SemiBold',
     color: '#F0913A',
     marginLeft: 10,
   },
@@ -664,11 +664,11 @@ const styles = StyleSheet.create({
   },
   goingAvatarText: {
     fontSize: 10,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
   },
   goingNamesText: {
     fontSize: 15,
-    fontWeight: '600',
+    fontFamily: 'Roboto-SemiBold',
     color: '#FFFFFF',
     marginLeft: 8,
   },
@@ -679,7 +679,7 @@ const styles = StyleSheet.create({
   },
   forMemberText: {
     fontSize: 15,
-    fontWeight: '600',
+    fontFamily: 'Roboto-SemiBold',
     color: '#FFFFFF',
     marginLeft: 8,
   },
@@ -707,7 +707,7 @@ const styles = StyleSheet.create({
   },
   sourceViewLink: {
     fontSize: 14,
-    fontWeight: '600',
+    fontFamily: 'Roboto-SemiBold',
     color: '#F0913A',
     marginLeft: 10,
   },
@@ -721,7 +721,7 @@ const styles = StyleSheet.create({
   },
   notesHeader: {
     fontSize: 11,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     color: '#8A97AB',
     letterSpacing: 1.1,
   },
@@ -754,7 +754,7 @@ const styles = StyleSheet.create({
   },
   editBtnText: {
     fontSize: 15,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     color: '#FFFFFF',
   },
   directionsBtn: {
@@ -769,7 +769,7 @@ const styles = StyleSheet.create({
   },
   directionsBtnText: {
     fontSize: 15,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     color: '#FFFFFF',
   },
 });

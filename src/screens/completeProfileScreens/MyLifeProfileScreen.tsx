@@ -24,7 +24,7 @@ import {
   resetFamilyState,
   resetLifeProfileState,
 } from '../../redux';
-import { getMyMemberId, clearUserData } from '../../units/asyncStorageManager';
+import { getMyMemberId, clearUserData } from '../../units/AsyncStorageManager';
 import {
   LifeProfileHeader,
   LifeProfileUserCard,
@@ -504,7 +504,6 @@ const MyLifeProfileScreen: React.FC<MyLifeProfileScreenProps> = ({
       <LifeProfileHeader
         title="My Life Profile"
         onBack={onBack}
-        onEdit={onEdit}
       />
 
       <ScrollView
@@ -612,7 +611,7 @@ const styles = StyleSheet.create({
   dashboardButtonText: {
     color: '#FFFFFF',
     fontSize: RFValue(14),
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
   },
   logoutButton: {
     flexDirection: 'row',
@@ -631,7 +630,7 @@ const styles = StyleSheet.create({
   logoutButtonText: {
     color: '#EF4444',
     fontSize: RFValue(13),
-    fontWeight: '600',
+    fontFamily: 'Roboto-SemiBold',
   },
 });
 

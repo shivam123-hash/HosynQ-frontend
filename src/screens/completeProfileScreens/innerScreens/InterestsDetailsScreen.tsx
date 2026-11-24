@@ -20,7 +20,7 @@ import {
   fetchLifeProfileSectionThunk,
   fetchLifeProfileFullThunk,
 } from '../../../redux';
-import { getMyMemberId } from '../../../units/asyncStorageManager';
+import { getMyMemberId } from '../../../units/AsyncStorageManager';
 import { CATEGORIES, InterestCategoryData } from './InterestsAndActivitiesScreen';
 
 export interface InterestsDetailsScreenProps {
@@ -498,7 +498,7 @@ const styles = StyleSheet.create({
   },
   headerTitle: {
     fontSize: RFValue(17),
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     color: '#FFFFFF',
     letterSpacing: 0.2,
   },
@@ -553,7 +553,7 @@ const styles = StyleSheet.create({
   },
   countBadgeText: {
     fontSize: RFValue(11.5),
-    fontWeight: '600',
+    fontFamily: 'Roboto-SemiBold',
     color: '#10B981',
   },
   categoryCard: {
@@ -585,14 +585,14 @@ const styles = StyleSheet.create({
   },
   categoryTitle: {
     fontSize: RFValue(12.5),
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     color: '#CAD4DF',
     letterSpacing: 0.8,
   },
   categoryCount: {
     fontSize: RFValue(11.5),
     color: '#64748B',
-    fontWeight: '500',
+    fontFamily: 'Roboto-Medium',
   },
   chipsRow: {
     flexDirection: 'row',
@@ -614,7 +614,7 @@ const styles = StyleSheet.create({
   },
   interestPillText: {
     fontSize: RFValue(13),
-    fontWeight: '600',
+    fontFamily: 'Roboto-SemiBold',
     color: '#FFFFFF',
   },
   emptyContainer: {
@@ -639,7 +639,7 @@ const styles = StyleSheet.create({
   },
   emptyTitle: {
     fontSize: RFValue(16),
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     color: '#FFFFFF',
     marginBottom: 8,
     textAlign: 'center',

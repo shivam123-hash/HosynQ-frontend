@@ -191,7 +191,7 @@ const styles = StyleSheet.create({
   },
   sheetTitle: {
     fontSize: 22,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     color: '#FFFFFF',
     letterSpacing: -0.3,
   },
@@ -223,7 +223,7 @@ const styles = StyleSheet.create({
   },
   methodLabel: {
     fontSize: 13.5,
-    fontWeight: '600',
+    fontFamily: 'Roboto-SemiBold',
     color: '#FFFFFF',
     marginTop: 6,
   },
@@ -245,7 +245,7 @@ const styles = StyleSheet.create({
   },
   uploadedFileName: {
     fontSize: 15,
-    fontWeight: '600',
+    fontFamily: 'Roboto-SemiBold',
     color: '#FFFFFF',
     marginBottom: 3,
   },
@@ -271,7 +271,7 @@ const styles = StyleSheet.create({
   },
   vaultTitle: {
     fontSize: 15.5,
-    fontWeight: '600',
+    fontFamily: 'Roboto-SemiBold',
     color: '#FFFFFF',
   },
   vaultSubtitle: {
@@ -288,7 +288,7 @@ const styles = StyleSheet.create({
   },
   saveButtonText: {
     fontSize: 16,
-    fontWeight: '600',
+    fontFamily: 'Roboto-SemiBold',
     color: '#FFFFFF',
   },
 });

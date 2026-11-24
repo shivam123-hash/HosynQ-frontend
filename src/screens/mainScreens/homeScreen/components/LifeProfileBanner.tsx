@@ -72,18 +72,18 @@ const styles = StyleSheet.create({
   },
   tagText: {
     fontSize: 11,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     color: Colors.primary,
     letterSpacing: 0.6,
   },
   percentText: {
     fontSize: 12,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     color: Colors.primary,
   },
   title: {
     fontSize: 15,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     color: Colors.text,
     marginBottom: 4,
   },
@@ -120,7 +120,7 @@ const styles = StyleSheet.create({
   },
   continueText: {
     fontSize: 12,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     color: Colors.primary,
   },
 });

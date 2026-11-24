@@ -565,7 +565,7 @@ const styles = StyleSheet.create({
   },
   navDateTitle: {
     fontSize: 20,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     color: '#FFFFFF',
     letterSpacing: -0.3,
   },
@@ -603,14 +603,14 @@ const styles = StyleSheet.create({
   },
   weekDayLabel: {
     fontSize: 11,
-    fontWeight: '600',
+    fontFamily: 'Roboto-SemiBold',
     color: '#8A97AB',
     marginBottom: 6,
     letterSpacing: 0.2,
   },
   weekDayLabelActive: {
     color: '#CAD4DF',
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
   },
   weekNumCircle: {
     width: 32,
@@ -629,12 +629,12 @@ const styles = StyleSheet.create({
   },
   weekNumText: {
     fontSize: 14,
-    fontWeight: '600',
+    fontFamily: 'Roboto-SemiBold',
     color: '#CAD4DF',
   },
   weekNumTextActive: {
     color: '#0B1A2F',
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
   },
   weekNumTextToday: {
     color: '#F0913A',
@@ -671,7 +671,7 @@ const styles = StyleSheet.create({
   },
   tasksHeaderTitle: {
     fontSize: 12,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     color: '#8A97AB',
     letterSpacing: 1.2,
   },
@@ -712,7 +712,7 @@ const styles = StyleSheet.create({
   },
   taskTitle: {
     fontSize: 15,
-    fontWeight: '600',
+    fontFamily: 'Roboto-SemiBold',
     color: '#FFFFFF',
   },
   taskTitleCompleted: {
@@ -726,7 +726,7 @@ const styles = StyleSheet.create({
   },
   taskSubtitleOverdue: {
     color: '#F0913A',
-    fontWeight: '500',
+    fontFamily: 'Roboto-Medium',
   },
   priorityDot: {
     width: 8,
@@ -749,7 +749,7 @@ const styles = StyleSheet.create({
   },
   slotTimeText: {
     fontSize: 13,
-    fontWeight: '500',
+    fontFamily: 'Roboto-Medium',
     color: '#8A97AB',
   },
   slotContentCol: {
@@ -803,7 +803,7 @@ const styles = StyleSheet.create({
   },
   eventTitle: {
     fontSize: 15,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     color: '#FFFFFF',
     flex: 1,
   },
@@ -817,7 +817,7 @@ const styles = StyleSheet.create({
   },
   memberChipInitial: {
     fontSize: 11,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     color: '#FFFFFF',
   },
   eventTimeText: {
@@ -853,7 +853,7 @@ const styles = StyleSheet.create({
   },
   emptyTitle: {
     fontSize: 17,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     color: '#FFFFFF',
     textAlign: 'center',
     marginBottom: 8,
@@ -878,7 +878,7 @@ const styles = StyleSheet.create({
   },
   addEventBtnText: {
     fontSize: 15,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     color: '#FFFFFF',
   },
   timelineTaskPill: {

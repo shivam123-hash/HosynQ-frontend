@@ -1,5 +1,5 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { tokenService } from './tokenServices';
+import { tokenService } from './TokenServices';
 
 const USER_DATA_KEY = 'user_data';
 const MY_MEMBER_ID_KEY = 'my_member_id';

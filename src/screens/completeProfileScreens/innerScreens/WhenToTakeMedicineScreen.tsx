@@ -28,7 +28,7 @@ import {
   fetchMedicinesThunk,
 } from '../../../redux/features/medicine/medicineSlice';
 import { UpdateMedicineRequest } from '../../../services/medicineServices';
-import { getMyMemberId } from '../../../units/asyncStorageManager';
+import { getMyMemberId } from '../../../units/AsyncStorageManager';
 
 export interface WhenToTakeMedicineData {
   frequency: string;
@@ -908,7 +908,7 @@ const styles = StyleSheet.create({
   headerTitleText: {
     color: '#FFFFFF',
     fontSize: RFValue(17),
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     textAlign: 'center',
   },
   headerSubtitleText: {
@@ -935,7 +935,7 @@ const styles = StyleSheet.create({
   sectionHeaderText: {
     color: '#8E9BAE',
     fontSize: RFValue(11),
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     letterSpacing: 1.2,
     textTransform: 'uppercase',
   },
@@ -965,11 +965,11 @@ const styles = StyleSheet.create({
   },
   chipTextUnselected: {
     color: '#CBD5E1',
-    fontWeight: '500',
+    fontFamily: 'Roboto-Medium',
   },
   chipTextSelected: {
     color: '#071526',
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
   },
   timesADayRow: {
     flexDirection: 'row',
@@ -981,7 +981,7 @@ const styles = StyleSheet.create({
   timesADayLabel: {
     color: '#CBD5E1',
     fontSize: RFValue(13),
-    fontWeight: '500',
+    fontFamily: 'Roboto-Medium',
   },
   timesNumbersRow: {
     flexDirection: 'row',
@@ -1008,11 +1008,11 @@ const styles = StyleSheet.create({
   },
   numberTextUnselected: {
     color: '#CBD5E1',
-    fontWeight: '600',
+    fontFamily: 'Roboto-SemiBold',
   },
   numberTextSelected: {
     color: '#071526',
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
   },
   cardContainer: {
     backgroundColor: '#0B1E36',
@@ -1041,7 +1041,7 @@ const styles = StyleSheet.create({
   doseTitle: {
     color: '#FFFFFF',
     fontSize: RFValue(13.5),
-    fontWeight: '600',
+    fontFamily: 'Roboto-SemiBold',
   },
   doseSubtitle: {
     color: '#8E9BAE',
@@ -1059,7 +1059,7 @@ const styles = StyleSheet.create({
   timeButtonText: {
     color: '#FFFFFF',
     fontSize: RFValue(12.5),
-    fontWeight: '600',
+    fontFamily: 'Roboto-SemiBold',
   },
   divider: {
     borderBottomWidth: 1,
@@ -1088,7 +1088,7 @@ const styles = StyleSheet.create({
   infoValue: {
     color: '#FFFFFF',
     fontSize: RFValue(13.5),
-    fontWeight: '600',
+    fontFamily: 'Roboto-SemiBold',
   },
   switchRow: {
     flexDirection: 'row',
@@ -1104,7 +1104,7 @@ const styles = StyleSheet.create({
   switchTitle: {
     color: '#FFFFFF',
     fontSize: RFValue(13),
-    fontWeight: '600',
+    fontFamily: 'Roboto-SemiBold',
   },
   switchSubtitle: {
     color: '#8E9BAE',
@@ -1137,7 +1137,7 @@ const styles = StyleSheet.create({
   modalTitle: {
     color: '#FFFFFF',
     fontSize: RFValue(16),
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     marginBottom: 4,
   },
   modalSubtitle: {
@@ -1160,13 +1160,13 @@ const styles = StyleSheet.create({
     flex: 1,
     color: '#FFFFFF',
     fontSize: RFValue(16),
-    fontWeight: '600',
+    fontFamily: 'Roboto-SemiBold',
     padding: 0,
   },
   modalInputUnit: {
     color: '#8E9BAE',
     fontSize: RFValue(13),
-    fontWeight: '500',
+    fontFamily: 'Roboto-Medium',
   },
   modalChipsRow: {
     flexDirection: 'row',
@@ -1189,11 +1189,11 @@ const styles = StyleSheet.create({
   modalChipText: {
     color: '#CBD5E1',
     fontSize: RFValue(12),
-    fontWeight: '500',
+    fontFamily: 'Roboto-Medium',
   },
   modalChipTextActive: {
     color: '#071526',
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
   },
   modalActionButtons: {
     flexDirection: 'row',
@@ -1209,7 +1209,7 @@ const styles = StyleSheet.create({
   modalCancelBtnText: {
     color: '#CBD5E1',
     fontSize: RFValue(13),
-    fontWeight: '600',
+    fontFamily: 'Roboto-SemiBold',
   },
   modalSaveBtn: {
     paddingHorizontal: 22,
@@ -1220,7 +1220,7 @@ const styles = StyleSheet.create({
   modalSaveBtnText: {
     color: '#FFFFFF',
     fontSize: RFValue(13),
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
   },
 });
 

@@ -109,7 +109,7 @@ const AddDocumentBottomSheet: React.FC<AddDocumentBottomSheetProps> = ({
           >
             <Feather name="camera" size={18} color="#F0913A" />
             <Text style={styles.scanText}>
-              Scan it and let HosynQ fill the details
+              Upload a clear image for correct details
             </Text>
             <Feather name="chevron-right" size={18} color="#F0913A" />
           </TouchableOpacity>
@@ -140,24 +140,6 @@ const AddDocumentBottomSheet: React.FC<AddDocumentBottomSheetProps> = ({
               </TouchableOpacity>
             ))}
           </View>
-
-          {/* Something Else Card */}
-          <TouchableOpacity
-            activeOpacity={0.7}
-            style={styles.somethingElseCard}
-            onPress={() => onSelectOption('something-else')}
-          >
-            <View style={styles.fileIconBox}>
-              <Feather name="file-text" size={17} color="#94A3B8" />
-            </View>
-            <View style={styles.somethingElseTextContainer}>
-              <Text style={styles.somethingElseTitle}>Something else</Text>
-              <Text style={styles.somethingElseSubtitle}>
-                Voter ID, birth certificate, ration card
-              </Text>
-            </View>
-            <Feather name="chevron-right" size={18} color="#64748B" />
-          </TouchableOpacity>
         </TouchableOpacity>
       </TouchableOpacity>
     </Modal>
@@ -193,7 +175,7 @@ const styles = StyleSheet.create({
   title: {
     color: '#FFFFFF',
     fontSize: RFValue(17),
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     marginBottom: 4,
   },
   subtitle: {
@@ -217,7 +199,7 @@ const styles = StyleSheet.create({
     flex: 1,
     color: '#FFFFFF',
     fontSize: RFValue(13),
-    fontWeight: '600',
+    fontFamily: 'Roboto-SemiBold',
     marginLeft: 10,
     marginRight: 6,
   },
@@ -226,7 +208,6 @@ const styles = StyleSheet.create({
     flexWrap: 'wrap',
     justifyContent: 'space-between',
     gap: 10,
-    marginBottom: 12,
   },
   gridItem: {
     width: '48%',
@@ -252,41 +233,7 @@ const styles = StyleSheet.create({
     flex: 1,
     color: '#FFFFFF',
     fontSize: RFValue(12.5),
-    fontWeight: '600',
-  },
-  somethingElseCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#131F35',
-    borderRadius: 14,
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.08)',
-    paddingHorizontal: 14,
-    paddingVertical: 12,
-  },
-  fileIconBox: {
-    width: 34,
-    height: 34,
-    borderRadius: 9,
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.1)',
-    backgroundColor: 'rgba(255, 255, 255, 0.05)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: 12,
-  },
-  somethingElseTextContainer: {
-    flex: 1,
-  },
-  somethingElseTitle: {
-    color: '#FFFFFF',
-    fontSize: RFValue(13.5),
-    fontWeight: '600',
-  },
-  somethingElseSubtitle: {
-    color: '#8E9BAE',
-    fontSize: RFValue(11),
-    marginTop: 2,
+    fontFamily: 'Roboto-SemiBold',
   },
 });
 

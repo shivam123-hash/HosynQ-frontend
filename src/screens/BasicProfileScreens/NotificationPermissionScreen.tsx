@@ -146,7 +146,7 @@ const styles = StyleSheet.create({
   stepText: {
     color: Colors.textSecondary,
     fontSize: RFValue(12.5),
-    fontWeight: '500',
+    fontFamily: 'Roboto-Medium',
   },
   progressContainer: {
     flexDirection: 'row',
@@ -173,7 +173,7 @@ const styles = StyleSheet.create({
   progressText: {
     color: Colors.textSecondary,
     fontSize: RFValue(11),
-    fontWeight: '600',
+    fontFamily: 'Roboto-SemiBold',
     marginLeft: 14,
   },
   scrollContent: {
@@ -207,7 +207,7 @@ const styles = StyleSheet.create({
   },
   title: {
     fontSize: RFValue(21),
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     color: '#FFFFFF',
     textAlign: 'center',
     marginBottom: 10,
@@ -236,7 +236,7 @@ const styles = StyleSheet.create({
   notNowText: {
     color: Colors.primary,
     fontSize: RFValue(14),
-    fontWeight: '600',
+    fontFamily: 'Roboto-SemiBold',
     textAlign: 'center',
   },
   footerNote: {

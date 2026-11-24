@@ -116,13 +116,7 @@ const DocumentDetailRemindersScreen: React.FC<
   };
 
   const handleOptionsPress = () => {
-    if (onOptionsPress) {
-      onOptionsPress();
-      return;
-    }
-    if (onDeletePress) {
-      setIsDeleteModalVisible(true);
-    }
+    setIsDeleteModalVisible(true);
   };
 
   const handleDelete = () => {
@@ -157,16 +151,16 @@ const DocumentDetailRemindersScreen: React.FC<
 
         <TouchableOpacity
           activeOpacity={0.7}
-          onPress={handleOptionsPress}
+          onPress={() => setIsDeleteModalVisible(true)}
           disabled={isDeleting}
           style={styles.headerButton}
           accessibilityRole="button"
-          accessibilityLabel="More options"
+          accessibilityLabel="Delete document"
         >
           {isDeleting ? (
-            <ThreeDotsLoader color="#F43F5E" size={5} spacing={3} />
+            <ThreeDotsLoader color="#EF4444" size={5} spacing={3} />
           ) : (
-            <Feather name="more-horizontal" size={20} color="#FFFFFF" />
+            <Feather name="trash-2" size={19} color="#EF4444" />
           )}
         </TouchableOpacity>
       </View>
@@ -423,7 +417,7 @@ const styles = StyleSheet.create({
   headerTitleText: {
     color: '#FFFFFF',
     fontSize: RFValue(17),
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     textAlign: 'center',
   },
   headerSubtitleText: {
@@ -471,7 +465,7 @@ const styles = StyleSheet.create({
   fileNameText: {
     color: '#FFFFFF',
     fontSize: RFValue(13.5),
-    fontWeight: '600',
+    fontFamily: 'Roboto-SemiBold',
   },
   fileDetailsText: {
     color: '#8E9BAE',
@@ -517,7 +511,7 @@ const styles = StyleSheet.create({
   detailValue: {
     color: '#FFFFFF',
     fontSize: RFValue(14),
-    fontWeight: '600',
+    fontFamily: 'Roboto-SemiBold',
   },
   reminderSettingsCard: {
     backgroundColor: '#0B1E36',
@@ -562,12 +556,12 @@ const styles = StyleSheet.create({
   avatarText: {
     color: '#FFFFFF',
     fontSize: RFValue(10.5),
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
   },
   avatarNamesText: {
     color: '#FFFFFF',
     fontSize: RFValue(13.5),
-    fontWeight: '600',
+    fontFamily: 'Roboto-SemiBold',
     marginLeft: 8,
   },
   autoRenewalRow: {
@@ -584,7 +578,7 @@ const styles = StyleSheet.create({
   autoRenewalTitle: {
     color: '#FFFFFF',
     fontSize: RFValue(13),
-    fontWeight: '600',
+    fontFamily: 'Roboto-SemiBold',
   },
   autoRenewalSubtitle: {
     color: '#8E9BAE',
@@ -617,7 +611,7 @@ const styles = StyleSheet.create({
   viewerTitle: {
     color: '#FFFFFF',
     fontSize: RFValue(15),
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     flex: 1,
     marginRight: 12,
   },

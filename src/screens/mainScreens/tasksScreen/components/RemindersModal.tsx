@@ -198,7 +198,7 @@ const styles = StyleSheet.create({
   },
   title: {
     fontSize: 22,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     color: '#CAD4DF',
     textAlign: 'center',
   },
@@ -237,7 +237,7 @@ const styles = StyleSheet.create({
   },
   optionTitle: {
     fontSize: 15,
-    fontWeight: '600',
+    fontFamily: 'Roboto-SemiBold',
     color: '#CAD4DF',
   },
   checkBox: {
@@ -262,7 +262,7 @@ const styles = StyleSheet.create({
   },
   switchLabel: {
     fontSize: 15,
-    fontWeight: '600',
+    fontFamily: 'Roboto-SemiBold',
     color: '#CAD4DF',
     flex: 1,
     marginRight: 16,
@@ -277,7 +277,7 @@ const styles = StyleSheet.create({
   },
   doneBtnText: {
     fontSize: 16,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     color: '#FFFFFF',
   },
 });

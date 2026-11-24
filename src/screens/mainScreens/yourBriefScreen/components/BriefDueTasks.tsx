@@ -122,17 +122,15 @@ const styles = StyleSheet.create({
     height: 24,
   },
   sectionTitle: {
-    fontFamily: 'Roboto',
     fontSize: 19,
     lineHeight: 24,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     color: '#B6B8B8',
   },
   actionText: {
-    fontFamily: 'Roboto',
     fontSize: 14,
     lineHeight: 18,
-    fontWeight: '500',
+    fontFamily: 'Roboto-Medium',
     color: Colors.primary, // #F0913A
   },
   card: {
@@ -170,10 +168,9 @@ const styles = StyleSheet.create({
     gap: 3,
   },
   taskTitle: {
-    fontFamily: 'Roboto',
     fontSize: 15.5,
     lineHeight: 20,
-    fontWeight: '500',
+    fontFamily: 'Roboto-Medium',
     color: '#B6B8B8',
   },
   taskTitleCompleted: {
@@ -185,15 +182,14 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   taskDueDate: {
-    fontFamily: 'Roboto',
     fontSize: 13,
     lineHeight: 18,
     color: '#8A97AB',
-    fontWeight: '400',
+    fontFamily: 'Roboto-Regular',
   },
   overdueText: {
     color: Colors.primary, // #F0913A
-    fontWeight: '500',
+    fontFamily: 'Roboto-Medium',
   },
   taskDot: {
     fontFamily: 'Roboto',

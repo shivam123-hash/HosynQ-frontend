@@ -246,7 +246,7 @@ const styles = StyleSheet.create({
   },
   headerTitle: {
     fontSize: 17,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     color: '#FFFFFF',
     letterSpacing: -0.2,
   },
@@ -274,7 +274,7 @@ const styles = StyleSheet.create({
   },
   sectionHeading: {
     fontSize: 11.5,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     color: '#8A97AB',
     letterSpacing: 1.2,
     textTransform: 'uppercase',
@@ -303,11 +303,11 @@ const styles = StyleSheet.create({
   },
   pillTextActive: {
     color: '#0B1A2F',
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
   },
   pillTextInactive: {
     color: '#C8D1DC',
-    fontWeight: '500',
+    fontFamily: 'Roboto-Medium',
   },
   card: {
     backgroundColor: '#122440',
@@ -343,7 +343,7 @@ const styles = StyleSheet.create({
   },
   activityTitle: {
     fontSize: 15.5,
-    fontWeight: '600',
+    fontFamily: 'Roboto-SemiBold',
     color: '#FFFFFF',
     flex: 1,
     marginRight: 10,
@@ -364,7 +364,7 @@ const styles = StyleSheet.create({
   },
   badgeBlueText: {
     fontSize: 11.5,
-    fontWeight: '600',
+    fontFamily: 'Roboto-SemiBold',
     color: '#5B9BF1',
   },
   divider: {
@@ -389,7 +389,7 @@ const styles = StyleSheet.create({
   },
   dashedAddButtonText: {
     fontSize: 15,
-    fontWeight: '600',
+    fontFamily: 'Roboto-SemiBold',
     color: '#F0923A',
   },
   fieldRow: {
@@ -411,7 +411,7 @@ const styles = StyleSheet.create({
   },
   fieldValue: {
     fontSize: 15,
-    fontWeight: '600',
+    fontFamily: 'Roboto-SemiBold',
     color: '#FFFFFF',
   },
   bottomBar: {
@@ -430,7 +430,7 @@ const styles = StyleSheet.create({
   },
   saveButtonText: {
     fontSize: 16,
-    fontWeight: '600',
+    fontFamily: 'Roboto-SemiBold',
     color: '#FFFFFF',
   },
 });

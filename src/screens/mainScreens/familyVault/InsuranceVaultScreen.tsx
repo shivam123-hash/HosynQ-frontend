@@ -192,7 +192,7 @@ const styles = StyleSheet.create({
   },
   headerTitle: {
     fontSize: 20,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     color: '#FFFFFF',
     letterSpacing: -0.3,
   },
@@ -229,7 +229,7 @@ const styles = StyleSheet.create({
   },
   tagText: {
     fontSize: 12,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     letterSpacing: 1.2,
     marginLeft: 6,
   },
@@ -242,12 +242,12 @@ const styles = StyleSheet.create({
   },
   badgeOrangeText: {
     fontSize: 12,
-    fontWeight: '600',
+    fontFamily: 'Roboto-SemiBold',
     color: '#F7C08E',
   },
   policyTitle: {
     fontSize: 16,
-    fontWeight: '600',
+    fontFamily: 'Roboto-SemiBold',
     color: '#FFFFFF',
     marginBottom: 6,
   },
@@ -269,7 +269,7 @@ const styles = StyleSheet.create({
   },
   renewNowBtnText: {
     fontSize: 15,
-    fontWeight: '600',
+    fontFamily: 'Roboto-SemiBold',
     color: '#FFFFFF',
   },
   dashedAddBtn: {
@@ -285,7 +285,7 @@ const styles = StyleSheet.create({
   },
   dashedAddBtnText: {
     fontSize: 15,
-    fontWeight: '600',
+    fontFamily: 'Roboto-SemiBold',
     color: '#F0923A',
   },
   bottomBar: {
@@ -309,7 +309,7 @@ const styles = StyleSheet.create({
   },
   addButtonText: {
     fontSize: 16,
-    fontWeight: '600',
+    fontFamily: 'Roboto-SemiBold',
     color: '#FFFFFF',
   },
 });

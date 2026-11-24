@@ -116,16 +116,12 @@ const InviteFamilyBottomSheet: React.FC<InviteFamilyBottomSheetProps> = ({
   };
 
   // 4. Open QR Code modal
-  const handleShowQrCode = async () => {
-    if (!invitation?.url && !inviteLoading) {
-      try {
-        await dispatch(createInvitationThunk()).unwrap();
-      } catch (error) {
-        console.warn('Failed to get invite link for QR Code:', error);
-      }
-    }
+  const handleShowQrCode = () => {
     setIsQrModalVisible(true);
     onShowQrCode?.();
+    if (!invitation?.url && !inviteLoading) {
+      dispatch(createInvitationThunk());
+    }
   };
 
   return (
@@ -134,9 +130,9 @@ const InviteFamilyBottomSheet: React.FC<InviteFamilyBottomSheetProps> = ({
         visible={visible}
         transparent
         animationType="slide"
-        onRequestClose={onClose}
+        onRequestClose={isQrModalVisible ? () => setIsQrModalVisible(false) : onClose}
       >
-        <Pressable style={styles.overlay} onPress={onClose}>
+        <Pressable style={styles.overlay} onPress={isQrModalVisible ? () => setIsQrModalVisible(false) : onClose}>
           <Pressable
             style={[
               styles.sheetContainer,
@@ -280,64 +276,59 @@ const InviteFamilyBottomSheet: React.FC<InviteFamilyBottomSheetProps> = ({
             </TouchableOpacity>
           </Pressable>
         </Pressable>
-      </Modal>
 
-      {/* QR Code Presentation Modal */}
-      <Modal
-        visible={isQrModalVisible}
-        transparent
-        animationType="fade"
-        onRequestClose={() => setIsQrModalVisible(false)}
-      >
-        <Pressable
-          style={styles.qrModalOverlay}
-          onPress={() => setIsQrModalVisible(false)}
-        >
+        {/* QR Code Presentation Overlay - Inside the same Modal so it works seamlessly on iOS without modal collision */}
+        {isQrModalVisible && (
           <Pressable
-            style={styles.qrModalContent}
-            onPress={(e) => e.stopPropagation()}
+            style={styles.qrModalOverlay}
+            onPress={() => setIsQrModalVisible(false)}
           >
-            {/* Header Close button */}
-            <TouchableOpacity
-              style={styles.qrCloseButton}
-              onPress={() => setIsQrModalVisible(false)}
-              activeOpacity={0.7}
+            <Pressable
+              style={styles.qrModalContent}
+              onPress={(e) => e.stopPropagation()}
             >
-              <Feather name="x" size={20} color="#FFFFFF" />
-            </TouchableOpacity>
+              {/* Header Close button */}
+              <TouchableOpacity
+                style={styles.qrCloseButton}
+                onPress={() => setIsQrModalVisible(false)}
+                activeOpacity={0.7}
+              >
+                <Feather name="x" size={20} color="#FFFFFF" />
+              </TouchableOpacity>
 
-            <Text style={styles.qrTitle}>Scan to Join Family</Text>
-            <Text style={styles.qrSubtitle}>
-              Scan this QR code with any phone to join {familyName}
-            </Text>
+              <Text style={styles.qrTitle}>Scan to Join Family</Text>
+              <Text style={styles.qrSubtitle}>
+                Scan this QR code with any phone to join {familyName}
+              </Text>
 
-            {/* QR Code Wrapper */}
-            <View style={styles.qrWrapper}>
-              {inviteLoading && !inviteUrl ? (
-                <View style={styles.qrLoadingBox}>
-                  <ActivityIndicator size="large" color={Colors.primary} />
-                  <Text style={styles.qrLoadingText}>Generating QR Code...</Text>
-                </View>
-              ) : (
-                <QRCodeView
-                  value={inviteUrl || `http://192.168.1.8:5000/invite/${familyId}`}
-                  size={200}
-                  padding={12}
-                />
-              )}
-            </View>
+              {/* QR Code Wrapper */}
+              <View style={styles.qrWrapper}>
+                {inviteLoading && !inviteUrl ? (
+                  <View style={styles.qrLoadingBox}>
+                    <ActivityIndicator size="large" color={Colors.primary} />
+                    <Text style={styles.qrLoadingText}>Generating QR Code...</Text>
+                  </View>
+                ) : (
+                  <QRCodeView
+                    value={inviteUrl || `http://192.168.1.8:5000/invite/${familyId}`}
+                    size={200}
+                    padding={12}
+                  />
+                )}
+              </View>
 
-            {/* Family ID Box */}
-            <View style={styles.qrFamilyIdBadge}>
-              <Text style={styles.qrFamilyIdLabel}>FAMILY ID</Text>
-              <Text style={styles.qrFamilyIdText}>{familyId}</Text>
-            </View>
+              {/* Family ID Box */}
+              <View style={styles.qrFamilyIdBadge}>
+                <Text style={styles.qrFamilyIdLabel}>FAMILY ID</Text>
+                <Text style={styles.qrFamilyIdText}>{familyId}</Text>
+              </View>
 
-            <Text style={styles.qrHintText}>
-              Point any camera to scan and open the invitation link.
-            </Text>
+              <Text style={styles.qrHintText}>
+                Point any camera to scan and open the invitation link.
+              </Text>
+            </Pressable>
           </Pressable>
-        </Pressable>
+        )}
       </Modal>
     </>
   );
@@ -369,7 +360,7 @@ const styles = StyleSheet.create({
   sheetTitle: {
     color: '#FFFFFF',
     fontSize: RFValue(18),
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     textAlign: 'center',
     marginBottom: 18,
   },
@@ -391,7 +382,7 @@ const styles = StyleSheet.create({
     color: Colors.textSecondary,
     fontSize: RFValue(11),
     letterSpacing: 1.5,
-    fontWeight: '600',
+    fontFamily: 'Roboto-SemiBold',
     textTransform: 'uppercase',
   },
   previewBody: {
@@ -430,7 +421,7 @@ const styles = StyleSheet.create({
   optionTitle: {
     color: '#FFFFFF',
     fontSize: RFValue(13.5),
-    fontWeight: '600',
+    fontFamily: 'Roboto-SemiBold',
     marginBottom: 2,
   },
   optionSubtitle: {
@@ -451,16 +442,21 @@ const styles = StyleSheet.create({
   doneText: {
     color: Colors.primary,
     fontSize: RFValue(15),
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
   },
 
   // QR Modal Styles
   qrModalOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.8)',
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(0, 0, 0, 0.85)',
     justifyContent: 'center',
     alignItems: 'center',
     padding: 24,
+    zIndex: 100,
   },
   qrModalContent: {
     width: '100%',
@@ -488,7 +484,7 @@ const styles = StyleSheet.create({
   qrTitle: {
     color: '#FFFFFF',
     fontSize: RFValue(17),
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     marginTop: 4,
     textAlign: 'center',
   },
@@ -521,7 +517,7 @@ const styles = StyleSheet.create({
     marginTop: 12,
     color: '#0F2238',
     fontSize: RFValue(12),
-    fontWeight: '500',
+    fontFamily: 'Roboto-Medium',
   },
   qrFamilyIdBadge: {
     backgroundColor: 'rgba(255, 255, 255, 0.06)',
@@ -537,12 +533,12 @@ const styles = StyleSheet.create({
     color: Colors.textSecondary,
     fontSize: RFValue(10),
     letterSpacing: 1.2,
-    fontWeight: '600',
+    fontFamily: 'Roboto-SemiBold',
   },
   qrFamilyIdText: {
     color: '#FFFFFF',
     fontSize: RFValue(15),
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     marginTop: 2,
     letterSpacing: 1,
   },

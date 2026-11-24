@@ -227,7 +227,7 @@ const styles = StyleSheet.create({
   },
   senderNameText: {
     fontSize: 16,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     color: Colors.white,
   },
   timestampText: {
@@ -319,7 +319,7 @@ const styles = StyleSheet.create({
   actionBtnLabel: {
     fontSize: 11,
     color: Colors.white,
-    fontWeight: '500',
+    fontFamily: 'Roboto-Medium',
     textAlign: 'center',
   },
 });

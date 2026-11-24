@@ -346,7 +346,7 @@ const styles = StyleSheet.create({
   },
   headerTitle: {
     fontSize: 17,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     color: '#FFFFFF',
     letterSpacing: -0.2,
     textAlign: 'center',
@@ -383,7 +383,7 @@ const styles = StyleSheet.create({
   },
   noticeBannerText: {
     fontSize: 13,
-    fontWeight: '500',
+    fontFamily: 'Roboto-Medium',
     color: '#F0923A',
   },
   subtitle: {
@@ -453,14 +453,14 @@ const styles = StyleSheet.create({
   },
   avatarText: {
     fontSize: 15,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
   },
   staffInfo: {
     flex: 1,
   },
   staffName: {
     fontSize: 15.5,
-    fontWeight: '600',
+    fontFamily: 'Roboto-SemiBold',
     color: '#FFFFFF',
   },
   staffSubtext: {
@@ -477,14 +477,14 @@ const styles = StyleSheet.create({
   },
   staffBadgeText: {
     fontSize: 11.5,
-    fontWeight: '600',
+    fontFamily: 'Roboto-SemiBold',
   },
   chevron: {
     marginLeft: 2,
   },
   sectionLabel: {
     fontSize: 11,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     color: '#8A9BAE',
     letterSpacing: 1.2,
     textTransform: 'uppercase',
@@ -506,7 +506,7 @@ const styles = StyleSheet.create({
   },
   permissionLabel: {
     fontSize: 15,
-    fontWeight: '500',
+    fontFamily: 'Roboto-Medium',
     color: '#FFFFFF',
   },
   divider: {
@@ -538,7 +538,7 @@ const styles = StyleSheet.create({
   },
   addStaffButtonText: {
     fontSize: 15.5,
-    fontWeight: '600',
+    fontFamily: 'Roboto-SemiBold',
     color: '#FFFFFF',
   },
 });

@@ -3,7 +3,8 @@
   "version": "0.0.1",
   "private": true,
   "scripts": {
-    "android": "react-native run-android",
+    "android": "adb reverse tcp:5000 tcp:5000 && react-native run-android",
+    "reverse": "adb reverse tcp:5000 tcp:5000 && adb reverse tcp:8081 tcp:8081",
     "ios": "react-native run-ios",
     "lint": "eslint .",
     "postinstall": "patch-package",
@@ -28,6 +29,7 @@
     "react": "19.2.3",
     "react-native": "0.87.1",
     "react-native-biometrics": "^3.0.1",
+    "react-native-camera-kit": "^18.0.1",
     "react-native-date-picker": "^5.0.13",
     "react-native-image-crop-picker": "^0.52.0",
     "react-native-responsive-fontsize": "^0.5.1",
