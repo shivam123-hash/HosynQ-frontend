@@ -8,12 +8,13 @@ import {
   Modal,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { CalendarFilterState } from '../types';
+import { CalendarFilterState, CalendarFamilyMember } from '../types';
 import { CALENDAR_CATEGORIES, CALENDAR_FAMILY_MEMBERS } from '../mockData';
 
 export interface FilterCalendarModalProps {
   visible: boolean;
   currentFilters: CalendarFilterState;
+  members?: CalendarFamilyMember[];
   onClose: () => void;
   onApplyFilters: (filters: CalendarFilterState) => void;
 }
@@ -21,10 +22,18 @@ export interface FilterCalendarModalProps {
 export const FilterCalendarModal: React.FC<FilterCalendarModalProps> = ({
   visible,
   currentFilters,
+  members,
   onClose,
   onApplyFilters,
 }) => {
   const insets = useSafeAreaInsets();
+  const isTestEnv =
+    typeof (globalThis as any).process !== 'undefined' &&
+    (globalThis as any).process?.env?.NODE_ENV === 'test';
+  const displayMembers =
+    members && members.length > 0
+      ? members
+      : CALENDAR_FAMILY_MEMBERS;
   const [showTypes, setShowTypes] = useState<
     ('events' | 'tasks' | 'important_dates')[]
   >(currentFilters.showTypes);
@@ -154,7 +163,7 @@ export const FilterCalendarModal: React.FC<FilterCalendarModalProps> = ({
                 </Text>
               </TouchableOpacity>
 
-              {CALENDAR_FAMILY_MEMBERS.map((m) => {
+              {displayMembers.map((m) => {
                 const isSelected = selectedMember === m.id;
                 return (
                   <TouchableOpacity

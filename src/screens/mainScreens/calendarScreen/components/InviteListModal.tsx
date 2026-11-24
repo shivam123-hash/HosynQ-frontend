@@ -10,11 +10,13 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Feather from '@react-native-vector-icons/feather';
+import { CalendarFamilyMember } from '../types';
 import { CALENDAR_FAMILY_MEMBERS } from '../mockData';
 
 export interface InviteListModalProps {
   visible: boolean;
   selectedMemberIds: string[];
+  members?: CalendarFamilyMember[];
   onClose: () => void;
   onSaveInvites: (invitedIds: string[]) => void;
   asModal?: boolean;
@@ -23,6 +25,7 @@ export interface InviteListModalProps {
 export const InviteListModal: React.FC<InviteListModalProps> = ({
   visible,
   selectedMemberIds,
+  members,
   onClose,
   onSaveInvites,
   asModal = true,
@@ -30,6 +33,14 @@ export const InviteListModal: React.FC<InviteListModalProps> = ({
   const insets = useSafeAreaInsets();
   const [invitedIds, setInvitedIds] = useState<string[]>(selectedMemberIds);
   const [askConfirmation, setAskConfirmation] = useState(true);
+
+  const isTestEnv =
+    typeof (globalThis as any).process !== 'undefined' &&
+    (globalThis as any).process?.env?.NODE_ENV === 'test';
+  const displayMembers =
+    members && members.length > 0
+      ? members
+      : CALENDAR_FAMILY_MEMBERS;
 
   useEffect(() => {
     setInvitedIds(selectedMemberIds);
@@ -86,7 +97,7 @@ export const InviteListModal: React.FC<InviteListModalProps> = ({
           contentContainerStyle={styles.scrollContent}
         >
           <View style={styles.membersCard}>
-            {CALENDAR_FAMILY_MEMBERS.map((m, idx) => {
+            {displayMembers.map((m, idx) => {
               const isChecked = invitedIds.includes(m.id);
               const isPriya = m.name === 'Priya';
               const displayName = isPriya ? 'Priya (you)' : m.name;

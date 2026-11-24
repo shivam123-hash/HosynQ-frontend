@@ -23,7 +23,7 @@ export interface EventDetailModalProps {
   onClose: () => void;
   onEditEvent: (event: CalendarEvent) => void;
   onOpenComments: (event: CalendarEvent) => void;
-  onCancelEvent: (event: CalendarEvent) => void;
+  onCancelEvent: (event: CalendarEvent, reason?: string) => void;
   onAddComment?: (eventId: string, commentText: string) => void;
 }
 
@@ -419,10 +419,10 @@ export const EventDetailModal: React.FC<EventDetailModalProps> = ({
           visible={showCancelModal}
           event={cachedEvent || event}
           onClose={() => setShowCancelModal(false)}
-          onConfirmCancel={() => {
+          onConfirmCancel={(id, note) => {
             setShowCancelModal(false);
             handleClose();
-            onCancelEvent(cachedEvent || event);
+            onCancelEvent(cachedEvent || event, note);
           }}
           asModal={false}
         />

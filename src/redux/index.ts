@@ -10,4 +10,7 @@ export * from './features/family/familySlice';
 export * from './features/lifeProfile/lifeProfileSlice';
 export * from './features/medicine/medicineSlice';
 export * from './features/tasks/tasksSlice';
+export * from './features/lists/listsSlice';
+export * from './features/calendar/calendarSlice';
+export * from './features/notifications/notificationsSlice';
 

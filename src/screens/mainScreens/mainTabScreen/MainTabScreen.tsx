@@ -34,6 +34,8 @@ import {
   resetFamilyState,
   resetLifeProfileState,
 } from '../../../redux';
+import { fetchTasks } from '../../../redux/features/tasks/tasksSlice';
+import { fetchCalendarFeed } from '../../../redux/features/calendar/calendarSlice';
 import { clearUserData } from '../../../units/asyncStorageManager';
 
 export interface MainTabScreenProps {
@@ -224,6 +226,12 @@ const MainTabScreen: React.FC<MainTabScreenProps> = ({
         visible={createTaskModalVisible}
         onClose={() => setCreateTaskModalVisible(false)}
         onCreateTask={(_task: Partial<TaskItem>) => {
+          dispatch(
+            fetchTasks({
+              status: 'PENDING',
+              today: new Date().toISOString().slice(0, 10),
+            })
+          );
           setActiveTab('tasks');
           setCreateTaskModalVisible(false);
           showToast('Task added to your family');
@@ -235,6 +243,12 @@ const MainTabScreen: React.FC<MainTabScreenProps> = ({
         visible={createEventModalVisible}
         onClose={() => setCreateEventModalVisible(false)}
         onSaveEvent={(_event: Partial<CalendarEvent>) => {
+          dispatch(
+            fetchCalendarFeed({
+              from: new Date().toISOString().slice(0, 10),
+              to: new Date(Date.now() + 30 * 86400000).toISOString().slice(0, 10),
+            })
+          );
           setActiveTab('calendar');
           setCreateEventModalVisible(false);
           showToast('Event added to your family');

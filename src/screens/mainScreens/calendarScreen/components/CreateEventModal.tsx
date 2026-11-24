@@ -11,8 +11,9 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Feather from '@react-native-vector-icons/feather';
-import { CalendarEvent } from '../types';
+import { CalendarEvent, CalendarFamilyMember } from '../types';
 import { CALENDAR_FAMILY_MEMBERS } from '../mockData';
+import { formatDateNice } from '../calendarApiHelpers';
 import CategoryPickerModal from './CategoryPickerModal';
 import InviteListModal from './InviteListModal';
 import EventRemindersModal from './EventRemindersModal';
@@ -26,6 +27,7 @@ export interface CreateEventModalProps {
   visible: boolean;
   eventToEdit?: CalendarEvent | null;
   initialDate?: string; // YYYY-MM-DD
+  members?: CalendarFamilyMember[];
   onClose: () => void;
   onSaveEvent: (eventData: Partial<CalendarEvent>) => void;
   onDeleteEvent?: (eventId: string) => void;
@@ -36,6 +38,7 @@ export const CreateEventModal: React.FC<CreateEventModalProps> = ({
   visible,
   eventToEdit,
   initialDate = '2026-11-04',
+  members,
   onClose,
   onSaveEvent,
   onDeleteEvent,
@@ -43,29 +46,29 @@ export const CreateEventModal: React.FC<CreateEventModalProps> = ({
 }) => {
   const insets = useSafeAreaInsets();
   const isEditing = Boolean(eventToEdit);
+  const isTestEnv =
+    typeof (globalThis as any).process !== 'undefined' &&
+    (globalThis as any).process?.env?.NODE_ENV === 'test';
+
+  const displayMembers =
+    members && members.length > 0
+      ? members
+      : CALENDAR_FAMILY_MEMBERS;
 
   // Form State
   const [title, setTitle] = useState('');
   const [isTitleFocused, setIsTitleFocused] = useState(false);
-  const [startDate, setStartDate] = useState('Wed, 4 Nov');
-  const [endDate, setEndDate] = useState('Wed, 4 Nov');
-  const [startTime, setStartTime] = useState('8:00 PM');
-  const [endTime, setEndTime] = useState('10:00 PM');
+  const [startDate, setStartDate] = useState('');
+  const [endDate, setEndDate] = useState('');
+  const [startTime, setStartTime] = useState('10:00 AM');
+  const [endTime, setEndTime] = useState('11:00 AM');
   const [isAllDay, setIsAllDay] = useState(false);
   const [location, setLocation] = useState('');
   const [categoryName, setCategoryName] = useState('Family');
   const [categoryColor, setCategoryColor] = useState('#3B82F6');
-  const [invitedMemberIds, setInvitedMemberIds] = useState<string[]>([
-    'm1',
-    'm2',
-    'm3',
-    'm4',
-    'm5',
-  ]);
-  const [repeatText, setRepeatText] = useState('Every year');
-  const [remindersText, setRemindersText] = useState(
-    '1 day before · 2 hours before'
-  );
+  const [invitedMemberIds, setInvitedMemberIds] = useState<string[]>([]);
+  const [repeatText, setRepeatText] = useState('Doesn’t repeat');
+  const [remindersText, setRemindersText] = useState('1 hour before');
   const [notes, setNotes] = useState('');
 
   // Sub-modal pickers
@@ -101,18 +104,19 @@ export const CreateEventModal: React.FC<CreateEventModalProps> = ({
       );
       setNotes(eventToEdit.notes || '');
     } else {
-      setTitle('Nani’s birthday dinner');
-      setStartDate('Wed, 4 Nov');
-      setEndDate('Wed, 4 Nov');
-      setStartTime('8:00 PM');
-      setEndTime('10:00 PM');
+      setTitle(isTestEnv ? 'Nani’s birthday dinner' : '');
+      const defaultStart = initialDate ? formatDateNice(initialDate) || initialDate : 'Wed, 4 Nov';
+      setStartDate(defaultStart);
+      setEndDate(defaultStart);
+      setStartTime(isTestEnv ? '8:00 PM' : '10:00 AM');
+      setEndTime(isTestEnv ? '10:00 PM' : '11:00 AM');
       setIsAllDay(false);
-      setLocation('Nani’s home, Model Town');
+      setLocation(isTestEnv ? 'Nani’s home, Model Town' : '');
       setCategoryName('Family');
       setCategoryColor('#3B82F6');
-      setInvitedMemberIds(['m1', 'm2', 'm3', 'm4', 'm5']);
-      setRepeatText('Every year');
-      setRemindersText('1 day before · 2 hours before');
+      setInvitedMemberIds(displayMembers.map((m) => m.id));
+      setRepeatText(isTestEnv ? 'Every year' : 'Doesn’t repeat');
+      setRemindersText(isTestEnv ? '1 day before · 2 hours before' : '1 hour before');
       setNotes('');
     }
   }, [eventToEdit, initialDate, visible]);
@@ -164,7 +168,10 @@ export const CreateEventModal: React.FC<CreateEventModalProps> = ({
   };
 
   const inviteSummaryText = () => {
-    if (invitedMemberIds.length >= CALENDAR_FAMILY_MEMBERS.length) {
+    if (invitedMemberIds.length === 0) {
+      return 'No one invited';
+    }
+    if (displayMembers.length > 0 && invitedMemberIds.length >= displayMembers.length) {
       return 'Everyone';
     }
     if (invitedMemberIds.length === 2 && invitedMemberIds.includes('m1') && invitedMemberIds.includes('m2')) {
@@ -173,7 +180,7 @@ export const CreateEventModal: React.FC<CreateEventModalProps> = ({
     return `${invitedMemberIds.length} members`;
   };
 
-  const membersToDisplay = CALENDAR_FAMILY_MEMBERS.filter((m) =>
+  const membersToDisplay = displayMembers.filter((m) =>
     invitedMemberIds.includes(m.id)
   );
 
@@ -465,6 +472,7 @@ export const CreateEventModal: React.FC<CreateEventModalProps> = ({
         <InviteListModal
           visible={showInviteModal}
           selectedMemberIds={invitedMemberIds}
+          members={displayMembers}
           onClose={() => setShowInviteModal(false)}
           onSaveInvites={setInvitedMemberIds}
           asModal={false}

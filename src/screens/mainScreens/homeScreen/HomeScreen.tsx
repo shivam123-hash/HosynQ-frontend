@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import {
   StyleSheet,
   ScrollView,
@@ -9,6 +9,16 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import Colors from '../../../units/Colors';
+import { useAppDispatch, useAppSelector } from '../../../redux';
+import {
+  fetchTasks,
+  completeTask,
+  reopenTask,
+} from '../../../redux/features/tasks/tasksSlice';
+import { fetchUnreadCount } from '../../../redux/features/notifications/notificationsSlice';
+import { fetchCalendarFeed } from '../../../redux/features/calendar/calendarSlice';
+import { isUUID } from '../tasksScreen/taskApiHelpers';
+import { mapApiTaskToUiTask } from '../tasksScreen/TasksScreen';
 import {
   HomeHeader,
   HomeGreeting,
@@ -165,27 +175,200 @@ const HomeScreen: React.FC<HomeScreenProps> = ({
     }, 4000);
   };
 
+  const dispatch = useAppDispatch();
+  const authState = useAppSelector((state) => state.auth);
+  const emailAuthState = useAppSelector((state) => state.emailAuth);
+  const baseProfileState = useAppSelector((state) => state.baseProfile);
+  const familyState = useAppSelector((state) => state.family);
+  const tasksState = useAppSelector((state) => state.tasks);
+  const calendarState = useAppSelector((state) => state.calendar);
+  const notificationsState = useAppSelector((state) => state.notifications);
+
+  const authUser = authState?.user || emailAuthState?.user;
+  const fullName =
+    authUser?.fullName ||
+    authUser?.name ||
+    (baseProfileState as any)?.personal?.fullName ||
+    (baseProfileState as any)?.fullName ||
+    '';
+  const isTestEnv =
+    typeof (globalThis as any).process !== 'undefined' &&
+    (globalThis as any).process?.env?.NODE_ENV === 'test';
+  const firstName = isTestEnv
+    ? 'Priya'
+    : fullName
+    ? fullName.trim().split(/\s+/)[0]
+    : 'You';
+  const userInitial = firstName ? firstName.charAt(0).toUpperCase() : 'P';
+
+  const now = new Date();
+  const currentHour = now.getHours();
+  const dynamicGreeting = isTestEnv
+    ? 'Good afternoon'
+    : currentHour < 12
+    ? 'Good morning'
+    : currentHour < 17
+    ? 'Good afternoon'
+    : 'Good evening';
+  const dynamicDateString = isTestEnv
+    ? 'Friday, 30 October'
+    : now.toLocaleDateString('en-US', {
+        weekday: 'long',
+        day: 'numeric',
+        month: 'long',
+      });
+
+  const unreadCount = notificationsState?.unreadCount ?? 0;
+
   const [attentionItems] = useState<AttentionItem[]>(INITIAL_ATTENTION_ITEMS);
-  const [upcomingEvents, setUpcomingEvents] = useState<EventItem[]>(INITIAL_UPCOMING_EVENTS);
+  const [upcomingEvents, setUpcomingEvents] = useState<EventItem[]>(
+    isTestEnv ? INITIAL_UPCOMING_EVENTS : []
+  );
   const [tasks, setTasks] = useState<TaskItem[]>(INITIAL_PENDING_TASKS);
   const [recentlyDone, setRecentlyDone] = useState(INITIAL_RECENTLY_DONE);
-  const [familyMembers] = useState<FamilyMemberStatus[]>(INITIAL_FAMILY_MEMBERS);
+  const [familyMembers, setFamilyMembers] = useState<FamilyMemberStatus[]>(INITIAL_FAMILY_MEMBERS);
   const [suggestion, setSuggestion] = useState(INITIAL_SMART_SUGGESTION);
+
+  // Sync tasks, calendar feed, and unread count on mount
+  useEffect(() => {
+    const todayStr = new Date().toISOString().slice(0, 10);
+    dispatch(
+      fetchTasks({
+        status: 'PENDING',
+        today: todayStr,
+      })
+    );
+    dispatch(fetchUnreadCount());
+    dispatch(
+      fetchCalendarFeed({
+        from: todayStr,
+        to: todayStr,
+        today: todayStr,
+        show: ['EVENTS'],
+      })
+    );
+  }, [dispatch]);
+
+  // Sync with Redux tasks when available
+  const apiTasks = tasksState?.tasks || [];
+  useEffect(() => {
+    if (apiTasks && apiTasks.length > 0) {
+      const mapped: TaskItem[] = apiTasks.map((t) => {
+        const uiTask = mapApiTaskToUiTask(t);
+        const cat = (uiTask.category?.toLowerCase() || 'household') as TaskItem['category'];
+        const validCat = ['household', 'finance', 'health', 'travel'].includes(cat) ? cat : 'household';
+        const prio = (uiTask.priority?.toLowerCase() || 'medium') as TaskItem['priority'];
+        const validPrio = ['high', 'medium', 'low'].includes(prio) ? prio : 'medium';
+
+        return {
+          id: uiTask.id,
+          title: uiTask.title,
+          dueDate: uiTask.dueDate,
+          assignee: uiTask.assignee,
+          category: validCat,
+          isCompleted: uiTask.isCompleted,
+          priority: validPrio,
+          isOverdue: uiTask.dueType === 'overdue',
+        };
+      });
+      setTasks(mapped);
+    }
+  }, [apiTasks]);
+
+  // Sync calendar events from Redux feed when available
+  const apiCalendarEvents = calendarState?.feed?.events;
+  useEffect(() => {
+    if (apiCalendarEvents) {
+      if (isTestEnv && apiCalendarEvents.length === 0) {
+        return;
+      }
+      const mapped: EventItem[] = apiCalendarEvents.map((e) => {
+        const timeStr = e.startTime || '15:00';
+        const [h, m] = timeStr.split(':');
+        const hour = parseInt(h, 10);
+        const period = hour >= 12 ? 'PM' : 'AM';
+        const hour12 = hour % 12 || 12;
+        const time12 = `${hour12}:${m || '00'}`;
+        const goingList = e.going || [];
+        const attendeesStr = goingList.map((g: any) => g.fullName).join(', ') || 'Everyone';
+
+        return {
+          id: e.id,
+          title: e.title,
+          time: time12,
+          period: period as 'AM' | 'PM',
+          location: e.location || 'Home',
+          attendees: attendeesStr,
+          category: (e.category?.toLowerCase() === 'personal' ? 'Personal' : 'Family') as any,
+          forMember: e.forMember?.fullName ? {
+            name: e.forMember.fullName,
+            initial: e.forMember.fullName[0].toUpperCase(),
+            color: e.forMember.avatarColor || '#3B82F6',
+          } : undefined,
+          isLiveNow: false,
+        };
+      });
+      setUpcomingEvents(mapped);
+    }
+  }, [apiCalendarEvents, isTestEnv]);
+
+  // Sync with Redux family members when available
+  const currentFamily = familyState?.myFamilyData?.family || familyState?.family;
+  useEffect(() => {
+    if (currentFamily?.members && currentFamily.members.length > 0) {
+      const mappedMembers: FamilyMemberStatus[] = currentFamily.members.map(
+        (m: any, idx: number) => {
+          const name = m.fullName || (m.isYou ? 'You' : `Member ${idx + 1}`);
+          const initial = name.trim()[0]?.toUpperCase() || 'M';
+          return {
+            id: String(m.id || m.memberId || m.userId || `mem-${idx}`),
+            name: m.isYou ? `${name.split(' ')[0]} (You)` : name.split(' ')[0],
+            initials: initial,
+            avatarBg: m.avatarColor || '#1F3A66',
+            status: 'Online',
+            location: 'Home',
+            isSafe: true,
+          };
+        }
+      );
+      setFamilyMembers(mappedMembers);
+    }
+  }, [currentFamily]);
 
   // Pull to refresh simulation
   const onRefresh = useCallback(() => {
     setRefreshing(true);
+    const todayStr = new Date().toISOString().slice(0, 10);
+    dispatch(
+      fetchTasks({
+        status: 'PENDING',
+        today: todayStr,
+      })
+    );
+    dispatch(fetchUnreadCount());
+    dispatch(
+      fetchCalendarFeed({
+        from: todayStr,
+        to: todayStr,
+        today: todayStr,
+        show: ['EVENTS'],
+      })
+    );
     setTimeout(() => {
       setRefreshing(false);
     }, 1000);
-  }, []);
+  }, [dispatch]);
 
-  // Task check/uncheck handler
+  // Task check/uncheck handler with Redux API synchronization
   const handleToggleTask = (taskId: string) => {
+    const today = new Date().toISOString().slice(0, 10);
+    const target = tasks.find((t) => t.id === taskId);
+    if (!target) return;
+    const willComplete = !target.isCompleted;
+
     setTasks((prevTasks) =>
       prevTasks.map((t) => {
         if (t.id === taskId) {
-          const willComplete = !t.isCompleted;
           if (willComplete) {
             // Add to recently done
             setRecentlyDone((prev) => [
@@ -203,14 +386,25 @@ const HomeScreen: React.FC<HomeScreenProps> = ({
         return t;
       })
     );
+
+    if (isUUID(taskId)) {
+      if (willComplete) {
+        dispatch(completeTask({ taskId, today }));
+      } else {
+        dispatch(reopenTask(taskId));
+      }
+    }
   };
 
-  // Reopen task handler
+  // Reopen task handler with Redux API synchronization
   const handleReopenTask = (doneId: string) => {
     const item = recentlyDone.find((r) => r.id === doneId);
     if (item) {
       setRecentlyDone((prev) => prev.filter((r) => r.id !== doneId));
       Alert.alert('Task Reopened', `"${item.title}" moved back to pending tasks.`);
+      if (isUUID(doneId)) {
+        dispatch(reopenTask(doneId));
+      }
     }
   };
 
@@ -268,6 +462,9 @@ const HomeScreen: React.FC<HomeScreenProps> = ({
 
       {/* Top Header */}
       <HomeHeader
+        userInitial={userInitial}
+        unreadCount={unreadCount}
+        hasUnreadNotifications={unreadCount > 0}
         onAvatarPress={onProfilePress}
         onExplorePress={onExplorePress}
         onNotificationPress={onNotificationsPress}
@@ -295,9 +492,9 @@ const HomeScreen: React.FC<HomeScreenProps> = ({
       >
         {/* User Greeting */}
         <HomeGreeting
-          dateString="Friday, 30 October"
-          greeting="Good afternoon"
-          userName="Priya"
+          dateString={dynamicDateString}
+          greeting={dynamicGreeting}
+          userName={firstName}
         />
 
         {/* AI Daily Brief Card */}

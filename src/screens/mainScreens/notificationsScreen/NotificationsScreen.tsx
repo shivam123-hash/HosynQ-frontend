@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useCallback } from 'react';
+import React, { useState, useMemo, useCallback, useEffect } from 'react';
 import {
   StyleSheet,
   ScrollView,
@@ -7,6 +7,13 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Colors from '../../../units/Colors';
+import { useAppDispatch, useAppSelector } from '../../../redux';
+import {
+  fetchNotifications,
+  markAllNotificationsRead,
+  markNotificationRead,
+} from '../../../redux/features/notifications/notificationsSlice';
+import { NotificationItemData } from '../../../services/notificationServices';
 import {
   NotificationsHeader,
   NotificationsFilterPills,
@@ -18,7 +25,83 @@ import {
   NotificationFilterType,
   NotificationItem,
   NotificationSectionGroup,
+  NotificationCategory,
 } from './types';
+
+const isUUID = (str: string): boolean =>
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(str);
+
+const mapNotificationDataToItem = (item: NotificationItemData): NotificationItem => {
+  const isUnread = !item.readAt;
+  const typeLower = (item.type || '').toLowerCase();
+
+  let category: NotificationCategory = 'general';
+  let iconName = 'bell';
+  let iconBgColor = '#1E293B';
+  let iconColor = '#8EB7F5';
+  let isAvatar = false;
+  let avatarInitial: string | undefined = undefined;
+  let avatarBg: string | undefined = undefined;
+
+  if (typeLower.includes('task')) {
+    category = 'tasks';
+    iconName = 'check-square';
+    iconBgColor = 'rgba(16, 185, 129, 0.15)';
+    iconColor = '#10B981';
+  } else if (
+    typeLower.includes('family') ||
+    typeLower.includes('member') ||
+    typeLower.includes('join')
+  ) {
+    category = 'family';
+    iconName = 'users';
+    iconBgColor = 'rgba(240, 146, 58, 0.15)';
+    iconColor = '#F0913A';
+    isAvatar = true;
+    avatarInitial = item.title ? item.title.trim()[0].toUpperCase() : 'F';
+    avatarBg = '#F0913A';
+  } else if (typeLower.includes('event') || typeLower.includes('calendar')) {
+    category = 'general';
+    iconName = 'calendar';
+    iconBgColor = 'rgba(59, 130, 246, 0.15)';
+    iconColor = '#3B82F6';
+  } else if (typeLower.includes('renew') || typeLower.includes('doc')) {
+    category = 'renewals';
+    iconName = 'file-text';
+    iconBgColor = 'rgba(245, 158, 11, 0.15)';
+    iconColor = '#F59E0B';
+  }
+
+  const diffMs = Date.now() - new Date(item.createdAt).getTime();
+  const diffMins = Math.floor(diffMs / (1000 * 60));
+  const diffHours = Math.floor(diffMins / 60);
+  const diffDays = Math.floor(diffHours / 24);
+
+  let timeAgo = 'Just now';
+  if (diffDays > 0) {
+    timeAgo = `${diffDays}d ago`;
+  } else if (diffHours > 0) {
+    timeAgo = `${diffHours}h ago`;
+  } else if (diffMins > 0) {
+    timeAgo = `${diffMins}m ago`;
+  }
+
+  return {
+    id: item.id,
+    category,
+    iconName,
+    iconBgColor,
+    iconColor,
+    isAvatar,
+    avatarInitial,
+    avatarBg,
+    title: item.title,
+    subtitle: item.body,
+    timestamp: timeAgo,
+    isUnread,
+    actionType: typeLower.includes('join') ? 'join_request' : 'default',
+  };
+};
 
 export interface NotificationsScreenProps {
   isEmpty?: boolean;
@@ -39,10 +122,24 @@ const NotificationsScreen: React.FC<NotificationsScreenProps> = ({
   onApprove,
   onDecline,
 }) => {
+  const dispatch = useAppDispatch();
+  const notificationsState = useAppSelector((state) => state.notifications);
+
   const [selectedFilter, setSelectedFilter] =
     useState<NotificationFilterType>(initialFilter);
   const [notifications, setNotifications] =
     useState<NotificationItem[]>(INITIAL_NOTIFICATIONS);
+
+  useEffect(() => {
+    dispatch(fetchNotifications());
+  }, [dispatch]);
+
+  const apiNotifications = notificationsState?.notifications;
+  useEffect(() => {
+    if (apiNotifications && apiNotifications.length > 0) {
+      setNotifications(apiNotifications.map(mapNotificationDataToItem));
+    }
+  }, [apiNotifications]);
 
   // Count unread notifications
   const unreadCount = useMemo(() => {
@@ -52,13 +149,14 @@ const NotificationsScreen: React.FC<NotificationsScreenProps> = ({
 
   // Mark all notifications as read
   const handleMarkAllRead = useCallback(() => {
+    dispatch(markAllNotificationsRead());
     setNotifications((prev) =>
       prev.map((item) => ({
         ...item,
         isUnread: false,
       }))
     );
-  }, []);
+  }, [dispatch]);
 
   // Filter items based on active pill
   const filteredItems = useMemo<NotificationItem[]>(() => {
@@ -120,9 +218,26 @@ const NotificationsScreen: React.FC<NotificationsScreenProps> = ({
     return result;
   }, [filteredItems]);
 
+  // Handle Item Press (mark single notification as read if UUID)
+  const handleNotificationPress = useCallback(
+    (item: NotificationItem) => {
+      if (item.isUnread && isUUID(item.id)) {
+        dispatch(markNotificationRead(item.id));
+      }
+      setNotifications((prev) =>
+        prev.map((n) => (n.id === item.id ? { ...n, isUnread: false } : n))
+      );
+      onItemPress?.(item);
+    },
+    [dispatch, onItemPress]
+  );
+
   // Handle Approve request
   const handleApprove = useCallback(
     (item: NotificationItem) => {
+      if (isUUID(item.id)) {
+        dispatch(markNotificationRead(item.id));
+      }
       if (onApprove) {
         onApprove(item);
       } else {
@@ -144,12 +259,15 @@ const NotificationsScreen: React.FC<NotificationsScreenProps> = ({
         );
       }
     },
-    [onApprove]
+    [dispatch, onApprove]
   );
 
   // Handle Decline request
   const handleDecline = useCallback(
     (item: NotificationItem) => {
+      if (isUUID(item.id)) {
+        dispatch(markNotificationRead(item.id));
+      }
       if (onDecline) {
         onDecline(item);
       } else {
@@ -171,7 +289,7 @@ const NotificationsScreen: React.FC<NotificationsScreenProps> = ({
         );
       }
     },
-    [onDecline]
+    [dispatch, onDecline]
   );
 
   const isCurrentEmpty = isEmpty || filteredItems.length === 0;
@@ -217,7 +335,7 @@ const NotificationsScreen: React.FC<NotificationsScreenProps> = ({
             <NotificationSectionCard
               key={section.key}
               section={section}
-              onItemPress={onItemPress}
+              onItemPress={handleNotificationPress}
               onApprove={handleApprove}
               onDecline={handleDecline}
             />

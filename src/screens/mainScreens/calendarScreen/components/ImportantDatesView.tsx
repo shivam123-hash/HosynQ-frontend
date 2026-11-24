@@ -208,6 +208,19 @@ export const ImportantDatesView: React.FC<ImportantDatesViewProps> = ({
           </View>
         )}
 
+        {/* Empty state when no important dates */}
+        {filteredDates.length === 0 && (
+          <View style={styles.emptyContainer}>
+            <View style={styles.emptyIconCircle}>
+              <Feather name="calendar" size={32} color="#F0913A" />
+            </View>
+            <Text style={styles.emptyTitle}>No important dates yet</Text>
+            <Text style={styles.emptySubtitle}>
+              Add birthdays, anniversaries, and document renewals so your family never misses a milestone.
+            </Text>
+          </View>
+        )}
+
         {/* Add Important Date Dashed Button (CAL-15) */}
         <TouchableOpacity
           style={styles.addBtnDashed}
@@ -378,5 +391,33 @@ const styles = StyleSheet.create({
     fontSize: 15,
     fontWeight: '700',
     color: '#F0913A',
+  },
+  emptyContainer: {
+    alignItems: 'center',
+    paddingVertical: 40,
+    paddingHorizontal: 24,
+  },
+  emptyIconCircle: {
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    backgroundColor: '#1E2D44',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 16,
+  },
+  emptyTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: '#FFFFFF',
+    marginBottom: 8,
+    textAlign: 'center',
+  },
+  emptySubtitle: {
+    fontSize: 14,
+    color: '#8A97AB',
+    textAlign: 'center',
+    lineHeight: 20,
+    marginBottom: 20,
   },
 });

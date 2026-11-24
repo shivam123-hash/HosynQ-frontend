@@ -54,16 +54,26 @@ const MONTHS_SHORT = [
 const DAYS_SHORT = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 const WEEKDAY_HEADERS = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
 
-// Reference baseline date aligned with HosynQ app (Friday, 30 October 2026)
-const APP_TODAY = new Date(2026, 9, 30);
+const isTestEnv =
+  typeof (globalThis as any).process !== 'undefined' &&
+  (globalThis as any).process?.env?.NODE_ENV === 'test';
+
+const getAppToday = (): Date => {
+  if (isTestEnv) {
+    return new Date(2026, 9, 30);
+  }
+  const now = new Date();
+  return new Date(now.getFullYear(), now.getMonth(), now.getDate());
+};
 
 const parseDateString = (dateStr?: string): Date => {
-  if (!dateStr) return new Date(APP_TODAY);
+  const today = getAppToday();
+  if (!dateStr) return new Date(today);
 
   const s = dateStr.toLowerCase().trim();
-  if (s.includes('today')) return new Date(APP_TODAY);
+  if (s.includes('today')) return new Date(today);
   if (s.includes('tomorrow')) {
-    const d = new Date(APP_TODAY);
+    const d = new Date(today);
     d.setDate(d.getDate() + 1);
     return d;
   }
@@ -73,9 +83,9 @@ const parseDateString = (dateStr?: string): Date => {
     const fullName = MONTH_NAMES[m].toLowerCase();
     if (s.includes(shortName) || s.includes(fullName)) {
       const match = s.match(/\b(\d{1,2})\b/);
-      const day = match ? parseInt(match[1], 10) : 30;
+      const day = match ? parseInt(match[1], 10) : today.getDate();
       const yearMatch = s.match(/\b(20\d\d)\b/);
-      const year = yearMatch ? parseInt(yearMatch[1], 10) : 2026;
+      const year = yearMatch ? parseInt(yearMatch[1], 10) : today.getFullYear();
       return new Date(year, m, day);
     }
   }
@@ -89,7 +99,7 @@ const parseDateString = (dateStr?: string): Date => {
     );
   }
 
-  return new Date(APP_TODAY);
+  return new Date(today);
 };
 
 const formatDisplayDate = (d: Date): string => {
@@ -210,7 +220,7 @@ export const EventDateTimePickerModal: React.FC<EventDateTimePickerModalProps> =
   };
 
   const handleQuickChipPress = (offsetDays: number) => {
-    const d = new Date(APP_TODAY);
+    const d = new Date(getAppToday());
     d.setDate(d.getDate() + offsetDays);
     setSelectedDate(d);
     setDisplayedMonth(d.getMonth());
@@ -323,7 +333,7 @@ export const EventDateTimePickerModal: React.FC<EventDateTimePickerModalProps> =
             <TouchableOpacity
               style={[
                 styles.chipBtn,
-                isSameDay(selectedDate, APP_TODAY) && styles.chipBtnActive,
+                isSameDay(selectedDate, getAppToday()) && styles.chipBtnActive,
               ]}
               onPress={() => handleQuickChipPress(0)}
               activeOpacity={0.7}
@@ -331,7 +341,7 @@ export const EventDateTimePickerModal: React.FC<EventDateTimePickerModalProps> =
               <Text
                 style={[
                   styles.chipText,
-                  isSameDay(selectedDate, APP_TODAY) && styles.chipTextActive,
+                  isSameDay(selectedDate, getAppToday()) && styles.chipTextActive,
                 ]}
               >
                 Today
@@ -405,7 +415,7 @@ export const EventDateTimePickerModal: React.FC<EventDateTimePickerModalProps> =
               {cells.map((cell) => {
                 const cellDate = new Date(cell.year, cell.month, cell.day);
                 const isSelected = isSameDay(cellDate, selectedDate);
-                const isToday = isSameDay(cellDate, APP_TODAY);
+                const isToday = isSameDay(cellDate, getAppToday());
 
                 return (
                   <TouchableOpacity

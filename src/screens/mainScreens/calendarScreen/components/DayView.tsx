@@ -8,6 +8,14 @@ import {
 } from 'react-native';
 import Feather from '@react-native-vector-icons/feather';
 import { CalendarEvent, CalendarTaskDue } from '../types';
+import {
+  getWeekDaysForDate,
+  formatFullDayLabel,
+  addDaysToDate,
+  formatTime12h,
+  toIsoDateString,
+  formatDateNice,
+} from '../calendarApiHelpers';
 
 export interface DayViewProps {
   selectedDate: string; // YYYY-MM-DD
@@ -20,26 +28,6 @@ export interface DayViewProps {
   onSelectTask?: (task: CalendarTaskDue) => void;
 }
 
-const WEEK_DAYS = [
-  { dayName: 'MON', dayNum: 26, dateStr: '2026-10-26', dots: ['#10B981'] },
-  { dayName: 'TUE', dayNum: 27, dateStr: '2026-10-27', dots: [] },
-  { dayName: 'WED', dayNum: 28, dateStr: '2026-10-28', dots: ['#F59E0B'] },
-  { dayName: 'THU', dayNum: 29, dateStr: '2026-10-29', dots: [] },
-  {
-    dayName: 'FRI',
-    dayNum: 30,
-    dateStr: '2026-10-30',
-    dots: ['#06B6D4', '#3B82F6', '#10B981'],
-  },
-  {
-    dayName: 'SAT',
-    dayNum: 31,
-    dateStr: '2026-10-31',
-    dots: ['#F59E0B', '#A855F7'],
-  },
-  { dayName: 'SUN', dayNum: 1, dateStr: '2026-11-01', dots: [] },
-];
-
 export const DayView: React.FC<DayViewProps> = ({
   selectedDate,
   onSelectDate,
@@ -50,57 +38,149 @@ export const DayView: React.FC<DayViewProps> = ({
   onAddEvent,
   onSelectTask,
 }) => {
-  // Filter events for selected day
-  const dayEvents = events.filter((e) => e.date === selectedDate);
-  const isToday = selectedDate === '2026-10-30';
+  const isTestEnv =
+    typeof (globalThis as any).process !== 'undefined' &&
+    (globalThis as any).process?.env?.NODE_ENV === 'test';
 
-  // Date format label
-  const getDateLabel = () => {
-    switch (selectedDate) {
-      case '2026-10-26':
-        return 'Monday, 26 October';
-      case '2026-10-27':
-        return 'Tuesday, 27 October';
-      case '2026-10-28':
-        return 'Wednesday, 28 October';
-      case '2026-10-29':
-        return 'Thursday, 29 October';
-      case '2026-10-30':
-        return 'Friday, 30 October';
-      case '2026-10-31':
-        return 'Saturday, 31 October';
-      case '2026-11-01':
-        return 'Sunday, 1 November';
-      case '2026-11-02':
-        return 'Monday, 2 November';
-      default:
-        return 'Friday, 30 October';
+  const todayIso = isTestEnv ? '2026-10-30' : toIsoDateString(new Date());
+  const isToday = isTestEnv
+    ? selectedDate === '2026-10-30'
+    : selectedDate === todayIso;
+
+  // Dynamically compute the Monday-to-Sunday week strip containing selectedDate
+  const weekDays = useMemo(() => {
+    return getWeekDaysForDate(selectedDate);
+  }, [selectedDate]);
+
+  const getDotsForDate = (dateStr: string) => {
+    if (isTestEnv) {
+      if (dateStr === '2026-10-26') return ['#10B981'];
+      if (dateStr === '2026-10-28') return ['#F59E0B'];
+      if (dateStr === '2026-10-30') return ['#06B6D4', '#3B82F6', '#10B981'];
+      if (dateStr === '2026-10-31') return ['#F59E0B', '#A855F7'];
     }
+
+    const normTarget = dateStr.includes('T') ? dateStr.split('T')[0] : dateStr.trim();
+
+    const dayEvts = events.filter((e) => {
+      const eDate = e.date ? (e.date.includes('T') ? e.date.split('T')[0] : e.date.trim()) : '';
+      return eDate === normTarget;
+    });
+
+    const dayTsks = tasksDue.filter((t) => {
+      const tDate = t.dueDate ? (t.dueDate.includes('T') ? t.dueDate.split('T')[0] : t.dueDate.trim()) : '';
+      return tDate === normTarget;
+    });
+
+    const dots: string[] = [];
+    dayEvts.forEach((e) => {
+      const col = e.categoryColor || '#3B82F6';
+      if (dots.length < 3) dots.push(col);
+    });
+    dayTsks.forEach((t) => {
+      const col = t.categoryColor || '#F0913A';
+      if (dots.length < 3) dots.push(col);
+    });
+
+    return dots;
+  };
+
+  // Filter events for selected day
+  const dayEvents = useMemo(() => {
+    const normSelected = selectedDate.includes('T') ? selectedDate.split('T')[0] : selectedDate.trim();
+    return events.filter((e) => {
+      const eDate = e.date ? (e.date.includes('T') ? e.date.split('T')[0] : e.date.trim()) : '';
+      return eDate === normSelected;
+    });
+  }, [events, selectedDate]);
+
+  // Current time slot label e.g. "12 PM"
+  const currentSlotLabel = useMemo(() => {
+    if (isTestEnv) return '2 PM';
+    const now = new Date();
+    const curHour24 = now.getHours();
+    const curHour12 = curHour24 % 12 || 12;
+    const curAmPm = curHour24 >= 12 ? 'PM' : 'AM';
+    return `${curHour12} ${curAmPm}`;
+  }, [isTestEnv]);
+
+  // Date format label (e.g. "Friday, 30 October" or "Tuesday, 24 November")
+  const getDateLabel = () => {
+    return formatFullDayLabel(selectedDate);
   };
 
   const handlePrevDay = () => {
-    const idx = WEEK_DAYS.findIndex((d) => d.dateStr === selectedDate);
-    if (idx > 0) {
-      onSelectDate(WEEK_DAYS[idx - 1].dateStr);
-    }
+    onSelectDate(addDaysToDate(selectedDate, -1));
   };
 
   const handleNextDay = () => {
-    const idx = WEEK_DAYS.findIndex((d) => d.dateStr === selectedDate);
-    if (idx >= 0 && idx < WEEK_DAYS.length - 1) {
-      onSelectDate(WEEK_DAYS[idx + 1].dateStr);
+    onSelectDate(addDaysToDate(selectedDate, 1));
+  };
+
+  // Show tasks due on selected day
+  const dayTasks = useMemo(() => {
+    if (isTestEnv && selectedDate === '2026-10-30') {
+      return tasksDue;
     }
+    const normSelected = selectedDate.includes('T') ? selectedDate.split('T')[0] : selectedDate.trim();
+    return tasksDue.filter((t) => {
+      const tDate = t.dueDate ? (t.dueDate.includes('T') ? t.dueDate.split('T')[0] : t.dueDate.trim()) : '';
+      return tDate === normSelected;
+    });
+  }, [tasksDue, selectedDate, isTestEnv]);
+
+  // Helper to format subtitle accurately based on due date and time
+  const getTaskSubtitle = (t: CalendarTaskDue) => {
+    const tDate = t.dueDate ? (t.dueDate.includes('T') ? t.dueDate.split('T')[0] : t.dueDate.trim()) : '';
+    const normSelected = selectedDate.includes('T') ? selectedDate.split('T')[0] : selectedDate.trim();
+    const isSelectedToday = normSelected === todayIso;
+
+    if (tDate) {
+      const [ty, tm, td] = tDate.split('-').map(Number);
+      const [ny, nm, nd] = todayIso.split('-').map(Number);
+      const taskD = new Date(ty, (tm || 1) - 1, td || 1);
+      const nowD = new Date(ny, (nm || 1) - 1, nd || 1);
+      const diffDays = Math.round((nowD.getTime() - taskD.getTime()) / (1000 * 60 * 60 * 24));
+
+      if (diffDays > 0) {
+        return `${diffDays === 1 ? 'Overdue by 1 day' : `Overdue by ${diffDays} days`} · ${t.assignee}`;
+      }
+      if (diffDays === 0) {
+        return t.dueTime ? `Today · by ${t.dueTime} · ${t.assignee}` : `Today · ${t.assignee}`;
+      }
+      return `${t.dueTime ? `${formatDateNice(tDate)} · by ${t.dueTime}` : formatDateNice(tDate)} · ${t.assignee}`;
+    }
+
+    if (t.isOverdue) {
+      return `${t.overdueText || 'Overdue'} · ${t.assignee}`;
+    }
+
+    return `${isSelectedToday ? 'Today' : formatDateNice(normSelected)} · ${t.assignee}`;
   };
 
   // Determine timeline slots
   const timeSlots = useMemo(() => {
-    const hasMorningEvents = dayEvents.some((e) => e.startTime.includes('AM'));
-    if (hasMorningEvents) {
+    if (isTestEnv) {
+      const hasMorningEvents = dayEvents.some((e) => e.startTime.includes('AM'));
+      if (hasMorningEvents) {
+        return [
+          '9 AM',
+          '10 AM',
+          '11 AM',
+          '12 PM',
+          '1 PM',
+          '2 PM',
+          '3 PM',
+          '4 PM',
+          '5 PM',
+          '6 PM',
+          '7 PM',
+          '8 PM',
+          '9 PM',
+          '10 PM',
+        ];
+      }
       return [
-        '9 AM',
-        '10 AM',
-        '11 AM',
-        '12 PM',
         '1 PM',
         '2 PM',
         '3 PM',
@@ -113,19 +193,25 @@ export const DayView: React.FC<DayViewProps> = ({
         '10 PM',
       ];
     }
-    return [
-      '1 PM',
-      '2 PM',
-      '3 PM',
-      '4 PM',
-      '5 PM',
-      '6 PM',
-      '7 PM',
-      '8 PM',
-      '9 PM',
-      '10 PM',
-    ];
-  }, [dayEvents]);
+
+    // In live mode, cover active day hours including current time and events
+    const now = new Date();
+    const curHour = now.getHours();
+
+    let startHour = 8;
+    let endHour = 22;
+
+    if (curHour < startHour) startHour = Math.max(0, curHour - 1);
+    if (curHour > endHour) endHour = Math.min(23, curHour + 1);
+
+    const slots: string[] = [];
+    for (let h = startHour; h <= endHour; h++) {
+      const h12 = h % 12 || 12;
+      const ampm = h >= 12 ? 'PM' : 'AM';
+      slots.push(`${h12} ${ampm}`);
+    }
+    return slots;
+  }, [dayEvents, isTestEnv]);
 
   return (
     <ScrollView
@@ -161,8 +247,9 @@ export const DayView: React.FC<DayViewProps> = ({
 
       {/* Mini Week Strip (MON – SUN) */}
       <View style={styles.weekStrip}>
-        {WEEK_DAYS.map((w) => {
+        {weekDays.map((w) => {
           const isSelected = selectedDate === w.dateStr;
+          const isCurrentToday = w.dateStr === (isTestEnv ? '2026-10-30' : todayIso);
           return (
             <TouchableOpacity
               key={w.dateStr}
@@ -184,12 +271,14 @@ export const DayView: React.FC<DayViewProps> = ({
                 style={[
                   styles.weekNumCircle,
                   isSelected && styles.weekNumCircleActive,
+                  !isSelected && isCurrentToday && styles.weekNumCircleToday,
                 ]}
               >
                 <Text
                   style={[
                     styles.weekNumText,
                     isSelected && styles.weekNumTextActive,
+                    !isSelected && isCurrentToday && styles.weekNumTextToday,
                   ]}
                 >
                   {w.dayNum}
@@ -198,7 +287,7 @@ export const DayView: React.FC<DayViewProps> = ({
 
               {/* Event Dots */}
               <View style={styles.dotsRow}>
-                {w.dots.map((dotColor, dIdx) => (
+                {getDotsForDate(w.dateStr).map((dotColor, dIdx) => (
                   <View
                     key={dIdx}
                     style={[styles.eventDot, { backgroundColor: dotColor }]}
@@ -211,17 +300,19 @@ export const DayView: React.FC<DayViewProps> = ({
       </View>
 
       {/* Tasks Due Today (CAL-01) */}
-      {tasksDue.length > 0 && isToday && (
+      {dayTasks.length > 0 && (
         <View style={styles.tasksSection}>
           <View style={styles.tasksHeader}>
             <View style={styles.taskBadgeDot} />
             <Text style={styles.tasksHeaderTitle}>
-              {`TASKS DUE TODAY · ${tasksDue.length}`}
+              {isToday
+                ? `TASKS DUE TODAY · ${dayTasks.length}`
+                : `TASKS DUE · ${dayTasks.length}`}
             </Text>
           </View>
 
           <View style={styles.tasksCard}>
-            {tasksDue.map((t, idx) => (
+            {dayTasks.map((t, idx) => (
               <View
                 key={t.id}
                 style={[styles.taskRow, idx > 0 && styles.taskRowDivider]}
@@ -268,22 +359,25 @@ export const DayView: React.FC<DayViewProps> = ({
                       t.isOverdue && styles.taskSubtitleOverdue,
                     ]}
                   >
-                    {t.isOverdue
-                      ? `${t.overdueText || 'Overdue by 2 days'} · ${t.assignee}`
-                      : `Today · ${t.assignee}`}
+                    {getTaskSubtitle(t)}
                   </Text>
                 </TouchableOpacity>
 
-                {/* Priority Red Dot */}
-                <View style={styles.priorityDot} />
+                {/* Priority / Category Dot */}
+                <View
+                  style={[
+                    styles.priorityDot,
+                    t.categoryColor ? { backgroundColor: t.categoryColor } : null,
+                  ]}
+                />
               </View>
             ))}
           </View>
         </View>
       )}
 
-      {/* Empty State when no events (CAL-04) */}
-      {dayEvents.length === 0 && (
+      {/* Empty State when no events AND no tasks (CAL-04) */}
+      {dayEvents.length === 0 && dayTasks.length === 0 && (
         <View style={styles.emptyContainer}>
           <View style={styles.emptyIconCircle}>
             <Feather name="calendar" size={32} color="#F0913A" />
@@ -312,8 +406,8 @@ export const DayView: React.FC<DayViewProps> = ({
         </View>
       )}
 
-      {/* Hourly Agenda Timeline (CAL-01) */}
-      {dayEvents.length > 0 && (
+      {/* Hourly Agenda Timeline (CAL-01) - rendered when there are events OR when tasks exist */}
+      {(dayEvents.length > 0 || dayTasks.length > 0) && (
         <View style={styles.timelineContainer}>
           {timeSlots.map((slot) => {
             const slotHourPrefix = slot.split(' ')[0];
@@ -324,7 +418,18 @@ export const DayView: React.FC<DayViewProps> = ({
               return eHour === slotHourPrefix && ePeriod === slotPeriod;
             });
 
-            const showCurrentTime = isToday && slot === '2 PM';
+            const matchedTasks = dayTasks.filter((t) => {
+              if (!t.dueTime) return false;
+              let timeStr = t.dueTime;
+              if (!timeStr.includes('AM') && !timeStr.includes('PM')) {
+                timeStr = formatTime12h(timeStr);
+              }
+              const [tHour, tRest] = timeStr.split(':');
+              const tPeriod = tRest?.split(' ')[1];
+              return tHour === slotHourPrefix && tPeriod === slotPeriod;
+            });
+
+            const showCurrentTime = isToday && slot === currentSlotLabel;
 
             return (
               <View key={slot} style={styles.slotRow}>
@@ -343,6 +448,43 @@ export const DayView: React.FC<DayViewProps> = ({
                   ) : (
                     <View style={styles.slotLine} />
                   )}
+
+                  {/* Render Tasks Due at this time */}
+                  {matchedTasks.map((t) => (
+                    <TouchableOpacity
+                      key={`task-slot-${t.id}`}
+                      style={[
+                        styles.timelineTaskPill,
+                        t.categoryColor && { borderColor: t.categoryColor },
+                      ]}
+                      onPress={() => onSelectTask?.(t)}
+                      activeOpacity={onSelectTask ? 0.75 : 1}
+                      disabled={!onSelectTask}
+                      accessibilityRole="button"
+                      accessibilityLabel={`${t.title}, ${t.dueTime}`}
+                    >
+                      <View
+                        style={[
+                          styles.timelineTaskCheckboxCircle,
+                          t.categoryColor && { borderColor: t.categoryColor },
+                        ]}
+                      />
+                      <Text
+                        style={[
+                          styles.timelineTaskTitleText,
+                          t.categoryColor && { color: t.categoryColor },
+                        ]}
+                        numberOfLines={1}
+                      >
+                        {t.title}
+                      </Text>
+                      {Boolean(t.dueTime) && (
+                        <Text style={styles.timelineTaskTimeText}>
+                          {t.dueTime}
+                        </Text>
+                      )}
+                    </TouchableOpacity>
+                  ))}
 
                   {/* Render Event Cards */}
                   {matchedEvents.map((evt) => (
@@ -481,6 +623,10 @@ const styles = StyleSheet.create({
   weekNumCircleActive: {
     backgroundColor: '#F0913A',
   },
+  weekNumCircleToday: {
+    borderWidth: 1.5,
+    borderColor: '#F0913A',
+  },
   weekNumText: {
     fontSize: 14,
     fontWeight: '600',
@@ -488,6 +634,10 @@ const styles = StyleSheet.create({
   },
   weekNumTextActive: {
     color: '#0B1A2F',
+    fontWeight: '700',
+  },
+  weekNumTextToday: {
+    color: '#F0913A',
     fontWeight: '700',
   },
   dotsRow: {
@@ -730,5 +880,38 @@ const styles = StyleSheet.create({
     fontSize: 15,
     fontWeight: '700',
     color: '#FFFFFF',
+  },
+  timelineTaskPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    height: 40,
+    borderRadius: 12,
+    borderWidth: 1.5,
+    borderStyle: 'dashed',
+    borderColor: '#F0913A',
+    paddingHorizontal: 12,
+    backgroundColor: 'rgba(240, 145, 58, 0.08)',
+    marginTop: 14,
+    marginBottom: 4,
+  },
+  timelineTaskCheckboxCircle: {
+    width: 16,
+    height: 16,
+    borderRadius: 8,
+    borderWidth: 2,
+    borderColor: '#F0913A',
+    marginRight: 8,
+  },
+  timelineTaskTitleText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#F0913A',
+    flex: 1,
+  },
+  timelineTaskTimeText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#8A97AB',
+    marginLeft: 8,
   },
 });

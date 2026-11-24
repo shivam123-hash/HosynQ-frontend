@@ -69,6 +69,8 @@ export interface CalendarTaskDue {
   overdueText?: string;
   isCompleted: boolean;
   memberId?: string;
+  category?: string;
+  categoryColor?: string;
 }
 
 export interface ImportantDateItem {

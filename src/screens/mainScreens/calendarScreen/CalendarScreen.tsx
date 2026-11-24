@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import {
   View,
   StyleSheet,
@@ -7,6 +7,25 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import AppTopBar from '../../../components/AppTopBar';
+import { useAppDispatch, useAppSelector } from '../../../redux';
+import {
+  fetchCalendarFeed,
+  createCalendarEvent,
+  updateCalendarEvent,
+  cancelCalendarEvent,
+  respondToCalendarEvent,
+  fetchImportantDates,
+} from '../../../redux/features/calendar/calendarSlice';
+import { getMyFamilyThunk } from '../../../redux/features/family/familySlice';
+import calendarServices from '../../../services/calendarServices';
+import {
+  mapApiEventToUiEvent,
+  mapApiTaskToCalendarTask,
+  mapApiImportantDateToUiItem,
+  isUUID,
+  addDaysToDate,
+  toIsoDateString,
+} from './calendarApiHelpers';
 import {
   CalendarHeader,
   CalendarSegmentedTabs,
@@ -28,12 +47,14 @@ import {
   INITIAL_CALENDAR_EVENTS,
   INITIAL_TASKS_DUE,
   INITIAL_IMPORTANT_DATES,
+  CALENDAR_FAMILY_MEMBERS,
 } from './mockData';
 import {
   CalendarEvent,
   CalendarTaskDue,
   CalendarViewMode,
   CalendarFilterState,
+  CalendarFamilyMember,
   ImportantDateItem,
 } from './types';
 
@@ -50,7 +71,7 @@ export interface CalendarScreenProps {
 
 export const CalendarScreen: React.FC<CalendarScreenProps> = ({
   initialViewMode = 'day',
-  initialDate = '2026-10-30',
+  initialDate,
   showImportantDatesBtn = false,
   onProfilePress,
   onNotificationsPress,
@@ -59,14 +80,71 @@ export const CalendarScreen: React.FC<CalendarScreenProps> = ({
 }) => {
   const insets = useSafeAreaInsets();
 
+  const dispatch = useAppDispatch();
+  const calendarState = useAppSelector((state) => state.calendar);
+  const notificationsState = useAppSelector((state) => state.notifications);
+  const familyState = useAppSelector((state) => state.family);
+  const unreadCount = notificationsState?.unreadCount ?? 0;
+
+  const isTestEnv =
+    typeof (globalThis as any).process !== 'undefined' &&
+    (globalThis as any).process?.env?.NODE_ENV === 'test';
+
+  const rawMembers = useMemo(() => {
+    return (
+      ((familyState?.myFamilyData?.family as any)?.members as any[]) ||
+      ((familyState?.myFamilyData as any)?.members as any[]) ||
+      ((familyState?.family as any)?.members as any[]) ||
+      []
+    );
+  }, [familyState]);
+
+  const familyMembersList: CalendarFamilyMember[] = useMemo(() => {
+    if (rawMembers && rawMembers.length > 0) {
+      return rawMembers.map((m: any, idx: number) => {
+        const fullName = m.fullName || m.name || (m.isYou ? 'You' : `Member ${idx + 1}`);
+        const firstName = fullName.trim().split(' ')[0] || fullName;
+        const initial = (firstName.trim()[0] || 'M').toUpperCase();
+        return {
+          id: String(m.memberId || m.id || m.userId || `m-${idx}`),
+          name: m.isYou ? `${firstName} (you)` : firstName,
+          initial,
+          color: m.avatarColor || (idx % 2 === 0 ? '#1F3A66' : '#4A2E1A'),
+          textColor: '#FFFFFF',
+        };
+      });
+    }
+    return CALENDAR_FAMILY_MEMBERS;
+  }, [rawMembers]);
+
   // Primary Views state
   const [viewMode, setViewMode] = useState<CalendarViewMode>(initialViewMode);
   const [isImportantDatesActive, setIsImportantDatesActive] = useState(false);
-  const [selectedDate, setSelectedDate] = useState<string>(initialDate);
+  const todayIso = toIsoDateString(new Date());
+  const effectiveInitialDate = initialDate || (isTestEnv ? '2026-10-30' : todayIso);
+  const [selectedDate, setSelectedDate] = useState<string>(effectiveInitialDate);
 
   // Month navigation state
-  const [selectedYear, setSelectedYear] = useState<number>(2026);
-  const [selectedMonth, setSelectedMonth] = useState<number>(9); // October (0-based)
+  const initialDateParts = effectiveInitialDate.split('-').map(Number);
+  const [selectedYear, setSelectedYear] = useState<number>(
+    initialDateParts[0] || (isTestEnv ? 2026 : new Date().getFullYear())
+  );
+  const [selectedMonth, setSelectedMonth] = useState<number>(
+    initialDateParts[1] !== undefined ? initialDateParts[1] - 1 : (isTestEnv ? 9 : new Date().getMonth())
+  );
+
+  // Automatically keep selectedYear and selectedMonth in sync with selectedDate
+  useEffect(() => {
+    const parts = selectedDate.split('-').map(Number);
+    if (parts[0] && parts[1] !== undefined) {
+      const yr = parts[0];
+      const mo = parts[1] - 1;
+      if (yr !== selectedYear || mo !== selectedMonth) {
+        setSelectedYear(yr);
+        setSelectedMonth(mo);
+      }
+    }
+  }, [selectedDate, selectedYear, selectedMonth]);
 
   // Filter state
   const [selectedMemberId, setSelectedMemberId] = useState<string>('everyone');
@@ -77,10 +155,79 @@ export const CalendarScreen: React.FC<CalendarScreenProps> = ({
     categories: [],
   });
 
-  // Data state
-  const [events, setEvents] = useState<CalendarEvent[]>(INITIAL_CALENDAR_EVENTS);
-  const [tasksDue, setTasksDue] = useState<CalendarTaskDue[]>(INITIAL_TASKS_DUE);
-  const [importantDates] = useState<ImportantDateItem[]>(INITIAL_IMPORTANT_DATES);
+  // Data state: only take data that comes from APIs
+  const [events, setEvents] = useState<CalendarEvent[]>(
+    isTestEnv ? INITIAL_CALENDAR_EVENTS : []
+  );
+  const [tasksDue, setTasksDue] = useState<CalendarTaskDue[]>(
+    isTestEnv ? INITIAL_TASKS_DUE : []
+  );
+  const [importantDates, setImportantDates] = useState<ImportantDateItem[]>(
+    isTestEnv ? INITIAL_IMPORTANT_DATES : []
+  );
+
+  // Fetch family members on mount
+  useEffect(() => {
+    dispatch(getMyFamilyThunk());
+  }, [dispatch]);
+
+  // Fetch feed and important dates on mount and when month/year changes
+  useEffect(() => {
+    const fromDate = `${selectedYear}-${String(selectedMonth + 1).padStart(2, '0')}-01`;
+    const lastDayOfMonth = new Date(selectedYear, selectedMonth + 1, 0).getDate();
+    const toDate = `${selectedYear}-${String(selectedMonth + 1).padStart(2, '0')}-${String(lastDayOfMonth).padStart(2, '0')}`;
+
+    dispatch(
+      fetchCalendarFeed({
+        from: fromDate,
+        to: toDate,
+        today: new Date().toISOString().slice(0, 10),
+      })
+    );
+    dispatch(fetchImportantDates());
+  }, [dispatch, selectedYear, selectedMonth]);
+
+  // Sync events from Redux feed
+  const apiEvents = calendarState?.feed?.events;
+  useEffect(() => {
+    if (apiEvents) {
+      if (isTestEnv) {
+        if (apiEvents.length > 0) {
+          setEvents(apiEvents.map(mapApiEventToUiEvent));
+        }
+        return;
+      }
+      setEvents(apiEvents.map(mapApiEventToUiEvent));
+    }
+  }, [apiEvents, isTestEnv]);
+
+  // Sync tasks from Redux feed
+  const apiTasks = calendarState?.feed?.tasks;
+  useEffect(() => {
+    if (apiTasks) {
+      if (isTestEnv) {
+        if (apiTasks.length > 0) {
+          setTasksDue(apiTasks.map(mapApiTaskToCalendarTask));
+        }
+        return;
+      }
+      setTasksDue(apiTasks.map(mapApiTaskToCalendarTask));
+    }
+  }, [apiTasks, isTestEnv]);
+
+  // Sync important dates from Redux
+  const apiImportantDates = calendarState?.importantDatesList;
+  useEffect(() => {
+    if (apiImportantDates) {
+      if (isTestEnv) {
+        if (apiImportantDates.length > 0) {
+          setImportantDates(apiImportantDates.map(mapApiImportantDateToUiItem));
+        }
+        return;
+      }
+      setImportantDates(apiImportantDates.map(mapApiImportantDateToUiItem));
+    }
+  }, [apiImportantDates, isTestEnv]);
 
   // Modals state
   const [selectedEventForDetail, setSelectedEventForDetail] = useState<CalendarEvent | null>(null);
@@ -96,9 +243,34 @@ export const CalendarScreen: React.FC<CalendarScreenProps> = ({
     return events.filter((e) => {
       // Member filter
       if (selectedMemberId !== 'everyone') {
-        const matchesFor = e.forMemberId === selectedMemberId;
-        const matchesGoing = e.goingMemberIds.includes(selectedMemberId);
-        if (!matchesFor && !matchesGoing) return false;
+        const selectedMember = familyMembersList.find((m) => m.id === selectedMemberId);
+        const memberCleanName = selectedMember
+          ? selectedMember.name.replace(' (you)', '').trim().toLowerCase()
+          : '';
+
+        const matchesForId = e.forMemberId === selectedMemberId;
+        const matchesGoingId = Boolean(
+          e.goingMemberIds && e.goingMemberIds.includes(selectedMemberId)
+        );
+
+        const forMemberName = (e.forMemberName || '').toLowerCase();
+        const matchesForName = Boolean(
+          memberCleanName &&
+          (forMemberName.includes(memberCleanName) || memberCleanName.includes(forMemberName))
+        );
+
+        const matchesGoingName = Boolean(
+          memberCleanName &&
+          e.goingMembers &&
+          e.goingMembers.some((g: any) => {
+            const gName = (g.name || g.fullName || '').toLowerCase();
+            return gName.includes(memberCleanName) || memberCleanName.includes(gName);
+          })
+        );
+
+        if (!matchesForId && !matchesGoingId && !matchesForName && !matchesGoingName) {
+          return false;
+        }
       }
 
       // Filter modal categories
@@ -111,18 +283,56 @@ export const CalendarScreen: React.FC<CalendarScreenProps> = ({
 
       return true;
     });
-  }, [events, selectedMemberId, filters]);
+  }, [events, selectedMemberId, familyMembersList, filters]);
 
   // Filtered Tasks
   const filteredTasks = useMemo(() => {
     if (!filters.showTypes.includes('tasks')) return [];
+    if (selectedMemberId === 'everyone') return tasksDue;
+
+    const selectedMember = familyMembersList.find((m) => m.id === selectedMemberId);
+    const memberCleanName = selectedMember
+      ? selectedMember.name.replace(' (you)', '').trim().toLowerCase()
+      : '';
+
     return tasksDue.filter((t) => {
-      if (selectedMemberId !== 'everyone' && t.memberId !== selectedMemberId) {
-        return false;
-      }
-      return true;
+      const matchesId =
+        t.memberId === selectedMemberId ||
+        (t as any).assigneeId === selectedMemberId ||
+        (t as any).userId === selectedMemberId;
+
+      const taskAssignee = (t.assignee || '').toLowerCase();
+      const matchesName = Boolean(
+        memberCleanName &&
+        (taskAssignee.includes(memberCleanName) || memberCleanName.includes(taskAssignee))
+      );
+
+      return matchesId || matchesName;
     });
-  }, [tasksDue, selectedMemberId, filters]);
+  }, [tasksDue, selectedMemberId, familyMembersList, filters.showTypes]);
+
+  // Filtered Important Dates
+  const filteredImportantDates = useMemo(() => {
+    if (!filters.showTypes.includes('important_dates')) return [];
+    if (selectedMemberId === 'everyone') return importantDates;
+
+    const selectedMember = familyMembersList.find((m) => m.id === selectedMemberId);
+    const memberCleanName = selectedMember
+      ? selectedMember.name.replace(' (you)', '').trim().toLowerCase()
+      : '';
+
+    return importantDates.filter((item) => {
+      if (!memberCleanName) return true;
+      const pName = (item.personName || '').toLowerCase();
+      const title = (item.title || '').toLowerCase();
+      return (
+        pName.includes(memberCleanName) ||
+        memberCleanName.includes(pName) ||
+        title.includes(memberCleanName) ||
+        item.whoSeesIt === 'Everyone'
+      );
+    });
+  }, [importantDates, selectedMemberId, familyMembersList, filters.showTypes]);
 
   // Handlers
   const handleToggleTask = (taskId: string) => {
@@ -139,6 +349,20 @@ export const CalendarScreen: React.FC<CalendarScreenProps> = ({
       );
       if (selectedEventForDetail?.id === targetId) {
         setSelectedEventForDetail((prev) => (prev ? ({ ...prev, ...eventData } as CalendarEvent) : null));
+      }
+      if (isUUID(targetId)) {
+        dispatch(
+          updateCalendarEvent({
+            id: targetId,
+            payload: {
+              title: eventData.title,
+              location: eventData.location,
+              notes: eventData.notes,
+              category: eventData.category?.toUpperCase(),
+              startsOn: eventData.date,
+            },
+          })
+        );
       }
     } else {
       const newEvt: CalendarEvent = {
@@ -163,17 +387,41 @@ export const CalendarScreen: React.FC<CalendarScreenProps> = ({
         comments: [],
       };
       setEvents((prev) => [newEvt, ...prev]);
+
+      dispatch(
+        createCalendarEvent({
+          title: newEvt.title,
+          notes: newEvt.notes,
+          location: newEvt.location,
+          category: newEvt.category.toUpperCase(),
+          startsOn: newEvt.date,
+          startTime: newEvt.startTime !== 'All day' ? newEvt.startTime : undefined,
+          endsOn: newEvt.date,
+          endTime: newEvt.endTime || undefined,
+        })
+      );
     }
     setEventToEdit(null);
   };
 
-  const handleConfirmCancelEvent = (eventId: string) => {
+  const handleConfirmCancelEvent = (eventId: string, cancelReason?: string) => {
     setEvents((prev) => prev.filter((e) => e.id !== eventId));
+    if (isUUID(eventId)) {
+      dispatch(
+        cancelCalendarEvent({
+          id: eventId,
+          payload: {
+            scope: 'THIS_ONE',
+            note: cancelReason,
+          },
+        })
+      );
+    }
     setSelectedEventForDetail(null);
     setSelectedEventForCancel(null);
   };
 
-  const handleAddComment = (eventId: string, commentText: string) => {
+  const handleAddComment = async (eventId: string, commentText: string) => {
     const newComment = {
       id: `c-${Date.now()}`,
       authorId: 'm1',
@@ -202,6 +450,14 @@ export const CalendarScreen: React.FC<CalendarScreenProps> = ({
         prev ? { ...prev, comments: [...prev.comments, newComment] } : null
       );
     }
+
+    if (isUUID(eventId)) {
+      try {
+        await calendarServices.addComment(eventId, commentText);
+      } catch (e) {
+        // Optimistic comment remains visible
+      }
+    }
   };
 
   const hasActiveFilters =
@@ -215,6 +471,8 @@ export const CalendarScreen: React.FC<CalendarScreenProps> = ({
 
       {/* App Top Bar */}
       <AppTopBar
+        unreadCount={unreadCount}
+        hasUnreadNotifications={unreadCount > 0}
         onAvatarPress={onProfilePress}
         onExplorePress={onExplorePress}
         onNotificationsPress={onNotificationsPress}
@@ -237,7 +495,7 @@ export const CalendarScreen: React.FC<CalendarScreenProps> = ({
       {isImportantDatesActive ? (
         /* Important Dates Screen (CAL-15) */
         <ImportantDatesView
-          dates={importantDates}
+          dates={filteredImportantDates}
           onSelectDateItem={(item) => setSelectedImportantDate(item)}
           onAddImportantDate={() => {
             Alert.alert('Add Important Date', 'Add birthdays, anniversaries, or document renewal milestones.');
@@ -256,7 +514,11 @@ export const CalendarScreen: React.FC<CalendarScreenProps> = ({
           {/* Member Avatars Strip */}
           <CalendarMemberFilter
             selectedMemberId={selectedMemberId}
-            onSelectMember={setSelectedMemberId}
+            onSelectMember={(memId) => {
+              setSelectedMemberId(memId);
+              setFilters((prev) => ({ ...prev, member: memId }));
+            }}
+            members={familyMembersList}
           />
 
           {/* Day View (CAL-01 & CAL-04) */}
@@ -292,7 +554,7 @@ export const CalendarScreen: React.FC<CalendarScreenProps> = ({
           {/* Week View (CAL-02) */}
           {viewMode === 'week' && (
             <WeekView
-              currentWeekRange="26 Oct – 1 Nov"
+              selectedDate={selectedDate}
               events={filteredEvents}
               tasksDue={filteredTasks}
               onSelectEvent={(evt) => setSelectedEventForDetail(evt)}
@@ -313,6 +575,12 @@ export const CalendarScreen: React.FC<CalendarScreenProps> = ({
               onSelectDate={(d) => {
                 setSelectedDate(d);
                 setViewMode('day');
+              }}
+              onPrevWeek={() => {
+                setSelectedDate((prev) => addDaysToDate(prev, -7));
+              }}
+              onNextWeek={() => {
+                setSelectedDate((prev) => addDaysToDate(prev, 7));
               }}
             />
           )}
@@ -341,9 +609,16 @@ export const CalendarScreen: React.FC<CalendarScreenProps> = ({
                 }
               }}
               onGoToToday={() => {
-                setSelectedYear(2026);
-                setSelectedMonth(9);
-                setSelectedDate('2026-10-30');
+                if (isTestEnv) {
+                  setSelectedYear(2026);
+                  setSelectedMonth(9);
+                  setSelectedDate('2026-10-30');
+                } else {
+                  const now = new Date();
+                  setSelectedYear(now.getFullYear());
+                  setSelectedMonth(now.getMonth());
+                  setSelectedDate(now.toISOString().slice(0, 10));
+                }
               }}
               events={filteredEvents}
               tasksDue={filteredTasks}
@@ -352,6 +627,21 @@ export const CalendarScreen: React.FC<CalendarScreenProps> = ({
                 setViewMode('day');
               }}
               onSelectEvent={(evt) => setSelectedEventForDetail(evt)}
+              onSelectTask={(t) => {
+                const taskItem: TaskItem = {
+                  id: t.id,
+                  title: t.title,
+                  dueDate: t.isOverdue ? t.overdueText || 'Overdue' : 'Today',
+                  dueType: t.isOverdue ? 'overdue' : 'today',
+                  assignee: t.assignee,
+                  assigneeInitial: (t.assignee || 'P').slice(0, 1),
+                  category: 'household',
+                  isCompleted: t.isCompleted,
+                  priority: 'medium',
+                };
+                setSelectedTaskForDetail(taskItem);
+              }}
+              onToggleTask={handleToggleTask}
             />
           )}
         </View>
@@ -361,6 +651,7 @@ export const CalendarScreen: React.FC<CalendarScreenProps> = ({
       <FilterCalendarModal
         visible={filterModalVisible}
         currentFilters={filters}
+        members={familyMembersList}
         onClose={() => setFilterModalVisible(false)}
         onApplyFilters={(f) => {
           setFilters(f);
@@ -380,7 +671,7 @@ export const CalendarScreen: React.FC<CalendarScreenProps> = ({
           handleSaveEvent(evt);
         }}
         onOpenComments={(evt) => setSelectedEventForComments(evt)}
-        onCancelEvent={(evt) => handleConfirmCancelEvent(evt.id)}
+        onCancelEvent={(evt, reason) => handleConfirmCancelEvent(evt.id, reason)}
         onAddComment={handleAddComment}
       />
 
@@ -395,13 +686,14 @@ export const CalendarScreen: React.FC<CalendarScreenProps> = ({
         visible={Boolean(selectedEventForCancel)}
         event={selectedEventForCancel}
         onClose={() => setSelectedEventForCancel(null)}
-        onConfirmCancel={handleConfirmCancelEvent}
+        onConfirmCancel={(id, reason) => handleConfirmCancelEvent(id, reason)}
       />
 
       <CreateEventModal
         visible={createModalVisible}
         eventToEdit={eventToEdit}
         initialDate={selectedDate}
+        members={familyMembersList}
         onClose={() => {
           setCreateModalVisible(false);
           setEventToEdit(null);

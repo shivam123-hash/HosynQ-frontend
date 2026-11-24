@@ -135,6 +135,26 @@ const API_ROUTES = {
   LIST_SUGGESTIONS: (listId: string) => `lists/${listId}/suggestions`,
   LIST_ITEMS: (listId: string) => `lists/${listId}/items`,
   LIST_ITEM_BY_ID: (listId: string, itemId: string) => `lists/${listId}/items/${itemId}`,
+
+  // Calendar Management Endpoints
+  CALENDAR_FEED: 'calendar',
+  CALENDAR_AVAILABILITY: 'calendar/availability',
+  CALENDAR_EVENTS: 'calendar/events',
+  CALENDAR_EVENT_BY_ID: (id: string, on?: string) =>
+    `calendar/events/${id}${on ? `?on=${on}` : ''}`,
+  CALENDAR_EVENT_CANCEL: (id: string) => `calendar/events/${id}/cancel`,
+  CALENDAR_EVENT_RESPONSE: (id: string) => `calendar/events/${id}/response`,
+  CALENDAR_EVENT_COMMENTS: (id: string) => `calendar/events/${id}/comments`,
+  CALENDAR_IMPORTANT_DATES: 'calendar/important-dates',
+  CALENDAR_IMPORTANT_DATE_BY_KEY: (key: string) => `calendar/important-dates/${key}`,
+
+  // Notifications Endpoints
+  NOTIFICATIONS: 'notifications',
+  NOTIFICATIONS_UNREAD_COUNT: 'notifications/unread-count',
+  NOTIFICATIONS_READ_ALL: 'notifications/read-all',
+  NOTIFICATION_MARK_READ: (id: string) => `notifications/${id}/read`,
+  NOTIFICATIONS_REGISTER_DEVICE: 'notifications/devices',
+  NOTIFICATIONS_SEND_TEST: 'notifications/test',
 };
 
 export default API_ROUTES;
