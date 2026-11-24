@@ -107,18 +107,18 @@ const styles = StyleSheet.create({
   },
   avatarText: {
     fontSize: 16,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
   },
   memberName: {
     fontSize: 12,
     color: '#8A97AB',
     marginTop: 6,
     textAlign: 'center',
-    fontWeight: '500',
+    fontFamily: 'Roboto-Medium',
   },
   selectedMemberName: {
     color: '#F0913A',
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
   },
 });
 

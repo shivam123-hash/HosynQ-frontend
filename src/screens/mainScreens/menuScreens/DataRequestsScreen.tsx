@@ -206,7 +206,7 @@ const styles = StyleSheet.create({
   },
   topBarTitle: {
     fontSize: 20,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     color: '#FFFFFF',
   },
   topBarRightPlaceholder: {
@@ -254,7 +254,7 @@ const styles = StyleSheet.create({
   },
   actionTitle: {
     fontSize: 15,
-    fontWeight: '600',
+    fontFamily: 'Roboto-SemiBold',
     color: '#FFFFFF',
     marginBottom: 3,
   },
@@ -269,7 +269,7 @@ const styles = StyleSheet.create({
   },
   sectionHeading: {
     fontSize: 13,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     color: '#8A97AB',
     letterSpacing: 1.2,
     textTransform: 'uppercase',
@@ -291,7 +291,7 @@ const styles = StyleSheet.create({
   },
   badgeInProgressText: {
     fontSize: 12,
-    fontWeight: '600',
+    fontFamily: 'Roboto-SemiBold',
     color: '#F7C08E',
   },
   badgeDone: {
@@ -304,7 +304,7 @@ const styles = StyleSheet.create({
   },
   badgeDoneText: {
     fontSize: 12,
-    fontWeight: '600',
+    fontFamily: 'Roboto-SemiBold',
     color: '#6FD9A6',
   },
   footerText: {

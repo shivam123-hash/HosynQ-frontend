@@ -224,7 +224,7 @@ const styles = StyleSheet.create({
   },
   headerTitle: {
     fontSize: 17,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     color: '#FFFFFF',
     letterSpacing: -0.2,
   },
@@ -266,7 +266,7 @@ const styles = StyleSheet.create({
   bannerText: {
     fontSize: 13.5,
     color: '#8A97AB',
-    fontWeight: '500',
+    fontFamily: 'Roboto-Medium',
     flex: 1,
   },
   card: {
@@ -295,7 +295,7 @@ const styles = StyleSheet.create({
   },
   fieldValue: {
     fontSize: 15,
-    fontWeight: '600',
+    fontFamily: 'Roboto-SemiBold',
     color: '#FFFFFF',
   },
   divider: {
@@ -319,7 +319,7 @@ const styles = StyleSheet.create({
   },
   saveButtonText: {
     fontSize: 16,
-    fontWeight: '600',
+    fontFamily: 'Roboto-SemiBold',
     color: '#FFFFFF',
   },
 });

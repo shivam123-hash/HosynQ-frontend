@@ -1,4 +1,4 @@
-import React, { useState, useRef, useCallback } from 'react';
+import React, { useState, useRef, useCallback, useEffect } from 'react';
 import {
   View,
   Text,
@@ -6,12 +6,19 @@ import {
   Pressable,
   StatusBar,
   PanResponder,
+  Animated,
+  Easing,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { RFValue } from 'react-native-responsive-fontsize';
 import Colors from '../../units/Colors';
 import ImagePath from '../../units/ImagePath';
-import { OrbitAnimationVisual, SlideItem } from './components';
+import {
+  OrbitAnimationVisual,
+  SlideItem,
+  RenderSlide,
+  NavButton,
+} from './components';
 
 const ORANGE = '#F0963C';
 const BG = Colors.background || '#0E1A2E';
@@ -32,7 +39,7 @@ export const ONBOARDING_DATA: SlideItem[] = [
   },
   {
     id: '3',
-    title: "Snap It. We'll Sort It.",
+    title: "Snap It. We'll \nSort It.",
     subtitle: 'Scan any document and turn it into tasks and events.',
     image: ImagePath.onBordingGroupImage,
   },
@@ -49,6 +56,54 @@ export interface OnboardingScreenProps {
   onSkip?: () => void;
 }
 
+interface AnimatedSegmentProps {
+  isActive: boolean;
+  onPress?: () => void;
+}
+
+const AnimatedSegment: React.FC<AnimatedSegmentProps> = ({ isActive, onPress }) => {
+  const anim = useRef(new Animated.Value(isActive ? 1 : 0)).current;
+
+  useEffect(() => {
+    Animated.timing(anim, {
+      toValue: isActive ? 1 : 0,
+      duration: 320,
+      easing: Easing.bezier(0.25, 1, 0.5, 1),
+      useNativeDriver: false,
+    }).start();
+  }, [isActive, anim]);
+
+  const width = anim.interpolate({
+    inputRange: [0, 1],
+    outputRange: [20, 36],
+  });
+
+  const backgroundColor = anim.interpolate({
+    inputRange: [0, 1],
+    outputRange: ['#1E2A4A', ORANGE],
+  });
+
+  const opacity = anim.interpolate({
+    inputRange: [0, 1],
+    outputRange: [0.65, 1],
+  });
+
+  return (
+    <Pressable onPress={onPress} hitSlop={{ top: 12, bottom: 12, left: 4, right: 4 }}>
+      <Animated.View
+        style={[
+          styles.segment,
+          {
+            width,
+            backgroundColor,
+            opacity,
+          },
+        ]}
+      />
+    </Pressable>
+  );
+};
+
 const OnboardingScreen: React.FC<OnboardingScreenProps> = ({
   onFinish,
   onSkip,
@@ -60,6 +115,18 @@ const OnboardingScreen: React.FC<OnboardingScreenProps> = ({
   const isReversedNavigation = activePage >= 2;
 
   const page = ONBOARDING_DATA[activePage];
+
+  const textFadeAnim = useRef(new Animated.Value(1)).current;
+
+  useEffect(() => {
+    textFadeAnim.setValue(0);
+    Animated.timing(textFadeAnim, {
+      toValue: 1,
+      duration: 250,
+      easing: Easing.out(Easing.ease),
+      useNativeDriver: true,
+    }).start();
+  }, [activePage, textFadeAnim]);
 
   const goNext = useCallback(() => {
     if (isLast) {
@@ -123,89 +190,42 @@ const OnboardingScreen: React.FC<OnboardingScreenProps> = ({
         {/* Orbit Animated Visual Area */}
         <OrbitAnimationVisual />
 
-        {/* Copy (Title & Description) */}
-        <View style={styles.copy}>
-          <Text style={styles.title}>{page.title}</Text>
-          <Text style={styles.description}>{page.subtitle}</Text>
-        </View>
+        {/* Copy (Title & Description) with Smooth Fade using RenderSlide */}
+        <Animated.View style={{ opacity: textFadeAnim }}>
+          <RenderSlide title={page.title} subtitle={page.subtitle} />
+        </Animated.View>
 
         {/* Bottom Navigation */}
         <View style={styles.navigation}>
-          {/* Pagination Indicators */}
+          {/* Smooth Animated Pagination Indicators */}
           <View style={styles.pagination}>
             {ONBOARDING_DATA.map((item, index) => (
-              <View
+              <AnimatedSegment
                 key={item.id}
-                style={[
-                  styles.segment,
-                  index === activePage && styles.segmentActive,
-                ]}
+                isActive={index === activePage}
+                onPress={() => setActivePage(index)}
               />
             ))}
           </View>
 
-          {/* Controls (< and >) */}
+          {/* Controls (< and >) using NavButton */}
           <View style={styles.controls}>
             {/* Back Button */}
-            <Pressable
-              accessibilityRole="button"
+            <NavButton
+              direction="prev"
               accessibilityLabel="Previous onboarding page"
               disabled={isFirst}
+              variant={isReversedNavigation ? 'filled' : 'outline'}
               onPress={goPrev}
-              style={({ pressed }) => [
-                styles.btn,
-                isReversedNavigation ? styles.btnFilled : styles.btnOutline,
-                isFirst && styles.btnDisabled,
-                pressed && !isFirst && styles.pressed,
-              ]}
-            >
-              <View style={styles.iconCenter}>
-                <Text
-                  style={[
-                    styles.chevron,
-                    {
-                      color: isFirst
-                        ? 'rgba(58, 74, 96, 0.4)'
-                        : isReversedNavigation
-                        ? BG
-                        : '#FFFFFF',
-                    },
-                  ]}
-                >
-                  ‹
-                </Text>
-              </View>
-            </Pressable>
+            />
 
             {/* Next Button */}
-            <Pressable
-              accessibilityRole="button"
+            <NavButton
+              direction="next"
               accessibilityLabel={isLast ? 'Get started' : 'Next onboarding page'}
+              variant={isReversedNavigation || isLast ? 'outline' : 'filled'}
               onPress={goNext}
-              style={({ pressed }) => [
-                styles.btn,
-                isReversedNavigation || isLast
-                  ? styles.btnOutline
-                  : styles.btnFilled,
-                pressed && styles.pressed,
-              ]}
-            >
-              <View style={styles.iconCenter}>
-                <Text
-                  style={[
-                    styles.chevron,
-                    {
-                      color:
-                        isReversedNavigation || isLast
-                          ? '#FFFFFF'
-                          : BG,
-                    },
-                  ]}
-                >
-                  ›
-                </Text>
-              </View>
-            </Pressable>
+            />
           </View>
         </View>
       </View>
@@ -240,31 +260,11 @@ const styles = StyleSheet.create({
   skipText: {
     color: '#8C98AB',
     fontSize: RFValue(13.5),
-    fontWeight: '500',
+    fontFamily: 'Roboto-Medium',
     letterSpacing: 0.1,
   },
   skipPlaceholder: {
     height: 30,
-  },
-  copy: {
-    justifyContent: 'flex-end',
-    marginBottom: 20,
-    marginTop: 8,
-  },
-  title: {
-    color: '#FFFFFF',
-    fontSize: RFValue(24),
-    lineHeight: RFValue(31),
-    fontWeight: '700',
-    marginBottom: 8,
-    textAlign: 'left',
-  },
-  description: {
-    color: '#8C98AB',
-    fontSize: RFValue(12.5),
-    lineHeight: RFValue(18),
-    maxWidth: 320,
-    textAlign: 'left',
   },
   navigation: {
     flexDirection: 'row',
@@ -275,63 +275,17 @@ const styles = StyleSheet.create({
   },
   pagination: {
     flexDirection: 'row',
-    gap: 6,
+    gap: 7,
     alignItems: 'center',
   },
   segment: {
-    width: 24,
-    height: 3.5,
-    borderRadius: 2,
-    backgroundColor: '#1E2A4A',
-  },
-  segmentActive: {
-    backgroundColor: ORANGE,
+    height: 4.5,
+    borderRadius: 2.5,
   },
   controls: {
     flexDirection: 'row',
     justifyContent: 'flex-end',
     gap: 12,
     alignItems: 'center',
-  },
-  btn: {
-    width: 54,
-    height: 54,
-    borderRadius: 27,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  btnFilled: {
-    backgroundColor: '#FFFFFF',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25,
-    shadowRadius: 4,
-    elevation: 3,
-  },
-  btnOutline: {
-    borderWidth: 1.2,
-    borderColor: DISABLED,
-    backgroundColor: 'transparent',
-  },
-  btnDisabled: {
-    borderColor: 'rgba(58, 74, 96, 0.35)',
-    backgroundColor: 'transparent',
-  },
-  pressed: {
-    opacity: 0.75,
-  },
-  iconCenter: {
-    width: 54,
-    height: 54,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  chevron: {
-    includeFontPadding: false,
-    textAlign: 'center',
-    textAlignVertical: 'center',
-    fontSize: RFValue(30),
-    lineHeight: RFValue(30),
-    fontWeight: '400',
   },
 });

@@ -322,7 +322,7 @@ const styles = StyleSheet.create({
   },
   headerTitle: {
     fontSize: 20,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     color: '#FFFFFF',
     letterSpacing: -0.2,
     textAlign: 'center',
@@ -357,7 +357,7 @@ const styles = StyleSheet.create({
   colorPaletteLabel: {
     fontSize: 13,
     color: '#CAD4DF',
-    fontWeight: '500',
+    fontFamily: 'Roboto-Medium',
     marginBottom: 10,
   },
   dotsRow: {
@@ -377,7 +377,7 @@ const styles = StyleSheet.create({
   inputLabel: {
     fontSize: 14,
     color: '#CAD4DF',
-    fontWeight: '500',
+    fontFamily: 'Roboto-Medium',
     marginTop: 18,
     marginBottom: 8,
   },
@@ -400,7 +400,7 @@ const styles = StyleSheet.create({
     flex: 1,
     fontSize: 16,
     color: '#FFFFFF',
-    fontWeight: '500',
+    fontFamily: 'Roboto-Medium',
     padding: 0,
   },
   ageHelperText: {
@@ -412,7 +412,7 @@ const styles = StyleSheet.create({
   roleSectionLabel: {
     fontSize: 12,
     color: '#8997AB',
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     letterSpacing: 1.2,
     textTransform: 'uppercase',
     marginTop: 18,
@@ -443,11 +443,11 @@ const styles = StyleSheet.create({
   },
   roleChipTextActive: {
     color: '#0B1A2F',
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
   },
   roleChipTextInactive: {
     color: '#C8D1DC',
-    fontWeight: '500',
+    fontFamily: 'Roboto-Medium',
   },
   infoNoticeBox: {
     backgroundColor: '#122440',
@@ -485,7 +485,7 @@ const styles = StyleSheet.create({
   },
   toggleTitle: {
     fontSize: 15,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     color: '#FFFFFF',
   },
   toggleSubtitle: {
@@ -509,7 +509,7 @@ const styles = StyleSheet.create({
   },
   addChildButtonText: {
     fontSize: 16,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     color: '#FFFFFF',
   },
 });

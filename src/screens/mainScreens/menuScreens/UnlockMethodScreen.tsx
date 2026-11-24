@@ -244,7 +244,7 @@ const styles = StyleSheet.create({
   },
   topBarTitle: {
     fontSize: 20,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     color: '#FFFFFF',
   },
   topBarRightPlaceholder: {
@@ -299,7 +299,7 @@ const styles = StyleSheet.create({
   },
   optionTitle: {
     fontSize: 15,
-    fontWeight: '600',
+    fontFamily: 'Roboto-SemiBold',
     color: '#FFFFFF',
     marginBottom: 4,
   },
@@ -365,7 +365,7 @@ const styles = StyleSheet.create({
   },
   saveBtnText: {
     fontSize: 16,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     color: '#FFFFFF',
   },
 });

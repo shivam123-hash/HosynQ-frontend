@@ -25,7 +25,7 @@ import {
   fetchLifeProfileSectionThunk,
   fetchLifeProfileFullThunk,
 } from '../../../redux/features/lifeProfile/lifeProfileSlice';
-import { getMyMemberId } from '../../../units/asyncStorageManager';
+import { getMyMemberId } from '../../../units/AsyncStorageManager';
 import { buildGrowthItemPayload } from './vaccinationPayloadUtils';
 
 export interface MeasurementData {
@@ -556,7 +556,7 @@ const styles = StyleSheet.create({
   },
   dateValue: {
     fontSize: RFValue(14.5),
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     color: '#FFFFFF',
   },
   unitSelectorContainer: {
@@ -580,12 +580,12 @@ const styles = StyleSheet.create({
   },
   unitOptionText: {
     fontSize: RFValue(13),
-    fontWeight: '600',
+    fontFamily: 'Roboto-SemiBold',
     color: '#94A3B8',
   },
   unitOptionTextActive: {
     color: '#FFFFFF',
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
   },
   stepperCard: {
     flexDirection: 'row',
@@ -603,12 +603,12 @@ const styles = StyleSheet.create({
   },
   stepperLabel: {
     fontSize: RFValue(15),
-    fontWeight: '600',
+    fontFamily: 'Roboto-SemiBold',
     color: '#8E9BAE',
   },
   stepperLabelActive: {
     color: '#CBD5E1',
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
   },
   stepperControls: {
     flexDirection: 'row',
@@ -631,12 +631,12 @@ const styles = StyleSheet.create({
   },
   stepperValueText: {
     fontSize: RFValue(24),
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     color: '#FFFFFF',
   },
   stepperUnitText: {
     fontSize: RFValue(13.5),
-    fontWeight: '500',
+    fontFamily: 'Roboto-Medium',
     color: '#8E9BAE',
     marginLeft: 4,
   },
@@ -693,7 +693,7 @@ const styles = StyleSheet.create({
   },
   reminderTitle: {
     fontSize: RFValue(14),
-    fontWeight: '600',
+    fontFamily: 'Roboto-SemiBold',
     color: '#FFFFFF',
     marginBottom: 3,
   },

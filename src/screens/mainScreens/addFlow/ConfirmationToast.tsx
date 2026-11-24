@@ -91,7 +91,7 @@ const styles = StyleSheet.create({
   },
   message: {
     fontSize: 14,
-    fontWeight: '600',
+    fontFamily: 'Roboto-SemiBold',
     color: Colors.cardInsetDark,
     marginLeft: 10,
     flexShrink: 1,
@@ -103,7 +103,7 @@ const styles = StyleSheet.create({
   },
   actionText: {
     fontSize: 14,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     color: Colors.amberDark,
   },
 });

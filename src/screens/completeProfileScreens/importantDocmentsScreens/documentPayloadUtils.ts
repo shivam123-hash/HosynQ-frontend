@@ -516,7 +516,17 @@ export const buildInsurancePayload = (
     payload.coveredMemberIds = [];
   }
 
-  payload.reminderLeadDays = [30, 7];
+  payload.reminderLeadDays = Array.isArray(data.reminders)
+    ? mapReminderLeadDays(data.reminders)
+    : [30, 7];
+
+  if (Array.isArray(data.remindMemberIds)) {
+    payload.remindMemberIds = data.remindMemberIds.filter(
+      (id) => typeof id === 'string' && id.trim().length > 0
+    );
+  } else {
+    payload.remindMemberIds = [];
+  }
 
   return payload;
 };
@@ -636,13 +646,32 @@ export const mapDocToPassportFormData = (doc: any) => {
   };
 };
 
-export const mapDocToVisaFormData = (doc: any) => {
+export const mapDocToVisaFormData = (doc: any, allDocs?: any[]) => {
   if (!doc) return null;
+  const linkedId = doc.linkedDocumentId || doc.linkedPassportId || '';
+  let linkedPassportLabel = '';
+  if (linkedId) {
+    if (Array.isArray(allDocs)) {
+      const linkedDoc = allDocs.find((d: any) => d.id === linkedId);
+      if (linkedDoc) {
+        const num = linkedDoc.number || linkedDoc.passportNumber || linkedDoc.docNumber || '';
+        const last4 = linkedDoc.last4 || (num && num.length >= 4 ? num.slice(-4) : num);
+        linkedPassportLabel = last4 ? `Passport ending ${last4}` : (linkedDoc.country ? `${linkedDoc.country} Passport` : 'Passport');
+      }
+    }
+    if (!linkedPassportLabel) {
+      const num = doc.linkedDocumentNumber || doc.linkedPassportNumber;
+      const last4 = doc.linkedPassportLast4 || (num && num.length >= 4 ? num.slice(-4) : num);
+      linkedPassportLabel = last4 ? `Passport ending ${last4}` : 'Passport';
+    }
+  }
+
   return {
     country: doc.country || 'USA',
     visaType: normalizeVisaType(doc.visaType),
     visaNumber: doc.number || (doc.last4 ? `•••• •••• ${doc.last4}` : ''),
-    linkedPassport: doc.linkedDocumentId ? `Passport ID: ${doc.linkedDocumentId}` : 'Passport ending 4567',
+    linkedPassport: linkedPassportLabel,
+    linkedPassportId: linkedId,
     validFrom: doc.issuedOn ? formatDisplayDateFromIso(doc.issuedOn) : '',
     validUntil: doc.expiresOn ? formatDisplayDateFromIso(doc.expiresOn) : '',
     entries: normalizeVisaEntries(doc.visaEntries || doc.entries),
@@ -674,9 +703,20 @@ export const mapDocToDLFormData = (doc: any) => {
     issuingRTO: doc.issuedAt || '',
     vehicleClasses: Array.isArray(doc.vehicleClasses) ? doc.vehicleClasses : ['CAR_LMV'],
     reminders: mapLeadDaysToReminders(doc.reminderLeadDays),
-    frontImageAdded: Boolean(doc.scanId || doc.scan),
-    backImageAdded: false,
+    assignees:
+      typeof doc.assignees === 'string' &&
+      !doc.assignees.match(/[0-9a-f]{8}-[0-9a-f]{4}/i)
+        ? doc.assignees
+        : '',
+    remindMemberIds: Array.isArray(doc.remindMemberIds)
+      ? doc.remindMemberIds
+      : [],
+    autoRenewal: doc.autoRenewalTask ?? true,
+    frontImageAdded: Boolean(doc.scanId || doc.scan || doc.fileUrl || doc.fileId),
+    backImageAdded: Boolean(doc.backFileUrl || doc.backFileId),
     scanId: doc.scanId || '',
+    fileUrl: doc.fileUrl || doc.fileUri || '',
+    frontImageUri: doc.fileUrl || doc.frontImageUri || '',
   };
 };
 
@@ -712,10 +752,19 @@ export const mapDocToInsuranceFormData = (doc: any) => {
     planName: doc.planName || '',
     policyNumber: doc.policyNumber || doc.number || '',
     sumInsured: doc.sumInsured ? `₹${doc.sumInsured.toLocaleString('en-IN')}` : '',
-    premiumPerYear: doc.premiumAmount ? `₹${doc.premiumAmount.toLocaleString('en-IN')}` : '',
+    premiumPerYear: doc.annualPremium || doc.premiumAmount ? `₹${(doc.annualPremium || doc.premiumAmount).toLocaleString('en-IN')}` : '',
     renewalDate: doc.expiresOn ? formatDisplayDateFromIso(doc.expiresOn) : '',
     saveInFamilyVault: doc.saveToFamilyVault ?? true,
     remindRenewal: Boolean(doc.renewalReminderLeadDays && doc.renewalReminderLeadDays.length > 0),
+    coveredMemberIds: Array.isArray(doc.coveredMemberIds) ? doc.coveredMemberIds : [],
+    coveredNames: '',
+    reminders: mapLeadDaysToReminders(doc.reminderLeadDays || doc.renewalReminderLeadDays),
+    remindMemberIds: Array.isArray(doc.remindMemberIds) ? doc.remindMemberIds : [],
+    assignees:
+      typeof doc.assignees === 'string' &&
+      !doc.assignees.match(/[0-9a-f]{8}-[0-9a-f]{4}/i)
+        ? doc.assignees
+        : '',
     frontImageAdded: Boolean(doc.scanId || doc.scan),
     backImageAdded: false,
     scanId: doc.scanId || '',

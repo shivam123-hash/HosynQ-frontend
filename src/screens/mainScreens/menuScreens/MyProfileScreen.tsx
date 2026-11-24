@@ -216,7 +216,7 @@ const styles = StyleSheet.create({
   },
   topBarTitle: {
     fontSize: 20,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     color: '#FFFFFF',
   },
   scrollView: {
@@ -244,7 +244,7 @@ const styles = StyleSheet.create({
   },
   avatarInitial: {
     fontSize: 34,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     color: '#FFFFFF',
   },
   cameraBadge: {
@@ -262,7 +262,7 @@ const styles = StyleSheet.create({
   },
   profileName: {
     fontSize: 20,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     color: '#FFFFFF',
     marginBottom: 4,
   },
@@ -300,7 +300,7 @@ const styles = StyleSheet.create({
   },
   rowValue: {
     fontSize: 15,
-    fontWeight: '600',
+    fontFamily: 'Roboto-SemiBold',
     color: '#FFFFFF',
   },
   divider: {
@@ -332,7 +332,7 @@ const styles = StyleSheet.create({
   },
   lifeProfileTitle: {
     fontSize: 15,
-    fontWeight: '600',
+    fontFamily: 'Roboto-SemiBold',
     color: '#FFFFFF',
     marginBottom: 3,
   },

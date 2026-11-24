@@ -849,7 +849,7 @@ const styles = StyleSheet.create({
   },
   headerTitle: {
     fontSize: 18,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     color: '#CAD4DF',
   },
   scrollContent: {
@@ -877,7 +877,7 @@ const styles = StyleSheet.create({
   },
   overdueTitle: {
     fontSize: 15,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     color: '#F06A6A',
     marginBottom: 4,
   },
@@ -904,7 +904,7 @@ const styles = StyleSheet.create({
   },
   bannerActionText: {
     fontSize: 13,
-    fontWeight: '600',
+    fontFamily: 'Roboto-SemiBold',
     color: '#F06A6A',
   },
   completedBanner: {
@@ -928,12 +928,12 @@ const styles = StyleSheet.create({
   },
   completedTitle: {
     fontSize: 15,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     color: '#6FDAA6',
   },
   completedSubtitle: {
     fontSize: 13,
-    fontWeight: '400',
+    fontFamily: 'Roboto-Regular',
     color: '#CBD2D9',
     marginTop: 4,
   },
@@ -970,11 +970,11 @@ const styles = StyleSheet.create({
   },
   badgeText: {
     fontSize: 12,
-    fontWeight: '600',
+    fontFamily: 'Roboto-SemiBold',
   },
   taskTitle: {
     fontSize: 26,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     color: '#CAD4DF',
     lineHeight: 32,
     marginBottom: 6,
@@ -1022,7 +1022,7 @@ const styles = StyleSheet.create({
   },
   infoValue: {
     fontSize: 15,
-    fontWeight: '600',
+    fontFamily: 'Roboto-SemiBold',
     color: '#CAD4DF',
   },
   overdueValueText: {
@@ -1054,7 +1054,7 @@ const styles = StyleSheet.create({
   },
   assigneeMiniText: {
     fontSize: 12,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
   },
   viewersBadgeRow: {
     flexDirection: 'row',
@@ -1095,7 +1095,7 @@ const styles = StyleSheet.create({
   },
   stackedAvatarText: {
     fontSize: 10,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
   },
   createdByText: {
     fontSize: 13,
@@ -1114,7 +1114,7 @@ const styles = StyleSheet.create({
   },
   notesLabel: {
     fontSize: 11,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     letterSpacing: 1.2,
     color: '#8A97AB',
     marginBottom: 6,
@@ -1135,12 +1135,12 @@ const styles = StyleSheet.create({
   },
   commentsTitle: {
     fontSize: 16,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     color: '#CAD4DF',
   },
   viewAllText: {
     fontSize: 14,
-    fontWeight: '600',
+    fontFamily: 'Roboto-SemiBold',
     color: '#F0913A',
   },
   commentItem: {
@@ -1157,7 +1157,7 @@ const styles = StyleSheet.create({
   },
   commentAvatarText: {
     fontSize: 14,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
   },
   commentBody: {
     flex: 1,
@@ -1170,7 +1170,7 @@ const styles = StyleSheet.create({
   },
   commentAuthor: {
     fontSize: 13,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     color: '#CAD4DF',
   },
   commentTime: {
@@ -1217,12 +1217,12 @@ const styles = StyleSheet.create({
   },
   toastText: {
     fontSize: 15,
-    fontWeight: '600',
+    fontFamily: 'Roboto-SemiBold',
     color: '#0B1A2F',
   },
   toastUndoText: {
     fontSize: 15,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     color: '#F0913A',
   },
   bottomBar: {
@@ -1249,7 +1249,7 @@ const styles = StyleSheet.create({
   },
   reassignBtnText: {
     fontSize: 16,
-    fontWeight: '600',
+    fontFamily: 'Roboto-SemiBold',
     color: '#CAD4DF',
   },
   markDoneBtn: {
@@ -1264,7 +1264,7 @@ const styles = StyleSheet.create({
   },
   markDoneBtnText: {
     fontSize: 16,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     color: Colors.white,
   },
   writeCommentPill: {
@@ -1294,7 +1294,7 @@ const styles = StyleSheet.create({
   },
   reopenTaskBtnText: {
     fontSize: 16,
-    fontWeight: '600',
+    fontFamily: 'Roboto-SemiBold',
     color: '#CAD4DF',
   },
 });

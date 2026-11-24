@@ -510,7 +510,7 @@ const styles = StyleSheet.create({
   },
   headerTitle: {
     fontSize: 18,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     color: Colors.white,
     letterSpacing: -0.2,
     textAlign: 'center',
@@ -538,7 +538,7 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: Colors.textSubtle,
     marginBottom: 8,
-    fontWeight: '500',
+    fontFamily: 'Roboto-Medium',
   },
   inputBox: {
     backgroundColor: Colors.cardBackground,
@@ -552,7 +552,7 @@ const styles = StyleSheet.create({
   },
   textInput: {
     fontSize: 18,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     color: Colors.white,
     lineHeight: 25,
     padding: 0,
@@ -583,16 +583,16 @@ const styles = StyleSheet.create({
   },
   segmentText: {
     fontSize: 15,
-    fontWeight: '600',
+    fontFamily: 'Roboto-SemiBold',
     color: Colors.textSubtle,
   },
   segmentTextActive: {
     color: Colors.cardInsetDark,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
   },
   sectionHeading: {
     fontSize: 12,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     color: Colors.textPlaceholder,
     letterSpacing: 1,
     marginBottom: 12,
@@ -625,11 +625,11 @@ const styles = StyleSheet.create({
   },
   chipTextSelected: {
     color: Colors.cardInsetDark,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
   },
   chipTextUnselected: {
     color: Colors.white,
-    fontWeight: '600',
+    fontFamily: 'Roboto-SemiBold',
   },
   cardContainer: {
     backgroundColor: Colors.cardBackground,
@@ -657,7 +657,7 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: Colors.textTertiaryAlt,
     marginBottom: 4,
-    fontWeight: '500',
+    fontFamily: 'Roboto-Medium',
   },
   avatarRow: {
     flexDirection: 'row',
@@ -674,12 +674,12 @@ const styles = StyleSheet.create({
   },
   avatarText: {
     fontSize: 12,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     color: Colors.amberLight,
   },
   rowValue: {
     fontSize: 17,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     color: Colors.white,
   },
   rowDivider: {
@@ -710,7 +710,7 @@ const styles = StyleSheet.create({
   },
   hintLink: {
     color: Colors.textLightMutedAlt,
-    fontWeight: '600',
+    fontFamily: 'Roboto-SemiBold',
     textDecorationLine: 'underline',
   },
   bottomBar: {
@@ -727,7 +727,7 @@ const styles = StyleSheet.create({
   },
   submitBtnText: {
     fontSize: 16,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     color: Colors.white,
   },
   pickerOverlay: {
@@ -757,7 +757,7 @@ const styles = StyleSheet.create({
   },
   pickerTitle: {
     fontSize: 20,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     color: Colors.white,
     marginBottom: 4,
   },
@@ -787,7 +787,7 @@ const styles = StyleSheet.create({
   pickerRowText: {
     flex: 1,
     fontSize: 16,
-    fontWeight: '600',
+    fontFamily: 'Roboto-SemiBold',
     color: Colors.white,
     marginLeft: 12,
   },

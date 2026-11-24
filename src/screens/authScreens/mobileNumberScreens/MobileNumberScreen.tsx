@@ -251,7 +251,7 @@ const styles = StyleSheet.create({
   },
   title: {
     fontSize: RFValue(21),
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     color: Colors.text,
     textAlign: 'center',
     marginBottom: 8,

@@ -316,7 +316,7 @@ const styles = StyleSheet.create({
   },
   monthTitleText: {
     fontSize: 20,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     color: '#FFFFFF',
     letterSpacing: -0.3,
   },
@@ -337,7 +337,7 @@ const styles = StyleSheet.create({
   },
   todayPillText: {
     fontSize: 13,
-    fontWeight: '600',
+    fontFamily: 'Roboto-SemiBold',
     color: '#CAD4DF',
   },
   chevronBtn: {
@@ -360,7 +360,7 @@ const styles = StyleSheet.create({
   },
   weekdayHeaderText: {
     fontSize: 11,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     color: '#8A97AB',
     letterSpacing: 0.8,
   },
@@ -391,7 +391,7 @@ const styles = StyleSheet.create({
   },
   dayNumberText: {
     fontSize: 15,
-    fontWeight: '600',
+    fontFamily: 'Roboto-SemiBold',
     color: '#FFFFFF',
   },
   dayNumberTextOtherMonth: {
@@ -399,7 +399,7 @@ const styles = StyleSheet.create({
   },
   dayNumberTextToday: {
     color: '#0B1A2F',
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
   },
   markersRow: {
     flexDirection: 'row',
@@ -454,7 +454,7 @@ const styles = StyleSheet.create({
   },
   legendText: {
     fontSize: 12,
-    fontWeight: '500',
+    fontFamily: 'Roboto-Medium',
     color: '#8A97AB',
   },
 });

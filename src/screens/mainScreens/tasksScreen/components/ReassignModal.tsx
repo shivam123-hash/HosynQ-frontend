@@ -173,14 +173,14 @@ const styles = StyleSheet.create({
   },
   avatarText: {
     fontSize: Typography.size.bodyMedium,
-    fontWeight: Typography.weight.bold,
+    fontFamily: 'Roboto-Bold',
   },
   memberInfo: {
     flex: 1,
   },
   memberName: {
     fontSize: Typography.size.bodyMedium,
-    fontWeight: Typography.weight.semiBold,
+    fontFamily: 'Roboto-SemiBold',
     color: Colors.textLightMutedAlt,
   },
   memberSub: {
@@ -215,7 +215,7 @@ const styles = StyleSheet.create({
   },
   switchLabel: {
     fontSize: Typography.size.bodyMedium,
-    fontWeight: Typography.weight.semiBold,
+    fontFamily: 'Roboto-SemiBold',
     color: Colors.textLightMutedAlt,
   },
 });

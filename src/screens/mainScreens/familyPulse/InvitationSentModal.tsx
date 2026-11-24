@@ -228,7 +228,7 @@ const styles = StyleSheet.create({
   },
   headlineText: {
     fontSize: 22,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     color: '#FFFFFF',
     letterSpacing: -0.2,
     textAlign: 'center',
@@ -261,7 +261,7 @@ const styles = StyleSheet.create({
   },
   avatarText: {
     fontSize: 18,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     color: '#D4B8F5',
   },
   inviteeInfo: {
@@ -270,7 +270,7 @@ const styles = StyleSheet.create({
   },
   inviteeName: {
     fontSize: 16,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     color: '#FFFFFF',
     letterSpacing: -0.1,
   },
@@ -289,7 +289,7 @@ const styles = StyleSheet.create({
   },
   waitingBadgeText: {
     fontSize: 13,
-    fontWeight: '600',
+    fontFamily: 'Roboto-SemiBold',
     color: '#F7C08E',
   },
   bottomActionsContainer: {
@@ -309,7 +309,7 @@ const styles = StyleSheet.create({
   },
   doneButtonText: {
     fontSize: 16,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     color: '#FFFFFF',
   },
   shareLinkButton: {
@@ -327,7 +327,7 @@ const styles = StyleSheet.create({
   },
   shareLinkButtonText: {
     fontSize: 16,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     color: '#FFFFFF',
   },
   inviteAnotherButton: {
@@ -338,7 +338,7 @@ const styles = StyleSheet.create({
   },
   inviteAnotherText: {
     fontSize: 15,
-    fontWeight: '600',
+    fontFamily: 'Roboto-SemiBold',
     color: '#F0913A',
   },
 });

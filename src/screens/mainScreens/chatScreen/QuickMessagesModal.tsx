@@ -192,7 +192,7 @@ const styles = StyleSheet.create({
   },
   sheetTitle: {
     fontSize: 20,
-    fontWeight: '800',
+    fontFamily: 'Roboto-Bold',
     color: Colors.white,
     letterSpacing: -0.3,
     marginBottom: 4,
@@ -240,7 +240,7 @@ const styles = StyleSheet.create({
   },
   itemTitle: {
     fontSize: 15,
-    fontWeight: '600',
+    fontFamily: 'Roboto-SemiBold',
     color: Colors.white,
   },
   itemSubtitle: {
@@ -263,7 +263,7 @@ const styles = StyleSheet.create({
   editText: {
     color: Colors.primary,
     fontSize: 15,
-    fontWeight: '600',
+    fontFamily: 'Roboto-SemiBold',
   },
 });
 

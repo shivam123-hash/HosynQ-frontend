@@ -219,7 +219,7 @@ const styles = StyleSheet.create({
   },
   topBarTitle: {
     fontSize: 20,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     color: Colors.white,
     letterSpacing: -0.3,
   },
@@ -232,7 +232,7 @@ const styles = StyleSheet.create({
   },
   sectionLabel: {
     fontSize: 12,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     color: Colors.textSecondaryMuted,
     letterSpacing: 1.2,
     marginBottom: 12,
@@ -262,15 +262,15 @@ const styles = StyleSheet.create({
   },
   chipTextActive: {
     color: '#0A111E',
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
   },
   chipTextInactive: {
     color: '#CAD4DF',
-    fontWeight: '500',
+    fontFamily: 'Roboto-Medium',
   },
   inputLabel: {
     fontSize: 14,
-    fontWeight: '600',
+    fontFamily: 'Roboto-SemiBold',
     color: Colors.white,
     marginTop: 18,
     marginBottom: 10,
@@ -295,7 +295,7 @@ const styles = StyleSheet.create({
   },
   sectionLabelInline: {
     fontSize: 12,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     color: Colors.textSecondaryMuted,
     letterSpacing: 1.2,
   },
@@ -344,7 +344,7 @@ const styles = StyleSheet.create({
   },
   deviceInfoTitle: {
     fontSize: 15,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     color: Colors.white,
   },
   deviceInfoSubtitle: {
@@ -378,7 +378,7 @@ const styles = StyleSheet.create({
   },
   sendButtonText: {
     fontSize: 16,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     color: Colors.white,
   },
 });

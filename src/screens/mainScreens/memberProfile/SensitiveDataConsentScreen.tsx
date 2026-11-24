@@ -252,7 +252,7 @@ const styles = StyleSheet.create({
   },
   heading: {
     fontSize: 24,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     color: '#FFFFFF',
     textAlign: 'center',
     letterSpacing: -0.3,
@@ -296,7 +296,7 @@ const styles = StyleSheet.create({
   rowText: {
     flex: 1,
     fontSize: 15,
-    fontWeight: '500',
+    fontFamily: 'Roboto-Medium',
     color: '#FFFFFF',
     lineHeight: 21,
   },
@@ -336,7 +336,7 @@ const styles = StyleSheet.create({
   },
   linkText: {
     color: '#F0923A',
-    fontWeight: '600',
+    fontFamily: 'Roboto-SemiBold',
   },
   bottomBar: {
     borderTopWidth: 1,
@@ -358,7 +358,7 @@ const styles = StyleSheet.create({
   },
   agreeButtonText: {
     fontSize: 16,
-    fontWeight: '600',
+    fontFamily: 'Roboto-SemiBold',
     color: '#FFFFFF',
   },
   notNowButton: {
@@ -368,7 +368,7 @@ const styles = StyleSheet.create({
   },
   notNowButtonText: {
     fontSize: 15,
-    fontWeight: '600',
+    fontFamily: 'Roboto-SemiBold',
     color: '#F0923A',
   },
 });

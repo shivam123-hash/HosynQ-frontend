@@ -111,7 +111,7 @@ const styles = StyleSheet.create({
   },
   title: {
     fontSize: 26,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     color: Colors.white,
     textAlign: 'center',
     marginTop: 36,
@@ -141,7 +141,7 @@ const styles = StyleSheet.create({
   },
   welcomeButtonText: {
     fontSize: 16,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     color: Colors.white,
   },
 });

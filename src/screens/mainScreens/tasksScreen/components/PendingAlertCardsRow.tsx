@@ -112,14 +112,14 @@ const styles = StyleSheet.create({
   },
   cardEyebrow: {
     fontSize: 11,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     letterSpacing: 1.2,
     color: '#8A97AB',
     marginBottom: 2,
   },
   cardValue: {
     fontSize: 16,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     color: '#FFFFFF',
   },
 });

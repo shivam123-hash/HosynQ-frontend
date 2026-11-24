@@ -20,7 +20,7 @@ import {
   getMyMemberId,
   saveMyMemberId,
   clearUserData,
-} from './src/units/asyncStorageManager';
+} from './src/units/AsyncStorageManager';
 
 function AppContent() {
   const [isCheckingAuth, setIsCheckingAuth] = useState(true);

@@ -142,7 +142,7 @@ const styles = StyleSheet.create({
   },
   screenTitle: {
     fontSize: 30,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     color: '#FFFFFF',
     letterSpacing: -0.5,
   },

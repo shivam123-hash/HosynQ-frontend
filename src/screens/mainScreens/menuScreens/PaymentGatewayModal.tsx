@@ -130,13 +130,13 @@ const styles = StyleSheet.create({
   },
   gatewayLabelText: {
     fontSize: 11,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     color: '#8A97AB',
     letterSpacing: 1.2,
   },
   sheetTitle: {
     fontSize: 22,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     color: '#FFFFFF',
     textAlign: 'center',
     marginBottom: 8,
@@ -161,7 +161,7 @@ const styles = StyleSheet.create({
   },
   methodTitle: {
     fontSize: 15,
-    fontWeight: '600',
+    fontFamily: 'Roboto-SemiBold',
     color: '#FFFFFF',
   },
   footerNoteContainer: {
@@ -174,7 +174,7 @@ const styles = StyleSheet.create({
   },
   footerNoteBadge: {
     fontSize: 11,
-    fontWeight: '800',
+    fontFamily: 'Roboto-Bold',
     color: '#F0913A',
     letterSpacing: 1.2,
     marginBottom: 8,

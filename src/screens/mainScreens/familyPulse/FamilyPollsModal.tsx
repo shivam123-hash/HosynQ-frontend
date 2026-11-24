@@ -418,7 +418,7 @@ const styles = StyleSheet.create({
   },
   headerTitle: {
     fontSize: 18,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     color: Colors.white,
     letterSpacing: -0.2,
   },
@@ -447,7 +447,7 @@ const styles = StyleSheet.create({
   },
   tabText: {
     fontSize: 14,
-    fontWeight: '600',
+    fontFamily: 'Roboto-SemiBold',
     color: Colors.textSecondary,
   },
   tabTextActive: {
@@ -490,12 +490,12 @@ const styles = StyleSheet.create({
   authorAvatarText: {
     color: Colors.white,
     fontSize: 12,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
   },
   authorText: {
     color: Colors.textSecondary,
     fontSize: 13,
-    fontWeight: '500',
+    fontFamily: 'Roboto-Medium',
     flexShrink: 1,
   },
   votedBadge: {
@@ -508,7 +508,7 @@ const styles = StyleSheet.create({
   votedBadgeText: {
     color: Colors.accentTeal,
     fontSize: 12,
-    fontWeight: '600',
+    fontFamily: 'Roboto-SemiBold',
   },
   voteNowBadge: {
     paddingHorizontal: 12,
@@ -520,11 +520,11 @@ const styles = StyleSheet.create({
   voteNowBadgeText: {
     color: Colors.primary,
     fontSize: 12,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
   },
   pollQuestion: {
     fontSize: 16,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     color: Colors.white,
     marginBottom: 16,
     lineHeight: 22,
@@ -548,7 +548,7 @@ const styles = StyleSheet.create({
   votedOptionName: {
     color: Colors.white,
     fontSize: 14,
-    fontWeight: '600',
+    fontFamily: 'Roboto-SemiBold',
   },
   checkCircle: {
     marginLeft: 6,
@@ -556,7 +556,7 @@ const styles = StyleSheet.create({
   votedOptionPercent: {
     color: Colors.textSecondary,
     fontSize: 13,
-    fontWeight: '600',
+    fontFamily: 'Roboto-SemiBold',
   },
   votedOptionPercentActive: {
     color: Colors.primary,
@@ -595,12 +595,12 @@ const styles = StyleSheet.create({
   clusterDotText: {
     color: Colors.white,
     fontSize: 9,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
   },
   footerInfoText: {
     color: Colors.textSecondary,
     fontSize: 12,
-    fontWeight: '500',
+    fontFamily: 'Roboto-Medium',
   },
   radioOptionsList: {
     gap: 10,
@@ -638,12 +638,12 @@ const styles = StyleSheet.create({
   radioOptionText: {
     color: Colors.white,
     fontSize: 14,
-    fontWeight: '500',
+    fontFamily: 'Roboto-Medium',
   },
   unvotedFooterText: {
     color: Colors.textSecondary,
     fontSize: 12,
-    fontWeight: '500',
+    fontFamily: 'Roboto-Medium',
   },
   bottomBar: {
     position: 'absolute',
@@ -670,7 +670,7 @@ const styles = StyleSheet.create({
   createPollButtonText: {
     color: Colors.white,
     fontSize: 16,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
   },
 });
 

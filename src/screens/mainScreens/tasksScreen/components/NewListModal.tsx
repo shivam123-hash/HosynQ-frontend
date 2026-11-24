@@ -259,7 +259,7 @@ const styles = StyleSheet.create({
   },
   sheetTitle: {
     fontSize: 22,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     color: '#FFFFFF',
     textAlign: 'center',
     marginBottom: 20,
@@ -269,7 +269,7 @@ const styles = StyleSheet.create({
   },
   sectionEyebrow: {
     fontSize: 11,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     letterSpacing: 1.2,
     color: '#8A97AB',
     marginBottom: 12,
@@ -311,7 +311,7 @@ const styles = StyleSheet.create({
   },
   typeLabel: {
     fontSize: 15,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     color: '#FFFFFF',
     marginBottom: 2,
   },
@@ -322,7 +322,7 @@ const styles = StyleSheet.create({
   },
   inputLabel: {
     fontSize: 13,
-    fontWeight: '600',
+    fontFamily: 'Roboto-SemiBold',
     color: '#CAD4DF',
     marginBottom: 8,
   },
@@ -338,7 +338,7 @@ const styles = StyleSheet.create({
   },
   textInput: {
     fontSize: 16,
-    fontWeight: '500',
+    fontFamily: 'Roboto-Medium',
     color: '#FFFFFF',
     padding: 0,
   },
@@ -351,7 +351,7 @@ const styles = StyleSheet.create({
   },
   switchLabel: {
     fontSize: 15,
-    fontWeight: '600',
+    fontFamily: 'Roboto-SemiBold',
     color: '#FFFFFF',
   },
   createBtn: {
@@ -364,7 +364,7 @@ const styles = StyleSheet.create({
   },
   createBtnText: {
     fontSize: 16,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     color: '#FFFFFF',
   },
 });

@@ -29,7 +29,7 @@ const styles = StyleSheet.create({
   sectionHeader: {
     color: '#8E9BAE',
     fontSize: RFValue(11),
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     letterSpacing: 1.2,
     textTransform: 'uppercase',
     marginBottom: 10,

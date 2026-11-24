@@ -318,7 +318,7 @@ const styles = StyleSheet.create({
   },
   headerTitle: {
     fontSize: 17,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     color: '#FFFFFF',
     letterSpacing: -0.2,
     textAlign: 'center',
@@ -356,12 +356,12 @@ const styles = StyleSheet.create({
   },
   ownerBadgeText: {
     fontSize: 12,
-    fontWeight: '600',
+    fontFamily: 'Roboto-SemiBold',
     color: '#F06A6D',
   },
   title: {
     fontSize: 22,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     color: '#FFFFFF',
     letterSpacing: -0.3,
     marginBottom: 8,
@@ -374,7 +374,7 @@ const styles = StyleSheet.create({
   },
   sectionLabel: {
     fontSize: 11,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     color: '#8A9BAE',
     letterSpacing: 1.2,
     textTransform: 'uppercase',
@@ -397,14 +397,14 @@ const styles = StyleSheet.create({
   },
   itemCross: {
     fontSize: 15,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     color: '#F06A6D',
     width: 18,
   },
   itemText: {
     fontSize: 14.5,
     color: '#E0E7F0',
-    fontWeight: '500',
+    fontFamily: 'Roboto-Medium',
   },
   divider: {
     height: 1,
@@ -414,7 +414,7 @@ const styles = StyleSheet.create({
   inputLabel: {
     fontSize: 13,
     color: '#8A9BAE',
-    fontWeight: '500',
+    fontFamily: 'Roboto-Medium',
     marginBottom: 8,
   },
   inputWrapper: {
@@ -432,7 +432,7 @@ const styles = StyleSheet.create({
   },
   textInput: {
     fontSize: 15,
-    fontWeight: '600',
+    fontFamily: 'Roboto-SemiBold',
     color: '#FFFFFF',
     letterSpacing: 1,
     padding: 0,
@@ -447,7 +447,7 @@ const styles = StyleSheet.create({
   },
   downloadText: {
     fontSize: 13.5,
-    fontWeight: '600',
+    fontFamily: 'Roboto-SemiBold',
     color: '#F0923A',
   },
   bottomBar: {
@@ -473,7 +473,7 @@ const styles = StyleSheet.create({
   },
   deleteButtonText: {
     fontSize: 15.5,
-    fontWeight: '600',
+    fontFamily: 'Roboto-SemiBold',
     color: '#FFFFFF',
   },
   cancelButton: {
@@ -483,7 +483,7 @@ const styles = StyleSheet.create({
   },
   cancelButtonText: {
     fontSize: 14.5,
-    fontWeight: '500',
+    fontFamily: 'Roboto-Medium',
     color: '#8A9BAE',
   },
 });

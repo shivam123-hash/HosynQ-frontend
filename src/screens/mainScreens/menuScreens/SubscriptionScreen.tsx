@@ -256,7 +256,7 @@ const styles = StyleSheet.create({
   },
   topBarTitle: {
     fontSize: 20,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     color: '#FFFFFF',
   },
   topBarRightPlaceholder: {
@@ -289,7 +289,7 @@ const styles = StyleSheet.create({
   },
   planBadgeText: {
     fontSize: 12,
-    fontWeight: '800',
+    fontFamily: 'Roboto-Bold',
     color: '#F0923A',
     letterSpacing: 1.2,
   },
@@ -305,12 +305,12 @@ const styles = StyleSheet.create({
   },
   cycleBadgeText: {
     fontSize: 12,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     color: '#F0923A',
   },
   priceText: {
     fontSize: 28,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     color: '#FFFFFF',
     marginBottom: 6,
   },
@@ -335,12 +335,12 @@ const styles = StyleSheet.create({
   },
   actionBtnText: {
     fontSize: 14,
-    fontWeight: '600',
+    fontFamily: 'Roboto-SemiBold',
     color: '#FFFFFF',
   },
   sectionHeading: {
     fontSize: 12,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     color: '#8A97AB',
     letterSpacing: 1.2,
     marginBottom: 12,
@@ -394,7 +394,7 @@ const styles = StyleSheet.create({
   },
   navRowTitle: {
     fontSize: 15,
-    fontWeight: '600',
+    fontFamily: 'Roboto-SemiBold',
     color: '#FFFFFF',
     flex: 1,
   },

@@ -113,11 +113,11 @@ const styles = StyleSheet.create({
   sparkleIcon: {
     fontSize: 26,
     color: Colors.primary, // #F0913A
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
   },
   title: {
     fontSize: 20,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     color: '#FFFFFF',
     marginBottom: 8,
     textAlign: 'center',
@@ -171,7 +171,7 @@ const styles = StyleSheet.create({
     flex: 1,
     fontSize: 14,
     color: '#FFFFFF',
-    fontWeight: '500',
+    fontFamily: 'Roboto-Medium',
   },
   statusGroup: {
     flexDirection: 'row',
@@ -183,7 +183,7 @@ const styles = StyleSheet.create({
   },
   doneStatusText: {
     color: '#34D399',
-    fontWeight: '600',
+    fontFamily: 'Roboto-SemiBold',
   },
   pendingStatusText: {
     color: '#8A97AB',
@@ -207,7 +207,7 @@ const styles = StyleSheet.create({
   },
   primaryButtonText: {
     fontSize: 15,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     color: '#0B1A2F',
   },
 });

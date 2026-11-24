@@ -90,17 +90,15 @@ const styles = StyleSheet.create({
     height: 24,
   },
   sectionTitle: {
-    fontFamily: 'Roboto',
     fontSize: 19,
     lineHeight: 24,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     color: '#B6B8B8',
   },
   actionText: {
-    fontFamily: 'Roboto',
     fontSize: 14,
     lineHeight: 18,
-    fontWeight: '500',
+    fontFamily: 'Roboto-Medium',
     color: Colors.primary, // #F0913A
   },
   eventCard: {
@@ -122,17 +120,15 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   timeValue: {
-    fontFamily: 'Roboto',
     fontSize: 18,
     lineHeight: 22,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     color: '#B6B8B8',
   },
   timePeriod: {
-    fontFamily: 'Roboto',
     fontSize: 13,
     lineHeight: 18,
-    fontWeight: '500',
+    fontFamily: 'Roboto-Medium',
     color: '#8A97AB',
   },
   infoColumn: {
@@ -140,17 +136,15 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   eventTitle: {
-    fontFamily: 'Roboto',
     fontSize: 15.5,
     lineHeight: 20,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     color: '#B6B8B8',
   },
   eventSubtitle: {
-    fontFamily: 'Roboto',
     fontSize: 13,
     lineHeight: 18,
-    fontWeight: '400',
+    fontFamily: 'Roboto-Regular',
     color: '#8A97AB',
   },
   categoryBadge: {
@@ -168,10 +162,9 @@ const styles = StyleSheet.create({
     backgroundColor: 'transparent',
   },
   categoryText: {
-    fontFamily: 'Roboto',
     fontSize: 13,
     lineHeight: 18,
-    fontWeight: '500',
+    fontFamily: 'Roboto-Medium',
   },
   familyText: {
     color: '#5B9BF0',

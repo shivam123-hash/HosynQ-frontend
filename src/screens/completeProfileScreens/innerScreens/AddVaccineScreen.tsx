@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   View,
   Text,
@@ -12,6 +12,8 @@ import {
   Platform,
   Alert,
   Modal,
+  Keyboard,
+  findNodeHandle,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Feather from '@react-native-vector-icons/feather';
@@ -32,7 +34,7 @@ import {
   fetchLifeProfileSectionThunk,
   fetchLifeProfileFullThunk,
 } from '../../../redux/features/lifeProfile/lifeProfileSlice';
-import { getMyMemberId } from '../../../units/asyncStorageManager';
+import { getMyMemberId } from '../../../units/AsyncStorageManager';
 import { buildVaccineItemPayload } from './vaccinationPayloadUtils';
 
 export interface AddVaccineFormData {
@@ -158,6 +160,39 @@ const AddVaccineScreen: React.FC<AddVaccineScreenProps> = ({
     title: '',
     format: 'DD MMM YYYY',
   });
+
+  const scrollViewRef = useRef<any>(null);
+  const [keyboardHeight, setKeyboardHeight] = useState(0);
+
+  useEffect(() => {
+    const showEvent = Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow';
+    const hideEvent = Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide';
+
+    const showSub = Keyboard.addListener(showEvent, (e) => {
+      setKeyboardHeight(e.endCoordinates ? e.endCoordinates.height : 0);
+    });
+    const hideSub = Keyboard.addListener(hideEvent, () => {
+      setKeyboardHeight(0);
+    });
+
+    return () => {
+      showSub.remove();
+      hideSub.remove();
+    };
+  }, []);
+
+  const handleInputFocus = (event: any) => {
+    if (scrollViewRef.current) {
+      const nodeHandle = findNodeHandle(event.target);
+      if (nodeHandle) {
+        setTimeout(() => {
+          (scrollViewRef.current as any)
+            ?.getScrollResponder?.()
+            ?.scrollResponderScrollNativeHandleToKeyboard(nodeHandle, 120, true);
+        }, 120);
+      }
+    }
+  };
 
   const [showImagePicker, setShowImagePicker] = useState<boolean>(false);
   const [isSaving, setIsSaving] = useState<boolean>(false);
@@ -292,10 +327,17 @@ const AddVaccineScreen: React.FC<AddVaccineScreenProps> = ({
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       >
         <ScrollView
+          ref={scrollViewRef}
           style={styles.scrollContainer}
-          contentContainerStyle={styles.scrollContent}
+          contentContainerStyle={[
+            styles.scrollContent,
+            keyboardHeight > 0
+              ? { paddingBottom: keyboardHeight + 80 }
+              : null,
+          ]}
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
+          onFocus={handleInputFocus}
         >
           {/* SECTION 1: VACCINE */}
           <Text style={styles.sectionHeader}>VACCINE</Text>
@@ -730,7 +772,7 @@ const styles = StyleSheet.create({
   sectionHeader: {
     color: '#F0913A',
     fontSize: RFValue(11),
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     letterSpacing: 1.2,
     textTransform: 'uppercase',
     marginBottom: 14,
@@ -744,7 +786,7 @@ const styles = StyleSheet.create({
   fieldLabel: {
     color: '#8E9BAE',
     fontSize: RFValue(12),
-    fontWeight: '500',
+    fontFamily: 'Roboto-Medium',
     marginBottom: 8,
   },
   textInput: {
@@ -796,7 +838,7 @@ const styles = StyleSheet.create({
   pickerValueText: {
     color: '#FFFFFF',
     fontSize: RFValue(13.5),
-    fontWeight: '500',
+    fontFamily: 'Roboto-Medium',
   },
   helperText: {
     color: '#60728B',
@@ -836,7 +878,7 @@ const styles = StyleSheet.create({
   attachBtnText: {
     color: '#F0913A',
     fontSize: RFValue(13),
-    fontWeight: '600',
+    fontFamily: 'Roboto-SemiBold',
   },
   uploadedCertCard: {
     flexDirection: 'row',
@@ -872,13 +914,13 @@ const styles = StyleSheet.create({
   uploadedCertName: {
     color: '#FFFFFF',
     fontSize: RFValue(13),
-    fontWeight: '600',
+    fontFamily: 'Roboto-SemiBold',
     marginBottom: 2,
   },
   uploadedCertStatus: {
     color: '#10B981',
     fontSize: RFValue(11),
-    fontWeight: '500',
+    fontFamily: 'Roboto-Medium',
   },
   uploadedCertActions: {
     flexDirection: 'row',
@@ -911,7 +953,7 @@ const styles = StyleSheet.create({
   switchCardTitle: {
     color: '#FFFFFF',
     fontSize: RFValue(13.5),
-    fontWeight: '600',
+    fontFamily: 'Roboto-SemiBold',
   },
   switchCardSubtitle: {
     color: '#8E9BAE',
@@ -951,7 +993,7 @@ const styles = StyleSheet.create({
   modalTitle: {
     color: '#FFFFFF',
     fontSize: RFValue(17),
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     marginBottom: 4,
   },
   modalSubtitle: {
@@ -988,7 +1030,7 @@ const styles = StyleSheet.create({
   memberAvatarText: {
     color: '#FFFFFF',
     fontSize: RFValue(14),
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
   },
   memberInfoCol: {
     flex: 1,
@@ -996,7 +1038,7 @@ const styles = StyleSheet.create({
   memberNameText: {
     color: '#FFFFFF',
     fontSize: RFValue(13.5),
-    fontWeight: '600',
+    fontFamily: 'Roboto-SemiBold',
     marginBottom: 2,
   },
   memberRoleText: {

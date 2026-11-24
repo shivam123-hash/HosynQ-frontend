@@ -1,5 +1,7 @@
 import { createAsyncThunk, createSlice, PayloadAction } from '@reduxjs/toolkit';
 import familyServices, {
+  AddChildMemberPayload,
+  AddChildMemberResponse,
   CreateFamilyPayload,
   CreateFamilyResponse,
   CreateInvitationResponse,
@@ -13,7 +15,7 @@ import familyServices, {
   PreviewInvitationPayload,
   PreviewInvitationResponse,
 } from '../../../services/familyServices';
-import { saveMyMemberId } from '../../../units/asyncStorageManager';
+import { saveMyMemberId } from '../../../units/AsyncStorageManager';
 
 export interface FamilyState {
   family: FamilyData | null;
@@ -34,6 +36,8 @@ export interface FamilyState {
   myFamilyData: MyFamilyResponse | null;
   myFamilyLoading: boolean;
   myFamilyError: string | null;
+  addMemberLoading: boolean;
+  addMemberError: string | null;
 }
 
 const initialState: FamilyState = {
@@ -55,6 +59,8 @@ const initialState: FamilyState = {
   myFamilyData: null,
   myFamilyLoading: false,
   myFamilyError: null,
+  addMemberLoading: false,
+  addMemberError: null,
 };
 
 /** Create Family Thunk (POST /api/v1/family/create) */
@@ -208,6 +214,35 @@ export const getMyFamilyThunk = createAsyncThunk<
 
 export const getMyFamily = getMyFamilyThunk;
 
+/** Add Child Member Thunk (POST /api/v1/family/members) */
+export const addFamilyMemberThunk = createAsyncThunk<
+  AddChildMemberResponse,
+  AddChildMemberPayload,
+  { rejectValue: string }
+>('family/addMember', async (payload, { rejectWithValue }) => {
+  try {
+    console.log('[addFamilyMember API] Payload:', payload);
+    const response = await familyServices.addFamilyMember(payload);
+    console.log('[addFamilyMember API] Success Response:', response);
+    return response;
+  } catch (error: any) {
+    const errorMsg =
+      error?.response?.data?.message ||
+      error?.message ||
+      'Failed to add child member.';
+    console.log('[addFamilyMember API] Error Response:', {
+      status: error?.response?.status,
+      data: error?.response?.data,
+      message: errorMsg,
+    });
+    return rejectWithValue(
+      Array.isArray(errorMsg) ? errorMsg.join(', ') : errorMsg
+    );
+  }
+});
+
+export const addFamilyMember = addFamilyMemberThunk;
+
 const familySlice = createSlice({
   name: 'family',
   initialState,
@@ -226,6 +261,9 @@ const familySlice = createSlice({
     },
     clearMyFamilyError: (state) => {
       state.myFamilyError = null;
+    },
+    clearAddMemberError: (state) => {
+      state.addMemberError = null;
     },
     resetFamilyState: () => initialState,
     setFamily: (state, action: PayloadAction<FamilyData>) => {
@@ -333,6 +371,18 @@ const familySlice = createSlice({
       .addCase(getMyFamilyThunk.rejected, (state, action) => {
         state.myFamilyLoading = false;
         state.myFamilyError = action.payload || 'Failed to check family status.';
+      })
+      .addCase(addFamilyMemberThunk.pending, (state) => {
+        state.addMemberLoading = true;
+        state.addMemberError = null;
+      })
+      .addCase(addFamilyMemberThunk.fulfilled, (state) => {
+        state.addMemberLoading = false;
+        state.addMemberError = null;
+      })
+      .addCase(addFamilyMemberThunk.rejected, (state, action) => {
+        state.addMemberLoading = false;
+        state.addMemberError = action.payload || 'Failed to add child member.';
       });
   },
 });
@@ -343,6 +393,7 @@ export const {
   clearJoinError,
   clearPreviewError,
   clearMyFamilyError,
+  clearAddMemberError,
   resetFamilyState,
   setFamily,
   setMyMemberId,

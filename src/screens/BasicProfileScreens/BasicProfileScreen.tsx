@@ -28,6 +28,7 @@ import {
   clearProfileError,
   clearAvatarError,
 } from '../../redux/features/baseProfileSet/baseProfileSlice';
+import { Fonts } from '../../units';
 
 export interface BasicProfileData {
   fullName: string;
@@ -354,7 +355,7 @@ const styles = StyleSheet.create({
   stepIndicatorText: {
     color: Colors.textSecondary,
     fontSize: RFValue(12.5),
-    fontWeight: '500',
+    fontFamily: 'Roboto-Medium',
   },
   progressContainer: {
     flexDirection: 'row',
@@ -382,7 +383,7 @@ const styles = StyleSheet.create({
   progressText: {
     color: Colors.textSecondary,
     fontSize: RFValue(11.5),
-    fontWeight: '600',
+    fontFamily: 'Roboto-SemiBold',
   },
   scrollContent: {
     flexGrow: 1,
@@ -400,7 +401,7 @@ const styles = StyleSheet.create({
   },
   title: {
     fontSize: RFValue(22),
-    fontWeight: '700',
+    fontFamily: Fonts.bold,
     color: Colors.text,
     textAlign: 'center',
     marginBottom: 6,
@@ -433,7 +434,7 @@ const styles = StyleSheet.create({
   avatarInitialText: {
     color: '#FFFFFF',
     fontSize: RFValue(34),
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
   },
   plusBadge: {
     position: 'absolute',
@@ -455,7 +456,7 @@ const styles = StyleSheet.create({
   changeAvatarText: {
     color: Colors.primary,
     fontSize: RFValue(13.5),
-    fontWeight: '600',
+    fontFamily: 'Roboto-SemiBold',
   },
   formSection: {
     width: '100%',
@@ -479,7 +480,7 @@ const styles = StyleSheet.create({
   errorText: {
     color: '#EF4444',
     fontSize: RFValue(12),
-    fontWeight: '500',
+    fontFamily: 'Roboto-Medium',
     textAlign: 'center',
   },
 });

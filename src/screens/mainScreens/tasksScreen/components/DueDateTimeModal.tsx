@@ -852,7 +852,7 @@ const styles = StyleSheet.create({
   },
   title: {
     fontSize: 22,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     color: '#FFFFFF',
     textAlign: 'center',
     marginBottom: 16,
@@ -888,12 +888,12 @@ const styles = StyleSheet.create({
   },
   quickChipText: {
     fontSize: 14,
-    fontWeight: '600',
+    fontFamily: 'Roboto-SemiBold',
     color: '#CAD4DF',
   },
   quickChipTextSelected: {
     color: '#0B1A2F',
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
   },
   chipDisabled: {
     opacity: 0.4,
@@ -924,7 +924,7 @@ const styles = StyleSheet.create({
   },
   monthTitle: {
     fontSize: 16,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     color: '#FFFFFF',
   },
   weekHeadersRow: {
@@ -936,7 +936,7 @@ const styles = StyleSheet.create({
     flex: 1,
     textAlign: 'center',
     fontSize: 12,
-    fontWeight: '600',
+    fontFamily: 'Roboto-SemiBold',
     color: '#8A97AB',
   },
   daysGrid: {
@@ -966,7 +966,7 @@ const styles = StyleSheet.create({
   },
   dayText: {
     fontSize: 14,
-    fontWeight: '600',
+    fontFamily: 'Roboto-SemiBold',
     color: '#FFFFFF',
   },
   otherMonthDayText: {
@@ -974,11 +974,11 @@ const styles = StyleSheet.create({
   },
   selectedDayText: {
     color: '#0B1A2F',
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
   },
   sectionHeader: {
     fontSize: 11,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     letterSpacing: 1.2,
     color: '#8A97AB',
     marginBottom: 10,
@@ -999,13 +999,13 @@ const styles = StyleSheet.create({
   },
   timePickerTitle: {
     fontSize: 14,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     color: '#CAD4DF',
     marginBottom: 8,
   },
   timePickerSubLabel: {
     fontSize: 11,
-    fontWeight: '600',
+    fontFamily: 'Roboto-SemiBold',
     color: '#8A97AB',
     marginBottom: 6,
     textTransform: 'uppercase',
@@ -1050,12 +1050,12 @@ const styles = StyleSheet.create({
   },
   timeNumberText: {
     fontSize: 13,
-    fontWeight: '600',
+    fontFamily: 'Roboto-SemiBold',
     color: '#CAD4DF',
   },
   timeNumberTextActive: {
     color: '#0B1A2F',
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
   },
   applyTimeBtn: {
     height: 40,
@@ -1069,7 +1069,7 @@ const styles = StyleSheet.create({
   },
   applyTimeBtnText: {
     fontSize: 14,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     color: '#F0913A',
   },
   switchRow: {
@@ -1081,7 +1081,7 @@ const styles = StyleSheet.create({
   },
   switchLabel: {
     fontSize: 16,
-    fontWeight: '600',
+    fontFamily: 'Roboto-SemiBold',
     color: '#FFFFFF',
   },
   doneBtn: {
@@ -1094,7 +1094,7 @@ const styles = StyleSheet.create({
   },
   doneBtnText: {
     fontSize: 16,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     color: '#FFFFFF',
   },
 });

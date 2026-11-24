@@ -19,7 +19,7 @@ import AppConfirmationModal from '../../components/AppConfirmationModal';
 import { SecurityOptionCard } from './components';
 import biometricService, {
   BiometricOptionType,
-} from '../../units/biometricService';
+} from '../../units/BiometricService';
 
 export type SecurityOptionType = BiometricOptionType;
 
@@ -282,7 +282,7 @@ const styles = StyleSheet.create({
   stepText: {
     color: Colors.textSecondary,
     fontSize: RFValue(12.5),
-    fontWeight: '500',
+    fontFamily: 'Roboto-Medium',
   },
   progressContainer: {
     flexDirection: 'row',
@@ -310,7 +310,7 @@ const styles = StyleSheet.create({
   progressText: {
     color: Colors.textSecondary,
     fontSize: RFValue(11.5),
-    fontWeight: '600',
+    fontFamily: 'Roboto-SemiBold',
   },
   scrollContent: {
     flexGrow: 1,
@@ -324,7 +324,7 @@ const styles = StyleSheet.create({
   },
   title: {
     fontSize: RFValue(22),
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     color: Colors.text,
     textAlign: 'center',
     marginBottom: 8,
@@ -352,7 +352,7 @@ const styles = StyleSheet.create({
   errorText: {
     color: '#EF4444',
     fontSize: RFValue(12),
-    fontWeight: '500',
+    fontFamily: 'Roboto-Medium',
     textAlign: 'center',
   },
   bottomSection: {

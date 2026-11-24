@@ -281,7 +281,7 @@ const styles = StyleSheet.create({
   },
   headerTitle: {
     fontSize: 18,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     color: '#FFFFFF',
     letterSpacing: -0.2,
     textAlign: 'center',
@@ -332,12 +332,12 @@ const styles = StyleSheet.create({
   },
   avatarText: {
     fontSize: 24,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     color: '#F0923A',
   },
   name: {
     fontSize: 22,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     color: '#FFFFFF',
     marginTop: 12,
     letterSpacing: -0.3,
@@ -363,18 +363,18 @@ const styles = StyleSheet.create({
   },
   progressLabel: {
     fontSize: 11,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     color: '#F0923A',
     letterSpacing: 1.2,
   },
   progressPercent: {
     fontSize: 14,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     color: '#F0923A',
   },
   progressTitle: {
     fontSize: 16,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     color: '#FFFFFF',
     marginTop: 8,
     marginBottom: 4,
@@ -408,7 +408,7 @@ const styles = StyleSheet.create({
   },
   progressActionText: {
     fontSize: 13,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     color: '#F0923A',
   },
   sectionsCard: {
@@ -440,7 +440,7 @@ const styles = StyleSheet.create({
   },
   sectionTitle: {
     fontSize: 16,
-    fontWeight: '600',
+    fontFamily: 'Roboto-SemiBold',
     color: '#FFFFFF',
     marginBottom: 3,
     letterSpacing: -0.1,
@@ -461,7 +461,7 @@ const styles = StyleSheet.create({
   },
   badgeDoneText: {
     fontSize: 12,
-    fontWeight: '600',
+    fontFamily: 'Roboto-SemiBold',
     color: '#4CC38A',
   },
   badgeOrange: {
@@ -475,7 +475,7 @@ const styles = StyleSheet.create({
   },
   badgeOrangeText: {
     fontSize: 12,
-    fontWeight: '600',
+    fontFamily: 'Roboto-SemiBold',
     color: '#F0923A',
   },
   badgeLocked: {
@@ -491,7 +491,7 @@ const styles = StyleSheet.create({
   },
   badgeLockedText: {
     fontSize: 12,
-    fontWeight: '600',
+    fontFamily: 'Roboto-SemiBold',
     color: '#8A9BAE',
   },
   divider: {

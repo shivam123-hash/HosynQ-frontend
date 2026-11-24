@@ -143,7 +143,7 @@ const styles = StyleSheet.create({
   },
   categoryTitle: {
     fontSize: 16,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     color: '#FFFFFF',
   },
   headerRight: {
@@ -163,7 +163,7 @@ const styles = StyleSheet.create({
   },
   countText: {
     fontSize: 13,
-    fontWeight: '600',
+    fontFamily: 'Roboto-SemiBold',
     color: '#CAD4DF',
   },
   itemsList: {
@@ -197,7 +197,7 @@ const styles = StyleSheet.create({
   },
   taskTitleText: {
     fontSize: 15,
-    fontWeight: '600',
+    fontFamily: 'Roboto-SemiBold',
     color: '#CAD4DF',
     lineHeight: 20,
   },

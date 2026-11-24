@@ -95,10 +95,9 @@ const styles = StyleSheet.create({
     height: 34,
   },
   title: {
-    fontFamily: 'Roboto',
     fontSize: 18,
     lineHeight: 24,
-    fontWeight: '600',
+    fontFamily: 'Roboto-SemiBold',
     color: '#CAD4DF',
   },
   openCalendarBtn: {
@@ -111,10 +110,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   openCalendarText: {
-    fontFamily: 'Roboto',
     fontSize: 12,
     lineHeight: 16,
-    fontWeight: '500',
+    fontFamily: 'Roboto-Medium',
     color: '#F0913A',
   },
   cardsList: {
@@ -138,17 +136,15 @@ const styles = StyleSheet.create({
     alignItems: 'flex-start',
   },
   timeHour: {
-    fontFamily: 'Roboto',
     fontSize: 15,
     lineHeight: 20,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     color: '#CAD4DF',
   },
   timePeriod: {
-    fontFamily: 'Roboto',
     fontSize: 12,
     lineHeight: 16,
-    fontWeight: '500',
+    fontFamily: 'Roboto-Medium',
     color: '#8A97AB',
   },
   detailsCol: {
@@ -157,17 +153,15 @@ const styles = StyleSheet.create({
     gap: 3,
   },
   eventTitle: {
-    fontFamily: 'Roboto',
     fontSize: 13.5,
     lineHeight: 18,
-    fontWeight: '500',
+    fontFamily: 'Roboto-Medium',
     color: '#CAD4DF',
   },
   eventMeta: {
-    fontFamily: 'Roboto',
     fontSize: 12,
     lineHeight: 16,
-    fontWeight: '400',
+    fontFamily: 'Roboto-Regular',
     color: '#8A97AB',
   },
   tagPill: {
@@ -178,10 +172,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   tagText: {
-    fontFamily: 'Roboto',
     fontSize: 11,
     lineHeight: 14,
-    fontWeight: '500',
+    fontFamily: 'Roboto-Medium',
   },
   familyTag: {
     borderWidth: 1,

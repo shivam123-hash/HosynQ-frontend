@@ -57,10 +57,9 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   titleText: {
-    fontFamily: 'Roboto',
     fontSize: 18,
     lineHeight: 24,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     color: '#CAD4DF',
   },
   rightSpacer: {

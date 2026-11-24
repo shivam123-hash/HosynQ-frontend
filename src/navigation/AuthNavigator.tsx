@@ -11,6 +11,8 @@ import { useAppDispatch, useAppSelector } from '../redux';
 import {
   sendOtp,
   verifyOtp,
+  googleLogin,
+  appleLogin,
   clearAuthError,
 } from '../redux/features/mobileFlow/authSlice';
 import {
@@ -19,9 +21,9 @@ import {
   clearPhoneError,
 } from '../redux/features/emailFlow/authSlice';
 import { fetchLifeProfileFullThunk } from '../redux/features/lifeProfile/lifeProfileSlice';
-import { getDeviceInfo } from '../units/deviceInfo';
+import { getDeviceInfo } from '../units/DeviceInfo';
 import { signInWithGoogle, signInWithApple, authServices } from '../services';
-import { saveMyMemberId } from '../units/asyncStorageManager';
+import { saveMyMemberId } from '../units/AsyncStorageManager';
 // Onboarding Screens
 import OnboardingScreen from '../screens/onBordingScreens/OnboardingScreen';
 // Auth Screens
@@ -69,40 +71,89 @@ const OnboardingWrapper: React.FC<AuthScreenProps<'Onboarding'>> = ({
 const AuthMainWrapper: React.FC<AuthScreenProps<'AuthMain'>> = ({
   navigation,
 }) => {
+  const dispatch = useAppDispatch();
+  const rootNav = useNavigation<RootNavigationProp>();
   const [googleLoading, setGoogleLoading] = React.useState(false);
   const [appleLoading, setAppleLoading] = React.useState(false);
+
+  const handlePostAuthNavigation = async (
+    res: any,
+    fallbackName?: string
+  ) => {
+    if (res?.nextStep === 'HOME') {
+      try {
+        const meData = await authServices.getProfile();
+        const resolvedMemberId =
+          meData?.lifeProfile?.memberId ||
+          meData?.memberId ||
+          res?.user?.memberId ||
+          null;
+        if (resolvedMemberId) {
+          await saveMyMemberId(resolvedMemberId);
+          try {
+            await dispatch(
+              fetchLifeProfileFullThunk({ memberId: resolvedMemberId })
+            ).unwrap();
+          } catch (fetchErr) {
+            console.log('[AuthMain] Error prefetching profile:', fetchErr);
+          }
+        }
+        rootNav.navigate('Profile', {
+          screen: 'MyLifeProfile',
+          params: { memberId: resolvedMemberId || undefined },
+        });
+      } catch {
+        rootNav.navigate('Home');
+      }
+    } else if (
+      res?.nextStep === 'CREATE_OR_JOIN_FAMILY' ||
+      res?.nextStep === 'FAMILY_SETUP'
+    ) {
+      navigation.replace('SetUpFamily');
+    } else if (
+      res?.nextStep === 'WAITING_FOR_APPROVAL' ||
+      res?.nextStep === 'FAMILY_PENDING'
+    ) {
+      navigation.replace('WaitingForApproval');
+    } else {
+      navigation.replace('BasicProfile', {
+        initialData: {
+          fullName:
+            res?.user?.fullName ||
+            res?.user?.name ||
+            fallbackName ||
+            undefined,
+        },
+      });
+    }
+  };
 
   const handleGoogleSignIn = async () => {
     try {
       setGoogleLoading(true);
       const res = await signInWithGoogle();
-      if (res.success && res.user) {
-        Alert.alert(
-          'Google Sign-In Successful',
-          `Logged in as: ${res.user.name || res.user.email}\nEmail: ${res.user.email}`,
-          [
-            {
-              text: 'OK',
-              onPress: () => {
-                navigation.replace('BasicProfile', {
-                  initialData: {
-                    fullName: res.user?.name || undefined,
-                  },
-                });
-              },
-            },
-          ],
-        );
+      if (res.success && res.idToken) {
+        const deviceInfo = await getDeviceInfo();
+        const authRes = await dispatch(
+          googleLogin({
+            idToken: res.idToken,
+            consentAccepted: true,
+            deviceInfo,
+          })
+        ).unwrap();
+
+        await handlePostAuthNavigation(authRes, res.user?.name || undefined);
       } else if (!res.cancelled) {
         Alert.alert(
           'Google Sign-In Error',
-          res.error || 'Failed to sign in with Google',
+          res.error || 'Failed to sign in with Google'
         );
       }
     } catch (err: any) {
+      console.log('googleLogin error:', err);
       Alert.alert(
         'Google Sign-In Error',
-        err?.message || 'Something went wrong',
+        err?.message || (typeof err === 'string' ? err : 'Something went wrong')
       );
     } finally {
       setGoogleLoading(false);
@@ -113,33 +164,29 @@ const AuthMainWrapper: React.FC<AuthScreenProps<'AuthMain'>> = ({
     try {
       setAppleLoading(true);
       const res = await signInWithApple();
-      if (res.success && res.user) {
-        Alert.alert(
-          'Apple Sign-In Successful',
-          `Logged in with Apple\nName: ${res.user.name || 'Apple User'}\nEmail: ${res.user.email || 'Private Relay'}`,
-          [
-            {
-              text: 'OK',
-              onPress: () => {
-                navigation.replace('BasicProfile', {
-                  initialData: {
-                    fullName: res.user?.name || undefined,
-                  },
-                });
-              },
-            },
-          ],
-        );
+      if (res.success && res.identityToken) {
+        const deviceInfo = await getDeviceInfo();
+        const authRes = await dispatch(
+          appleLogin({
+            identityToken: res.identityToken,
+            fullName: res.user?.name || undefined,
+            consentAccepted: true,
+            deviceInfo,
+          })
+        ).unwrap();
+
+        await handlePostAuthNavigation(authRes, res.user?.name || undefined);
       } else if (!res.cancelled) {
         Alert.alert(
           'Apple Sign-In Error',
-          res.error || 'Failed to sign in with Apple',
+          res.error || 'Failed to sign in with Apple'
         );
       }
     } catch (err: any) {
+      console.log('appleLogin error:', err);
       Alert.alert(
         'Apple Sign-In Error',
-        err?.message || 'Something went wrong',
+        err?.message || (typeof err === 'string' ? err : 'Something went wrong')
       );
     } finally {
       setAppleLoading(false);
@@ -282,9 +329,9 @@ const OtpWrapper: React.FC<AuthScreenProps<'Otp'>> = ({
         } catch {
           rootNav.navigate('Home');
         }
-      } else if (res.nextStep === 'CREATE_OR_JOIN_FAMILY') {
+      } else if (res.nextStep === 'CREATE_OR_JOIN_FAMILY' || res.nextStep === 'FAMILY_SETUP') {
         navigation.replace('SetUpFamily');
-      } else if (res.nextStep === 'WAITING_FOR_APPROVAL') {
+      } else if (res.nextStep === 'WAITING_FOR_APPROVAL' || res.nextStep === 'FAMILY_PENDING') {
         navigation.replace('WaitingForApproval');
       } else {
         navigation.replace('BasicProfile');
@@ -685,9 +732,6 @@ const JoinFamilyIdWrapper: React.FC<AuthScreenProps<'JoinFamilyId'>> = ({
         familyName: targetFamilyName,
         requestedTime: 'Just now',
       });
-    }}
-    onScanQrCode={() => {
-      console.log('Scan QR Code clicked');
     }}
   />
 );

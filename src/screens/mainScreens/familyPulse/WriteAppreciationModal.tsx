@@ -208,14 +208,14 @@ const styles = StyleSheet.create({
   },
   title: {
     fontSize: 24,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     letterSpacing: -0.3,
     color: Colors.white,
     marginBottom: 20,
   },
   sectionKicker: {
     fontSize: 12,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     color: Colors.textSecondary,
     letterSpacing: 0.8,
     marginBottom: 16,
@@ -243,16 +243,16 @@ const styles = StyleSheet.create({
   },
   avatarText: {
     fontSize: 17,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
   },
   memberName: {
     fontSize: 13.5,
-    fontWeight: '500',
+    fontFamily: 'Roboto-Medium',
     color: Colors.textSecondary,
     marginTop: 8,
   },
   memberNameSelected: {
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     color: Colors.white,
   },
   inputContainer: {
@@ -291,7 +291,7 @@ const styles = StyleSheet.create({
   },
   chipText: {
     fontSize: 14,
-    fontWeight: '500',
+    fontFamily: 'Roboto-Medium',
     color: '#C5D2E0',
   },
   privacyRow: {
@@ -316,7 +316,7 @@ const styles = StyleSheet.create({
   },
   postBtnText: {
     fontSize: 16,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     color: Colors.white,
   },
 });

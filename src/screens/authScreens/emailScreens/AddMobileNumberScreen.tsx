@@ -295,16 +295,16 @@ const styles = StyleSheet.create({
   avatarLetter: {
     color: '#F0913A',
     fontSize: RFValue(11),
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
   },
   signedInText: {
     color: '#8E9AA8',
     fontSize: RFValue(12),
-    fontWeight: '500',
+    fontFamily: 'Roboto-Medium',
   },
   title: {
     fontSize: RFValue(21),
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     color: '#FFFFFF',
     textAlign: 'center',
     marginBottom: 12,
@@ -331,7 +331,7 @@ const styles = StyleSheet.create({
   countryCodeText: {
     color: '#FFFFFF',
     fontSize: RFValue(14),
-    fontWeight: '500',
+    fontFamily: 'Roboto-Medium',
   },
   chevronIcon: {
     marginLeft: 4,
@@ -356,7 +356,7 @@ const styles = StyleSheet.create({
   errorText: {
     color: '#EF4444',
     fontSize: RFValue(11.5),
-    fontWeight: '500',
+    fontFamily: 'Roboto-Medium',
   },
   bottomSection: {
     width: '100%',
@@ -374,7 +374,7 @@ const styles = StyleSheet.create({
   skipText: {
     color: '#FFFFFF',
     fontSize: RFValue(14),
-    fontWeight: '600',
+    fontFamily: 'Roboto-SemiBold',
     textAlign: 'center',
   },
 });

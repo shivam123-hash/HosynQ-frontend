@@ -4,8 +4,11 @@ import authServices, {
   SendOtpResponse,
   VerifyOtpPayload,
   VerifyOtpResponse,
+  GoogleLoginPayload,
+  AppleLoginPayload,
+  SocialLoginResponse,
 } from '../../../services/authServices';
-import { getUserData, clearUserData } from '../../../units/asyncStorageManager';
+import { getUserData, clearUserData } from '../../../units/AsyncStorageManager';
 
 export interface AuthState {
   isLoggedIn: boolean;
@@ -81,6 +84,60 @@ export const verifyOtp = createAsyncThunk<
       error?.message ||
       'Failed to verify OTP. Please try again.';
     console.log('[verifyOtp API] Error Response:', {
+      status: error?.response?.status,
+      data: error?.response?.data,
+      message: errorMsg,
+    });
+    return rejectWithValue(
+      Array.isArray(errorMsg) ? errorMsg.join(', ') : errorMsg
+    );
+  }
+});
+
+export const googleLogin = createAsyncThunk<
+  SocialLoginResponse,
+  GoogleLoginPayload,
+  { rejectValue: string }
+>('auth/googleLogin', async (payload, { rejectWithValue, dispatch }) => {
+  try {
+    console.log('[googleLogin API] Submitting payload:', payload);
+    const response = await authServices.googleLogin(payload);
+    console.log('[googleLogin API] Success Response:', response);
+    dispatch(getProfile());
+    return response;
+  } catch (error: any) {
+    const errorMsg =
+      error?.response?.data?.message ||
+      error?.message ||
+      'Failed to sign in with Google. Please try again.';
+    console.log('[googleLogin API] Error Response:', {
+      status: error?.response?.status,
+      data: error?.response?.data,
+      message: errorMsg,
+    });
+    return rejectWithValue(
+      Array.isArray(errorMsg) ? errorMsg.join(', ') : errorMsg
+    );
+  }
+});
+
+export const appleLogin = createAsyncThunk<
+  SocialLoginResponse,
+  AppleLoginPayload,
+  { rejectValue: string }
+>('auth/appleLogin', async (payload, { rejectWithValue, dispatch }) => {
+  try {
+    console.log('[appleLogin API] Submitting payload:', payload);
+    const response = await authServices.appleLogin(payload);
+    console.log('[appleLogin API] Success Response:', response);
+    dispatch(getProfile());
+    return response;
+  } catch (error: any) {
+    const errorMsg =
+      error?.response?.data?.message ||
+      error?.message ||
+      'Failed to sign in with Apple. Please try again.';
+    console.log('[appleLogin API] Error Response:', {
       status: error?.response?.status,
       data: error?.response?.data,
       message: errorMsg,
@@ -202,6 +259,44 @@ const authSlice = createSlice({
       .addCase(verifyOtp.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload || 'Failed to verify OTP';
+      });
+
+    builder
+      .addCase(googleLogin.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(googleLogin.fulfilled, (state, action) => {
+        state.loading = false;
+        state.isLoggedIn = true;
+        state.accessToken = action.payload.accessToken || null;
+        state.refreshToken = action.payload.refreshToken || null;
+        state.user = action.payload.user || null;
+        state.inFamily = action.payload.inFamily || false;
+        state.nextStep = action.payload.nextStep || null;
+      })
+      .addCase(googleLogin.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload || 'Failed to sign in with Google';
+      });
+
+    builder
+      .addCase(appleLogin.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(appleLogin.fulfilled, (state, action) => {
+        state.loading = false;
+        state.isLoggedIn = true;
+        state.accessToken = action.payload.accessToken || null;
+        state.refreshToken = action.payload.refreshToken || null;
+        state.user = action.payload.user || null;
+        state.inFamily = action.payload.inFamily || false;
+        state.nextStep = action.payload.nextStep || null;
+      })
+      .addCase(appleLogin.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload || 'Failed to sign in with Apple';
       });
 
     builder.addCase(loadInitialState.fulfilled, (state, action) => {

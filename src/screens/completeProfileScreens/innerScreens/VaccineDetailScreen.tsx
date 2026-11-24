@@ -33,7 +33,7 @@ import {
   fetchLifeProfileFullThunk,
   deleteVaccineThunk,
 } from '../../../redux/features/lifeProfile/lifeProfileSlice';
-import { getMyMemberId } from '../../../units/asyncStorageManager';
+import { getMyMemberId } from '../../../units/AsyncStorageManager';
 import {
   mapDoseToEnum,
   mapEnumToDoseLabel,
@@ -1230,7 +1230,7 @@ const styles = StyleSheet.create({
   },
   headerTitle: {
     fontSize: RFValue(17),
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     color: '#FFFFFF',
     letterSpacing: 0.2,
   },
@@ -1281,7 +1281,7 @@ const styles = StyleSheet.create({
   },
   dueTitleText: {
     fontSize: RFValue(14.5),
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     color: '#FFFFFF',
     marginBottom: 4,
   },
@@ -1298,7 +1298,7 @@ const styles = StyleSheet.create({
   },
   bookBtnText: {
     fontSize: RFValue(13),
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     color: '#FFFFFF',
   },
   groupCard: {
@@ -1330,7 +1330,7 @@ const styles = StyleSheet.create({
   },
   groupCardValue: {
     fontSize: RFValue(14),
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     color: '#FFFFFF',
   },
   groupCardDivider: {
@@ -1353,19 +1353,19 @@ const styles = StyleSheet.create({
   },
   avatarPillText: {
     fontSize: RFValue(10),
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     color: '#FFFFFF',
   },
   reminderValueText: {
     fontSize: RFValue(13),
-    fontWeight: '600',
+    fontFamily: 'Roboto-SemiBold',
     color: '#FFFFFF',
     marginLeft: 4,
     flex: 1,
   },
   sectionHeader: {
     fontSize: RFValue(11.5),
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     color: '#64748B',
     letterSpacing: 0.8,
     marginBottom: 10,
@@ -1416,7 +1416,7 @@ const styles = StyleSheet.create({
   },
   doseYearTitle: {
     fontSize: RFValue(14.5),
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     color: '#FFFFFF',
     marginBottom: 3,
   },
@@ -1452,7 +1452,7 @@ const styles = StyleSheet.create({
   emptyDosesTitle: {
     color: '#FFFFFF',
     fontSize: RFValue(14),
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     marginTop: 8,
     marginBottom: 4,
   },
@@ -1482,7 +1482,7 @@ const styles = StyleSheet.create({
   },
   markGivenBtnText: {
     fontSize: RFValue(14),
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     color: '#FFFFFF',
   },
   editVaccineBtn: {
@@ -1492,7 +1492,7 @@ const styles = StyleSheet.create({
   },
   editVaccineText: {
     fontSize: RFValue(13.5),
-    fontWeight: '600',
+    fontFamily: 'Roboto-SemiBold',
     color: Colors.primary || '#F0913A',
   },
 
@@ -1533,7 +1533,7 @@ const styles = StyleSheet.create({
   },
   modalTitle: {
     fontSize: RFValue(18),
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     color: '#FFFFFF',
   },
   modalSubtitle: {
@@ -1565,7 +1565,7 @@ const styles = StyleSheet.create({
   },
   modalFieldValue: {
     fontSize: RFValue(14),
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     color: '#FFFFFF',
   },
   modalSectionLabel: {
@@ -1612,7 +1612,7 @@ const styles = StyleSheet.create({
   },
   addCertBtnText: {
     fontSize: RFValue(13),
-    fontWeight: '600',
+    fontFamily: 'Roboto-SemiBold',
     color: Colors.primary || '#F0913A',
   },
   modalNextDueCard: {

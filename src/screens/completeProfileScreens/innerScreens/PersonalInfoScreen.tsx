@@ -5,7 +5,7 @@ import {
   updateLifeProfileSectionThunk,
   fetchLifeProfileFullThunk,
 } from '../../../redux';
-import { getMyMemberId, saveMyMemberId } from '../../../units/asyncStorageManager';
+import { getMyMemberId, saveMyMemberId } from '../../../units/AsyncStorageManager';
 import PersonalInfoInputScreen from './PersonalInfoInputScreen';
 import PersonalInfoDetailsScreen from './PersonalInfoDetailsScreen';
 import { PersonalInfoData, WorkDetails } from '../components';

@@ -642,7 +642,7 @@ const styles = StyleSheet.create({
   },
   headerTitle: {
     fontSize: 20,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     color: '#FFFFFF',
     letterSpacing: -0.2,
     textAlign: 'center',
@@ -675,7 +675,7 @@ const styles = StyleSheet.create({
   },
   familyAvatarText: {
     fontSize: 18,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     color: '#FFFFFF',
   },
   familyInfo: {
@@ -684,7 +684,7 @@ const styles = StyleSheet.create({
   },
   familyNameText: {
     fontSize: 16,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     color: '#FFFFFF',
     letterSpacing: -0.1,
   },
@@ -720,7 +720,7 @@ const styles = StyleSheet.create({
   toastNoticeText: {
     fontSize: 12,
     color: '#E2E8F0',
-    fontWeight: '500',
+    fontFamily: 'Roboto-Medium',
   },
   joinRequestBanner: {
     flexDirection: 'row',
@@ -737,7 +737,7 @@ const styles = StyleSheet.create({
     flex: 1,
     marginLeft: 12,
     fontSize: 14,
-    fontWeight: '600',
+    fontFamily: 'Roboto-SemiBold',
     color: '#E2E8F0',
   },
   sectionHeader: {
@@ -747,7 +747,7 @@ const styles = StyleSheet.create({
   },
   sectionHeaderText: {
     fontSize: 12,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     color: '#8997AB',
     letterSpacing: 1.2,
     textTransform: 'uppercase',
@@ -779,7 +779,7 @@ const styles = StyleSheet.create({
   },
   memberAvatarText: {
     fontSize: 17,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     color: '#FFFFFF',
   },
   memberDetails: {
@@ -788,7 +788,7 @@ const styles = StyleSheet.create({
   },
   memberName: {
     fontSize: 16,
-    fontWeight: '600',
+    fontFamily: 'Roboto-SemiBold',
     color: '#FFFFFF',
   },
   memberRelation: {
@@ -807,7 +807,7 @@ const styles = StyleSheet.create({
   },
   roleBadgeTextBase: {
     fontSize: 12,
-    fontWeight: '600',
+    fontFamily: 'Roboto-SemiBold',
   },
   // Badge Colors
   roleBadgeOwner: {
@@ -858,7 +858,7 @@ const styles = StyleSheet.create({
   },
   primaryInviteButtonText: {
     fontSize: 16,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     color: '#FFFFFF',
     marginLeft: 8,
   },
@@ -871,7 +871,7 @@ const styles = StyleSheet.create({
   },
   secondaryAddChildButtonText: {
     fontSize: 15,
-    fontWeight: '600',
+    fontFamily: 'Roboto-SemiBold',
     color: '#F0913A',
     marginLeft: 8,
   },
@@ -902,7 +902,7 @@ const styles = StyleSheet.create({
   },
   staffEntryTitle: {
     fontSize: 15,
-    fontWeight: '600',
+    fontFamily: 'Roboto-SemiBold',
     color: '#FFFFFF',
   },
   staffEntrySubtitle: {
@@ -924,7 +924,7 @@ const styles = StyleSheet.create({
   },
   footerActionText: {
     fontSize: 13.5,
-    fontWeight: '500',
+    fontFamily: 'Roboto-Medium',
     color: '#8A9BAE',
   },
   footerActionDanger: {

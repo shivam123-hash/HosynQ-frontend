@@ -169,7 +169,7 @@ const styles = StyleSheet.create({
   },
   topBarTitle: {
     fontSize: 20,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     color: '#FFFFFF',
   },
   topBarRightPlaceholder: {
@@ -198,11 +198,11 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#F6C08E',
     lineHeight: 20,
-    fontWeight: '500',
+    fontFamily: 'Roboto-Medium',
   },
   sectionHeading: {
     fontSize: 12,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     color: '#8A97AB',
     letterSpacing: 1.2,
     marginBottom: 12,
@@ -231,7 +231,7 @@ const styles = StyleSheet.create({
   },
   reasonText: {
     fontSize: 16,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     color: '#FFFFFF',
   },
   radioOuter: {
@@ -272,7 +272,7 @@ const styles = StyleSheet.create({
   lossText: {
     fontSize: 14,
     color: '#FFFFFF',
-    fontWeight: '500',
+    fontFamily: 'Roboto-Medium',
     flex: 1,
   },
   bottomBar: {
@@ -292,7 +292,7 @@ const styles = StyleSheet.create({
   },
   cancelBtnText: {
     fontSize: 16,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     color: '#FFFFFF',
   },
   keepBtn: {
@@ -302,7 +302,7 @@ const styles = StyleSheet.create({
   },
   keepBtnText: {
     fontSize: 16,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     color: '#F0913A',
   },
 });

@@ -3,6 +3,7 @@ import Spacing, { SpacingType } from './Spacing';
 import BorderRadius, { BorderRadiusType } from './BorderRadius';
 import Typography, { TypographyType } from './Typography';
 import ImagePath from './ImagePath';
+import Fonts from './FontsStyle';
 
 export {
   Colors,
@@ -10,6 +11,7 @@ export {
   BorderRadius,
   Typography,
   ImagePath,
+  Fonts,
 };
 
 export type {
@@ -25,4 +27,5 @@ export default {
   BorderRadius,
   Typography,
   ImagePath,
+  Fonts,
 };

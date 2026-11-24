@@ -252,7 +252,7 @@ const styles = StyleSheet.create({
   },
   headerTitle: {
     fontSize: 18,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     color: '#FFFFFF',
   },
   placeholder: {
@@ -278,7 +278,7 @@ const styles = StyleSheet.create({
   textInput: {
     flex: 1,
     fontSize: 16,
-    fontWeight: '600',
+    fontFamily: 'Roboto-SemiBold',
     color: '#FFFFFF',
   },
   addBtnInside: {
@@ -297,7 +297,7 @@ const styles = StyleSheet.create({
   },
   quantityLabel: {
     fontSize: 14,
-    fontWeight: '500',
+    fontFamily: 'Roboto-Medium',
     color: '#CAD4DF',
   },
   quantityPill: {
@@ -312,13 +312,13 @@ const styles = StyleSheet.create({
   },
   quantityInput: {
     fontSize: 14,
-    fontWeight: '600',
+    fontFamily: 'Roboto-SemiBold',
     color: '#FFFFFF',
     textAlign: 'center',
   },
   sectionEyebrow: {
     fontSize: 11,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     letterSpacing: 1.2,
     color: '#8A97AB',
     marginBottom: 12,
@@ -344,7 +344,7 @@ const styles = StyleSheet.create({
   },
   suggestionText: {
     fontSize: 13,
-    fontWeight: '600',
+    fontFamily: 'Roboto-SemiBold',
     color: '#CAD4DF',
   },
   addedJustNowSection: {
@@ -383,7 +383,7 @@ const styles = StyleSheet.create({
   },
   addedItemTitle: {
     fontSize: 15,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     color: '#FFFFFF',
     marginBottom: 2,
   },
@@ -409,7 +409,7 @@ const styles = StyleSheet.create({
   },
   doneBtnText: {
     fontSize: 16,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     color: '#FFFFFF',
   },
 });

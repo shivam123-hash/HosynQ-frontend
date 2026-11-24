@@ -80,10 +80,9 @@ const styles = StyleSheet.create({
     marginTop: 24,
   },
   sectionTitle: {
-    fontFamily: 'Roboto',
     fontSize: 19,
     lineHeight: 24,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     color: '#B6B8B8',
     marginBottom: 12,
   },
@@ -109,15 +108,14 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   countText: {
-    fontFamily: 'Roboto',
     fontSize: 13,
     lineHeight: 18,
-    fontWeight: '500',
+    fontFamily: 'Roboto-Medium',
     color: '#B6B8B8',
   },
   countTextHighlighted: {
     color: Colors.primary, // #F0913A
-    fontWeight: '500',
+    fontFamily: 'Roboto-Medium',
   },
   barArea: {
     width: 22,
@@ -136,10 +134,9 @@ const styles = StyleSheet.create({
     backgroundColor: '#2A3E5E',
   },
   dayLabel: {
-    fontFamily: 'Roboto',
     fontSize: 10.5,
     lineHeight: 16,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     color: '#8A97AB',
     letterSpacing: 1.26,
   },
@@ -153,13 +150,13 @@ const styles = StyleSheet.create({
   dateNumDefault: {
     fontSize: 13,
     lineHeight: 18,
-    fontWeight: '400',
+    fontFamily: 'Roboto-Regular',
     color: '#B6B8B8',
   },
   dateNumToday: {
     fontSize: 15.5,
     lineHeight: 20,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     color: Colors.primary, // #F0913A
   },
 });

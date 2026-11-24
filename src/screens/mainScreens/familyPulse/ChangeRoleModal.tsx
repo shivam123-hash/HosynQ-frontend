@@ -248,7 +248,7 @@ const styles = StyleSheet.create({
   },
   title: {
     fontSize: 22,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     color: '#FFFFFF',
     marginBottom: 18,
     letterSpacing: -0.2,
@@ -273,7 +273,7 @@ const styles = StyleSheet.create({
   },
   roleTitle: {
     fontSize: 16,
-    fontWeight: '600',
+    fontFamily: 'Roboto-SemiBold',
     letterSpacing: -0.1,
   },
   roleDescription: {
@@ -310,7 +310,7 @@ const styles = StyleSheet.create({
   },
   saveButtonText: {
     fontSize: 16,
-    fontWeight: '600',
+    fontFamily: 'Roboto-SemiBold',
     color: '#FFFFFF',
   },
 });

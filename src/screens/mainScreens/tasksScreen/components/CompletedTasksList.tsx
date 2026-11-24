@@ -138,7 +138,7 @@ const styles = StyleSheet.create({
   },
   sectionHeader: {
     fontSize: 12,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     letterSpacing: 1.2,
     color: '#8A97AB',
     marginBottom: 10,
@@ -176,7 +176,7 @@ const styles = StyleSheet.create({
   },
   taskTitleStrikethrough: {
     fontSize: 15,
-    fontWeight: '600',
+    fontFamily: 'Roboto-SemiBold',
     color: '#8A97AB',
     textDecorationLine: 'line-through',
     lineHeight: 20,
@@ -189,7 +189,7 @@ const styles = StyleSheet.create({
   },
   reopenText: {
     fontSize: 14,
-    fontWeight: '600',
+    fontFamily: 'Roboto-SemiBold',
     color: '#F0913A',
   },
 });

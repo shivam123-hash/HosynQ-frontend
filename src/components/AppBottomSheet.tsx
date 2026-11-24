@@ -68,7 +68,6 @@ const AppBottomSheet: React.FC<AppBottomSheetProps> = ({
     >
       <View
         style={styles.overlay}
-        accessibilityRole="dialog"
         accessibilityLabel={accessibilityLabel || title}
       >
         <TouchableOpacity
@@ -175,7 +174,7 @@ const styles = StyleSheet.create({
   },
   title: {
     fontSize: Typography.size.title,
-    fontWeight: Typography.weight.bold,
+    fontFamily: 'Roboto-Bold',
     color: Colors.textLightMutedAlt,
     textAlign: 'center',
   },
@@ -202,7 +201,7 @@ const styles = StyleSheet.create({
   },
   actionBtnText: {
     fontSize: Typography.size.subtitle,
-    fontWeight: Typography.weight.bold,
+    fontFamily: 'Roboto-Bold',
     color: Colors.white,
   },
   cancelBtn: {
@@ -212,7 +211,7 @@ const styles = StyleSheet.create({
   },
   cancelBtnText: {
     fontSize: Typography.size.bodyMedium,
-    fontWeight: Typography.weight.semiBold,
+    fontFamily: 'Roboto-SemiBold',
     color: Colors.primary,
   },
 });

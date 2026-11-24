@@ -256,14 +256,14 @@ const styles = StyleSheet.create({
   },
   title: {
     fontSize: 20,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     color: '#FFFFFF',
     textAlign: 'center',
     marginBottom: 4,
   },
   subtitle: {
     fontSize: 14,
-    fontWeight: '400',
+    fontFamily: 'Roboto-Light',
     color: '#8A97AB',
     textAlign: 'center',
     marginBottom: 16,
@@ -302,7 +302,7 @@ const styles = StyleSheet.create({
   },
   avatarText: {
     fontSize: 14,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     color: '#FFFFFF',
   },
   memberTextCol: {
@@ -310,7 +310,7 @@ const styles = StyleSheet.create({
   },
   memberName: {
     fontSize: 15,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     color: '#FFFFFF',
     marginBottom: 2,
   },
@@ -347,7 +347,7 @@ const styles = StyleSheet.create({
   },
   switchLabel: {
     fontSize: 15,
-    fontWeight: '600',
+    fontFamily: 'Roboto-SemiBold',
     color: '#FFFFFF',
   },
   giveBtn: {
@@ -360,7 +360,7 @@ const styles = StyleSheet.create({
   },
   giveBtnText: {
     fontSize: 16,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     color: '#FFFFFF',
   },
 });

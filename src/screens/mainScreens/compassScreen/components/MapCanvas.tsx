@@ -391,7 +391,7 @@ const styles = StyleSheet.create({
   avatarInitial: {
     color: '#FFFFFF',
     fontSize: 14,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
   },
   routeLayer: {
     ...StyleSheet.absoluteFill,

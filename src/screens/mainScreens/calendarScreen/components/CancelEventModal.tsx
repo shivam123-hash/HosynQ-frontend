@@ -133,7 +133,7 @@ const styles = StyleSheet.create({
   },
   toggleLabel: {
     fontSize: 15,
-    fontWeight: '600',
+    fontFamily: 'Roboto-SemiBold',
     color: Colors.chipInactive,
   },
   reasonInputContainer: {

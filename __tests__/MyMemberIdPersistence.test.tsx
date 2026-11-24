@@ -4,7 +4,7 @@ import {
   saveUserData,
   getUserData,
   clearUserData,
-} from '../src/units/asyncStorageManager';
+} from '../src/units/AsyncStorageManager';
 import familyReducer, {
   createFamilyThunk,
   setMyMemberId,
@@ -47,6 +47,8 @@ describe('myMemberId persistence and family state', () => {
       myFamilyData: null,
       myFamilyLoading: false,
       myFamilyError: null,
+      addMemberLoading: false,
+      addMemberError: null,
     };
 
     const action = {
@@ -93,6 +95,8 @@ describe('myMemberId persistence and family state', () => {
       myFamilyData: null,
       myFamilyLoading: false,
       myFamilyError: null,
+      addMemberLoading: false,
+      addMemberError: null,
     };
 
     const state = familyReducer(

@@ -423,7 +423,7 @@ const styles = StyleSheet.create({
   },
   headerTitle: {
     fontSize: 18,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     color: Colors.white,
     letterSpacing: -0.2,
   },
@@ -455,7 +455,7 @@ const styles = StyleSheet.create({
     color: Colors.textNearWhite,
     fontSize: 13,
     lineHeight: 18,
-    fontWeight: '500',
+    fontFamily: 'Roboto-Medium',
   },
   centerGraphicArea: {
     alignItems: 'center',
@@ -482,7 +482,7 @@ const styles = StyleSheet.create({
   },
   unavailableTitle: {
     fontSize: 22,
-    fontWeight: '800',
+    fontFamily: 'Roboto-Bold',
     color: Colors.white,
     letterSpacing: -0.3,
     marginBottom: 12,
@@ -511,7 +511,7 @@ const styles = StyleSheet.create({
   inviteButtonText: {
     color: Colors.white,
     fontSize: 16,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
   },
   hideButton: {
     paddingVertical: 10,
@@ -521,7 +521,7 @@ const styles = StyleSheet.create({
   hideButtonText: {
     color: Colors.primary,
     fontSize: 15,
-    fontWeight: '600',
+    fontFamily: 'Roboto-SemiBold',
   },
   chatArea: {
     flex: 1,
@@ -569,7 +569,7 @@ const styles = StyleSheet.create({
   datePillText: {
     color: Colors.textSecondary,
     fontSize: 12,
-    fontWeight: '600',
+    fontFamily: 'Roboto-SemiBold',
   },
   outgoingMessageContainer: {
     alignItems: 'flex-end',
@@ -586,7 +586,7 @@ const styles = StyleSheet.create({
   outgoingText: {
     color: Colors.black,
     fontSize: 15,
-    fontWeight: '500',
+    fontFamily: 'Roboto-Medium',
     lineHeight: 20,
   },
   outgoingMetaRow: {
@@ -620,7 +620,7 @@ const styles = StyleSheet.create({
   avatarInitial: {
     color: Colors.white,
     fontSize: 12,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
   },
   incomingContentGroup: {
     flex: 1,

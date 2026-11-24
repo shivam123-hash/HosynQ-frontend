@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import {
   View,
   Text,
@@ -10,6 +10,8 @@ import {
   KeyboardAvoidingView,
   Platform,
   Alert,
+  Keyboard,
+  findNodeHandle,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Feather from '@react-native-vector-icons/feather';
@@ -161,6 +163,79 @@ const HealthProfileInputScreen: React.FC<HealthProfileInputScreenProps> = ({
   const [newMedicationText, setNewMedicationText] = useState('');
   const [isAddingMedication, setIsAddingMedication] = useState(false);
 
+  // Keyboard and focus tracking
+  const scrollViewRef = useRef<any>(null);
+  const [keyboardHeight, setKeyboardHeight] = useState(0);
+  const [allergiesY, setAllergiesY] = useState(0);
+  const [conditionsY, setConditionsY] = useState(0);
+  const [medicationsY, setMedicationsY] = useState(0);
+
+  useEffect(() => {
+    const showEvent = Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow';
+    const hideEvent = Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide';
+
+    const showSub = Keyboard.addListener(showEvent, (e) => {
+      setKeyboardHeight(e.endCoordinates ? e.endCoordinates.height : 0);
+    });
+    const hideSub = Keyboard.addListener(hideEvent, () => {
+      setKeyboardHeight(0);
+    });
+
+    return () => {
+      showSub.remove();
+      hideSub.remove();
+    };
+  }, []);
+
+  const handleInputFocus = (event: any) => {
+    if (scrollViewRef.current) {
+      const nodeHandle = findNodeHandle(event.target);
+      if (nodeHandle) {
+        setTimeout(() => {
+          (scrollViewRef.current as any)
+            ?.getScrollResponder?.()
+            ?.scrollResponderScrollNativeHandleToKeyboard(nodeHandle, 120, true);
+        }, 120);
+      }
+    }
+  };
+
+  const handleOpenAddAllergy = () => {
+    setIsAddingAllergy(true);
+    setTimeout(() => {
+      if (scrollViewRef.current && allergiesY > 0) {
+        scrollViewRef.current.scrollTo({
+          y: Math.max(0, allergiesY - 60),
+          animated: true,
+        });
+      }
+    }, 120);
+  };
+
+  const handleOpenAddCondition = () => {
+    setIsAddingCondition(true);
+    setTimeout(() => {
+      if (scrollViewRef.current && conditionsY > 0) {
+        scrollViewRef.current.scrollTo({
+          y: Math.max(0, conditionsY - 60),
+          animated: true,
+        });
+      }
+    }, 120);
+  };
+
+  const handleOpenAddMedication = () => {
+    setIsAddingMedication(true);
+    setTimeout(() => {
+      if (scrollViewRef.current && medicationsY > 0) {
+        scrollViewRef.current.scrollTo({
+          y: Math.max(0, medicationsY - 60),
+          animated: true,
+        });
+      }
+    }, 120);
+  };
+
   const handleRemoveAllergy = (id: string) => {
     setForm((prev) => ({
       ...prev,
@@ -259,8 +334,14 @@ const HealthProfileInputScreen: React.FC<HealthProfileInputScreenProps> = ({
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       >
         <ScrollView
+          ref={scrollViewRef}
           style={styles.scrollContainer}
-          contentContainerStyle={styles.scrollContent}
+          contentContainerStyle={[
+            styles.scrollContent,
+            keyboardHeight > 0
+              ? { paddingBottom: keyboardHeight + 100 }
+              : null,
+          ]}
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
         >
@@ -275,6 +356,7 @@ const HealthProfileInputScreen: React.FC<HealthProfileInputScreenProps> = ({
               value={form.doctor.doctorName}
               placeholder="Dr. Anjali Rao"
               placeholderTextColor="#60728B"
+              onFocus={handleInputFocus}
               onChangeText={(text) =>
                 setForm((prev) => ({
                   ...prev,
@@ -349,6 +431,7 @@ const HealthProfileInputScreen: React.FC<HealthProfileInputScreenProps> = ({
                 placeholder="98765 01234"
                 placeholderTextColor="#60728B"
                 keyboardType="phone-pad"
+                onFocus={handleInputFocus}
                 onChangeText={(text) =>
                   setForm((prev) => ({
                     ...prev,
@@ -367,6 +450,7 @@ const HealthProfileInputScreen: React.FC<HealthProfileInputScreenProps> = ({
               value={form.doctor.clinicName}
               placeholder="Rao Clinic"
               placeholderTextColor="#60728B"
+              onFocus={handleInputFocus}
               onChangeText={(text) =>
                 setForm((prev) => ({
                   ...prev,
@@ -437,7 +521,10 @@ const HealthProfileInputScreen: React.FC<HealthProfileInputScreenProps> = ({
           </Text>
 
           {/* Allergies */}
-          <View style={styles.fieldGroup}>
+          <View
+            style={styles.fieldGroup}
+            onLayout={(e) => setAllergiesY(e.nativeEvent.layout.y)}
+          >
             <Text style={styles.fieldLabel}>Allergies</Text>
             <View style={styles.chipsContainer}>
               <View style={styles.chipsRow}>
@@ -463,6 +550,7 @@ const HealthProfileInputScreen: React.FC<HealthProfileInputScreenProps> = ({
                     placeholder="e.g. Peanuts · Severe"
                     placeholderTextColor="#60728B"
                     autoFocus
+                    onFocus={handleInputFocus}
                     onChangeText={setNewAllergyText}
                     onSubmitEditing={handleAddAllergy}
                   />
@@ -477,7 +565,7 @@ const HealthProfileInputScreen: React.FC<HealthProfileInputScreenProps> = ({
                 <TouchableOpacity
                   activeOpacity={0.7}
                   style={styles.addChipBtn}
-                  onPress={() => setIsAddingAllergy(true)}
+                  onPress={handleOpenAddAllergy}
                 >
                   <Text style={styles.addChipBtnText}>Add allergy</Text>
                 </TouchableOpacity>
@@ -486,7 +574,10 @@ const HealthProfileInputScreen: React.FC<HealthProfileInputScreenProps> = ({
           </View>
 
           {/* Conditions */}
-          <View style={styles.fieldGroup}>
+          <View
+            style={styles.fieldGroup}
+            onLayout={(e) => setConditionsY(e.nativeEvent.layout.y)}
+          >
             <Text style={styles.fieldLabel}>Conditions</Text>
             <View style={styles.chipsContainer}>
               <View style={styles.chipsRow}>
@@ -512,6 +603,7 @@ const HealthProfileInputScreen: React.FC<HealthProfileInputScreenProps> = ({
                     placeholder="e.g. Asthma · since 2018"
                     placeholderTextColor="#60728B"
                     autoFocus
+                    onFocus={handleInputFocus}
                     onChangeText={setNewConditionText}
                     onSubmitEditing={handleAddCondition}
                   />
@@ -526,7 +618,7 @@ const HealthProfileInputScreen: React.FC<HealthProfileInputScreenProps> = ({
                 <TouchableOpacity
                   activeOpacity={0.7}
                   style={styles.addChipBtn}
-                  onPress={() => setIsAddingCondition(true)}
+                  onPress={handleOpenAddCondition}
                 >
                   <Text style={styles.addChipBtnText}>Add condition</Text>
                 </TouchableOpacity>
@@ -540,7 +632,10 @@ const HealthProfileInputScreen: React.FC<HealthProfileInputScreenProps> = ({
           </Text>
 
           {/* Regular medicines */}
-          <View style={styles.fieldGroup}>
+          <View
+            style={styles.fieldGroup}
+            onLayout={(e) => setMedicationsY(e.nativeEvent.layout.y)}
+          >
             <Text style={styles.fieldLabel}>Regular medicines</Text>
             <View style={styles.chipsContainer}>
               <View style={styles.chipsRow}>
@@ -566,6 +661,7 @@ const HealthProfileInputScreen: React.FC<HealthProfileInputScreenProps> = ({
                     placeholder="e.g. Omega 3 · daily"
                     placeholderTextColor="#60728B"
                     autoFocus
+                    onFocus={handleInputFocus}
                     onChangeText={setNewMedicationText}
                     onSubmitEditing={handleAddMedication}
                   />
@@ -580,7 +676,7 @@ const HealthProfileInputScreen: React.FC<HealthProfileInputScreenProps> = ({
                 <TouchableOpacity
                   activeOpacity={0.7}
                   style={styles.addChipBtn}
-                  onPress={() => setIsAddingMedication(true)}
+                  onPress={handleOpenAddMedication}
                 >
                   <Text style={styles.addChipBtnText}>Add medicine</Text>
                 </TouchableOpacity>
@@ -732,6 +828,7 @@ const HealthProfileInputScreen: React.FC<HealthProfileInputScreenProps> = ({
                 placeholder="-1.25"
                 placeholderTextColor="#60728B"
                 keyboardType="numbers-and-punctuation"
+                onFocus={handleInputFocus}
                 onChangeText={(text) =>
                   setForm((prev) => ({
                     ...prev,
@@ -749,6 +846,7 @@ const HealthProfileInputScreen: React.FC<HealthProfileInputScreenProps> = ({
                 placeholder="-1.00"
                 placeholderTextColor="#60728B"
                 keyboardType="numbers-and-punctuation"
+                onFocus={handleInputFocus}
                 onChangeText={(text) =>
                   setForm((prev) => ({
                     ...prev,
@@ -882,7 +980,7 @@ const styles = StyleSheet.create({
   sectionHeader: {
     color: '#F0913A',
     fontSize: RFValue(11),
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     letterSpacing: 1.2,
     textTransform: 'uppercase',
     marginBottom: 14,
@@ -896,7 +994,7 @@ const styles = StyleSheet.create({
   fieldLabel: {
     color: '#8E9BAE',
     fontSize: RFValue(12),
-    fontWeight: '500',
+    fontFamily: 'Roboto-Medium',
     marginBottom: 8,
   },
   textInput: {
@@ -923,7 +1021,7 @@ const styles = StyleSheet.create({
   pickerValueText: {
     color: '#FFFFFF',
     fontSize: RFValue(13.5),
-    fontWeight: '500',
+    fontFamily: 'Roboto-Medium',
   },
   phoneInputContainer: {
     flexDirection: 'row',
@@ -944,7 +1042,7 @@ const styles = StyleSheet.create({
   phoneCodeText: {
     color: '#FFFFFF',
     fontSize: RFValue(13.5),
-    fontWeight: '600',
+    fontFamily: 'Roboto-SemiBold',
   },
   phoneTextInput: {
     flex: 1,
@@ -1029,7 +1127,7 @@ const styles = StyleSheet.create({
   chipText: {
     color: '#FFFFFF',
     fontSize: RFValue(12),
-    fontWeight: '500',
+    fontFamily: 'Roboto-Medium',
   },
   chipCloseBtn: {
     marginLeft: 6,
@@ -1041,7 +1139,7 @@ const styles = StyleSheet.create({
   chipCloseText: {
     color: '#8E9BAE',
     fontSize: RFValue(14),
-    fontWeight: '600',
+    fontFamily: 'Roboto-SemiBold',
     lineHeight: 16,
   },
   addChipBtn: {
@@ -1080,7 +1178,7 @@ const styles = StyleSheet.create({
   inlineAddDoneText: {
     color: '#FFFFFF',
     fontSize: RFValue(12),
-    fontWeight: '600',
+    fontFamily: 'Roboto-SemiBold',
   },
   sideBySideRow: {
     flexDirection: 'row',
@@ -1126,11 +1224,11 @@ const styles = StyleSheet.create({
   wearsPillText: {
     color: '#8E9BAE',
     fontSize: RFValue(13),
-    fontWeight: '500',
+    fontFamily: 'Roboto-Medium',
   },
   wearsPillTextActive: {
     color: '#FFFFFF',
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
   },
   attachBtn: {
     flexDirection: 'row',
@@ -1149,7 +1247,7 @@ const styles = StyleSheet.create({
   attachBtnText: {
     color: '#F0913A',
     fontSize: RFValue(13),
-    fontWeight: '600',
+    fontFamily: 'Roboto-SemiBold',
   },
   bottomBar: {
     paddingHorizontal: 20,

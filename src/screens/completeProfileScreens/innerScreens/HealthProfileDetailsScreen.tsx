@@ -543,7 +543,7 @@ const styles = StyleSheet.create({
   privacyText: {
     color: '#8E9BAE',
     fontSize: RFValue(12.5),
-    fontWeight: '500',
+    fontFamily: 'Roboto-Medium',
   },
   card: {
     backgroundColor: '#0B1E36',
@@ -574,13 +574,13 @@ const styles = StyleSheet.create({
   rowLabel: {
     color: '#8E9BAE',
     fontSize: RFValue(11),
-    fontWeight: '500',
+    fontFamily: 'Roboto-Medium',
     marginBottom: 2,
   },
   rowValue: {
     color: '#FFFFFF',
     fontSize: RFValue(13.5),
-    fontWeight: '600',
+    fontFamily: 'Roboto-SemiBold',
   },
   cardDivider: {
     height: 1,
@@ -593,7 +593,7 @@ const styles = StyleSheet.create({
   sectionSmallLabel: {
     color: '#8E9BAE',
     fontSize: RFValue(11.5),
-    fontWeight: '500',
+    fontFamily: 'Roboto-Medium',
     marginBottom: 10,
   },
   allergyPillsRow: {
@@ -611,7 +611,7 @@ const styles = StyleSheet.create({
   solidPillText: {
     color: '#FFFFFF',
     fontSize: RFValue(12.5),
-    fontWeight: '600',
+    fontFamily: 'Roboto-SemiBold',
   },
   addPillBtn: {
     borderWidth: 1,
@@ -624,7 +624,7 @@ const styles = StyleSheet.create({
   addPillText: {
     color: '#FFFFFF',
     fontSize: RFValue(12.5),
-    fontWeight: '500',
+    fontFamily: 'Roboto-Medium',
   },
   conditionSection: {
     paddingHorizontal: 16,
@@ -637,7 +637,7 @@ const styles = StyleSheet.create({
   boldDetailText: {
     color: '#FFFFFF',
     fontSize: RFValue(13.5),
-    fontWeight: '600',
+    fontFamily: 'Roboto-SemiBold',
   },
   scheduleHeaderRow: {
     flexDirection: 'row',
@@ -648,14 +648,14 @@ const styles = StyleSheet.create({
   scheduleSectionTitle: {
     color: '#8E9BAE',
     fontSize: RFValue(11.5),
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     letterSpacing: 1.2,
     textTransform: 'uppercase',
   },
   scheduleStatusCount: {
     color: '#8E9BAE',
     fontSize: RFValue(12),
-    fontWeight: '500',
+    fontFamily: 'Roboto-Medium',
   },
   scheduleCard: {
     backgroundColor: '#0B1E36',
@@ -668,7 +668,7 @@ const styles = StyleSheet.create({
   timeSlotLabel: {
     color: '#F0913A',
     fontSize: RFValue(11),
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     letterSpacing: 1.1,
     textTransform: 'uppercase',
     marginBottom: 12,
@@ -718,7 +718,7 @@ const styles = StyleSheet.create({
   medicineNameText: {
     color: '#FFFFFF',
     fontSize: RFValue(13.5),
-    fontWeight: '600',
+    fontFamily: 'Roboto-SemiBold',
     marginBottom: 2,
   },
   medicineDosageText: {
@@ -741,7 +741,7 @@ const styles = StyleSheet.create({
   },
   statusBadgeText: {
     fontSize: RFValue(11.5),
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
   },
   statusBadgeTextTaken: {
     color: '#2ED573',
@@ -767,7 +767,7 @@ const styles = StyleSheet.create({
   missedDoseTitle: {
     color: '#FFFFFF',
     fontSize: RFValue(13.5),
-    fontWeight: '600',
+    fontFamily: 'Roboto-SemiBold',
   },
   missedDoseSubtitle: {
     color: '#8E9BAE',
@@ -796,7 +796,7 @@ const styles = StyleSheet.create({
   emptyMedicineTitle: {
     color: '#FFFFFF',
     fontSize: RFValue(14),
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     marginBottom: 6,
     textAlign: 'center',
   },

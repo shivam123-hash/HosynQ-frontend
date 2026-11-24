@@ -83,7 +83,7 @@ const styles = StyleSheet.create({
   },
   title: {
     fontSize: Typography.size.titleSmall,
-    fontWeight: Typography.weight.bold,
+    fontFamily: 'Roboto-Bold',
     color: Colors.textLightMutedAlt,
     textAlign: 'center',
     marginBottom: Spacing.xs,
@@ -106,7 +106,7 @@ const styles = StyleSheet.create({
   },
   actionBtnText: {
     fontSize: Typography.size.bodyMedium,
-    fontWeight: Typography.weight.bold,
+    fontFamily: 'Roboto-Bold',
     color: Colors.white,
   },
 });

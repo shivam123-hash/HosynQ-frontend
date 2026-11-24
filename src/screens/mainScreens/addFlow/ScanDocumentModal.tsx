@@ -1395,12 +1395,12 @@ const styles = StyleSheet.create({
   },
   headerTitle: {
     fontSize: 17,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     color: Colors.white,
   },
   ignoreText: {
     fontSize: 15,
-    fontWeight: '600',
+    fontFamily: 'Roboto-SemiBold',
     color: Colors.primary,
   },
   statusPillWrapper: {
@@ -1426,7 +1426,7 @@ const styles = StyleSheet.create({
   },
   statusPillText: {
     fontSize: 12,
-    fontWeight: '600',
+    fontFamily: 'Roboto-SemiBold',
     color: Colors.white,
   },
   viewfinderContainer: {
@@ -1532,12 +1532,12 @@ const styles = StyleSheet.create({
   },
   modeBtnText: {
     fontSize: 13,
-    fontWeight: '600',
+    fontFamily: 'Roboto-SemiBold',
     color: Colors.textSubtle,
   },
   modeBtnTextActive: {
     color: Colors.cardInsetDark,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
   },
   cameraBottomBar: {
     flexDirection: 'row',
@@ -1569,7 +1569,7 @@ const styles = StyleSheet.create({
   },
   thumbBadgeText: {
     fontSize: 11,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     color: Colors.white,
   },
   shutterOuter: {
@@ -1593,7 +1593,7 @@ const styles = StyleSheet.create({
   },
   doneBtnText: {
     fontSize: 16,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     color: Colors.primary,
   },
   readingContent: {
@@ -1664,7 +1664,7 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: Colors.textSubtle,
     marginLeft: 12,
-    fontWeight: '500',
+    fontFamily: 'Roboto-Medium',
   },
   statusDivider: {
     height: 1,
@@ -1692,7 +1692,7 @@ const styles = StyleSheet.create({
   },
   progressPct: {
     fontSize: 13,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     color: Colors.primary,
   },
   lockRow: {
@@ -1757,7 +1757,7 @@ const styles = StyleSheet.create({
   },
   outcomeTitle: {
     fontSize: 22,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     color: Colors.white,
     textAlign: 'center',
     marginBottom: 10,
@@ -1808,7 +1808,7 @@ const styles = StyleSheet.create({
   },
   savedFileName: {
     fontSize: 15,
-    fontWeight: '600',
+    fontFamily: 'Roboto-SemiBold',
     color: Colors.white,
   },
   savedFileMeta: {
@@ -1831,7 +1831,7 @@ const styles = StyleSheet.create({
   primaryOrangeBtnText: {
     color: Colors.white,
     fontSize: 16,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
   },
   secondaryDarkBtn: {
     height: 50,
@@ -1846,7 +1846,7 @@ const styles = StyleSheet.create({
   secondaryDarkBtnText: {
     color: Colors.white,
     fontSize: 15,
-    fontWeight: '600',
+    fontFamily: 'Roboto-SemiBold',
   },
   textLinkBtn: {
     alignItems: 'center',
@@ -1856,7 +1856,7 @@ const styles = StyleSheet.create({
   orangeLinkText: {
     color: Colors.primary,
     fontSize: 15,
-    fontWeight: '600',
+    fontFamily: 'Roboto-SemiBold',
   },
   bottomBar: {
     paddingHorizontal: 16,
@@ -1871,7 +1871,7 @@ const styles = StyleSheet.create({
   },
   cancelLinkText: {
     fontSize: 15,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     color: Colors.primary,
   },
   scrollView: {
@@ -1883,7 +1883,7 @@ const styles = StyleSheet.create({
   },
   orangeKicker: {
     fontSize: 12,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     color: Colors.primary,
     letterSpacing: 0.8,
     marginBottom: 12,
@@ -1912,7 +1912,7 @@ const styles = StyleSheet.create({
   },
   docTitle: {
     fontSize: 15,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     color: Colors.white,
     marginBottom: 2,
   },
@@ -1930,7 +1930,7 @@ const styles = StyleSheet.create({
   },
   summaryLabel: {
     fontSize: 11,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     color: Colors.textTertiary,
     letterSpacing: 0.6,
     marginBottom: 6,
@@ -1948,13 +1948,13 @@ const styles = StyleSheet.create({
   },
   itemsSectionTitle: {
     fontSize: 16,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     color: Colors.white,
   },
   itemsSelectedCount: {
     fontSize: 12,
     color: Colors.textTertiary,
-    fontWeight: '500',
+    fontFamily: 'Roboto-Medium',
   },
   itemsContainerCard: {
     backgroundColor: Colors.surfaceDeep,
@@ -1999,28 +1999,28 @@ const styles = StyleSheet.create({
   },
   eventTag: {
     fontSize: 11,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     color: Colors.accentBlue,
     marginLeft: 6,
     letterSpacing: 0.5,
   },
   taskTag: {
     fontSize: 11,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     color: Colors.primary,
     marginLeft: 6,
     letterSpacing: 0.5,
   },
   reminderTag: {
     fontSize: 11,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     color: Colors.accentPurple,
     marginLeft: 6,
     letterSpacing: 0.5,
   },
   foundItemTitle: {
     fontSize: 15,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     color: Colors.white,
     marginBottom: 3,
   },
@@ -2041,7 +2041,7 @@ const styles = StyleSheet.create({
   },
   pillGreenText: {
     fontSize: 11,
-    fontWeight: '600',
+    fontFamily: 'Roboto-SemiBold',
     color: Colors.accentTeal,
   },
   pillOrange: {
@@ -2053,7 +2053,7 @@ const styles = StyleSheet.create({
   },
   pillOrangeText: {
     fontSize: 11,
-    fontWeight: '600',
+    fontFamily: 'Roboto-SemiBold',
     color: Colors.primary,
   },
   pillGrey: {
@@ -2065,7 +2065,7 @@ const styles = StyleSheet.create({
   },
   pillGreyText: {
     fontSize: 11,
-    fontWeight: '500',
+    fontFamily: 'Roboto-Medium',
     color: Colors.textSubtle,
   },
   bottomBarRow: {
@@ -2089,7 +2089,7 @@ const styles = StyleSheet.create({
   },
   reviewEditBtnText: {
     fontSize: 14,
-    fontWeight: '600',
+    fontFamily: 'Roboto-SemiBold',
     color: Colors.white,
   },
   addItemsBtn: {
@@ -2102,7 +2102,7 @@ const styles = StyleSheet.create({
   },
   addItemsBtnText: {
     fontSize: 14,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     color: Colors.white,
   },
   dateSheetBackdrop: {
@@ -2128,7 +2128,7 @@ const styles = StyleSheet.create({
   },
   dateSheetTitle: {
     fontSize: 20,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     color: Colors.white,
     textAlign: 'center',
     marginBottom: 8,
@@ -2150,7 +2150,7 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: Colors.surfaceNavy,
     textAlign: 'center',
-    fontWeight: '500',
+    fontFamily: 'Roboto-Medium',
   },
   dateOptionCard: {
     backgroundColor: Colors.surfaceDeep,
@@ -2173,7 +2173,7 @@ const styles = StyleSheet.create({
   },
   dateOptionTitle: {
     fontSize: 15,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     color: Colors.white,
     marginBottom: 4,
   },
@@ -2210,7 +2210,7 @@ const styles = StyleSheet.create({
   },
   useDateBtnText: {
     fontSize: 15,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     color: Colors.white,
   },
   pickAnotherDateBtn: {
@@ -2219,7 +2219,7 @@ const styles = StyleSheet.create({
   },
   pickAnotherDateText: {
     fontSize: 14,
-    fontWeight: '600',
+    fontFamily: 'Roboto-SemiBold',
     color: Colors.primary,
   },
   reviewSub: {
@@ -2256,7 +2256,7 @@ const styles = StyleSheet.create({
   reviewRowVal: {
     flex: 1,
     fontSize: 14,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     color: Colors.white,
   },
   successContent: {
@@ -2286,7 +2286,7 @@ const styles = StyleSheet.create({
   },
   successTitle: {
     fontSize: 22,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     color: Colors.white,
     marginBottom: 6,
   },
@@ -2331,7 +2331,7 @@ const styles = StyleSheet.create({
   },
   successItemTitle: {
     fontSize: 14,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     color: Colors.white,
     marginBottom: 2,
   },
@@ -2345,7 +2345,7 @@ const styles = StyleSheet.create({
   },
   navLinkText: {
     fontSize: 13,
-    fontWeight: '600',
+    fontFamily: 'Roboto-SemiBold',
     color: Colors.primary,
     marginRight: 2,
   },
@@ -2364,7 +2364,7 @@ const styles = StyleSheet.create({
   },
   donePrimaryBtnText: {
     fontSize: 15,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     color: Colors.white,
   },
   scanAnotherBtn: {
@@ -2373,7 +2373,7 @@ const styles = StyleSheet.create({
   },
   scanAnotherText: {
     fontSize: 14,
-    fontWeight: '600',
+    fontFamily: 'Roboto-SemiBold',
     color: Colors.primary,
   },
   spacer16: {
@@ -2383,11 +2383,11 @@ const styles = StyleSheet.create({
     fontSize: 14,
     marginLeft: 12,
     color: Colors.white,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
   },
   quoteHighlightedDate: {
     color: Colors.primary,
-    fontWeight: 'bold',
+    fontFamily: 'Roboto-Bold',
   },
   ml8: {
     marginLeft: 8,
@@ -2470,7 +2470,7 @@ const styles = StyleSheet.create({
   },
   permissionTitle: {
     fontSize: 22,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     color: Colors.white,
     textAlign: 'center',
     marginBottom: 12,
@@ -2495,7 +2495,7 @@ const styles = StyleSheet.create({
   },
   permissionPrimaryBtnText: {
     fontSize: 16,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     color: Colors.white,
   },
   permissionSecondaryBtn: {
@@ -2505,12 +2505,12 @@ const styles = StyleSheet.create({
   },
   permissionSecondaryBtnText: {
     fontSize: 15,
-    fontWeight: '600',
+    fontFamily: 'Roboto-SemiBold',
     color: Colors.textSubtle,
   },
   uploadInsteadText: {
     fontSize: 15,
-    fontWeight: '600',
+    fontFamily: 'Roboto-SemiBold',
     color: Colors.primary,
   },
 });

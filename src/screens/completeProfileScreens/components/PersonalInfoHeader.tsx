@@ -78,13 +78,13 @@ const styles = StyleSheet.create({
   titleText: {
     color: '#FFFFFF',
     fontSize: RFValue(17),
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     textAlign: 'center',
   },
   subtitleText: {
     color: '#8E9BAE',
     fontSize: RFValue(12),
-    fontWeight: '400',
+    fontFamily: 'Roboto-Light',
     marginTop: 2,
     textAlign: 'center',
   },

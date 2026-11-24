@@ -101,12 +101,12 @@ const styles = StyleSheet.create({
   dateText: {
     fontSize: 13,
     color: '#8A97AB',
-    fontWeight: '500',
+    fontFamily: 'Roboto-Medium',
   },
   writingStatus: {
     fontSize: 13,
     color: Colors.primary, // #F0913A
-    fontWeight: '600',
+    fontFamily: 'Roboto-SemiBold',
   },
   card: {
     backgroundColor: '#122440',
@@ -128,7 +128,7 @@ const styles = StyleSheet.create({
   },
   cardTitle: {
     fontSize: 15,
-    fontWeight: '600',
+    fontFamily: 'Roboto-SemiBold',
     color: '#CAD4DF',
   },
   skeletonLine: {

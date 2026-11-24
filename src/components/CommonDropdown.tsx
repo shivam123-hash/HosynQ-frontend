@@ -225,18 +225,18 @@ const styles = StyleSheet.create({
     fontSize: RFValue(10.5),
     color: Colors.textSecondary,
     marginBottom: 2,
-    fontWeight: '400',
+    fontFamily: 'Roboto-Regular',
   },
   selectedValueText: {
     fontSize: RFValue(13.5),
     color: '#FFFFFF',
-    fontWeight: '500',
+    fontFamily: 'Roboto-Medium',
   },
   placeholderText: {
     fontSize: RFValue(13.5),
     color: Colors.textSecondary,
     flex: 1,
-    fontWeight: '400',
+    fontFamily: 'Roboto-Regular',
   },
   chevronWrapper: {
     marginLeft: 12,
@@ -251,14 +251,14 @@ const styles = StyleSheet.create({
     fontSize: RFValue(11),
     marginTop: 5,
     marginLeft: 24,
-    fontWeight: '400',
+    fontFamily: 'Roboto-Regular',
   },
   helperText: {
     color: '#7E8F9F',
     fontSize: RFValue(11),
     marginTop: 5,
     marginLeft: 24,
-    fontWeight: '400',
+    fontFamily: 'Roboto-Light',
   },
   modalOverlay: {
     flex: 1,
@@ -293,7 +293,7 @@ const styles = StyleSheet.create({
   },
   modalTitle: {
     fontSize: RFValue(15.5),
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     color: '#FFFFFF',
   },
   optionsList: {
@@ -317,12 +317,12 @@ const styles = StyleSheet.create({
   optionLabel: {
     fontSize: RFValue(13.5),
     color: '#CBD5E1',
-    fontWeight: '400',
+    fontFamily: 'Roboto-Regular',
     flex: 1,
   },
   selectedOptionLabel: {
     color: '#FFFFFF',
-    fontWeight: '600',
+    fontFamily: 'Roboto-SemiBold',
   },
   checkCircle: {
     width: 22,

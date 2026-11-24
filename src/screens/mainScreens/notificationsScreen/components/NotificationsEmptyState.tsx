@@ -72,7 +72,7 @@ const styles = StyleSheet.create({
   },
   headline: {
     fontSize: 24,
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     color: '#CAD4DF',
     textAlign: 'center',
     marginTop: 28,
@@ -93,7 +93,7 @@ const styles = StyleSheet.create({
   },
   linkText: {
     fontSize: 15,
-    fontWeight: '600',
+    fontFamily: 'Roboto-SemiBold',
     color: '#F0913A',
     textAlign: 'center',
   },

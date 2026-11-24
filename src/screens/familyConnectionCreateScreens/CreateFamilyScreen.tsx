@@ -5,9 +5,8 @@ import {
   StyleSheet,
   StatusBar,
   ScrollView,
-  Modal,
   TouchableOpacity,
-  Pressable,
+  TextInput,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Feather from '@react-native-vector-icons/feather';
@@ -18,13 +17,12 @@ import CommonInput from '../../components/CommonInput';
 import CommonDropdown from '../../components/CommonDropdown';
 import KeyboardAvoidingWrapper from '../../components/KeyboardAvoidingWrapper';
 import { useAppDispatch, useAppSelector } from '../../redux';
-import { createFamilyThunk, clearFamilyError } from '../../redux/features/family/familySlice';
-import { mapFamilyTypeToBackend } from '../../services/familyServices';
 import {
-  FamilyHeader,
-  FamilyMemberItem,
-  DashedActionButton,
-} from './components';
+  createFamilyThunk,
+  clearFamilyError,
+} from '../../redux/features/family/familySlice';
+import { mapFamilyTypeToBackend } from '../../services/familyServices';
+import { FamilyHeader } from './components';
 
 export interface FamilyMember {
   id: string;
@@ -38,6 +36,7 @@ export interface FamilyMember {
 export interface CreateFamilyData {
   familyName: string;
   familyType: string;
+  expectedMemberCount?: number;
   members: FamilyMember[];
   familyCode?: string;
   family?: any;
@@ -59,6 +58,8 @@ const FAMILY_TYPE_OPTIONS = [
   'Other',
 ];
 
+const MEMBER_COUNT_PRESETS = [2, 3, 4, 5, 6, 7, 8, 9, 10, 12, 15];
+
 const CreateFamilyScreen: React.FC<CreateFamilyScreenProps> = ({
   initialData,
   onBack,
@@ -66,7 +67,9 @@ const CreateFamilyScreen: React.FC<CreateFamilyScreenProps> = ({
 }) => {
   const insets = useSafeAreaInsets();
   const dispatch = useAppDispatch();
-  const { loading, error } = useAppSelector((state) => state.family);
+  const familyState = useAppSelector((state) => state.family);
+  const { loading, error } = familyState;
+
   const [localError, setLocalError] = useState<string | null>(null);
 
   const [familyName, setFamilyName] = useState(
@@ -75,50 +78,18 @@ const CreateFamilyScreen: React.FC<CreateFamilyScreenProps> = ({
   const [familyType, setFamilyType] = useState(
     initialData?.familyType || ''
   );
-
-  const [members, setMembers] = useState<FamilyMember[]>(
-    initialData?.members || [
-      {
-        id: '1',
-        name: 'Priya Sharma',
-        role: 'You · Mother',
-        initial: 'P',
-        badge: 'Owner',
-        avatarColor: '#6E4327',
-      },
-    ]
+  const [expectedMemberCount, setExpectedMemberCount] = useState<number>(
+    initialData?.expectedMemberCount || 5
   );
+  const [expectedMemberInput, setExpectedMemberInput] = useState<string>(
+    String(initialData?.expectedMemberCount || 5)
+  );
+  const [isMemberInputFocused, setIsMemberInputFocused] = useState(false);
 
-  // Add Member Modal State
-  const [isModalVisible, setIsModalVisible] = useState(false);
-  const [modalType, setModalType] = useState<'adult' | 'child'>('adult');
-  const [newMemberName, setNewMemberName] = useState('');
-  const [newMemberRole, setNewMemberRole] = useState('');
-
-  const handleOpenAddModal = (type: 'adult' | 'child') => {
-    setModalType(type);
-    setNewMemberName('');
-    setNewMemberRole(type === 'adult' ? 'Father' : 'Child');
-    setIsModalVisible(true);
-  };
-
-  const handleConfirmAddMember = () => {
-    if (!newMemberName.trim()) return;
-
-    const trimmedName = newMemberName.trim();
-    const firstInitial = trimmedName.charAt(0).toUpperCase();
-
-    const newMember: FamilyMember = {
-      id: Date.now().toString(),
-      name: trimmedName,
-      role: newMemberRole.trim() || (modalType === 'adult' ? 'Adult' : 'Child'),
-      initial: firstInitial,
-      avatarColor: modalType === 'adult' ? '#1E40AF' : '#059669',
-    };
-
-    setMembers((prev) => [...prev, newMember]);
-    setIsModalVisible(false);
-  };
+  const isCreateDisabled =
+    loading ||
+    familyName.trim().length < 2 ||
+    !familyType.trim();
 
   const handleSubmit = async () => {
     const trimmedName = familyName.trim();
@@ -127,16 +98,29 @@ const CreateFamilyScreen: React.FC<CreateFamilyScreenProps> = ({
       return;
     }
 
+    if (!familyType || !familyType.trim()) {
+      setLocalError('Please select a family type');
+      return;
+    }
+
     setLocalError(null);
     dispatch(clearFamilyError());
 
     try {
       const backendFamilyType = mapFamilyTypeToBackend(familyType);
+      const parsedCount = parseInt(expectedMemberInput, 10);
+      const finalCount =
+        !isNaN(parsedCount) && parsedCount > 0
+          ? parsedCount
+          : expectedMemberCount > 0
+          ? expectedMemberCount
+          : 5;
+
       const res = await dispatch(
         createFamilyThunk({
           name: trimmedName,
           familyType: backendFamilyType,
-          expectedMemberCount: 5,
+          expectedMemberCount: finalCount,
         })
       ).unwrap();
 
@@ -147,7 +131,8 @@ const CreateFamilyScreen: React.FC<CreateFamilyScreenProps> = ({
       onCreateFamily?.({
         familyName: res.family?.name || trimmedName,
         familyType: res.family?.familyType || familyType,
-        members,
+        expectedMemberCount: finalCount,
+        members: [],
         familyCode: res.family?.familyCode,
         family: res.family,
         memberId: myMemberId,
@@ -177,6 +162,7 @@ const CreateFamilyScreen: React.FC<CreateFamilyScreenProps> = ({
         style={styles.flexOne}
         contentContainerStyle={styles.scrollContent}
         extraHeight={20}
+        autoScrollToEnd={false}
       >
         <View>
           {/* Title & Subtitle */}
@@ -220,39 +206,123 @@ const CreateFamilyScreen: React.FC<CreateFamilyScreenProps> = ({
               placeholder="Select family type"
               containerStyle={styles.inputSpacing}
             />
-          </View>
 
-          {/* Members Section */}
-          <View style={styles.membersSection}>
-            <View style={styles.membersHeaderRow}>
-              <Text style={styles.membersLabel}>Members</Text>
-              <Text style={styles.optionalLabel}>Optional now</Text>
-            </View>
+            {/* Expected Member Count: 2-in-1 Input & Horizontal Scroll Presets */}
+            <View style={styles.inputSpacing}>
+              <Text style={styles.fieldLabel}>Expected member count</Text>
+              <View
+                style={[
+                  styles.memberCountInputContainer,
+                  isMemberInputFocused && styles.memberCountInputContainerFocused,
+                ]}
+              >
+                <Feather
+                  name="users"
+                  size={18}
+                  color="#8E9BAE"
+                  style={styles.usersIcon}
+                />
+                <TextInput
+                  style={styles.memberCountTextInput}
+                  value={expectedMemberInput}
+                  onChangeText={(val) => {
+                    const cleanVal = val.replace(/[^0-9]/g, '');
+                    setExpectedMemberInput(cleanVal);
+                    const parsed = parseInt(cleanVal, 10);
+                    if (!isNaN(parsed)) {
+                      setExpectedMemberCount(parsed);
+                    }
+                    if (localError || error) {
+                      setLocalError(null);
+                      dispatch(clearFamilyError());
+                    }
+                  }}
+                  onFocus={() => setIsMemberInputFocused(true)}
+                  onBlur={() => {
+                    setIsMemberInputFocused(false);
+                    if (!expectedMemberInput || parseInt(expectedMemberInput, 10) < 1) {
+                      setExpectedMemberInput('1');
+                      setExpectedMemberCount(1);
+                    }
+                  }}
+                  keyboardType="number-pad"
+                  placeholder="5"
+                  placeholderTextColor={Colors.textSecondary}
+                />
+                <View style={styles.stepperContainer}>
+                  <TouchableOpacity
+                    activeOpacity={0.7}
+                    style={styles.stepperBtn}
+                    onPress={() => {
+                      const current = parseInt(expectedMemberInput, 10) || expectedMemberCount || 5;
+                      const next = Math.max(1, current - 1);
+                      setExpectedMemberCount(next);
+                      setExpectedMemberInput(String(next));
+                      if (localError || error) {
+                        setLocalError(null);
+                        dispatch(clearFamilyError());
+                      }
+                    }}
+                  >
+                    <Feather name="minus" size={16} color="#FFFFFF" />
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    activeOpacity={0.7}
+                    style={styles.stepperBtn}
+                    onPress={() => {
+                      const current = parseInt(expectedMemberInput, 10) || expectedMemberCount || 5;
+                      const next = current + 1;
+                      setExpectedMemberCount(next);
+                      setExpectedMemberInput(String(next));
+                      if (localError || error) {
+                        setLocalError(null);
+                        dispatch(clearFamilyError());
+                      }
+                    }}
+                  >
+                    <Feather name="plus" size={16} color="#FFFFFF" />
+                  </TouchableOpacity>
+                </View>
+              </View>
 
-            {/* Members List */}
-            {members.map((member) => (
-              <FamilyMemberItem
-                key={member.id}
-                name={member.name}
-                relationRole={member.role}
-                initial={member.initial}
-                badge={member.badge}
-                avatarColor={member.avatarColor}
-              />
-            ))}
-
-            {/* Dashed Buttons: + Invite adult & + Add child */}
-            <View style={styles.actionButtonsRow}>
-              <DashedActionButton
-                title="Invite adult"
-                onPress={() => handleOpenAddModal('adult')}
-                style={styles.actionButtonLeft}
-              />
-              <DashedActionButton
-                title="Add child"
-                onPress={() => handleOpenAddModal('child')}
-                style={styles.actionButtonRight}
-              />
+              {/* Horizontal Scrollable Presets */}
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                contentContainerStyle={styles.numbersScrollContent}
+                style={styles.numbersScrollView}
+              >
+                {MEMBER_COUNT_PRESETS.map((num) => {
+                  const isSelected = expectedMemberCount === num;
+                  return (
+                    <TouchableOpacity
+                      key={num}
+                      activeOpacity={0.7}
+                      onPress={() => {
+                        setExpectedMemberCount(num);
+                        setExpectedMemberInput(String(num));
+                        if (localError || error) {
+                          setLocalError(null);
+                          dispatch(clearFamilyError());
+                        }
+                      }}
+                      style={[
+                        styles.numberChip,
+                        isSelected && styles.numberChipSelected,
+                      ]}
+                    >
+                      <Text
+                        style={[
+                          styles.numberChipText,
+                          isSelected && styles.numberChipTextSelected,
+                        ]}
+                      >
+                        {num}
+                      </Text>
+                    </TouchableOpacity>
+                  );
+                })}
+              </ScrollView>
             </View>
           </View>
         </View>
@@ -275,7 +345,7 @@ const CreateFamilyScreen: React.FC<CreateFamilyScreenProps> = ({
             title="Create Family"
             onPress={handleSubmit}
             loading={loading}
-            disabled={loading}
+            disabled={isCreateDisabled}
             backgroundColor={Colors.primary}
             textColor="#FFFFFF"
             height={56}
@@ -284,71 +354,6 @@ const CreateFamilyScreen: React.FC<CreateFamilyScreenProps> = ({
           />
         </View>
       </KeyboardAvoidingWrapper>
-
-      {/* Add Member Interactive Bottom Sheet / Modal */}
-      <Modal
-        visible={isModalVisible}
-        transparent
-        animationType="slide"
-        onRequestClose={() => setIsModalVisible(false)}
-      >
-        <Pressable
-          style={styles.modalOverlay}
-          onPress={() => setIsModalVisible(false)}
-        >
-          <Pressable
-            style={[styles.modalContent, { paddingBottom: insets.bottom + 16 }]}
-            onPress={(e) => e.stopPropagation()}
-          >
-            <View style={styles.sheetHandle} />
-
-            <Text style={styles.modalTitle}>
-              {modalType === 'adult' ? 'Invite Adult' : 'Add Child'}
-            </Text>
-            <Text style={styles.modalSubtitle}>
-              {modalType === 'adult'
-                ? 'Enter name and role of the family member to invite.'
-                : 'Enter details for the child.'}
-            </Text>
-
-            <CommonInput
-              label="Full Name"
-              value={newMemberName}
-              onChangeText={setNewMemberName}
-              placeholder="e.g. Rahul Sharma"
-              containerStyle={styles.inputSpacing}
-              activeBorderColor={Colors.primary}
-            />
-
-            <CommonInput
-              label="Role / Relation"
-              value={newMemberRole}
-              onChangeText={setNewMemberRole}
-              placeholder={modalType === 'adult' ? 'e.g. Father, Spouse' : 'e.g. Son, Daughter'}
-              containerStyle={styles.inputSpacing}
-              activeBorderColor={Colors.primary}
-            />
-
-            <View style={styles.modalBtnRow}>
-              <TouchableOpacity
-                activeOpacity={0.7}
-                style={styles.modalCancelBtn}
-                onPress={() => setIsModalVisible(false)}
-              >
-                <Text style={styles.modalCancelText}>Cancel</Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                activeOpacity={0.8}
-                style={styles.modalAddBtn}
-                onPress={handleConfirmAddMember}
-              >
-                <Text style={styles.modalAddText}>Add</Text>
-              </TouchableOpacity>
-            </View>
-          </Pressable>
-        </Pressable>
-      </Modal>
     </View>
   );
 };
@@ -376,7 +381,7 @@ const styles = StyleSheet.create({
   },
   title: {
     fontSize: RFValue(22),
-    fontWeight: '700',
+    fontFamily: 'Roboto-Bold',
     color: '#FFFFFF',
     textAlign: 'center',
   },
@@ -392,103 +397,79 @@ const styles = StyleSheet.create({
   inputSpacing: {
     marginBottom: 16,
   },
-  membersSection: {
-    marginTop: 8,
-  },
-  membersHeaderRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 12,
-  },
-  membersLabel: {
+  fieldLabel: {
     color: '#FFFFFF',
-    fontSize: RFValue(14),
-    fontWeight: '600',
+    fontSize: RFValue(13),
+    fontFamily: 'Roboto-SemiBold',
+    marginBottom: 8,
   },
-  optionalLabel: {
-    color: Colors.textSecondary,
-    fontSize: RFValue(12.5),
-  },
-  actionButtonsRow: {
+  memberCountInputContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginTop: 6,
+    height: 52,
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    backgroundColor: 'rgba(255, 255, 255, 0.04)',
+    paddingHorizontal: 16,
   },
-  actionButtonLeft: {
-    marginRight: 8,
+  memberCountInputContainerFocused: {
+    borderColor: Colors.primary,
   },
-  actionButtonRight: {
-    marginLeft: 8,
+  usersIcon: {
+    marginRight: 10,
+  },
+  memberCountTextInput: {
+    flex: 1,
+    color: '#FFFFFF',
+    fontSize: RFValue(14.5),
+    fontFamily: 'Roboto-SemiBold',
+    paddingVertical: 0,
+  },
+  stepperContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  stepperBtn: {
+    width: 32,
+    height: 32,
+    borderRadius: 8,
+    backgroundColor: 'rgba(255, 255, 255, 0.08)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  numbersScrollView: {
+    marginTop: 10,
+  },
+  numbersScrollContent: {
+    flexDirection: 'row',
+    gap: 8,
+    paddingVertical: 2,
+  },
+  numberChip: {
+    paddingHorizontal: 14,
+    paddingVertical: 7,
+    borderRadius: 18,
+    backgroundColor: 'rgba(255, 255, 255, 0.05)',
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.1)',
+  },
+  numberChipSelected: {
+    backgroundColor: Colors.primary,
+    borderColor: Colors.primary,
+  },
+  numberChipText: {
+    color: Colors.textSecondary,
+    fontSize: RFValue(13),
+    fontFamily: 'Roboto-SemiBold',
+  },
+  numberChipTextSelected: {
+    color: '#FFFFFF',
+    fontFamily: 'Roboto-Bold',
   },
   bottomSection: {
     marginTop: 32,
-  },
-  // Modal Styles
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.65)',
-    justifyContent: 'flex-end',
-  },
-  modalContent: {
-    backgroundColor: Colors.background,
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
-    paddingHorizontal: 24,
-    paddingTop: 12,
-  },
-  sheetHandle: {
-    width: 40,
-    height: 4,
-    backgroundColor: 'rgba(255, 255, 255, 0.25)',
-    borderRadius: 2,
-    alignSelf: 'center',
-    marginBottom: 18,
-  },
-  modalTitle: {
-    color: '#FFFFFF',
-    fontSize: RFValue(18),
-    fontWeight: '700',
-    textAlign: 'center',
-  },
-  modalSubtitle: {
-    color: Colors.textSecondary,
-    fontSize: RFValue(13),
-    textAlign: 'center',
-    marginTop: 6,
-    marginBottom: 20,
-  },
-  modalBtnRow: {
-    flexDirection: 'row',
-    gap: 12,
-    marginTop: 12,
-  },
-  modalCancelBtn: {
-    flex: 1,
-    height: 50,
-    borderRadius: 25,
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.2)',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  modalCancelText: {
-    color: Colors.textSecondary,
-    fontSize: RFValue(14),
-    fontWeight: '600',
-  },
-  modalAddBtn: {
-    flex: 1,
-    height: 50,
-    borderRadius: 25,
-    backgroundColor: Colors.primary,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  modalAddText: {
-    color: '#FFFFFF',
-    fontSize: RFValue(14),
-    fontWeight: '700',
   },
   errorContainer: {
     flexDirection: 'row',
@@ -503,7 +484,7 @@ const styles = StyleSheet.create({
   errorText: {
     color: '#EF4444',
     fontSize: RFValue(12),
-    fontWeight: '500',
+    fontFamily: 'Roboto-Medium',
     textAlign: 'center',
   },
 });

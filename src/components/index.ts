@@ -25,6 +25,9 @@ import AppConfirmationModal, {
   AppConfirmationModalProps,
 } from './AppConfirmationModal';
 import AppErrorModal, { AppErrorModalProps } from './AppErrorModal';
+import QrCodeScannerModal, {
+  QrCodeScannerModalProps,
+} from './QrCodeScannerModal';
 
 export {
   CommonBtn,
@@ -38,6 +41,7 @@ export {
   AppImagePickerBottomSheet,
   AppConfirmationModal,
   AppErrorModal,
+  QrCodeScannerModal,
   formatDate,
   formatTime,
   parseDateTimeString,
@@ -71,6 +75,7 @@ export type {
   SelectedImage,
   AppConfirmationModalProps,
   AppErrorModalProps,
+  QrCodeScannerModalProps,
 };
 
 export default {

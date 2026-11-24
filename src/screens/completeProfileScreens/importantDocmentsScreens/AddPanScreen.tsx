@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   View,
   Text,
@@ -9,6 +9,8 @@ import {
   StatusBar,
   Platform,
   KeyboardAvoidingView,
+  Keyboard,
+  findNodeHandle,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Feather from '@react-native-vector-icons/feather';
@@ -79,6 +81,39 @@ const AddPanScreen: React.FC<AddPanScreenProps> = ({
 
   const [isDatePickerVisible, setIsDatePickerVisible] = useState(false);
 
+  const scrollViewRef = useRef<any>(null);
+  const [keyboardHeight, setKeyboardHeight] = useState(0);
+
+  useEffect(() => {
+    const showEvent = Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow';
+    const hideEvent = Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide';
+
+    const showSub = Keyboard.addListener(showEvent, (e) => {
+      setKeyboardHeight(e.endCoordinates ? e.endCoordinates.height : 0);
+    });
+    const hideSub = Keyboard.addListener(hideEvent, () => {
+      setKeyboardHeight(0);
+    });
+
+    return () => {
+      showSub.remove();
+      hideSub.remove();
+    };
+  }, []);
+
+  const handleInputFocus = (event: any) => {
+    if (scrollViewRef.current) {
+      const nodeHandle = findNodeHandle(event.target);
+      if (nodeHandle) {
+        setTimeout(() => {
+          (scrollViewRef.current as any)
+            ?.getScrollResponder?.()
+            ?.scrollResponderScrollNativeHandleToKeyboard(nodeHandle, 120, true);
+        }, 120);
+      }
+    }
+  };
+
   const cleanPan = (val?: string): string => {
     if (!val) return '';
     return val.replace(/[^A-Za-z0-9]/g, '').trim().toUpperCase();
@@ -146,10 +181,17 @@ const AddPanScreen: React.FC<AddPanScreenProps> = ({
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       >
         <ScrollView
+          ref={scrollViewRef}
           style={styles.scrollContainer}
-          contentContainerStyle={styles.scrollContent}
+          contentContainerStyle={[
+            styles.scrollContent,
+            keyboardHeight > 0
+              ? { paddingBottom: keyboardHeight + 80 }
+              : null,
+          ]}
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
+          onFocus={handleInputFocus}
         >
           {/* Top Field: Upload & Scan Document Photo */}
           <DocumentPhotoUploadField
@@ -331,7 +373,7 @@ const styles = StyleSheet.create({
   photoTitle: {
     color: '#FFFFFF',
     fontSize: RFValue(12.5),
-    fontWeight: '600',
+    fontFamily: 'Roboto-SemiBold',
     marginTop: 4,
   },
   photoSubtitle: {
@@ -345,7 +387,7 @@ const styles = StyleSheet.create({
   fieldLabel: {
     color: '#94A3B8',
     fontSize: RFValue(12),
-    fontWeight: '500',
+    fontFamily: 'Roboto-Medium',
     marginBottom: 6,
   },
   inputBox: {
@@ -386,7 +428,7 @@ const styles = StyleSheet.create({
   selectorText: {
     color: '#FFFFFF',
     fontSize: RFValue(13.5),
-    fontWeight: '500',
+    fontFamily: 'Roboto-Medium',
   },
   bottomBar: {
     paddingHorizontal: 20,

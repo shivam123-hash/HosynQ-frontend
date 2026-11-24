@@ -85,7 +85,16 @@ export const signInWithGoogle = async (): Promise<GoogleAuthResult> => {
     // In latest @react-native-google-signin/google-signin, response structure has data
     const userInfo = response?.data || response;
     const user = userInfo?.user;
-    const idToken = userInfo?.idToken;
+    let idToken = userInfo?.idToken;
+
+    if (!idToken && g.GoogleSignin.getTokens) {
+      try {
+        const tokens = await g.GoogleSignin.getTokens();
+        idToken = tokens?.idToken;
+      } catch (tokenErr) {
+        console.log('[GoogleSignin] getTokens fallback error:', tokenErr);
+      }
+    }
 
     return {
       success: true,
