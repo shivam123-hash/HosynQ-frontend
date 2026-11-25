@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
   View,
   Text,
@@ -11,7 +11,15 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Feather from '@react-native-vector-icons/feather';
-import { CalendarEvent, EventComment } from '../types';
+import { useAppSelector } from '../../../../redux';
+import { CalendarEvent, EventComment, CalendarFamilyMember } from '../types';
+import {
+  extractFamilyMembersFromState,
+  resolveMyMemberIdFromState,
+  formatDisplayReminders,
+  formatDisplayRepeat,
+  normalizeRsvpResponse,
+} from '../calendarApiHelpers';
 import CancelEventModal from './CancelEventModal';
 import EventCommentsModal from './EventCommentsModal';
 import CreateEventModal from './CreateEventModal';
@@ -20,21 +28,25 @@ import AppOptionsMenu from '../../common/AppOptionsMenu';
 export interface EventDetailModalProps {
   visible: boolean;
   event: CalendarEvent | null;
+  members?: CalendarFamilyMember[];
   onClose: () => void;
   onEditEvent: (event: CalendarEvent) => void;
   onOpenComments: (event: CalendarEvent) => void;
   onCancelEvent: (event: CalendarEvent, reason?: string) => void;
   onAddComment?: (eventId: string, commentText: string) => void;
+  onRsvpResponse?: (eventId: string, response: 'GOING' | 'NOT_GOING') => void;
 }
 
 export const EventDetailModal: React.FC<EventDetailModalProps> = ({
   visible,
   event: eventProp,
+  members,
   onClose,
   onEditEvent,
   onOpenComments,
   onCancelEvent,
   onAddComment,
+  onRsvpResponse,
 }) => {
   const insets = useSafeAreaInsets();
   const [cachedEvent, setCachedEvent] = useState<CalendarEvent | null>(
@@ -44,6 +56,7 @@ export const EventDetailModal: React.FC<EventDetailModalProps> = ({
   const [showCancelModal, setShowCancelModal] = useState(false);
   const [showComments, setShowComments] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
+  const [showAttendeesModal, setShowAttendeesModal] = useState(false);
 
   useEffect(() => {
     if (eventProp) {
@@ -57,16 +70,244 @@ export const EventDetailModal: React.FC<EventDetailModalProps> = ({
       setShowCancelModal(false);
       setShowComments(false);
       setShowEditModal(false);
+      setShowAttendeesModal(false);
     }
   }, [visible]);
 
   useEffect(() => {
-    if (showCancelModal || showEditModal || showComments) {
+    if (
+      showCancelModal ||
+      showEditModal ||
+      showComments ||
+      showAttendeesModal
+    ) {
       setIsMenuOpen(false);
     }
-  }, [showCancelModal, showEditModal, showComments]);
+  }, [
+    showCancelModal,
+    showEditModal,
+    showComments,
+    showAttendeesModal,
+  ]);
 
-  const event = eventProp || cachedEvent;
+  const event = cachedEvent || eventProp;
+
+  const familyState = useAppSelector((state) => state.family);
+  const authUser = useAppSelector((state) => state.auth?.user);
+  const emailAuthUser = useAppSelector((state) => state.emailAuth?.user);
+  const baseProfile = useAppSelector((state) => state.baseProfile);
+  const lifeProfile = useAppSelector((state) => state.lifeProfile);
+  const authUserId = authUser?.id || emailAuthUser?.id || baseProfile?.user?.id;
+  const myMemberId =
+    resolveMyMemberIdFromState(familyState, authUserId) ||
+    (lifeProfile as any)?.memberId ||
+    (lifeProfile as any)?.profile?.memberId ||
+    null;
+
+  const allAvailableMembers = useMemo(() => {
+    if (members && members.length > 0) return members;
+    return extractFamilyMembersFromState(familyState);
+  }, [members, familyState]);
+
+  const currentUserName = useMemo(() => {
+    const myMember = myMemberId
+      ? allAvailableMembers.find((m) => m.id === myMemberId)
+      : null;
+    const rawName =
+      myMember?.name ||
+      authUser?.fullName ||
+      emailAuthUser?.fullName ||
+      baseProfile?.user?.fullName ||
+      (baseProfile?.isProfileComplete ? baseProfile?.fullName : '') ||
+      (lifeProfile as any)?.profile?.personal?.fullName ||
+      (lifeProfile as any)?.fullName ||
+      '';
+    const cleaned = rawName.replace(/\s*\(you\)\s*$/i, '').trim();
+    return cleaned || 'You';
+  }, [myMemberId, allAvailableMembers, authUser, emailAuthUser, baseProfile, lifeProfile]);
+
+  const isCurrentUserMember = useMemo(() => {
+    return (member: { id?: string; name?: string }) => {
+      if (myMemberId) {
+        return (
+          member.id === myMemberId ||
+          (Boolean(authUserId) && member.id === authUserId) ||
+          member.name === 'You'
+        );
+      }
+      if (authUserId && member.id === authUserId) return true;
+      if (member.name === 'You') return true;
+      if (currentUserName && currentUserName !== 'You' && member.name) {
+        return (
+          member.name.replace(/\s*\(you\)\s*$/i, '').trim().toLowerCase() ===
+          currentUserName.toLowerCase()
+        );
+      }
+      return false;
+    };
+  }, [myMemberId, authUserId, currentUserName]);
+
+  const isCreator = useMemo(() => {
+    if (!event) return false;
+    if (event.isCreator) return true;
+    const creatorIds = [event.createdByMemberId, event.createdById].filter(
+      Boolean
+    );
+    if (myMemberId && creatorIds.includes(myMemberId)) return true;
+    if (authUserId && creatorIds.includes(authUserId)) return true;
+    return false;
+  }, [event, myMemberId, authUserId]);
+
+  const effectiveMyResponse = useMemo(() => {
+    if (!event) return null;
+    const direct = normalizeRsvpResponse(event.myResponse);
+    if (direct) return direct;
+    if (myMemberId) {
+      const invEntry = event.invitees?.find((i) => i.id === myMemberId);
+      const invResponse = normalizeRsvpResponse(invEntry?.response);
+      if (invResponse) {
+        return invResponse;
+      }
+      if (
+        !invEntry &&
+        Array.isArray(event.goingMembers) &&
+        event.goingMembers.some((g) => g.id === myMemberId)
+      ) {
+        return 'GOING';
+      }
+    }
+    return null;
+  }, [event, myMemberId]);
+
+  const activeGoingMembers = useMemo(() => {
+    if (!event) return [];
+    let list: Array<{ id: string; name: string; initial: string; color: string; textColor?: string }> = [];
+
+    if (Array.isArray(event.goingMembers) && event.goingMembers.length > 0) {
+      list = event.goingMembers.map((g) => ({
+        id: g.id,
+        name: g.name,
+        initial: g.initial || (g.name ? g.name[0].toUpperCase() : 'U'),
+        color: g.color || '#1F3A66',
+        textColor: g.textColor || '#FFFFFF',
+      }));
+    } else if (Array.isArray(event.goingMemberIds) && event.goingMemberIds.length > 0) {
+      list = event.goingMemberIds
+        .map((id) => allAvailableMembers.find((m) => m.id === id))
+        .filter(Boolean)
+        .map((m: any) => ({
+          id: m.id,
+          name: m.name,
+          initial: m.initial || (m.name ? m.name[0].toUpperCase() : 'U'),
+          color: m.color || '#1F3A66',
+          textColor: m.textColor || '#FFFFFF',
+        }));
+    }
+
+    const myId = myMemberId;
+    const isCurrentUserInList = list.some((m) => isCurrentUserMember(m));
+
+    if (effectiveMyResponse === 'NOT_GOING') {
+      list = list.filter((m) => !isCurrentUserMember(m));
+    } else if ((effectiveMyResponse === 'GOING' || isCreator) && !isCurrentUserInList) {
+      const myMember = myId ? allAvailableMembers.find((m) => m.id === myId) : null;
+      const cleanMyName =
+        (myMember?.name || currentUserName || 'You').replace(/\s*\(you\)\s*$/i, '').trim() || 'You';
+      list.push({
+        id: myId || 'me',
+        name: cleanMyName,
+        initial: myMember?.initial || (cleanMyName !== 'You' ? cleanMyName[0].toUpperCase() : 'Y'),
+        color: myMember?.color || '#4A2E1A',
+        textColor: myMember?.textColor || '#F7C08E',
+      });
+    }
+
+    return list;
+  }, [event?.goingMembers, event?.goingMemberIds, effectiveMyResponse, isCreator, allAvailableMembers, myMemberId, currentUserName, isCurrentUserMember]);
+
+  const canShowRsvpCard = useMemo(() => {
+    if (!event) return false;
+    // Creator is already going -> never show "Are you going?"
+    if (isCreator) return false;
+    // Hide RSVP section once the invitee has submitted a response or cannot respond
+    if (Boolean(effectiveMyResponse) || event.canRespond === false) return false;
+
+    // If backend explicitly granted respond permission and user hasn't responded, trust it
+    if (event.backendCanRespond === true) return true;
+
+    // Show to every invited user who has not responded yet
+    if (myMemberId && Array.isArray(event.invitees) && event.invitees.length > 0) {
+      const invEntry = event.invitees.find((i) => i.id === myMemberId);
+      return Boolean(invEntry && !normalizeRsvpResponse(invEntry.response));
+    }
+
+    if (
+      myMemberId &&
+      Array.isArray(event.invitedMemberIds) &&
+      event.invitedMemberIds.length > 0
+    ) {
+      return event.invitedMemberIds.includes(myMemberId);
+    }
+
+    return Boolean(
+      event.askToConfirm ||
+        event.canRespond ||
+        (event.goingMemberIds && event.goingMemberIds.length > 0)
+    );
+  }, [event, isCreator, effectiveMyResponse, myMemberId]);
+
+  const handleRsvpSelect = (response: 'GOING' | 'NOT_GOING') => {
+    if (!event || isCreator || Boolean(effectiveMyResponse) || event.canRespond === false) {
+      return;
+    }
+    setCachedEvent((prev) =>
+      prev ? { ...prev, myResponse: response, canRespond: false } : null
+    );
+    onRsvpResponse?.(event.id, response);
+  };
+
+  const goingNamesText = useMemo(() => {
+    if (activeGoingMembers.length === 0) {
+      return 'No one going';
+    }
+
+    let seenYou = false;
+    const names = activeGoingMembers.map((m) => {
+      if (isCurrentUserMember(m) && !seenYou) {
+        seenYou = true;
+        return 'you';
+      }
+      return m.name.replace(/\s*\(you\)\s*$/i, '').trim() || m.name;
+    });
+
+    if (names.length === 1) {
+      return names[0] === 'you' ? 'You' : names[0];
+    }
+    if (names.length === 2) {
+      if (names[0] === 'you') return `${names[1]} and you`;
+      return `${names[0]} and ${names[1]}`;
+    }
+    if (names.length === 3) {
+      if (names.includes('you')) {
+        const others = names.filter((n) => n !== 'you');
+        return `${others[0]}, ${others[1]} and you`;
+      }
+      return `${names[0]}, ${names[1]} and ${names[2]}`;
+    }
+    const first = names[0] === 'you' ? names[1] : names[0];
+    const second = names[0] === 'you' ? names[2] : (names[1] === 'you' ? names[2] : names[1]);
+    const remaining = names.length - 2;
+    return `${first}, ${second} and ${remaining} more`;
+  }, [activeGoingMembers, isCurrentUserMember]);
+
+  const displayReminders = useMemo(
+    () => formatDisplayReminders(event?.reminders),
+    [event?.reminders]
+  );
+  const displayRepeat = useMemo(
+    () => formatDisplayRepeat(event?.repeat),
+    [event?.repeat]
+  );
 
   if (!event) return null;
 
@@ -75,11 +316,18 @@ export const EventDetailModal: React.FC<EventDetailModalProps> = ({
     setShowComments(false);
     setShowCancelModal(false);
     setShowEditModal(false);
+    setShowAttendeesModal(false);
     onClose();
   };
 
   const handleToggleMenu = () => {
-    if (showCancelModal || showEditModal || showComments) return;
+    if (
+      showCancelModal ||
+      showEditModal ||
+      showComments ||
+      showAttendeesModal
+    )
+      return;
     setIsMenuOpen((prev) => !prev);
   };
 
@@ -102,7 +350,7 @@ export const EventDetailModal: React.FC<EventDetailModalProps> = ({
       isCurrentUser: true,
     };
     setCachedEvent((prev) =>
-      prev ? { ...prev, comments: [...prev.comments, newComment] } : null
+      prev ? { ...prev, comments: [...(prev.comments || []), newComment] } : null
     );
     onAddComment?.(eventId, commentText);
   };
@@ -154,27 +402,35 @@ export const EventDetailModal: React.FC<EventDetailModalProps> = ({
           items={[
             {
               id: 'comments',
-              label: `Comments (${event.comments.length})`,
+              label: `Comments (${event.comments?.length || 0})`,
               iconName: 'message-square',
               onPress: () => {
                 setShowComments(true);
                 onOpenComments(event);
               },
             },
-            {
-              id: 'edit',
-              label: 'Edit Event',
-              iconName: 'edit-2',
-              onPress: () => setShowEditModal(true),
-              showDividerAfter: true,
-            },
-            {
-              id: 'cancel',
-              label: 'Cancel Event',
-              iconName: 'trash-2',
-              destructive: true,
-              onPress: () => setShowCancelModal(true),
-            },
+            ...(event.canEdit !== false
+              ? [
+                  {
+                    id: 'edit',
+                    label: 'Edit Event',
+                    iconName: 'edit-2',
+                    onPress: () => setShowEditModal(true),
+                    showDividerAfter: event.canCancel !== false,
+                  },
+                ]
+              : []),
+            ...(event.canCancel !== false
+              ? [
+                  {
+                    id: 'cancel',
+                    label: 'Cancel Event',
+                    iconName: 'trash-2',
+                    destructive: true,
+                    onPress: () => setShowCancelModal(true),
+                  },
+                ]
+              : []),
           ]}
         />
 
@@ -242,11 +498,19 @@ export const EventDetailModal: React.FC<EventDetailModalProps> = ({
             )}
 
             {/* Row 2: Going */}
-            <View
+            <TouchableOpacity
               style={[
                 styles.cardRow,
                 Boolean(event.location) && styles.cardRowDivider,
               ]}
+              onPress={() => {
+                if (activeGoingMembers.length > 0) {
+                  setShowAttendeesModal(true);
+                }
+              }}
+              activeOpacity={activeGoingMembers.length > 0 ? 0.7 : 1}
+              accessibilityRole="button"
+              accessibilityLabel={`Going: ${goingNamesText}`}
             >
               <View style={styles.rowIconCol}>
                 <Feather name="users" size={18} color="#8A97AB" />
@@ -254,23 +518,57 @@ export const EventDetailModal: React.FC<EventDetailModalProps> = ({
               <View style={styles.rowTextCol}>
                 <Text style={styles.rowLabel}>Going</Text>
                 <View style={styles.goingRow}>
-                  <View style={styles.avatarsOverlap}>
-                    <View style={[styles.goingAvatar, styles.avatarRohan]}>
-                      <Text style={[styles.goingAvatarText, styles.avatarRohanText]}>
-                        R
-                      </Text>
+                  {activeGoingMembers.length > 0 ? (
+                    <View style={styles.avatarsOverlap}>
+                      {activeGoingMembers.slice(0, 3).map((member, idx) => (
+                        <View
+                          key={member.id || `going-${idx}`}
+                          style={[
+                            styles.goingAvatar,
+                            {
+                              backgroundColor: member.color || '#1F3A66',
+                              marginLeft: idx > 0 ? -6 : 0,
+                              zIndex: 10 - idx,
+                            },
+                          ]}
+                        >
+                          <Text
+                            style={[
+                              styles.goingAvatarText,
+                              { color: member.textColor || '#FFFFFF' },
+                            ]}
+                          >
+                            {member.initial || member.name[0].toUpperCase()}
+                          </Text>
+                        </View>
+                      ))}
+                      {activeGoingMembers.length > 3 && (
+                        <View
+                          style={[
+                            styles.goingAvatar,
+                            styles.avatarExtra,
+                            { marginLeft: -6, zIndex: 6 },
+                          ]}
+                        >
+                          <Text style={styles.avatarExtraText}>
+                            +{activeGoingMembers.length - 3}
+                          </Text>
+                        </View>
+                      )}
                     </View>
-                    <View style={[styles.goingAvatar, styles.avatarPriya]}>
-                      <Text style={[styles.goingAvatarText, styles.avatarPriyaText]}>
-                        P
-                      </Text>
-                    </View>
-                  </View>
-                  <Text style={styles.goingNamesText}>Rohan and you</Text>
+                  ) : null}
+                  <Text
+                    style={[
+                      styles.goingNamesText,
+                      activeGoingMembers.length === 0 && styles.goingNamesEmpty,
+                    ]}
+                  >
+                    {goingNamesText}
+                  </Text>
                 </View>
               </View>
               <Feather name="chevron-right" size={18} color="#8A97AB" />
-            </View>
+            </TouchableOpacity>
 
             {/* Row 3: For */}
             {Boolean(event.forMemberName) && (
@@ -318,9 +616,8 @@ export const EventDetailModal: React.FC<EventDetailModalProps> = ({
               </View>
               <View style={styles.rowTextCol}>
                 <Text style={styles.rowLabel}>Reminders</Text>
-                <Text style={styles.rowValue}>{event.reminders}</Text>
+                <Text style={styles.rowValue}>{displayReminders}</Text>
               </View>
-              <Feather name="chevron-right" size={18} color="#8A97AB" />
             </View>
 
             {/* Row 5: Repeat */}
@@ -330,9 +627,8 @@ export const EventDetailModal: React.FC<EventDetailModalProps> = ({
               </View>
               <View style={styles.rowTextCol}>
                 <Text style={styles.rowLabel}>Repeat</Text>
-                <Text style={styles.rowValue}>{event.repeat}</Text>
+                <Text style={styles.rowValue}>{displayRepeat}</Text>
               </View>
-              <Feather name="chevron-right" size={18} color="#8A97AB" />
             </View>
           </View>
 
@@ -357,6 +653,87 @@ export const EventDetailModal: React.FC<EventDetailModalProps> = ({
             </View>
           )}
 
+          {/* RSVP Attendance Card (CAL-06) - shown to everyone who is invited */}
+          {canShowRsvpCard && (
+            <View style={styles.rsvpCard}>
+              <View style={styles.rsvpHeaderRow}>
+                <Feather name="user-check" size={16} color="#CAD4DF" />
+                <Text style={styles.rsvpHeaderTitle}>Are you going?</Text>
+                {effectiveMyResponse && (
+                  <Text
+                    style={[
+                      styles.rsvpStatusBadge,
+                      effectiveMyResponse === 'GOING'
+                        ? styles.rsvpStatusGoing
+                        : styles.rsvpStatusNotGoing,
+                    ]}
+                  >
+                    {effectiveMyResponse === 'GOING'
+                      ? 'You said Going'
+                      : 'You said Not Going'}
+                  </Text>
+                )}
+              </View>
+              <View style={styles.rsvpButtonsRow}>
+                <TouchableOpacity
+                  style={[
+                    styles.rsvpBtn,
+                    styles.rsvpBtnGoing,
+                    effectiveMyResponse === 'GOING' && styles.rsvpBtnActiveGoing,
+                  ]}
+                  onPress={() => handleRsvpSelect('GOING')}
+                  activeOpacity={0.7}
+                  accessibilityRole="button"
+                  accessibilityLabel="Respond Going"
+                >
+                  <Feather
+                    name="check"
+                    size={16}
+                    color={effectiveMyResponse === 'GOING' ? '#FFFFFF' : '#10B981'}
+                  />
+                  <Text
+                    style={[
+                      styles.rsvpBtnText,
+                      effectiveMyResponse === 'GOING' && styles.rsvpBtnTextActive,
+                    ]}
+                  >
+                    Going
+                  </Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={[
+                    styles.rsvpBtn,
+                    styles.rsvpBtnNotGoing,
+                    effectiveMyResponse === 'NOT_GOING' &&
+                      styles.rsvpBtnActiveNotGoing,
+                  ]}
+                  onPress={() => handleRsvpSelect('NOT_GOING')}
+                  activeOpacity={0.7}
+                  accessibilityRole="button"
+                  accessibilityLabel="Respond Not Going"
+                >
+                  <Feather
+                    name="x"
+                    size={16}
+                    color={
+                      effectiveMyResponse === 'NOT_GOING' ? '#FFFFFF' : '#EF4444'
+                    }
+                  />
+                  <Text
+                    style={[
+                      styles.rsvpBtnText,
+                      effectiveMyResponse === 'NOT_GOING' &&
+                        styles.rsvpBtnTextActive,
+                    ]}
+                  >
+                    Not Going
+                  </Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          )}
+
           {/* NOTES Card (CAL-06) */}
           {Boolean(event.notes) && (
             <View style={styles.notesCard}>
@@ -368,21 +745,26 @@ export const EventDetailModal: React.FC<EventDetailModalProps> = ({
 
         {/* Bottom Action Buttons (CAL-06) */}
         <View style={styles.bottomBar}>
-          <TouchableOpacity
-            style={styles.editBtn}
-            onPress={() => {
-              setIsMenuOpen(false);
-              setShowEditModal(true);
-            }}
-            activeOpacity={0.8}
-            accessibilityRole="button"
-            accessibilityLabel="Edit event"
-          >
-            <Text style={styles.editBtnText}>Edit</Text>
-          </TouchableOpacity>
+          {event.canEdit !== false && (
+            <TouchableOpacity
+              style={styles.editBtn}
+              onPress={() => {
+                setIsMenuOpen(false);
+                setShowEditModal(true);
+              }}
+              activeOpacity={0.8}
+              accessibilityRole="button"
+              accessibilityLabel="Edit event"
+            >
+              <Text style={styles.editBtnText}>Edit</Text>
+            </TouchableOpacity>
+          )}
 
           <TouchableOpacity
-            style={styles.directionsBtn}
+            style={[
+              styles.directionsBtn,
+              event.canEdit === false && { flex: 1 },
+            ]}
             onPress={() => {
               Alert.alert(
                 'Directions',
@@ -398,11 +780,85 @@ export const EventDetailModal: React.FC<EventDetailModalProps> = ({
           </TouchableOpacity>
         </View>
 
+        {/* Attendees Modal Sheet */}
+        <Modal
+          visible={showAttendeesModal}
+          transparent
+          animationType="fade"
+          onRequestClose={() => setShowAttendeesModal(false)}
+        >
+          <View style={styles.attendeesOverlay}>
+            <TouchableOpacity
+              style={styles.attendeesBackdrop}
+              onPress={() => setShowAttendeesModal(false)}
+              activeOpacity={1}
+              accessibilityRole="button"
+              accessibilityLabel="Close attendees modal"
+            />
+            <View
+              style={[
+                styles.attendeesSheet,
+                { paddingBottom: Math.max(insets.bottom, 16) + 16 },
+              ]}
+            >
+              <View style={styles.attendeesHandle} />
+              <View style={styles.attendeesHeader}>
+                <Text style={styles.attendeesTitle}>Who’s going</Text>
+                <Text style={styles.attendeesSubtitle}>
+                  {activeGoingMembers.length}{' '}
+                  {activeGoingMembers.length === 1 ? 'person is' : 'people are'}{' '}
+                  attending
+                </Text>
+              </View>
+              <ScrollView style={styles.attendeesList}>
+                {activeGoingMembers.map((m) => (
+                  <View key={m.id} style={styles.attendeeItem}>
+                    <View
+                      style={[
+                        styles.attendeeAvatar,
+                        { backgroundColor: m.color || '#1F3A66' },
+                      ]}
+                    >
+                      <Text
+                        style={[
+                          styles.attendeeAvatarText,
+                          { color: m.textColor || '#FFFFFF' },
+                        ]}
+                      >
+                        {m.initial || m.name[0].toUpperCase()}
+                      </Text>
+                    </View>
+                    <Text style={styles.attendeeName}>
+                      {m.name === 'You' || (myMemberId && m.id === myMemberId)
+                        ? `${m.name} (you)`
+                        : m.name}
+                    </Text>
+                    <View style={styles.attendeeGoingBadge}>
+                      <Feather name="check" size={14} color="#10B981" />
+                      <Text style={styles.attendeeGoingBadgeText}>Going</Text>
+                    </View>
+                  </View>
+                ))}
+              </ScrollView>
+              <TouchableOpacity
+                style={styles.attendeesDoneBtn}
+                onPress={() => setShowAttendeesModal(false)}
+                activeOpacity={0.8}
+                accessibilityRole="button"
+                accessibilityLabel="Close attendees sheet"
+              >
+                <Text style={styles.attendeesDoneText}>Done</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </Modal>
+
         {/* Edit Event Modal Overlay (CAL-09 / CAL-10) */}
         {showEditModal && (
           <CreateEventModal
             visible={showEditModal}
             eventToEdit={cachedEvent || event}
+            members={members}
             onClose={() => setShowEditModal(false)}
             onSaveEvent={handleSaveEditedEvent}
             onDeleteEvent={() => {
@@ -460,7 +916,7 @@ const styles = StyleSheet.create({
     width: 44,
     height: 44,
     borderRadius: 22,
-    backgroundColor: '#122440',
+    backgroundColor: 'transparent',
     borderWidth: 1,
     borderColor: '#1F3352',
     justifyContent: 'center',
@@ -641,26 +1097,19 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
-  avatarRohan: {
-    backgroundColor: '#1F3A66',
-    zIndex: 2,
+  avatarExtra: {
+    backgroundColor: '#1E293B',
+    borderWidth: 1.5,
+    borderColor: '#122440',
   },
-  avatarRohanText: {
-    color: '#8DB8F5',
+  avatarExtraText: {
+    fontSize: 9,
+    fontFamily: 'Roboto-Bold',
+    color: '#8A97AB',
   },
-  avatarPriya: {
-    backgroundColor: '#4A2E1A',
-    marginLeft: -6,
-    zIndex: 1,
-  },
-  avatarPriyaText: {
-    color: '#F7C08E',
-  },
-  avatarAarav: {
-    backgroundColor: '#493A12',
-  },
-  avatarAaravText: {
-    color: '#F2C14D',
+  goingNamesEmpty: {
+    color: '#8A97AB',
+    fontFamily: 'Roboto-Regular',
   },
   goingAvatarText: {
     fontSize: 10,
@@ -748,7 +1197,7 @@ const styles = StyleSheet.create({
     borderRadius: 26,
     borderWidth: 1.5,
     borderColor: '#1F3352',
-    backgroundColor: '#122440',
+    backgroundColor: 'transparent',
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -769,6 +1218,173 @@ const styles = StyleSheet.create({
   },
   directionsBtnText: {
     fontSize: 15,
+    fontFamily: 'Roboto-Bold',
+    color: '#FFFFFF',
+  },
+  rsvpCard: {
+    backgroundColor: '#122440',
+    borderRadius: 16,
+    padding: 16,
+    marginTop: 16,
+    borderWidth: 1,
+    borderColor: '#1F3352',
+  },
+  rsvpHeaderRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginBottom: 12,
+  },
+  rsvpHeaderTitle: {
+    fontSize: 14,
+    fontFamily: 'Roboto-SemiBold',
+    color: '#CAD4DF',
+    flex: 1,
+  },
+  rsvpStatusBadge: {
+    fontSize: 12,
+    fontFamily: 'Roboto-Medium',
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 8,
+    overflow: 'hidden',
+  },
+  rsvpStatusGoing: {
+    color: '#10B981',
+    backgroundColor: 'rgba(16, 185, 129, 0.15)',
+  },
+  rsvpStatusNotGoing: {
+    color: '#EF4444',
+    backgroundColor: 'rgba(239, 68, 68, 0.15)',
+  },
+  rsvpButtonsRow: {
+    flexDirection: 'row',
+    gap: 12,
+  },
+  rsvpBtn: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 10,
+    borderRadius: 12,
+    borderWidth: 1,
+    gap: 6,
+    backgroundColor: '#0F2036',
+    borderColor: '#1F3352',
+  },
+  rsvpBtnGoing: {
+    borderColor: 'rgba(16, 185, 129, 0.3)',
+  },
+  rsvpBtnNotGoing: {
+    borderColor: 'rgba(239, 68, 68, 0.3)',
+  },
+  rsvpBtnActiveGoing: {
+    backgroundColor: '#10B981',
+    borderColor: '#10B981',
+  },
+  rsvpBtnActiveNotGoing: {
+    backgroundColor: '#EF4444',
+    borderColor: '#EF4444',
+  },
+  rsvpBtnText: {
+    fontSize: 14,
+    fontFamily: 'Roboto-SemiBold',
+    color: '#CAD4DF',
+  },
+  rsvpBtnTextActive: {
+    color: '#FFFFFF',
+  },
+  attendeesOverlay: {
+    flex: 1,
+    justifyContent: 'flex-end',
+    backgroundColor: 'rgba(0,0,0,0.6)',
+  },
+  attendeesBackdrop: {
+    flex: 1,
+  },
+  attendeesSheet: {
+    backgroundColor: '#122440',
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    paddingHorizontal: 20,
+    paddingTop: 12,
+    maxHeight: '60%',
+  },
+  attendeesHandle: {
+    width: 36,
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: '#334E68',
+    alignSelf: 'center',
+    marginBottom: 16,
+  },
+  attendeesHeader: {
+    marginBottom: 16,
+  },
+  attendeesTitle: {
+    fontSize: 20,
+    fontFamily: 'Roboto-Bold',
+    color: '#FFFFFF',
+  },
+  attendeesSubtitle: {
+    fontSize: 13,
+    color: '#8A97AB',
+    marginTop: 2,
+  },
+  attendeesList: {
+    maxHeight: 260,
+  },
+  attendeeItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderColor: '#1F3352',
+  },
+  attendeeAvatar: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 12,
+  },
+  attendeeAvatarText: {
+    fontSize: 14,
+    fontFamily: 'Roboto-Bold',
+    color: '#FFFFFF',
+  },
+  attendeeName: {
+    fontSize: 16,
+    fontFamily: 'Roboto-Medium',
+    color: '#FFFFFF',
+    flex: 1,
+  },
+  attendeeGoingBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(16, 185, 129, 0.15)',
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 12,
+    gap: 4,
+  },
+  attendeeGoingBadgeText: {
+    fontSize: 12,
+    fontFamily: 'Roboto-SemiBold',
+    color: '#10B981',
+  },
+  attendeesDoneBtn: {
+    height: 48,
+    backgroundColor: '#F0913A',
+    borderRadius: 24,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginTop: 16,
+  },
+  attendeesDoneText: {
+    fontSize: 16,
     fontFamily: 'Roboto-Bold',
     color: '#FFFFFF',
   },

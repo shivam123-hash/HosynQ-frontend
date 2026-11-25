@@ -8,8 +8,8 @@ import {
   ScrollView,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { TaskFilterState, TaskPriority, TaskCategory } from '../types';
-import { CATEGORY_META, PRIORITY_META, FAMILY_MEMBERS } from '../mockData';
+import { TaskFilterState, TaskPriority, TaskCategory, FamilyMemberOption } from '../types';
+import { CATEGORY_META, PRIORITY_META } from '../constants';
 
 export interface FilterTasksModalProps {
   visible: boolean;
@@ -17,6 +17,7 @@ export interface FilterTasksModalProps {
   filters: TaskFilterState;
   onApplyFilters: (filters: TaskFilterState) => void;
   matchCount: number;
+  members?: FamilyMemberOption[];
 }
 
 const FilterTasksModal: React.FC<FilterTasksModalProps> = ({
@@ -25,8 +26,10 @@ const FilterTasksModal: React.FC<FilterTasksModalProps> = ({
   filters,
   onApplyFilters,
   matchCount,
+  members,
 }) => {
   const insets = useSafeAreaInsets();
+  const displayMembers = members || [];
   const [localFilters, setLocalFilters] = React.useState<TaskFilterState>(filters);
 
   React.useEffect(() => {
@@ -88,7 +91,7 @@ const FilterTasksModal: React.FC<FilterTasksModalProps> = ({
             {/* ASSIGNED TO */}
             <Text style={styles.sectionHeader}>ASSIGNED TO</Text>
             <View style={styles.chipsRow}>
-              {FAMILY_MEMBERS.map((member) => {
+              {displayMembers.map((member) => {
                 const isSelected = localFilters.assignedTo === member.id;
                 return (
                   <TouchableOpacity

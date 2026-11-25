@@ -570,7 +570,7 @@ const DueDateTimeModal: React.FC<DueDateTimeModalProps> = ({
                       <View
                         style={[
                           styles.dayCircle,
-                          cell.isToday && styles.todayCircle,
+                          !cell.isSelected && cell.isToday && styles.todayCircle,
                           cell.isSelected && styles.selectedDayCircle,
                         ]}
                       >
@@ -892,6 +892,9 @@ const styles = StyleSheet.create({
     width: 32,
     height: 32,
     borderRadius: 16,
+    overflow: 'hidden',
+    backgroundColor: 'transparent',
+    borderWidth: 0,
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -901,11 +904,14 @@ const styles = StyleSheet.create({
   },
   selectedDayCircle: {
     backgroundColor: '#F0913A',
+    borderWidth: 0,
   },
   dayText: {
     fontSize: 14,
     fontFamily: 'Roboto-SemiBold',
     color: '#FFFFFF',
+    includeFontPadding: false,
+    textAlign: 'center',
   },
   otherMonthDayText: {
     color: '#4B5970',

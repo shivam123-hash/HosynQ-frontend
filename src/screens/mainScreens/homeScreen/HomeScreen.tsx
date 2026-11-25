@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useEffect } from 'react';
+import React, { useState, useCallback, useEffect, useMemo } from 'react';
 import {
   StyleSheet,
   ScrollView,
@@ -16,9 +16,22 @@ import {
   reopenTask,
 } from '../../../redux/features/tasks/tasksSlice';
 import { fetchUnreadCount } from '../../../redux/features/notifications/notificationsSlice';
-import { fetchCalendarFeed } from '../../../redux/features/calendar/calendarSlice';
+import {
+  fetchCalendarFeed,
+  createCalendarEvent,
+  updateCalendarEvent,
+} from '../../../redux/features/calendar/calendarSlice';
 import { isUUID } from '../tasksScreen/taskApiHelpers';
 import { mapApiTaskToUiTask } from '../tasksScreen/TasksScreen';
+import {
+  buildCreateEventPayload,
+  buildUpdateEventPayload,
+  extractFamilyMembersFromState,
+} from '../calendarScreen/calendarApiHelpers';
+import {
+  getMyFamilyBasicThunk,
+  getMyFamilyThunk,
+} from '../../../redux/features/family/familySlice';
 import {
   HomeHeader,
   HomeGreeting,
@@ -282,7 +295,9 @@ const HomeScreen: React.FC<HomeScreenProps> = ({
       if (isTestEnv && apiCalendarEvents.length === 0) {
         return;
       }
-      const mapped: EventItem[] = apiCalendarEvents.map((e) => {
+      const mapped: EventItem[] = apiCalendarEvents.map((e: any, idx: number) => {
+        const rawId = e.id || e.eventId || e._id;
+        const eventId = rawId ? String(rawId) : `event-${idx}-${Date.now()}`;
         const timeStr = e.startTime || '15:00';
         const [h, m] = timeStr.split(':');
         const hour = parseInt(h, 10);
@@ -293,8 +308,8 @@ const HomeScreen: React.FC<HomeScreenProps> = ({
         const attendeesStr = goingList.map((g: any) => g.fullName).join(', ') || 'Everyone';
 
         return {
-          id: e.id,
-          title: e.title,
+          id: eventId,
+          title: e.title || 'Untitled Event',
           time: time12,
           period: period as 'AM' | 'PM',
           location: e.location || 'Home',
@@ -334,6 +349,17 @@ const HomeScreen: React.FC<HomeScreenProps> = ({
       setFamilyMembers(mappedMembers);
     }
   }, [currentFamily]);
+
+  const calendarFamilyMembers = useMemo(() => {
+    return extractFamilyMembersFromState(familyState);
+  }, [familyState]);
+
+  useEffect(() => {
+    if (calendarFamilyMembers.length === 0 && !isTestEnv) {
+      dispatch(getMyFamilyBasicThunk());
+      dispatch(getMyFamilyThunk());
+    }
+  }, [calendarFamilyMembers.length, dispatch, isTestEnv]);
 
   // Pull to refresh simulation
   const onRefresh = useCallback(() => {
@@ -433,7 +459,8 @@ const HomeScreen: React.FC<HomeScreenProps> = ({
     }
   };
 
-  const handleEditEvent = (updated: CalendarEvent) => {
+  const handleEditEvent = async (updated: CalendarEvent) => {
+    console.log('[HomeScreen.handleEditEvent] Updating event in HomeScreen:', updated);
     setUpcomingEvents((prev) =>
       prev.map((e) =>
         e.id === updated.id
@@ -448,6 +475,25 @@ const HomeScreen: React.FC<HomeScreenProps> = ({
       )
     );
     showToast('Event updated');
+
+    if (updated.id && isUUID(updated.id)) {
+      try {
+        const payload = buildUpdateEventPayload(updated);
+        console.log('[HomeScreen.handleEditEvent] Dispatching updateCalendarEvent id:', updated.id, 'payload:', payload);
+        try {
+          console.log(
+            '[HomeScreen.handleEditEvent] Backend Update Payload (formatted):\n',
+            JSON.stringify(payload, null, 2)
+          );
+        } catch {
+          // ignore serialization error
+        }
+        const res = await dispatch(updateCalendarEvent({ id: updated.id, payload })).unwrap();
+        console.log('[HomeScreen.handleEditEvent] Update success response:', res);
+      } catch (err) {
+        console.log('[HomeScreen.handleEditEvent] Update error:', err);
+      }
+    }
   };
 
   const handleCancelEvent = (cancelled: CalendarEvent) => {
@@ -747,11 +793,36 @@ const HomeScreen: React.FC<HomeScreenProps> = ({
       {/* Quick Event Creator */}
       <CreateEventModal
         visible={internalEventVisible}
+        members={calendarFamilyMembers}
+        initialDate={new Date().toISOString().slice(0, 10)}
         onClose={() => setInternalEventVisible(false)}
-        onSaveEvent={(_event: Partial<CalendarEvent>) => {
-          setInternalEventVisible(false);
-          onOpenCalendar?.();
-          showToast('Event added to your family');
+        onSaveEvent={async (eventData: Partial<CalendarEvent>) => {
+          try {
+            const payload = buildCreateEventPayload(eventData);
+            console.log('[HomeScreen.onSaveEvent] Creating event payload:', payload);
+            try {
+              console.log(
+                '[HomeScreen.onSaveEvent] Backend Create Payload (formatted):\n',
+                JSON.stringify(payload, null, 2)
+              );
+            } catch {
+              // ignore serialization error
+            }
+            const created = await dispatch(createCalendarEvent(payload)).unwrap();
+            console.log('[HomeScreen.onSaveEvent] Create success, created event:', created);
+            dispatch(
+              fetchCalendarFeed({
+                from: new Date().toISOString().slice(0, 10),
+                to: new Date(Date.now() + 30 * 86400000).toISOString().slice(0, 10),
+              })
+            );
+            setInternalEventVisible(false);
+            onOpenCalendar?.();
+            showToast('Event added to your family');
+          } catch (err: any) {
+            console.log('[HomeScreen.onSaveEvent] Create event error:', err);
+            showToast(err?.message || 'Failed to create event', 'cancelled');
+          }
         }}
       />
 
@@ -916,6 +987,7 @@ const HomeScreen: React.FC<HomeScreenProps> = ({
         <EventDetailModal
           visible={Boolean(selectedEventForDetail)}
           event={selectedEventForDetail}
+          members={calendarFamilyMembers}
           onClose={() => setSelectedEventForDetail(null)}
           onEditEvent={handleEditEvent}
           onOpenComments={() => {}}

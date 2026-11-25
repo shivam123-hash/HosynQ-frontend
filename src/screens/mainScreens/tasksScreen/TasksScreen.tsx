@@ -56,13 +56,8 @@ import {
   INITIAL_TRIP_DATA,
 } from './components';
 import { TasksSkeleton, ListsSkeleton } from '../../../components/SkeletonLoader';
-import {
-  INITIAL_TASKS,
-  INITIAL_LISTS,
-  FAMILY_MEMBERS,
-  CATEGORY_META,
-  PRIORITY_META,
-} from './mockData';
+import { CATEGORY_META, PRIORITY_META } from './constants';
+import { TEST_TASKS } from '../../../__test_fixtures__/tasksFixtures';
 import {
   TaskItem,
   TasksMainTab,
@@ -73,6 +68,7 @@ import {
   TaskDueDateType,
   ListGroup,
   ListType,
+  FamilyMemberOption,
 } from './types';
 import {
   formatTaskDueDate,
@@ -166,6 +162,8 @@ export interface TasksScreenProps {
   onOpenChat?: () => void;
   showBottomNavBar?: boolean;
   initialTasks?: TaskItem[];
+  initialLists?: ListGroup[];
+  initialFamilyMembers?: FamilyMemberOption[];
 }
 
 const TasksScreen: React.FC<TasksScreenProps> = ({
@@ -174,6 +172,8 @@ const TasksScreen: React.FC<TasksScreenProps> = ({
   forceEmpty = false,
   showBottomNavBar = true,
   initialTasks,
+  initialLists,
+  initialFamilyMembers,
   onProfilePress,
   onExplorePress,
   onNotificationsPress,
@@ -197,12 +197,13 @@ const TasksScreen: React.FC<TasksScreenProps> = ({
     (state) =>
       ((state.family.myFamilyData?.family as any)?.members as any[]) ||
       ((state.family.myFamilyData as any)?.members as any[]) ||
+      ((state.family.family as any)?.members as any[]) ||
       []
   );
 
   const memberFilterOptions = useMemo(() => {
-    if (!familyMembers || familyMembers.length === 0) {
-      return FAMILY_MEMBERS;
+    if (initialFamilyMembers && initialFamilyMembers.length > 0) {
+      return initialFamilyMembers;
     }
     return [
       {
@@ -212,7 +213,7 @@ const TasksScreen: React.FC<TasksScreenProps> = ({
         avatarBg: '#1E3A66',
         avatarColor: '#FFFFFF',
       },
-      ...familyMembers.map((m: any) => {
+      ...(familyMembers || []).map((m: any) => {
         const name = m.fullName || m.name || 'Member';
         const initial = (name.trim()[0] || 'M').toUpperCase();
         return {
@@ -224,14 +225,13 @@ const TasksScreen: React.FC<TasksScreenProps> = ({
         };
       }),
     ];
-  }, [familyMembers]);
+  }, [familyMembers, initialFamilyMembers]);
 
   const isTestEnv =
     typeof (globalThis as any).process !== 'undefined' &&
     (globalThis as any).process.env?.NODE_ENV === 'test';
-  const defaultInitialTasks = isTestEnv && !forceEmpty ? INITIAL_TASKS : [];
   const [tasks, setTasks] = useState<TaskItem[]>(
-    forceEmpty ? [] : initialTasks !== undefined ? initialTasks : defaultInitialTasks
+    forceEmpty ? [] : initialTasks !== undefined ? initialTasks : (isTestEnv ? TEST_TASKS : [])
   );
   const [mainTab, setMainTab] = useState<TasksMainTab>(initialMainTab);
   const [statusTab, setStatusTab] = useState<TasksStatusTab>(initialStatus);
@@ -263,9 +263,8 @@ const TasksScreen: React.FC<TasksScreenProps> = ({
   const [prefillTitle, setPrefillTitle] = useState('');
 
   // Lists state
-  const defaultInitialLists = isTestEnv && !forceEmpty ? INITIAL_LISTS : [];
   const [lists, setLists] = useState<ListGroup[]>(
-    forceEmpty ? [] : defaultInitialLists
+    forceEmpty ? [] : initialLists !== undefined ? initialLists : []
   );
   const [selectedList, setSelectedList] = useState<ListGroup | null>(null);
   const [newListModalVisible, setNewListModalVisible] = useState(false);
@@ -929,12 +928,14 @@ const TasksScreen: React.FC<TasksScreenProps> = ({
         filters={filters}
         onApplyFilters={setFilters}
         matchCount={filteredTasks.length}
+        members={memberFilterOptions}
       />
 
       {/* Task Detail Modal */}
       <TaskDetailModal
         visible={!!selectedTask}
         task={selectedTask}
+        members={memberFilterOptions}
         liveTaskDetail={apiSelectedTask?.id === selectedTask?.id ? apiSelectedTask : null}
         onClose={() => {
           setSelectedTask(null);

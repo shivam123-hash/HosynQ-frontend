@@ -1,6 +1,6 @@
 import { ListSummaryData, ListDetailData, ListItemData } from '../../../services/listsServices';
 import { ListGroup, ListItemEntry, ListType } from './types';
-import { LIST_TYPE_CONFIG } from './mockData';
+import { LIST_TYPE_CONFIG } from './constants';
 
 export const mapBackendListTypeToUi = (typeStr?: string): ListType => {
   if (!typeStr) return 'grocery';

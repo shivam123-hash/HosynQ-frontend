@@ -26,6 +26,7 @@ export interface DayViewProps {
   onToggleTask: (taskId: string) => void;
   onAddEvent: () => void;
   onSelectTask?: (task: CalendarTaskDue) => void;
+  refreshControl?: React.ReactElement;
 }
 
 export const DayView: React.FC<DayViewProps> = ({
@@ -37,6 +38,7 @@ export const DayView: React.FC<DayViewProps> = ({
   onToggleTask,
   onAddEvent,
   onSelectTask,
+  refreshControl,
 }) => {
   const isTestEnv =
     typeof (globalThis as any).process !== 'undefined' &&
@@ -93,6 +95,29 @@ export const DayView: React.FC<DayViewProps> = ({
       return eDate === normSelected;
     });
   }, [events, selectedDate]);
+
+  // Split into All-Day events and Timed events (CAL-01 / CAL-04)
+  const allDayEvents = useMemo(() => {
+    return dayEvents.filter(
+      (e) =>
+        e.isAllDay ||
+        e.startTime === 'All day' ||
+        !e.startTime ||
+        (e.startTime === '12:00 AM' && (e.endTime === '11:59 PM' || e.endTime === '12:00 AM')) ||
+        (e.startTime === '00:00' && (e.endTime === '23:59' || e.endTime === '24:00'))
+    );
+  }, [dayEvents]);
+
+  const timedEvents = useMemo(() => {
+    return dayEvents.filter(
+      (e) =>
+        !e.isAllDay &&
+        e.startTime !== 'All day' &&
+        Boolean(e.startTime) &&
+        !(e.startTime === '12:00 AM' && (e.endTime === '11:59 PM' || e.endTime === '12:00 AM')) &&
+        !(e.startTime === '00:00' && (e.endTime === '23:59' || e.endTime === '24:00'))
+    );
+  }, [dayEvents]);
 
   // Current time slot label e.g. "12 PM"
   const currentSlotLabel = useMemo(() => {
@@ -217,6 +242,7 @@ export const DayView: React.FC<DayViewProps> = ({
     <ScrollView
       showsVerticalScrollIndicator={false}
       contentContainerStyle={styles.scrollContent}
+      refreshControl={refreshControl}
     >
       {/* Date Navigation Row: "Friday, 30 October" on left, "<" & ">" on right */}
       <View style={styles.navRow}>
@@ -248,7 +274,10 @@ export const DayView: React.FC<DayViewProps> = ({
       {/* Mini Week Strip (MON – SUN) */}
       <View style={styles.weekStrip}>
         {weekDays.map((w) => {
-          const isSelected = selectedDate === w.dateStr;
+          const normSelected = selectedDate.includes('T')
+            ? selectedDate.split('T')[0]
+            : selectedDate.trim();
+          const isSelected = normSelected === w.dateStr;
           const isCurrentToday = w.dateStr === (isTestEnv ? '2026-10-30' : todayIso);
           return (
             <TouchableOpacity
@@ -406,14 +435,62 @@ export const DayView: React.FC<DayViewProps> = ({
         </View>
       )}
 
+      {/* All-Day Events Section (CAL-01 / CAL-04) */}
+      {allDayEvents.length > 0 && (
+        <View style={styles.allDayContainer}>
+          <Text style={styles.allDayHeader}>ALL-DAY EVENTS</Text>
+          {allDayEvents.map((evt) => (
+            <TouchableOpacity
+              key={evt.id}
+              style={[
+                styles.allDayCard,
+                { borderLeftColor: evt.categoryColor || '#3B82F6' },
+              ]}
+              onPress={() => onSelectEvent(evt)}
+              activeOpacity={0.8}
+              accessibilityRole="button"
+              accessibilityLabel={`${evt.title} All day`}
+            >
+              <View style={styles.allDayCardContent}>
+                <Text style={styles.allDayTitle}>{evt.title}</Text>
+                {Boolean(evt.location) && (
+                  <Text style={styles.allDaySub}>{evt.location}</Text>
+                )}
+              </View>
+              {Boolean(evt.category) && (
+                <View
+                  style={[
+                    styles.allDayCategoryBadge,
+                    { backgroundColor: `${evt.categoryColor || '#3B82F6'}22` },
+                  ]}
+                >
+                  <Text
+                    style={[
+                      styles.allDayCategoryBadgeText,
+                      { color: evt.categoryColor || '#3B82F6' },
+                    ]}
+                  >
+                    {evt.category}
+                  </Text>
+                </View>
+              )}
+            </TouchableOpacity>
+          ))}
+        </View>
+      )}
+
       {/* Hourly Agenda Timeline (CAL-01) - rendered when there are events OR when tasks exist */}
-      {(dayEvents.length > 0 || dayTasks.length > 0) && (
+      {(timedEvents.length > 0 || dayTasks.length > 0) && (
         <View style={styles.timelineContainer}>
           {timeSlots.map((slot) => {
             const slotHourPrefix = slot.split(' ')[0];
             const slotPeriod = slot.split(' ')[1];
-            const matchedEvents = dayEvents.filter((e) => {
-              const [eHour, eRest] = e.startTime.split(':');
+            const matchedEvents = timedEvents.filter((e) => {
+              let timeStr = e.startTime;
+              if (!timeStr.includes('AM') && !timeStr.includes('PM')) {
+                timeStr = formatTime12h(timeStr);
+              }
+              const [eHour, eRest] = timeStr.split(':');
               const ePeriod = eRest?.split(' ')[1];
               return eHour === slotHourPrefix && ePeriod === slotPeriod;
             });
@@ -616,12 +693,16 @@ const styles = StyleSheet.create({
     width: 32,
     height: 32,
     borderRadius: 16,
+    overflow: 'hidden',
+    backgroundColor: 'transparent',
+    borderWidth: 0,
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: 6,
   },
   weekNumCircleActive: {
     backgroundColor: '#F0913A',
+    borderWidth: 0,
   },
   weekNumCircleToday: {
     borderWidth: 1.5,
@@ -631,6 +712,8 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontFamily: 'Roboto-SemiBold',
     color: '#CAD4DF',
+    includeFontPadding: false,
+    textAlign: 'center',
   },
   weekNumTextActive: {
     color: '#0B1A2F',
@@ -913,5 +996,54 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: '#8A97AB',
     marginLeft: 8,
+  },
+  allDayContainer: {
+    marginHorizontal: 16,
+    marginTop: 12,
+    marginBottom: 8,
+  },
+  allDayHeader: {
+    fontSize: 11,
+    fontFamily: 'Roboto-Bold',
+    letterSpacing: 1.2,
+    color: '#8A97AB',
+    marginBottom: 8,
+  },
+  allDayCard: {
+    backgroundColor: '#0F1E33',
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#1F3352',
+    borderLeftWidth: 4,
+    padding: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 8,
+  },
+  allDayCardContent: {
+    flex: 1,
+    marginRight: 8,
+  },
+  allDayTitle: {
+    fontSize: 14,
+    fontFamily: 'Roboto-Bold',
+    color: '#FFFFFF',
+  },
+  allDaySub: {
+    fontSize: 12,
+    fontFamily: 'Roboto-Regular',
+    color: '#8A97AB',
+    marginTop: 2,
+  },
+  allDayCategoryBadge: {
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 6,
+  },
+  allDayCategoryBadgeText: {
+    fontSize: 11,
+    fontFamily: 'Roboto-SemiBold',
+    textTransform: 'uppercase',
   },
 });

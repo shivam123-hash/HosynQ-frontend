@@ -8,7 +8,6 @@ import BorderRadius from '../../../../units/BorderRadius';
 import Typography from '../../../../units/Typography';
 import tasksServices, { WorkloadMemberData } from '../../../../services/tasksServices';
 import { isUUID } from '../taskApiHelpers';
-import { FAMILY_MEMBERS } from '../mockData';
 
 export interface ReassignModalProps {
   visible: boolean;
@@ -16,6 +15,7 @@ export interface ReassignModalProps {
   currentAssignee?: string;
   onClose: () => void;
   onSelectAssignee: (memberId: string, memberName?: string) => void;
+  members?: ReassignMemberOption[];
 }
 
 const MEMBER_ORDER = ['priya', 'rohan', 'dadi', 'anaya', 'aarav'];
@@ -44,11 +44,13 @@ const ReassignModal: React.FC<ReassignModalProps> = ({
   currentAssignee = 'Priya',
   onClose,
   onSelectAssignee,
+  members: propMembers,
 }) => {
   const familyMembers = useAppSelector(
     (state) =>
       ((state.family.myFamilyData?.family as any)?.members as any[]) ||
       ((state.family.myFamilyData as any)?.members as any[]) ||
+      ((state.family.family as any)?.members as any[]) ||
       []
   );
 
@@ -70,6 +72,9 @@ const ReassignModal: React.FC<ReassignModalProps> = ({
   }, [visible]);
 
   const members: ReassignMemberOption[] = useMemo(() => {
+    if (propMembers && propMembers.length > 0) {
+      return propMembers;
+    }
     if (workloadMembers && workloadMembers.length > 0) {
       return workloadMembers.map((wm) => ({
         id: wm.memberId,
@@ -96,22 +101,8 @@ const ReassignModal: React.FC<ReassignModalProps> = ({
           m.relationship === 'CHILD',
       }));
     }
-    const rawMembers = FAMILY_MEMBERS.filter((m) => m.id !== 'everyone');
-    const sorted = [...rawMembers].sort((a, b) => {
-      const idxA = MEMBER_ORDER.indexOf(a.id);
-      const idxB = MEMBER_ORDER.indexOf(b.id);
-      return (idxA === -1 ? 99 : idxA) - (idxB === -1 ? 99 : idxB);
-    });
-    return sorted.map((m) => ({
-      id: m.id,
-      name: m.name,
-      initial: m.initial,
-      avatarBg: m.avatarBg,
-      avatarColor: m.avatarColor,
-      taskCount: m.taskCount || 1,
-      isChild: m.id === 'anaya' || m.id === 'aarav',
-    }));
-  }, [familyMembers]);
+    return [];
+  }, [familyMembers, workloadMembers]);
 
   const [selectedId, setSelectedId] = useState<string>(() => {
     const rohan = members.find((m: ReassignMemberOption) => m.name.toLowerCase() === 'rohan' || m.id === 'rohan');

@@ -8,7 +8,6 @@ import {
 } from 'react-native';
 import Feather from '@react-native-vector-icons/feather';
 import { CalendarFamilyMember } from '../types';
-import { CALENDAR_FAMILY_MEMBERS } from '../mockData';
 
 export interface CalendarMemberFilterProps {
   selectedMemberId: string;
@@ -22,10 +21,7 @@ export const CalendarMemberFilter: React.FC<CalendarMemberFilterProps> = ({
   members,
 }) => {
   const isEveryone = selectedMemberId === 'everyone';
-  const displayMembers =
-    members && members.length > 0
-      ? members
-      : CALENDAR_FAMILY_MEMBERS;
+  const displayMembers = members || [];
 
   return (
     <View style={styles.container}>

@@ -11,7 +11,13 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Feather from '@react-native-vector-icons/feather';
 import { CalendarFamilyMember } from '../types';
-import { CALENDAR_FAMILY_MEMBERS } from '../mockData';
+import { extractFamilyMembersFromState } from '../calendarApiHelpers';
+import { useAppSelector, useAppDispatch } from '../../../../redux';
+import {
+  getMyFamilyBasicThunk,
+  getMyFamilyThunk,
+} from '../../../../redux/features/family/familySlice';
+import { TEST_FAMILY_MEMBERS } from '../../../../__test_fixtures__/calendarFixtures';
 
 export interface InviteListModalProps {
   visible: boolean;
@@ -31,20 +37,45 @@ export const InviteListModal: React.FC<InviteListModalProps> = ({
   asModal = true,
 }) => {
   const insets = useSafeAreaInsets();
+  const dispatch = useAppDispatch();
   const [invitedIds, setInvitedIds] = useState<string[]>(selectedMemberIds);
   const [askConfirmation, setAskConfirmation] = useState(true);
 
   const isTestEnv =
     typeof (globalThis as any).process !== 'undefined' &&
     (globalThis as any).process?.env?.NODE_ENV === 'test';
-  const displayMembers =
-    members && members.length > 0
-      ? members
-      : CALENDAR_FAMILY_MEMBERS;
+
+  const familyState = useAppSelector((state) => state.family);
+  const displayMembers = React.useMemo(() => {
+    if (members && members.length > 0) {
+      return members;
+    }
+    const extracted = extractFamilyMembersFromState(familyState);
+    if (extracted.length > 0) {
+      return extracted;
+    }
+    if (isTestEnv) {
+      return TEST_FAMILY_MEMBERS;
+    }
+    return [];
+  }, [members, familyState, isTestEnv]);
+
+  // Auto-fetch if visible and list is empty
+  useEffect(() => {
+    if (visible && displayMembers.length === 0 && !isTestEnv) {
+      console.log('[InviteListModal] displayMembers is empty on open, fetching family details...');
+      dispatch(getMyFamilyBasicThunk());
+      dispatch(getMyFamilyThunk());
+    }
+  }, [visible, displayMembers.length, dispatch, isTestEnv]);
 
   useEffect(() => {
-    setInvitedIds(selectedMemberIds);
-  }, [selectedMemberIds, visible]);
+    if (selectedMemberIds && selectedMemberIds.length > 0) {
+      setInvitedIds(selectedMemberIds);
+    } else if (displayMembers.length > 0) {
+      setInvitedIds(displayMembers.map((m) => m.id));
+    }
+  }, [selectedMemberIds, visible, displayMembers]);
 
   if (!visible) return null;
 
@@ -99,9 +130,13 @@ export const InviteListModal: React.FC<InviteListModalProps> = ({
           <View style={styles.membersCard}>
             {displayMembers.map((m, idx) => {
               const isChecked = invitedIds.includes(m.id);
-              const isPriya = m.name === 'Priya';
-              const displayName = isPriya ? 'Priya (you)' : m.name;
-              const statusSubtitle = isPriya ? 'Organiser' : 'Free at 8:00 PM';
+              const isYou =
+                m.name.toLowerCase().includes('(you)') ||
+                (m as any).isYou ||
+                m.id === (familyState as any)?.family?.myMemberId ||
+                m.id === (familyState as any)?.myMemberId;
+              const displayName = m.name;
+              const statusSubtitle = isYou ? 'Organiser' : 'Available';
 
               return (
                 <TouchableOpacity

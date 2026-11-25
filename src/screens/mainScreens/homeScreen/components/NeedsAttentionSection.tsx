@@ -47,9 +47,10 @@ const NeedsAttentionSection: React.FC<NeedsAttentionSectionProps> = ({
         {items.map((item, index) => {
           const isFirst = index === 0;
           const isUrgent = item.type === 'urgent';
+          const itemKey = item.id ? String(item.id) : `attn-item-${index}`;
           return (
             <TouchableOpacity
-              key={item.id}
+              key={itemKey}
               onPress={() => onItemPress?.(item)}
               activeOpacity={0.7}
               style={[styles.itemRow, !isFirst && styles.rowBorder]}

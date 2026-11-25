@@ -5,7 +5,7 @@ export interface CalendarFeedParams {
   from: string; // YYYY-MM-DD
   to: string; // YYYY-MM-DD
   today?: string;
-  show?: ('EVENTS' | 'TASKS' | 'IMPORTANT_DATES')[];
+  show?: ('EVENTS' | 'TASKS')[];
   memberIds?: string[];
   categories?: string[];
 }
@@ -40,18 +40,6 @@ export interface CancelEventPayload {
   scope?: 'THIS_ONE' | 'THIS_AND_FUTURE' | 'ALL';
   occurrenceOn?: string;
   note?: string;
-}
-
-export interface CreateImportantDatePayload {
-  title: string;
-  kind: 'BIRTHDAY' | 'ANNIVERSARY' | 'RENEWAL' | 'OTHER';
-  onDate: string;
-  repeatsYearly?: boolean;
-  memberId?: string;
-  notes?: string;
-  reminderLeadDays?: number[];
-  sharedWithAll?: boolean;
-  visibleMemberIds?: string[];
 }
 
 export interface CalendarEventOccurrence {
@@ -110,11 +98,10 @@ export interface CalendarFeedResponse {
   appliedFilters: any;
   events: CalendarEventOccurrence[];
   tasks: any[];
-  importantDates: any[];
 }
 
 const calendarServices = {
-  // 1. Fetch Calendar Feed (Events, Tasks, Important Dates)
+  // 1. Fetch Calendar Feed (Events & Tasks)
   getFeed: async (params: CalendarFeedParams): Promise<CalendarFeedResponse> => {
     const response = await apiClient.get<CalendarFeedResponse>(API_ROUTES.CALENDAR_FEED, { params });
     return response.data;
@@ -133,7 +120,9 @@ const calendarServices = {
 
   // 3. Create Event
   createEvent: async (payload: CreateEventPayload) => {
+    console.log('[calendarServices.createEvent] POST', API_ROUTES.CALENDAR_EVENTS, 'payload:', payload);
     const response = await apiClient.post(API_ROUTES.CALENDAR_EVENTS, payload);
+    console.log('[calendarServices.createEvent] Response status:', response.status, 'data:', response.data);
     return response.data;
   },
 
@@ -145,7 +134,9 @@ const calendarServices = {
 
   // 5. Update Event
   updateEvent: async (id: string, payload: UpdateEventPayload) => {
+    console.log('[calendarServices.updateEvent] PATCH', API_ROUTES.CALENDAR_EVENT_BY_ID(id), 'payload:', payload);
     const response = await apiClient.patch(API_ROUTES.CALENDAR_EVENT_BY_ID(id), payload);
+    console.log('[calendarServices.updateEvent] Response status:', response.status, 'data:', response.data);
     return response.data;
   },
 
@@ -172,36 +163,6 @@ const calendarServices = {
   // 9. Post Event Comment
   addComment: async (id: string, body: string) => {
     const response = await apiClient.post(API_ROUTES.CALENDAR_EVENT_COMMENTS(id), { body });
-    return response.data;
-  },
-
-  // 10. List Important Dates
-  getImportantDates: async (params?: { kind?: string; today?: string }) => {
-    const response = await apiClient.get(API_ROUTES.CALENDAR_IMPORTANT_DATES, { params });
-    return response.data;
-  },
-
-  // 11. Create Important Date
-  createImportantDate: async (payload: CreateImportantDatePayload) => {
-    const response = await apiClient.post(API_ROUTES.CALENDAR_IMPORTANT_DATES, payload);
-    return response.data;
-  },
-
-  // 12. Get Important Date Detail
-  getImportantDate: async (key: string, today?: string) => {
-    const response = await apiClient.get(API_ROUTES.CALENDAR_IMPORTANT_DATE_BY_KEY(key), { params: { today } });
-    return response.data;
-  },
-
-  // 13. Update Important Date
-  updateImportantDate: async (key: string, payload: Partial<CreateImportantDatePayload>) => {
-    const response = await apiClient.patch(API_ROUTES.CALENDAR_IMPORTANT_DATE_BY_KEY(key), payload);
-    return response.data;
-  },
-
-  // 14. Delete Important Date
-  deleteImportantDate: async (key: string) => {
-    const response = await apiClient.delete(API_ROUTES.CALENDAR_IMPORTANT_DATE_BY_KEY(key));
     return response.data;
   },
 };

@@ -21,9 +21,10 @@ const RecentlyDoneSection: React.FC<RecentlyDoneSectionProps> = ({
       <Text style={styles.title}>Recently done</Text>
 
       <View style={styles.list}>
-        {items.map((item) => {
+        {items.map((item, idx) => {
+          const itemKey = item.id ? String(item.id) : `done-item-${idx}`;
           return (
-            <View key={item.id} style={styles.doneRow}>
+            <View key={itemKey} style={styles.doneRow}>
               {/* Checkmark Circle */}
               <View style={styles.checkCircle}>
                 <Feather name="check" size={12} color="#0B1A2F" />

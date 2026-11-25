@@ -1,13 +1,10 @@
 import {
-  TaskItem,
   FamilyMemberOption,
-  TaskCategory,
-  TaskPriority,
+  TaskItem,
   ListGroup,
-  ListType,
-} from './types';
+} from '../../src/screens/mainScreens/tasksScreen/types';
 
-export const FAMILY_MEMBERS: FamilyMemberOption[] = [
+export const TEST_FAMILY_MEMBERS: FamilyMemberOption[] = [
   {
     id: 'everyone',
     name: 'Everyone',
@@ -29,88 +26,37 @@ export const FAMILY_MEMBERS: FamilyMemberOption[] = [
     name: 'Rohan',
     initial: 'R',
     avatarBg: '#1E3A66',
-    avatarColor: '#8DB8F5',
+    avatarColor: '#CAD4DF',
     taskCount: 4,
   },
   {
     id: 'anaya',
     name: 'Anaya',
     initial: 'A',
-    avatarBg: '#5C2149',
-    avatarColor: '#F472B6',
+    avatarBg: '#4A1E35',
+    avatarColor: '#F2A0C6',
     taskCount: 1,
   },
   {
     id: 'aarav',
     name: 'Aarav',
     initial: 'Aa',
-    avatarBg: '#5C5221',
-    avatarColor: '#FBBF24',
+    avatarBg: '#3D351E',
+    avatarColor: '#EBB23A',
     taskCount: 1,
   },
   {
     id: 'dadi',
     name: 'Dadi',
     initial: 'D',
-    avatarBg: '#215C33',
-    avatarColor: '#4ADE80',
+    avatarBg: '#1E3524',
+    avatarColor: '#81B29A',
     taskCount: 1,
   },
 ];
 
-export const CATEGORY_META: Record<
-  TaskCategory,
-  { label: string; color: string; badgeBorder: string }
-> = {
-  household: {
-    label: 'Household',
-    color: '#F0913A',
-    badgeBorder: '#6B3A2A',
-  },
-  family: {
-    label: 'Family',
-    color: '#3B82F6',
-    badgeBorder: '#1E3A66',
-  },
-  personal: {
-    label: 'Personal',
-    color: '#10B981',
-    badgeBorder: '#1E4E38',
-  },
-  finance: {
-    label: 'Finance',
-    color: '#F06A6A',
-    badgeBorder: '#F06A6A',
-  },
-  health: {
-    label: 'Health',
-    color: '#8B5CF6',
-    badgeBorder: '#3C2166',
-  },
-  travel: {
-    label: 'Travel',
-    color: '#14B8A6',
-    badgeBorder: '#164E48',
-  },
-  work: {
-    label: 'Work',
-    color: '#94A3B8',
-    badgeBorder: '#273C56',
-  },
-};
-
-export const PRIORITY_META: Record<
-  TaskPriority,
-  { label: string; color: string }
-> = {
-  high: { label: 'High priority', color: '#F06A6A' },
-  medium: { label: 'Medium', color: '#FBBF24' },
-  low: { label: 'Low', color: '#94A3B8' },
-};
-
-export const INITIAL_TASKS: TaskItem[] = [
+export const TEST_TASKS: TaskItem[] = [
   // --- PENDING TASKS ---
-  // Household
   {
     id: 'tsk-1',
     title: 'Buy Diwali sweets and diyas',
@@ -165,8 +111,6 @@ export const INITIAL_TASKS: TaskItem[] = [
     viewers: 'Everyone in the family',
     isCompleted: false,
   },
-
-  // Finance
   {
     id: 'tsk-4',
     title: 'Pay electricity bill',
@@ -229,8 +173,6 @@ export const INITIAL_TASKS: TaskItem[] = [
     isOverdue: true,
     overdueDateText: 'Overdue by 2 days',
   },
-
-  // Travel
   {
     id: 'tsk-6',
     title: 'Book train tickets to Jaipur',
@@ -250,8 +192,6 @@ export const INITIAL_TASKS: TaskItem[] = [
     notes: 'Shatabdi Express morning departure preferred.',
     isCompleted: false,
   },
-
-  // Health
   {
     id: 'tsk-7',
     title: 'Doctor checkup for Dadi',
@@ -269,7 +209,6 @@ export const INITIAL_TASKS: TaskItem[] = [
     viewers: 'Everyone in the family',
     isCompleted: false,
   },
-
   // --- COMPLETED TASKS ---
   {
     id: 'tsk-c1',
@@ -337,55 +276,7 @@ export const INITIAL_TASKS: TaskItem[] = [
   },
 ];
 
-export const START_SUGGESTIONS = [
-  { id: 's-1', title: 'Pay electricity bill', dotColor: '#F87171' },
-  { id: 's-2', title: 'Buy groceries', dotColor: '#F0913A' },
-  { id: 's-3', title: 'Book a doctor visit', dotColor: '#8B5CF6' },
-  { id: 's-4', title: 'Pay school fees', dotColor: '#3B82F6' },
-];
-
-export const LIST_TYPE_CONFIG: Record<
-  ListType,
-  { label: string; subtitle: string; icon: string; color: string; bg: string }
-> = {
-  grocery: {
-    label: 'Grocery',
-    subtitle: 'Food, home supplies',
-    icon: 'shopping-cart',
-    color: '#F0913A',
-    bg: '#3D2517',
-  },
-  packing: {
-    label: 'Packing',
-    subtitle: 'Trips, hospital bag',
-    icon: 'briefcase',
-    color: '#2DD4BF',
-    bg: '#13383B',
-  },
-  school: {
-    label: 'School',
-    subtitle: 'Books, uniforms, projects',
-    icon: 'book',
-    color: '#60A5FA',
-    bg: '#152B4D',
-  },
-  party: {
-    label: 'Party',
-    subtitle: 'Guests, food, décor',
-    icon: 'volume-2',
-    color: '#C084FC',
-    bg: '#2B1B40',
-  },
-  custom: {
-    label: 'Custom',
-    subtitle: 'Anything else',
-    icon: 'list',
-    color: '#34D399',
-    bg: '#14382B',
-  },
-};
-
-export const INITIAL_LISTS: ListGroup[] = [
+export const TEST_LISTS: ListGroup[] = [
   {
     id: 'lst-1',
     title: 'Diwali shopping',
@@ -552,5 +443,3 @@ export const INITIAL_LISTS: ListGroup[] = [
     ],
   },
 ];
-
-

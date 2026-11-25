@@ -14,6 +14,10 @@ import {
   fetchLifeProfileFullThunk,
   loadCachedLifeProfileThunk,
 } from './src/redux/features/lifeProfile/lifeProfileSlice';
+import {
+  getMyFamilyThunk,
+  getMyFamilyBasicThunk,
+} from './src/redux/features/family/familySlice';
 import { configureGoogleSignIn, authServices } from './src/services';
 import {
   getUserData,
@@ -99,6 +103,10 @@ function AppContent() {
               console.log(
                 '[AppBootstrap] User in family. Navigating directly to Home/Dashboard!'
               );
+              // Pre-fetch family details immediately so all screens have members available
+              store.dispatch(getMyFamilyThunk());
+              store.dispatch(getMyFamilyBasicThunk());
+
               setInitialTarget({
                 root: 'Home',
                 memberId: resolvedMemberId || undefined,

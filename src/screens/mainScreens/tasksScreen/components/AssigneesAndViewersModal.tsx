@@ -9,7 +9,6 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Feather from '@react-native-vector-icons/feather';
 import { useAppSelector } from '../../../../redux';
-import { FAMILY_MEMBERS } from '../mockData';
 
 export type ViewersOption = 'everyone' | 'adults' | 'assignees';
 
@@ -19,6 +18,7 @@ export interface AssigneesAndViewersModalProps {
   selectedViewers: ViewersOption;
   onClose: () => void;
   onSave: (assignees: string[], viewers: ViewersOption, viewersLabel: string) => void;
+  members?: { id: string; name: string; initial: string; avatarBg: string; avatarColor: string }[];
 }
 
 const VIEWERS_CONFIG: {
@@ -53,6 +53,7 @@ const AssigneesAndViewersModal: React.FC<AssigneesAndViewersModalProps> = ({
   selectedViewers,
   onClose,
   onSave,
+  members: propMembers,
 }) => {
   const insets = useSafeAreaInsets();
   const familyMembers = useAppSelector(
@@ -64,6 +65,9 @@ const AssigneesAndViewersModal: React.FC<AssigneesAndViewersModalProps> = ({
   );
 
   const members = useMemo(() => {
+    if (propMembers && propMembers.length > 0) {
+      return propMembers;
+    }
     if (familyMembers.length > 0) {
       return familyMembers.map((m: any) => {
         const rawName = m.fullName || m.name || (m.isYou ? 'You' : 'Member');
@@ -81,7 +85,7 @@ const AssigneesAndViewersModal: React.FC<AssigneesAndViewersModalProps> = ({
         };
       });
     }
-    return FAMILY_MEMBERS.filter((m) => m.id !== 'everyone');
+    return [];
   }, [familyMembers]);
 
   // Normalize initial selection to match member names or 'You'

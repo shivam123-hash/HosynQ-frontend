@@ -31,11 +31,12 @@ const UpcomingEventsSection: React.FC<UpcomingEventsSectionProps> = ({
 
       {/* Events List */}
       <View style={styles.cardsList}>
-        {events.map((event) => {
+        {events.map((event, idx) => {
           const isFamily = event.category === 'Family';
+          const cardKey = event.id ? String(event.id) : `upcoming-evt-${idx}`;
           return (
             <TouchableOpacity
-              key={event.id}
+              key={cardKey}
               onPress={() => onEventPress?.(event)}
               activeOpacity={0.7}
               style={styles.eventCard}

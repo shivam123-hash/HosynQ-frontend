@@ -111,6 +111,30 @@ export interface MyFamilyResponse {
   message?: string;
 }
 
+export interface MyFamilyBasicResponse {
+  success?: boolean;
+  inFamily?: boolean;
+  family?: {
+    id: string;
+    name: string;
+    familyCode?: string;
+    familyType?: string;
+    memberCount?: number;
+    myRole?: string;
+    myMemberId?: string;
+    members: FamilyMemberData[];
+  } | null;
+  id?: string;
+  name?: string;
+  familyCode?: string;
+  familyType?: string;
+  memberCount?: number;
+  myRole?: string;
+  myMemberId?: string;
+  members?: FamilyMemberData[];
+  message?: string;
+}
+
 export interface JoinRequestItemData {
   id: string;
   userId?: string;
@@ -330,6 +354,24 @@ const familyServices = {
   getMyFamily: async (): Promise<MyFamilyResponse> => {
     const response = await apiClient.get<MyFamilyResponse>(API_ROUTES.FAMILY_MY_FAMILY);
     return response.data;
+  },
+
+  // 1b. Get My Family Basic Details (GET /api/v1/family/my-family/basic)
+  getMyFamilyBasic: async (): Promise<MyFamilyBasicResponse> => {
+    try {
+      const response = await apiClient.get<MyFamilyBasicResponse>(API_ROUTES.FAMILY_MY_FAMILY_BASIC);
+      console.log('[familyServices.getMyFamilyBasic] Raw Data:', response.data);
+      console.log('[familyServices.getMyFamilyBasic] JSON Data:\n', JSON.stringify(response.data, null, 2));
+      return response.data;
+    } catch (err: any) {
+      if (err?.response?.status === 404) {
+        console.log('[familyServices.getMyFamilyBasic] /basic returned 404, falling back to /my-family...');
+        const fallbackRes = await apiClient.get<MyFamilyResponse>(API_ROUTES.FAMILY_MY_FAMILY);
+        console.log('[familyServices.getMyFamilyBasic] Fallback Data:', fallbackRes.data);
+        return fallbackRes.data as any;
+      }
+      throw err;
+    }
   },
 
   // 2. Submit Join Request (POST /api/v1/family/join-request)

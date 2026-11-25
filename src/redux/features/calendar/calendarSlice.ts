@@ -4,19 +4,15 @@ import calendarServices, {
   CreateEventPayload,
   UpdateEventPayload,
   CancelEventPayload,
-  CreateImportantDatePayload,
 } from '../../../services/calendarServices';
 
 export interface CalendarState {
   feed: {
     events: any[];
     tasks: any[];
-    importantDates: any[];
     appliedFilters: any | null;
   };
   selectedEvent: any | null;
-  importantDatesList: any[];
-  importantDateCounts: Record<string, number>;
   loading: boolean;
   detailLoading: boolean;
   actionLoading: boolean;
@@ -27,12 +23,9 @@ const initialState: CalendarState = {
   feed: {
     events: [],
     tasks: [],
-    importantDates: [],
     appliedFilters: null,
   },
   selectedEvent: null,
-  importantDatesList: [],
-  importantDateCounts: {},
   loading: false,
   detailLoading: false,
   actionLoading: false,
@@ -72,10 +65,33 @@ export const createEventThunk = createAsyncThunk(
   'calendar/createEvent',
   async (payload: CreateEventPayload, { rejectWithValue }) => {
     try {
+      console.log('[createEvent API] Creating event with payload:', payload);
+      try {
+        console.log('[createEvent API] Request Payload (formatted):\n', JSON.stringify(payload, null, 2));
+      } catch {
+        // ignore serialization errors
+      }
       const res = await calendarServices.createEvent(payload);
+      console.log('[createEvent API] Success Response (raw):', res);
+      try {
+        console.log('[createEvent API] Success Response (formatted):\n', JSON.stringify(res, null, 2));
+      } catch {
+        // ignore serialization errors
+      }
       return res.event;
     } catch (err: any) {
-      return rejectWithValue(err?.response?.data?.message || 'Failed to create event');
+      const errorMsg =
+        err?.response?.data?.message ||
+        err?.message ||
+        'Failed to create event';
+      console.log('[createEvent API] Error Response:', {
+        status: err?.response?.status,
+        data: err?.response?.data,
+        message: errorMsg,
+      });
+      return rejectWithValue(
+        Array.isArray(errorMsg) ? errorMsg.join(', ') : errorMsg
+      );
     }
   }
 );
@@ -87,10 +103,33 @@ export const updateEventThunk = createAsyncThunk(
   'calendar/updateEvent',
   async ({ id, payload }: { id: string; payload: UpdateEventPayload }, { rejectWithValue }) => {
     try {
+      console.log('[updateEvent API] Updating event id:', id, 'payload:', payload);
+      try {
+        console.log('[updateEvent API] Request Payload (formatted):\n', JSON.stringify(payload, null, 2));
+      } catch {
+        // ignore serialization errors
+      }
       const res = await calendarServices.updateEvent(id, payload);
+      console.log('[updateEvent API] Success Response (raw):', res);
+      try {
+        console.log('[updateEvent API] Success Response (formatted):\n', JSON.stringify(res, null, 2));
+      } catch {
+        // ignore serialization errors
+      }
       return res.event;
     } catch (err: any) {
-      return rejectWithValue(err?.response?.data?.message || 'Failed to update event');
+      const errorMsg =
+        err?.response?.data?.message ||
+        err?.message ||
+        'Failed to update event';
+      console.log('[updateEvent API] Error Response:', {
+        status: err?.response?.status,
+        data: err?.response?.data,
+        message: errorMsg,
+      });
+      return rejectWithValue(
+        Array.isArray(errorMsg) ? errorMsg.join(', ') : errorMsg
+      );
     }
   }
 );
@@ -118,7 +157,16 @@ export const respondToEventThunk = createAsyncThunk(
   async ({ id, response }: { id: string; response: 'GOING' | 'NOT_GOING' }, { rejectWithValue }) => {
     try {
       const res = await calendarServices.respondToEvent(id, response);
-      return res.event;
+      return res.event
+        ? {
+            ...res.event,
+            myResponse: res.event.myResponse ?? response,
+            permissions: {
+              ...(res.event.permissions || {}),
+              canRespond: false,
+            },
+          }
+        : { id, myResponse: response, permissions: { canRespond: false } };
     } catch (err: any) {
       return rejectWithValue(err?.response?.data?.message || 'Failed to respond to event');
     }
@@ -126,48 +174,6 @@ export const respondToEventThunk = createAsyncThunk(
 );
 export const respondToEvent = respondToEventThunk;
 export const respondToCalendarEvent = respondToEventThunk;
-
-// 7. Fetch Important Dates Thunk
-export const fetchImportantDatesThunk = createAsyncThunk(
-  'calendar/fetchImportantDates',
-  async (params: { kind?: string; today?: string } | undefined, { rejectWithValue }) => {
-    try {
-      const res = await calendarServices.getImportantDates(params);
-      return res;
-    } catch (err: any) {
-      return rejectWithValue(err?.response?.data?.message || 'Failed to fetch important dates');
-    }
-  }
-);
-export const fetchImportantDates = fetchImportantDatesThunk;
-
-// 8. Delete Important Date Thunk (DELETE /api/v1/calendar/important-dates/:key)
-export const deleteImportantDateThunk = createAsyncThunk(
-  'calendar/deleteImportantDate',
-  async (key: string, { rejectWithValue }) => {
-    try {
-      const res = await calendarServices.deleteImportantDate(key);
-      return { key, ...res };
-    } catch (err: any) {
-      return rejectWithValue(err?.response?.data?.message || 'Failed to delete important date');
-    }
-  }
-);
-export const deleteImportantDate = deleteImportantDateThunk;
-
-// 9. Create Important Date Thunk (POST /api/v1/calendar/important-dates)
-export const createImportantDateThunk = createAsyncThunk(
-  'calendar/createImportantDate',
-  async (payload: CreateImportantDatePayload, { rejectWithValue }) => {
-    try {
-      const res = await calendarServices.createImportantDate(payload);
-      return res;
-    } catch (err: any) {
-      return rejectWithValue(err?.response?.data?.message || 'Failed to create important date');
-    }
-  }
-);
-export const createImportantDate = createImportantDateThunk;
 
 const calendarSlice = createSlice({
   name: 'calendar',
@@ -191,7 +197,6 @@ const calendarSlice = createSlice({
         state.loading = false;
         state.feed.events = action.payload.events || [];
         state.feed.tasks = action.payload.tasks || [];
-        state.feed.importantDates = action.payload.importantDates || [];
         state.feed.appliedFilters = action.payload.appliedFilters || null;
       })
       .addCase(fetchCalendarFeedThunk.rejected, (state, action) => {
@@ -213,29 +218,48 @@ const calendarSlice = createSlice({
         state.error = action.payload as string;
       });
 
+    // Create Event
+    builder.addCase(createEventThunk.fulfilled, (state, action) => {
+      state.actionLoading = false;
+      if (action.payload) {
+        const exists = state.feed.events.some((e) => e.id === action.payload.id);
+        if (!exists) {
+          state.feed.events = [action.payload, ...state.feed.events];
+        }
+      }
+    });
+
+    // Update Event
+    builder.addCase(updateEventThunk.fulfilled, (state, action) => {
+      state.actionLoading = false;
+      if (action.payload) {
+        state.feed.events = state.feed.events.map((e) =>
+          e.id === action.payload.id ? { ...e, ...action.payload } : e
+        );
+        if (state.selectedEvent?.id === action.payload.id) {
+          state.selectedEvent = { ...state.selectedEvent, ...action.payload };
+        }
+      }
+    });
+
+    // Respond to Event
+    builder.addCase(respondToEventThunk.fulfilled, (state, action) => {
+      state.actionLoading = false;
+      if (action.payload) {
+        state.feed.events = state.feed.events.map((e) =>
+          e.id === action.payload.id ? { ...e, ...action.payload } : e
+        );
+        if (state.selectedEvent?.id === action.payload.id) {
+          state.selectedEvent = { ...state.selectedEvent, ...action.payload };
+        }
+      }
+    });
+
     // Cancel Event
     builder.addCase(cancelEventThunk.fulfilled, (state, action) => {
       state.feed.events = state.feed.events.filter((e) => e.id !== action.payload.id);
       if (state.selectedEvent?.id === action.payload.id) {
         state.selectedEvent.cancelledAt = action.payload.cancelledAt;
-      }
-    });
-
-    // Important Dates
-    builder.addCase(fetchImportantDatesThunk.fulfilled, (state, action) => {
-      state.importantDatesList = action.payload.dates || [];
-      state.importantDateCounts = action.payload.counts || {};
-    });
-
-    builder.addCase(deleteImportantDateThunk.fulfilled, (state, action) => {
-      state.importantDatesList = state.importantDatesList.filter(
-        (d) => d.key !== action.payload.key && d.id !== action.payload.key
-      );
-    });
-
-    builder.addCase(createImportantDateThunk.fulfilled, (state, action) => {
-      if (action.payload?.date) {
-        state.importantDatesList = [action.payload.date, ...state.importantDatesList];
       }
     });
   },

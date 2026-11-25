@@ -25,6 +25,7 @@ export interface WeekViewProps {
   onSelectTask?: (task: CalendarTaskDue) => void;
   onPrevWeek?: () => void;
   onNextWeek?: () => void;
+  refreshControl?: React.ReactElement;
 }
 
 export const WeekView: React.FC<WeekViewProps> = ({
@@ -37,6 +38,7 @@ export const WeekView: React.FC<WeekViewProps> = ({
   onSelectDate,
   onPrevWeek,
   onNextWeek,
+  refreshControl,
 }) => {
   const isTestEnv =
     typeof (globalThis as any).process !== 'undefined' &&
@@ -59,6 +61,7 @@ export const WeekView: React.FC<WeekViewProps> = ({
     <ScrollView
       showsVerticalScrollIndicator={false}
       contentContainerStyle={styles.scrollContent}
+      refreshControl={refreshControl}
     >
       {/* Week Range Navigation Header (CAL-02) */}
       <View style={styles.navRow}>

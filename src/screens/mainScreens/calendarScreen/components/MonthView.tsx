@@ -24,6 +24,7 @@ export interface MonthViewProps {
   onSelectEvent?: (event: CalendarEvent) => void;
   onSelectTask?: (task: CalendarTaskDue) => void;
   onToggleTask?: (taskId: string) => void;
+  refreshControl?: React.ReactElement;
 }
 
 const MONTH_NAMES = [
@@ -66,6 +67,7 @@ export const MonthView: React.FC<MonthViewProps> = ({
   onSelectEvent,
   onSelectTask,
   onToggleTask,
+  refreshControl,
 }) => {
   const normSelectedDate = useMemo(() => {
     return selectedDate.includes('T') ? selectedDate.split('T')[0] : selectedDate.trim();
@@ -215,6 +217,7 @@ export const MonthView: React.FC<MonthViewProps> = ({
     <ScrollView
       showsVerticalScrollIndicator={false}
       contentContainerStyle={styles.scrollContent}
+      refreshControl={refreshControl}
     >
       {/* Month Card (CAL-03) */}
       <View style={styles.monthCard}>
@@ -277,8 +280,8 @@ export const MonthView: React.FC<MonthViewProps> = ({
           {weeks.map((week, wIdx) => (
             <View key={wIdx} style={styles.weekRow}>
               {week.map((cell) => {
-                const isSelected = cell.dateStr === selectedDate;
-                const isOrangeActive = cell.isToday;
+                const isSelected = cell.dateStr === normSelectedDate;
+                const isTodayUnselected = !isSelected && cell.isToday;
 
                 return (
                   <TouchableOpacity
@@ -292,15 +295,16 @@ export const MonthView: React.FC<MonthViewProps> = ({
                     <View
                       style={[
                         styles.dayCircle,
-                        isOrangeActive && styles.dayCircleToday,
-                        !isOrangeActive && isSelected && styles.dayCircleSelected,
+                        isSelected && styles.dayCircleSelected,
+                        isTodayUnselected && styles.dayCircleToday,
                       ]}
                     >
                       <Text
                         style={[
                           styles.dayNumberText,
                           !cell.isCurrentMonth && styles.dayNumberTextOtherMonth,
-                          isOrangeActive && styles.dayNumberTextToday,
+                          isTodayUnselected && styles.dayNumberTextToday,
+                          isSelected && styles.dayNumberTextSelected,
                         ]}
                       >
                         {cell.day}
@@ -319,7 +323,7 @@ export const MonthView: React.FC<MonthViewProps> = ({
                         <View
                           style={[
                             styles.taskSquare,
-                            isOrangeActive && styles.taskSquareToday,
+                            isSelected && styles.taskSquareToday,
                           ]}
                         />
                       )}
@@ -556,25 +560,36 @@ const styles = StyleSheet.create({
     width: 36,
     height: 36,
     borderRadius: 18,
+    overflow: 'hidden',
+    backgroundColor: 'transparent',
+    borderWidth: 0,
     justifyContent: 'center',
     alignItems: 'center',
   },
   dayCircleToday: {
-    backgroundColor: '#F0913A',
-  },
-  dayCircleSelected: {
     borderWidth: 1.5,
     borderColor: '#F0913A',
+    backgroundColor: 'transparent',
+  },
+  dayCircleSelected: {
+    backgroundColor: '#F0913A',
+    borderWidth: 0,
   },
   dayNumberText: {
     fontSize: 15,
     fontFamily: 'Roboto-SemiBold',
     color: '#FFFFFF',
+    includeFontPadding: false,
+    textAlign: 'center',
   },
   dayNumberTextOtherMonth: {
     color: '#475569',
   },
   dayNumberTextToday: {
+    color: '#F0913A',
+    fontFamily: 'Roboto-Bold',
+  },
+  dayNumberTextSelected: {
     color: '#0B1A2F',
     fontFamily: 'Roboto-Bold',
   },

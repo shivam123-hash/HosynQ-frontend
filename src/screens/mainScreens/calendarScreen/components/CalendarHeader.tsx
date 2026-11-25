@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, TextInput } from 'react-native';
 import Feather from '@react-native-vector-icons/feather';
 
 export interface CalendarHeaderProps {
@@ -7,9 +7,11 @@ export interface CalendarHeaderProps {
   hasActiveFilters?: boolean;
   onSearchPress?: () => void;
   onFilterPress?: () => void;
-  onImportantDatesPress?: () => void;
-  isImportantDatesActive?: boolean;
-  showImportantDatesBtn?: boolean;
+  onAddPress?: () => void;
+  searchQuery?: string;
+  onSearchChange?: (text: string) => void;
+  isSearchVisible?: boolean;
+  onToggleSearch?: () => void;
 }
 
 export const CalendarHeader: React.FC<CalendarHeaderProps> = ({
@@ -17,80 +19,98 @@ export const CalendarHeader: React.FC<CalendarHeaderProps> = ({
   hasActiveFilters = false,
   onSearchPress,
   onFilterPress,
-  onImportantDatesPress,
-  isImportantDatesActive = false,
-  showImportantDatesBtn = false,
+  onAddPress,
+  searchQuery = '',
+  onSearchChange,
+  isSearchVisible = false,
+  onToggleSearch,
 }) => {
-  return (
-    <View style={styles.header}>
-      <Text style={styles.title}>{title}</Text>
+  const handleSearchPress = onToggleSearch || onSearchPress;
 
-      <View style={styles.actions}>
-        {/* Important Dates Star/Gift Icon (Optional) */}
-        {showImportantDatesBtn && (
+  return (
+    <View style={styles.container}>
+      <View style={[styles.header, isSearchVisible && styles.headerWithSearch]}>
+        <Text style={styles.title}>{title}</Text>
+
+        <View style={styles.actions}>
+          {/* Search */}
           <TouchableOpacity
             style={[
               styles.iconBtn,
-              isImportantDatesActive && styles.iconBtnActive,
+              isSearchVisible && styles.iconBtnActive,
             ]}
-            onPress={onImportantDatesPress}
+            onPress={handleSearchPress}
             activeOpacity={0.7}
             accessibilityRole="button"
-            accessibilityLabel="Important dates"
+            accessibilityLabel="Search events"
           >
             <Feather
-              name="star"
-              size={19}
-              color={isImportantDatesActive ? '#F0913A' : '#CAD4DF'}
+              name="search"
+              size={18}
+              color={isSearchVisible ? '#F0913A' : '#FFFFFF'}
             />
           </TouchableOpacity>
-        )}
 
-        {/* Search */}
-        <TouchableOpacity
-          style={styles.iconBtn}
-          onPress={onSearchPress}
-          activeOpacity={0.7}
-          accessibilityRole="button"
-          accessibilityLabel="Search events"
-        >
-          <Feather name="search" size={20} color="#FFFFFF" />
-        </TouchableOpacity>
-
-        {/* Filter with active dot */}
-        <TouchableOpacity
-          style={[
-            styles.iconBtn,
-            hasActiveFilters && styles.iconBtnActive,
-          ]}
-          onPress={onFilterPress}
-          activeOpacity={0.7}
-          accessibilityRole="button"
-          accessibilityLabel="Filter calendar"
-        >
-          <View style={styles.filterIconContainer}>
-            <View
-              style={[
-                styles.filterLineTop,
-                hasActiveFilters && styles.filterLineActive,
-              ]}
-            />
-            <View
-              style={[
-                styles.filterLineMiddle,
-                hasActiveFilters && styles.filterLineActive,
-              ]}
-            />
-            <View
-              style={[
-                styles.filterLineBottom,
-                hasActiveFilters && styles.filterLineActive,
-              ]}
-            />
-          </View>
-          {hasActiveFilters && <View style={styles.activeDot} />}
-        </TouchableOpacity>
+          {/* Filter with active dot */}
+          <TouchableOpacity
+            style={[
+              styles.iconBtn,
+              hasActiveFilters && styles.iconBtnActive,
+            ]}
+            onPress={onFilterPress}
+            activeOpacity={0.7}
+            accessibilityRole="button"
+            accessibilityLabel="Filter calendar"
+          >
+            <View style={styles.filterIconContainer}>
+              <View
+                style={[
+                  styles.filterLineTop,
+                  hasActiveFilters && styles.filterLineActive,
+                ]}
+              />
+              <View
+                style={[
+                  styles.filterLineMiddle,
+                  hasActiveFilters && styles.filterLineActive,
+                ]}
+              />
+              <View
+                style={[
+                  styles.filterLineBottom,
+                  hasActiveFilters && styles.filterLineActive,
+                ]}
+              />
+            </View>
+            {hasActiveFilters && <View style={styles.activeDot} />}
+          </TouchableOpacity>
+        </View>
       </View>
+
+      {/* Inline Search Input Bar (when active) */}
+      {isSearchVisible && (
+        <View style={styles.searchBarWrapper}>
+          <Feather name="search" size={16} color="#8A97AB" />
+          <TextInput
+            style={styles.searchInput}
+            placeholder="Search events, tasks..."
+            placeholderTextColor="#8A97AB"
+            value={searchQuery}
+            onChangeText={onSearchChange}
+            autoFocus
+          />
+          {Boolean(searchQuery && searchQuery.length > 0) && (
+            <TouchableOpacity
+              onPress={() => onSearchChange?.('')}
+              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+              accessibilityRole="button"
+              accessibilityLabel="Clear search"
+            >
+              <Feather name="x" size={16} color="#8A97AB" />
+            </TouchableOpacity>
+          )}
+        </View>
+      )}
     </View>
   );
 };
@@ -98,18 +118,47 @@ export const CalendarHeader: React.FC<CalendarHeaderProps> = ({
 export default CalendarHeader;
 
 const styles = StyleSheet.create({
+  container: {
+    width: '100%',
+  },
   header: {
-    height: 56,
+    minHeight: 56,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: 20,
+    marginBottom: 16,
+  },
+  headerWithSearch: {
+    marginBottom: 12,
+  },
+  searchBarWrapper: {
+    marginHorizontal: 20,
+    marginBottom: 16,
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#122440',
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: '#1F3352',
+    paddingHorizontal: 14,
+    height: 44,
+    gap: 10,
+  },
+  searchInput: {
+    flex: 1,
+    fontSize: 15,
+    color: '#CAD4DF',
+    paddingVertical: 0,
   },
   title: {
     fontSize: 28,
+    lineHeight: 36,
     fontFamily: 'Roboto-Bold',
     color: '#FFFFFF',
     letterSpacing: -0.5,
+    textAlignVertical: 'center',
+    includeFontPadding: false,
   },
   actions: {
     flexDirection: 'row',
@@ -117,12 +166,12 @@ const styles = StyleSheet.create({
     gap: 10,
   },
   iconBtn: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
+    width: 42,
+    height: 42,
+    borderRadius: 21,
     backgroundColor: 'transparent',
     borderWidth: 1.5,
-    borderColor: '#3A4556',
+    borderColor: '#1F3352',
     justifyContent: 'center',
     alignItems: 'center',
     position: 'relative',

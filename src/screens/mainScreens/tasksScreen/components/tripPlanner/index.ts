@@ -1,5 +1,5 @@
 export * from './types';
-export * from './mockTripData';
+export * from './tripConstants';
 export { TripPlannerModal } from './TripPlannerModal';
 export type { TripScreenName, TripPlannerModalProps } from './TripPlannerModal';
 export { FindCommonDatesModal } from './FindCommonDatesModal';

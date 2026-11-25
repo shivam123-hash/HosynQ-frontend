@@ -23,7 +23,7 @@ import {
   deleteList,
 } from '../../../../redux/features/lists/listsSlice';
 import { ListGroup, ListItemEntry, ListType } from '../types';
-import { LIST_TYPE_CONFIG } from '../mockData';
+import { LIST_TYPE_CONFIG } from '../constants';
 import { isUUID } from '../taskApiHelpers';
 import { mapApiListDetailToUiList } from '../listApiHelpers';
 

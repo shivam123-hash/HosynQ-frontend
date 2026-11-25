@@ -2,16 +2,16 @@ import { Platform, NativeModules } from 'react-native';
 
 /**
  * Local development host configuration:
- * Current Mac Wi-Fi IP: 192.168.1.18
+ * Current Mac Wi-Fi IP: 192.168.1.11
  * (Find by running `ifconfig | grep "inet 192"` in Mac terminal)
  */
-export const DEV_MACHINE_IP = '192.168.1.18';
+export const DEV_MACHINE_IP = '192.168.1.11';
 
 /**
  * Automatically extracts the development host IP:
  * 1. Checks NativeModules.SourceCode.scriptURL (Metro packager IP)
- *    If Metro is accessed from 192.168.1.18, this dynamically resolves it!
- * 2. Falls back to DEV_MACHINE_IP (192.168.1.18) so real devices never call
+ *    If Metro is accessed from 192.168.1.11, this dynamically resolves it!
+ * 2. Falls back to DEV_MACHINE_IP (192.168.1.11) so real devices never call
  *    "localhost" (which points to the mobile device itself and causes Network Error).
  */
 export const resolveDevHost = (): string => {
@@ -83,6 +83,7 @@ const API_ROUTES = {
   FAMILY_INVITATION_BY_ID: (invitationId: string) => `family/invitations/${invitationId}`,
   FAMILY_INVITATION_PREVIEW: 'family/invitations/preview',
   FAMILY_MY_FAMILY: 'family/my-family',
+  FAMILY_MY_FAMILY_BASIC: 'family/my-family/basic',
   FAMILY_TRANSFER_OWNERSHIP: 'family/transfer-ownership',
   FAMILY_LEAVE: 'family/leave',
   FAMILY_DELETE: 'family',
@@ -158,8 +159,6 @@ const API_ROUTES = {
   CALENDAR_EVENT_CANCEL: (id: string) => `calendar/events/${id}/cancel`,
   CALENDAR_EVENT_RESPONSE: (id: string) => `calendar/events/${id}/response`,
   CALENDAR_EVENT_COMMENTS: (id: string) => `calendar/events/${id}/comments`,
-  CALENDAR_IMPORTANT_DATES: 'calendar/important-dates',
-  CALENDAR_IMPORTANT_DATE_BY_KEY: (key: string) => `calendar/important-dates/${key}`,
 
   // Notifications Endpoints
   NOTIFICATIONS: 'notifications',
