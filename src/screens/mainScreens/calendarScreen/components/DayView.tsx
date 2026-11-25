@@ -352,9 +352,8 @@ export const DayView: React.FC<DayViewProps> = ({
                   activeOpacity={0.7}
                   accessibilityRole="checkbox"
                   accessibilityState={{ checked: t.isCompleted }}
-                  accessibilityLabel={`${t.title}, ${
-                    t.isCompleted ? 'completed' : 'incomplete'
-                  }`}
+                  accessibilityLabel={`${t.title}, ${t.isCompleted ? 'completed' : 'incomplete'
+                    }`}
                 >
                   <View
                     style={[
@@ -921,9 +920,9 @@ const styles = StyleSheet.create({
   },
   emptyContainer: {
     alignItems: 'center',
-    paddingVertical: 48,
+    paddingVertical: 10,
     paddingHorizontal: 32,
-    marginTop: 12,
+    // marginTop: 12,
   },
   emptyIconCircle: {
     width: 68,
