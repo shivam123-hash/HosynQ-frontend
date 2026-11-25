@@ -3,6 +3,8 @@ import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import AppDialog from '../../../../components/AppDialog';
 import Colors from '../../../../units/Colors';
 
+import { Fonts, Typography } from '../../../../units';
+
 export type RepeatEditScope = 'this_only' | 'all_future';
 
 export interface EditRepeatingConfirmModalProps {
@@ -111,10 +113,10 @@ export default EditRepeatingConfirmModal;
 const styles = StyleSheet.create({
   optionsCard: {
     width: '100%',
-    backgroundColor: 'transparent',
+    backgroundColor: Colors.transparent,
     borderRadius: 16,
     borderWidth: 1.5,
-    borderColor: '#3A4556',
+    borderColor: Colors.borderMutedAlt,
     overflow: 'hidden',
     marginBottom: 20,
   },
@@ -124,10 +126,10 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingVertical: 14,
     paddingHorizontal: 16,
-    backgroundColor: 'transparent',
+    backgroundColor: Colors.transparent,
   },
   optionRowSelected: {
-    backgroundColor: '#1A2B47',
+    backgroundColor: Colors.cardSelected,
   },
   divider: {
     height: 1,
@@ -138,12 +140,12 @@ const styles = StyleSheet.create({
     marginRight: 12,
   },
   optionTitle: {
-    fontSize: 15,
-    fontFamily: 'Roboto-SemiBold',
+    fontSize: Typography.size.bodyMedium,
+    fontFamily: Fonts.semiBold,
     color: Colors.textLightMutedAlt,
   },
   optionSubtitle: {
-    fontSize: 13,
+    fontSize: Typography.size.bodySmall,
     color: Colors.textSecondaryMuted,
     marginTop: 2,
   },

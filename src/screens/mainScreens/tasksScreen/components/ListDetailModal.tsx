@@ -46,6 +46,8 @@ import AssignListItemModal from './AssignListItemModal';
 import ShareListModal from './ShareListModal';
 import ListOptionsModal from './ListOptionsModal';
 
+import { Colors, Fonts, Typography } from '../../../../units';
+
 export interface ListDetailModalProps {
   visible: boolean;
   list: ListGroup | null;
@@ -328,7 +330,7 @@ const ListDetailModal: React.FC<ListDetailModalProps> = ({
             accessibilityRole="button"
             accessibilityLabel="Close list"
           >
-            <Feather name="chevron-left" size={24} color="#FFFFFF" />
+            <Feather name="chevron-left" size={24} color={Colors.white} />
           </TouchableOpacity>
 
           <TouchableOpacity
@@ -338,7 +340,7 @@ const ListDetailModal: React.FC<ListDetailModalProps> = ({
             accessibilityRole="button"
             accessibilityLabel="List options"
           >
-            <Feather name="more-horizontal" size={22} color="#FFFFFF" />
+            <Feather name="more-horizontal" size={22} color={Colors.white} />
           </TouchableOpacity>
         </View>
 
@@ -372,11 +374,11 @@ const ListDetailModal: React.FC<ListDetailModalProps> = ({
               {list.sharedWith.slice(0, 5).map((name, idx) => {
                 const initial = name.slice(0, name === 'Aarav' ? 2 : 1);
                 const bgColors = [
-                  '#78350F',
-                  '#064E3B',
-                  '#1E3A8A',
-                  '#831843',
-                  '#854D0E',
+                  Colors.tripYellowBg,
+                  Colors.tripGreenBg,
+                  Colors.tripBlueBg,
+                  Colors.tripPinkBg,
+                  Colors.amberDeep,
                 ];
                 const bg = bgColors[idx % bgColors.length];
                 return (
@@ -425,7 +427,7 @@ const ListDetailModal: React.FC<ListDetailModalProps> = ({
           {isAllDone && (
             <View style={styles.celebrationCard}>
               <View style={styles.celebrationCircle}>
-                <Feather name="check" size={26} color="#6FDAA6" />
+                <Feather name="check" size={26} color={Colors.tripCompletedGreen} />
               </View>
               <Text style={styles.celebrationTitle}>Everything’s bought</Text>
               <Text style={styles.celebrationSubtitle}>
@@ -450,7 +452,7 @@ const ListDetailModal: React.FC<ListDetailModalProps> = ({
               <Feather
                 name="plus"
                 size={20}
-                color="#F0913A"
+                color={Colors.primary}
                 style={styles.addItemIcon}
               />
               <Text style={styles.addItemText}>Add an item</Text>
@@ -511,7 +513,7 @@ const ListDetailModal: React.FC<ListDetailModalProps> = ({
                               styles.assignedBadge,
                               {
                                 backgroundColor:
-                                  item.assignedAvatarBg || '#78350F',
+                                  item.assignedAvatarBg || Colors.tripYellowBg,
                               },
                             ]}
                           >
@@ -522,7 +524,7 @@ const ListDetailModal: React.FC<ListDetailModalProps> = ({
                           </View>
                         ) : (
                           <View style={styles.unassignedBadge}>
-                            <Feather name="plus" size={14} color="#8A97AB" />
+                            <Feather name="plus" size={14} color={Colors.textSecondaryMuted} />
                           </View>
                         )}
                       </TouchableOpacity>
@@ -568,7 +570,7 @@ const ListDetailModal: React.FC<ListDetailModalProps> = ({
                         accessibilityLabel={`Unmark ${item.title}`}
                       >
                         <View style={styles.completedCheckCircle}>
-                          <Feather name="check" size={14} color="#0B1A2F" />
+                          <Feather name="check" size={14} color={Colors.background} />
                         </View>
                       </TouchableOpacity>
 
@@ -593,7 +595,7 @@ const ListDetailModal: React.FC<ListDetailModalProps> = ({
                             styles.assignedBadge,
                             {
                               backgroundColor:
-                                item.assignedAvatarBg || '#1E3A8A',
+                                item.assignedAvatarBg || Colors.tripBlueBg,
                             },
                           ]}
                         >
@@ -653,7 +655,7 @@ const ListDetailModal: React.FC<ListDetailModalProps> = ({
               <Feather
                 name="archive"
                 size={18}
-                color="#FFFFFF"
+                color={Colors.white}
                 style={styles.archiveBtnIcon}
               />
               <Text style={styles.archiveListText}>Archive list</Text>
@@ -703,7 +705,7 @@ export default ListDetailModal;
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#0B1A2F',
+    backgroundColor: Colors.background,
   },
   header: {
     height: 56,
@@ -716,9 +718,9 @@ const styles = StyleSheet.create({
     width: 44,
     height: 44,
     borderRadius: 22,
-    backgroundColor: 'transparent',
+    backgroundColor: Colors.transparent,
     borderWidth: 1.5,
-    borderColor: '#3A4556',
+    borderColor: Colors.borderMutedAlt,
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -741,13 +743,13 @@ const styles = StyleSheet.create({
     marginRight: 6,
   },
   categoryPillText: {
-    fontSize: 13,
-    fontFamily: 'Roboto-Bold',
+    fontSize: Typography.size.bodySmall,
+    fontFamily: Fonts.bold,
   },
   listTitle: {
-    fontSize: 28,
-    fontFamily: 'Roboto-Bold',
-    color: '#FFFFFF',
+    fontSize: Typography.size.display,
+    fontFamily: Fonts.bold,
+    color: Colors.white,
     marginBottom: 10,
     letterSpacing: -0.4,
   },
@@ -768,20 +770,20 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     borderWidth: 1.5,
-    borderColor: '#0B1A2F',
+    borderColor: Colors.background,
   },
   clusterAvatarOverlap: {
     marginLeft: -6,
   },
   clusterInitial: {
-    fontSize: 10,
-    fontFamily: 'Roboto-Bold',
-    color: '#FFFFFF',
+    fontSize: Typography.size.micro,
+    fontFamily: Fonts.bold,
+    color: Colors.white,
   },
   sharedText: {
-    fontSize: 14,
-    fontFamily: 'Roboto-Medium',
-    color: '#8A97AB',
+    fontSize: Typography.size.body,
+    fontFamily: Fonts.medium,
+    color: Colors.textSecondaryMuted,
   },
   progressRow: {
     flexDirection: 'row',
@@ -793,7 +795,7 @@ const styles = StyleSheet.create({
     width: 185,
     height: 6,
     borderRadius: 3,
-    backgroundColor: '#1E2D44',
+    backgroundColor: Colors.surfaceNavyAlt2,
     overflow: 'hidden',
   },
   progressFill: {
@@ -801,21 +803,21 @@ const styles = StyleSheet.create({
     borderRadius: 3,
   },
   progressFillGreen: {
-    backgroundColor: '#6FDAA6',
+    backgroundColor: Colors.tripCompletedGreen,
   },
   progressFillOrange: {
-    backgroundColor: '#F0913A',
+    backgroundColor: Colors.primary,
   },
   progressText: {
-    fontSize: 14,
-    fontFamily: 'Roboto-SemiBold',
-    color: '#CAD4DF',
+    fontSize: Typography.size.body,
+    fontFamily: Fonts.semiBold,
+    color: Colors.textLightMutedAlt,
   },
   celebrationCard: {
-    backgroundColor: '#0F2329',
+    backgroundColor: Colors.tripTealBg,
     borderRadius: 24,
     borderWidth: 1.5,
-    borderColor: '#2F6B52',
+    borderColor: Colors.tripMintBorder,
     paddingTop: 22,
     paddingHorizontal: 18,
     paddingBottom: 18,
@@ -827,21 +829,21 @@ const styles = StyleSheet.create({
     height: 56,
     borderRadius: 28,
     borderWidth: 2,
-    borderColor: '#6FDAA6',
+    borderColor: Colors.tripCompletedGreen,
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: 12,
   },
   celebrationTitle: {
-    fontSize: 18,
-    fontFamily: 'Roboto-Bold',
-    color: '#6FDAA6',
+    fontSize: Typography.size.titleSmall,
+    fontFamily: Fonts.bold,
+    color: Colors.tripCompletedGreen,
     marginBottom: 8,
     textAlign: 'center',
   },
   celebrationSubtitle: {
-    fontSize: 14,
-    color: '#CBD2D9',
+    fontSize: Typography.size.body,
+    color: Colors.textLightGray,
     textAlign: 'center',
     lineHeight: 20,
     maxWidth: 280,
@@ -854,33 +856,33 @@ const styles = StyleSheet.create({
     height: 50,
     borderRadius: 25,
     borderWidth: 1.5,
-    borderColor: '#1F3352',
-    backgroundColor: 'transparent',
+    borderColor: Colors.borderBold,
+    backgroundColor: Colors.transparent,
     marginBottom: 22,
   },
   addItemIcon: {
     marginRight: 10,
   },
   addItemText: {
-    fontSize: 16,
-    fontFamily: 'Roboto-Medium',
-    color: '#8A97AB',
+    fontSize: Typography.size.subtitle,
+    fontFamily: Fonts.medium,
+    color: Colors.textSecondaryMuted,
   },
   itemsSection: {
     marginBottom: 24,
   },
   sectionHeader: {
-    fontSize: 12,
-    fontFamily: 'Roboto-Bold',
+    fontSize: Typography.size.caption,
+    fontFamily: Fonts.bold,
     letterSpacing: 1.2,
-    color: '#8A97AB',
+    color: Colors.textSecondaryMuted,
     marginBottom: 12,
   },
   itemsCard: {
-    backgroundColor: 'transparent',
+    backgroundColor: Colors.transparent,
     borderRadius: 20,
     borderWidth: 1.5,
-    borderColor: '#3A4556',
+    borderColor: Colors.borderMutedAlt,
     overflow: 'hidden',
   },
   itemRow: {
@@ -891,7 +893,7 @@ const styles = StyleSheet.create({
   },
   itemRowDivider: {
     borderTopWidth: 1,
-    borderColor: '#1A2C46',
+    borderColor: Colors.surfaceNavyAlt,
   },
   checkboxTouch: {
     paddingRight: 14,
@@ -901,13 +903,13 @@ const styles = StyleSheet.create({
     height: 24,
     borderRadius: 12,
     borderWidth: 2,
-    borderColor: '#2E415E',
+    borderColor: Colors.borderNavyLight,
   },
   completedCheckCircle: {
     width: 24,
     height: 24,
     borderRadius: 12,
-    backgroundColor: '#2DD4BF',
+    backgroundColor: Colors.accentTealMint,
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -915,18 +917,18 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   itemTitle: {
-    fontSize: 16,
-    fontFamily: 'Roboto-SemiBold',
-    color: '#FFFFFF',
+    fontSize: Typography.size.subtitle,
+    fontFamily: Fonts.semiBold,
+    color: Colors.white,
     marginBottom: 3,
   },
   completedTitle: {
     textDecorationLine: 'line-through',
-    color: '#8A97AB',
+    color: Colors.textSecondaryMuted,
   },
   itemSubtitle: {
-    fontSize: 13,
-    color: '#8A97AB',
+    fontSize: Typography.size.bodySmall,
+    color: Colors.textSecondaryMuted,
   },
   assigneeBtn: {
     paddingLeft: 8,
@@ -939,9 +941,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   assignedInitial: {
-    fontSize: 12,
-    fontFamily: 'Roboto-Bold',
-    color: '#FFFFFF',
+    fontSize: Typography.size.caption,
+    fontFamily: Fonts.bold,
+    color: Colors.white,
   },
   unassignedBadge: {
     width: 28,
@@ -949,7 +951,7 @@ const styles = StyleSheet.create({
     borderRadius: 14,
     borderWidth: 1.5,
     borderStyle: 'dashed',
-    borderColor: '#3A4D6B',
+    borderColor: Colors.borderSlate,
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -964,9 +966,9 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   showAllText: {
-    fontSize: 14,
-    fontFamily: 'Roboto-Bold',
-    color: '#F0913A',
+    fontSize: Typography.size.body,
+    fontFamily: Fonts.bold,
+    color: Colors.primary,
   },
   moreDoneBtn: {
     alignItems: 'center',
@@ -974,18 +976,18 @@ const styles = StyleSheet.create({
     paddingVertical: 14,
   },
   moreDoneText: {
-    fontSize: 14,
-    fontFamily: 'Roboto-SemiBold',
-    color: '#8A97AB',
+    fontSize: Typography.size.body,
+    fontFamily: Fonts.semiBold,
+    color: Colors.textSecondaryMuted,
   },
   allDoneBottomBar: {
     position: 'absolute',
     bottom: 0,
     left: 0,
     right: 0,
-    backgroundColor: '#0B1A2F',
+    backgroundColor: Colors.background,
     borderTopWidth: 1,
-    borderTopColor: '#1F3352',
+    borderTopColor: Colors.borderBold,
     flexDirection: 'row',
     gap: 12,
     paddingHorizontal: 20,
@@ -995,23 +997,23 @@ const styles = StyleSheet.create({
     flex: 1,
     height: 52,
     borderRadius: 26,
-    backgroundColor: 'transparent',
+    backgroundColor: Colors.transparent,
     borderWidth: 1.5,
-    borderColor: '#3A4556',
+    borderColor: Colors.borderMutedAlt,
     justifyContent: 'center',
     alignItems: 'center',
   },
   clearListText: {
-    fontSize: 16,
-    fontFamily: 'Roboto-Bold',
-    color: '#FFFFFF',
+    fontSize: Typography.size.subtitle,
+    fontFamily: Fonts.bold,
+    color: Colors.white,
   },
   archiveListBtn: {
     flex: 1,
     flexDirection: 'row',
     height: 52,
     borderRadius: 26,
-    backgroundColor: '#F0913A',
+    backgroundColor: Colors.primary,
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -1019,8 +1021,8 @@ const styles = StyleSheet.create({
     marginRight: 8,
   },
   archiveListText: {
-    fontSize: 16,
-    fontFamily: 'Roboto-Bold',
-    color: '#FFFFFF',
+    fontSize: Typography.size.subtitle,
+    fontFamily: Fonts.bold,
+    color: Colors.white,
   },
 });

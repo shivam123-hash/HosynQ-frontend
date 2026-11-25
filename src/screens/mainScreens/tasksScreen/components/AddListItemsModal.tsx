@@ -13,6 +13,9 @@ import Feather from '@react-native-vector-icons/feather';
 import listsServices from '../../../../services/listsServices';
 import { isUUID } from '../taskApiHelpers';
 import { ListItemEntry } from '../types';
+import CommonBtn from '../../../../components/CommonBtn';
+
+import { Colors, Fonts, Typography } from '../../../../units';
 
 export interface AddListItemsModalProps {
   visible: boolean;
@@ -125,7 +128,7 @@ const AddListItemsModal: React.FC<AddListItemsModalProps> = ({
             accessibilityRole="button"
             accessibilityLabel="Go back"
           >
-            <Feather name="chevron-left" size={24} color="#FFFFFF" />
+            <Feather name="chevron-left" size={24} color={Colors.white} />
           </TouchableOpacity>
 
           <Text style={styles.headerTitle}>Add items</Text>
@@ -143,8 +146,8 @@ const AddListItemsModal: React.FC<AddListItemsModalProps> = ({
               value={itemName}
               onChangeText={setItemName}
               placeholder="e.g. Sparklers"
-              placeholderTextColor="#8A97AB"
-              selectionColor="#F0913A"
+              placeholderTextColor={Colors.textSecondaryMuted}
+              selectionColor={Colors.primary}
               returnKeyType="done"
               onSubmitEditing={handleAddItem}
             />
@@ -155,7 +158,7 @@ const AddListItemsModal: React.FC<AddListItemsModalProps> = ({
               accessibilityRole="button"
               accessibilityLabel="Add item"
             >
-              <Feather name="plus" size={20} color="#FFFFFF" />
+              <Feather name="plus" size={20} color={Colors.white} />
             </TouchableOpacity>
           </View>
 
@@ -168,8 +171,8 @@ const AddListItemsModal: React.FC<AddListItemsModalProps> = ({
                 value={quantity}
                 onChangeText={setQuantity}
                 placeholder="2 boxes"
-                placeholderTextColor="#CAD4DF"
-                selectionColor="#F0913A"
+                placeholderTextColor={Colors.textLightMutedAlt}
+                selectionColor={Colors.primary}
               />
             </View>
           </View>
@@ -187,7 +190,7 @@ const AddListItemsModal: React.FC<AddListItemsModalProps> = ({
                 <Feather
                   name="plus"
                   size={14}
-                  color="#CAD4DF"
+                  color={Colors.textLightMutedAlt}
                   style={styles.plusIcon}
                 />
                 <Text style={styles.suggestionText}>{item}</Text>
@@ -209,7 +212,7 @@ const AddListItemsModal: React.FC<AddListItemsModalProps> = ({
                     ]}
                   >
                     <View style={styles.addedCheckCircle}>
-                      <Feather name="check" size={14} color="#2DD4BF" />
+                      <Feather name="check" size={14} color={Colors.accentTealMint} />
                     </View>
 
                     <View style={styles.addedTextCol}>
@@ -226,7 +229,7 @@ const AddListItemsModal: React.FC<AddListItemsModalProps> = ({
                       style={styles.deleteBtn}
                       activeOpacity={0.7}
                     >
-                      <Feather name="x" size={16} color="#8A97AB" />
+                      <Feather name="x" size={16} color={Colors.textSecondaryMuted} />
                     </TouchableOpacity>
                   </View>
                 ))}
@@ -237,19 +240,18 @@ const AddListItemsModal: React.FC<AddListItemsModalProps> = ({
 
         {/* Bottom Button */}
         <View style={styles.bottomBar}>
-          <TouchableOpacity
-            style={styles.doneBtn}
-            onPress={handleDone}
-            activeOpacity={0.8}
-            accessibilityRole="button"
-            accessibilityLabel={`Done, ${addedItems.length} added`}
-          >
-            <Text style={styles.doneBtnText}>
-              {addedItems.length > 0
+          <CommonBtn
+            title={
+              addedItems.length > 0
                 ? `Done · ${addedItems.length} added`
-                : 'Done'}
-            </Text>
-          </TouchableOpacity>
+                : 'Done'
+            }
+            onPress={handleDone}
+            backgroundColor={Colors.primary}
+            height={52}
+            borderRadius={26}
+            fontSize={16}
+          />
         </View>
       </View>
     </Modal>
@@ -261,7 +263,7 @@ export default AddListItemsModal;
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#0B1A2F',
+    backgroundColor: Colors.background,
   },
   header: {
     height: 56,
@@ -274,16 +276,16 @@ const styles = StyleSheet.create({
     width: 44,
     height: 44,
     borderRadius: 22,
-    backgroundColor: 'transparent',
+    backgroundColor: Colors.transparent,
     borderWidth: 1.5,
-    borderColor: '#3A4556',
+    borderColor: Colors.borderMutedAlt,
     justifyContent: 'center',
     alignItems: 'center',
   },
   headerTitle: {
-    fontSize: 18,
-    fontFamily: 'Roboto-Bold',
-    color: '#FFFFFF',
+    fontSize: Typography.size.titleSmall,
+    fontFamily: Fonts.bold,
+    color: Colors.white,
   },
   placeholder: {
     width: 44,
@@ -296,10 +298,10 @@ const styles = StyleSheet.create({
   inputPill: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'transparent',
+    backgroundColor: Colors.transparent,
     borderRadius: 28,
     borderWidth: 1.5,
-    borderColor: '#F0913A',
+    borderColor: Colors.primary,
     paddingLeft: 18,
     paddingRight: 6,
     height: 56,
@@ -307,15 +309,15 @@ const styles = StyleSheet.create({
   },
   textInput: {
     flex: 1,
-    fontSize: 16,
-    fontFamily: 'Roboto-SemiBold',
-    color: '#FFFFFF',
+    fontSize: Typography.size.subtitle,
+    fontFamily: Fonts.semiBold,
+    color: Colors.white,
   },
   addBtnInside: {
     width: 44,
     height: 44,
     borderRadius: 22,
-    backgroundColor: '#F0913A',
+    backgroundColor: Colors.primary,
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -326,31 +328,31 @@ const styles = StyleSheet.create({
     marginBottom: 24,
   },
   quantityLabel: {
-    fontSize: 14,
-    fontFamily: 'Roboto-Medium',
-    color: '#CAD4DF',
+    fontSize: Typography.size.body,
+    fontFamily: Fonts.medium,
+    color: Colors.textLightMutedAlt,
   },
   quantityPill: {
     height: 38,
     paddingHorizontal: 14,
     borderRadius: 8,
-    backgroundColor: 'transparent',
+    backgroundColor: Colors.transparent,
     borderWidth: 1.5,
-    borderColor: '#3A4556',
+    borderColor: Colors.borderMutedAlt,
     justifyContent: 'center',
     minWidth: 100,
   },
   quantityInput: {
-    fontSize: 14,
-    fontFamily: 'Roboto-SemiBold',
-    color: '#FFFFFF',
+    fontSize: Typography.size.body,
+    fontFamily: Fonts.semiBold,
+    color: Colors.white,
     textAlign: 'center',
   },
   sectionEyebrow: {
-    fontSize: 11,
-    fontFamily: 'Roboto-Bold',
+    fontSize: Typography.size.captionSmall,
+    fontFamily: Fonts.bold,
     letterSpacing: 1.2,
-    color: '#8A97AB',
+    color: Colors.textSecondaryMuted,
     marginBottom: 12,
   },
   suggestionsWrap: {
@@ -365,45 +367,45 @@ const styles = StyleSheet.create({
     height: 38,
     paddingHorizontal: 14,
     borderRadius: 8,
-    backgroundColor: 'transparent',
+    backgroundColor: Colors.transparent,
     borderWidth: 1.5,
-    borderColor: '#3A4556',
+    borderColor: Colors.borderMutedAlt,
   },
   plusIcon: {
     marginRight: 6,
   },
   suggestionText: {
-    fontSize: 13,
-    fontFamily: 'Roboto-SemiBold',
-    color: '#CAD4DF',
+    fontSize: Typography.size.bodySmall,
+    fontFamily: Fonts.semiBold,
+    color: Colors.textLightMutedAlt,
   },
   addedJustNowSection: {
     marginBottom: 24,
   },
   addedCard: {
-    backgroundColor: 'transparent',
+    backgroundColor: Colors.transparent,
     borderRadius: 20,
     borderWidth: 1.5,
-    borderColor: '#3A4556',
+    borderColor: Colors.borderMutedAlt,
     overflow: 'hidden',
   },
   addedItemRow: {
     flexDirection: 'row',
     alignItems: 'center',
     padding: 16,
-    backgroundColor: 'transparent',
+    backgroundColor: Colors.transparent,
   },
   addedItemDivider: {
     borderTopWidth: 1,
-    borderTopColor: '#3A4556',
+    borderTopColor: Colors.borderMutedAlt,
   },
   addedCheckCircle: {
     width: 24,
     height: 24,
     borderRadius: 12,
     borderWidth: 1.5,
-    borderColor: '#2DD4BF',
-    backgroundColor: 'transparent',
+    borderColor: Colors.accentTealMint,
+    backgroundColor: Colors.transparent,
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 14,
@@ -412,14 +414,14 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   addedItemTitle: {
-    fontSize: 15,
-    fontFamily: 'Roboto-Bold',
-    color: '#FFFFFF',
+    fontSize: Typography.size.bodyMedium,
+    fontFamily: Fonts.bold,
+    color: Colors.white,
     marginBottom: 2,
   },
   addedItemSubtitle: {
-    fontSize: 12,
-    color: '#8A97AB',
+    fontSize: Typography.size.caption,
+    color: Colors.textSecondaryMuted,
   },
   deleteBtn: {
     padding: 6,
@@ -428,19 +430,19 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingTop: 12,
     paddingBottom: 20,
-    backgroundColor: '#0B1A2F',
+    backgroundColor: Colors.background,
   },
   doneBtn: {
     height: 52,
     borderRadius: 26,
-    backgroundColor: '#F0913A',
+    backgroundColor: Colors.primary,
     justifyContent: 'center',
     alignItems: 'center',
   },
   doneBtnText: {
-    fontSize: 16,
-    fontFamily: 'Roboto-Bold',
-    color: '#FFFFFF',
+    fontSize: Typography.size.subtitle,
+    fontFamily: Fonts.bold,
+    color: Colors.white,
   },
 });
 

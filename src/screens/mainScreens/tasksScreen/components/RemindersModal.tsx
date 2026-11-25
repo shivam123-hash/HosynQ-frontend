@@ -11,6 +11,8 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Feather from '@react-native-vector-icons/feather';
 
+import { Colors, Fonts, Typography } from '../../../../units';
+
 export interface RemindersModalProps {
   visible: boolean;
   initialReminders?: string[]; // list of selected options, e.g. ['1 hour before']
@@ -127,7 +129,7 @@ const RemindersModal: React.FC<RemindersModalProps> = ({
                       ]}
                     >
                       {isSelected && (
-                        <Feather name="check" size={14} color="#0B1A2F" />
+                        <Feather name="check" size={14} color={Colors.background} />
                       )}
                     </View>
                   </TouchableOpacity>
@@ -143,8 +145,8 @@ const RemindersModal: React.FC<RemindersModalProps> = ({
               <Switch
                 value={alsoRemindViewers}
                 onValueChange={setAlsoRemindViewers}
-                trackColor={{ false: '#3A4556', true: '#F0913A' }}
-                thumbColor="#FFFFFF"
+                trackColor={{ false: Colors.borderMutedAlt, true: Colors.primary }}
+                thumbColor={Colors.white}
               />
             </View>
           </ScrollView>
@@ -169,7 +171,7 @@ const styles = StyleSheet.create({
   overlay: {
     flex: 1,
     justifyContent: 'flex-end',
-    backgroundColor: 'rgba(0, 0, 0, 0.65)',
+    backgroundColor: Colors.tasksDarkOverlay,
   },
   backdrop: {
     position: 'absolute',
@@ -179,11 +181,11 @@ const styles = StyleSheet.create({
     bottom: 0,
   },
   sheetContainer: {
-    backgroundColor: '#122440',
+    backgroundColor: Colors.cardBackground,
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
     borderTopWidth: 1,
-    borderColor: '#1F3352',
+    borderColor: Colors.borderBold,
     paddingHorizontal: 20,
     paddingTop: 12,
     maxHeight: '90%',
@@ -192,19 +194,19 @@ const styles = StyleSheet.create({
     width: 40,
     height: 4,
     borderRadius: 2,
-    backgroundColor: '#3A4556',
+    backgroundColor: Colors.borderMutedAlt,
     alignSelf: 'center',
     marginBottom: 16,
   },
   title: {
-    fontSize: 22,
-    fontFamily: 'Roboto-Bold',
-    color: '#CAD4DF',
+    fontSize: Typography.size.titleLarge,
+    fontFamily: Fonts.bold,
+    color: Colors.textLightMutedAlt,
     textAlign: 'center',
   },
   subtitle: {
-    fontSize: 14,
-    color: '#8A97AB',
+    fontSize: Typography.size.body,
+    color: Colors.textSecondaryMuted,
     textAlign: 'center',
     marginTop: 4,
     marginBottom: 20,
@@ -213,10 +215,10 @@ const styles = StyleSheet.create({
     paddingBottom: 16,
   },
   optionsCard: {
-    backgroundColor: 'transparent',
+    backgroundColor: Colors.transparent,
     borderRadius: 20,
     borderWidth: 1.5,
-    borderColor: '#3A4556',
+    borderColor: Colors.borderMutedAlt,
     overflow: 'hidden',
     marginBottom: 20,
   },
@@ -226,32 +228,32 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingVertical: 14,
     paddingHorizontal: 16,
-    backgroundColor: 'transparent',
+    backgroundColor: Colors.transparent,
   },
   optionRowSelected: {
-    backgroundColor: '#1A2B47',
+    backgroundColor: Colors.cardSelected,
   },
   rowDivider: {
     borderBottomWidth: 1,
-    borderBottomColor: '#1F3352',
+    borderBottomColor: Colors.borderBold,
   },
   optionTitle: {
-    fontSize: 15,
-    fontFamily: 'Roboto-SemiBold',
-    color: '#CAD4DF',
+    fontSize: Typography.size.bodyMedium,
+    fontFamily: Fonts.semiBold,
+    color: Colors.textLightMutedAlt,
   },
   checkBox: {
     width: 22,
     height: 22,
     borderRadius: 6,
     borderWidth: 2,
-    borderColor: '#3A4556',
+    borderColor: Colors.borderMutedAlt,
     justifyContent: 'center',
     alignItems: 'center',
   },
   checkBoxSelected: {
-    backgroundColor: '#F0913A',
-    borderColor: '#F0913A',
+    backgroundColor: Colors.primary,
+    borderColor: Colors.primary,
   },
   switchRow: {
     flexDirection: 'row',
@@ -261,23 +263,23 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   switchLabel: {
-    fontSize: 15,
-    fontFamily: 'Roboto-SemiBold',
-    color: '#CAD4DF',
+    fontSize: Typography.size.bodyMedium,
+    fontFamily: Fonts.semiBold,
+    color: Colors.textLightMutedAlt,
     flex: 1,
     marginRight: 16,
   },
   doneBtn: {
     height: 52,
     borderRadius: 26,
-    backgroundColor: '#F0913A',
+    backgroundColor: Colors.primary,
     justifyContent: 'center',
     alignItems: 'center',
     marginTop: 8,
   },
   doneBtnText: {
-    fontSize: 16,
-    fontFamily: 'Roboto-Bold',
-    color: '#FFFFFF',
+    fontSize: Typography.size.subtitle,
+    fontFamily: Fonts.bold,
+    color: Colors.white,
   },
 });

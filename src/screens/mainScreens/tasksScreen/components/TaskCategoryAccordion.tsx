@@ -8,6 +8,9 @@ import {
 import Feather from '@react-native-vector-icons/feather';
 import { TaskItem } from '../types';
 import { PRIORITY_META } from '../constants';
+import Fonts from '../../../../units/FontsStyle';
+import Colors from '../../../../units/Colors';
+import Typography from '../../../../units/Typography';
 
 export interface TaskCategoryAccordionProps {
   categoryTitle: string;
@@ -54,7 +57,7 @@ const TaskCategoryAccordion: React.FC<TaskCategoryAccordionProps> = ({
           <Feather
             name={isExpanded ? 'chevron-up' : 'chevron-down'}
             size={18}
-            color="#8A97AB"
+            color={Colors.textSecondaryMuted}
           />
         </View>
       </TouchableOpacity>
@@ -64,7 +67,7 @@ const TaskCategoryAccordion: React.FC<TaskCategoryAccordionProps> = ({
         <View style={styles.itemsList}>
           {items.map((task, index) => {
             const priorityColor =
-              PRIORITY_META[task.priority]?.color || '#94A3B8';
+              PRIORITY_META[task.priority]?.color || Colors.slateLight;
             const isLast = index === items.length - 1;
 
             return (
@@ -116,10 +119,10 @@ export default TaskCategoryAccordion;
 
 const styles = StyleSheet.create({
   card: {
-    backgroundColor: '#0F1D30',
+    backgroundColor: Colors.tasksCardBg,
     borderRadius: 20,
     borderWidth: 1.5,
-    borderColor: '#1E3557',
+    borderColor: Colors.tasksCardBorder,
     marginHorizontal: 20,
     marginBottom: 16,
     overflow: 'hidden',
@@ -142,9 +145,9 @@ const styles = StyleSheet.create({
     borderRadius: 3.5,
   },
   categoryTitle: {
-    fontSize: 16,
-    fontFamily: 'Roboto-Bold',
-    color: '#FFFFFF',
+    fontSize: Typography.size.body,
+    fontFamily: Fonts.bold,
+    color: Colors.white,
   },
   headerRight: {
     flexDirection: 'row',
@@ -152,23 +155,23 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   countBadge: {
-    width: 26,
-    height: 26,
-    borderRadius: 13,
-    backgroundColor: '#15253C',
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    backgroundColor: Colors.tasksBadgeDarkBg,
     borderWidth: 1,
-    borderColor: '#243A58',
+    borderColor: Colors.tasksBadgeBorder,
     justifyContent: 'center',
     alignItems: 'center',
   },
   countText: {
-    fontSize: 13,
-    fontFamily: 'Roboto-SemiBold',
-    color: '#CAD4DF',
+    fontSize: Typography.size.caption,
+    fontFamily: Fonts.semiBold,
+    color: Colors.textLightMutedAlt,
   },
   itemsList: {
     borderTopWidth: 1,
-    borderTopColor: '#172B47',
+    borderTopColor: Colors.tasksCardDivider,
   },
   taskRow: {
     flexDirection: 'row',
@@ -178,7 +181,7 @@ const styles = StyleSheet.create({
   },
   rowDivider: {
     borderBottomWidth: 1,
-    borderBottomColor: '#172B47',
+    borderBottomColor: Colors.tasksCardDivider,
   },
   checkboxTouchable: {
     paddingRight: 12,
@@ -188,22 +191,23 @@ const styles = StyleSheet.create({
     height: 22,
     borderRadius: 11,
     borderWidth: 2,
-    borderColor: '#2C415F',
-    backgroundColor: 'transparent',
+    borderColor: Colors.tasksCheckboxBorder,
+    backgroundColor: Colors.transparent,
   },
   taskDetailsTouchable: {
     flex: 1,
     marginRight: 10,
   },
   taskTitleText: {
-    fontSize: 15,
-    fontFamily: 'Roboto-SemiBold',
-    color: '#CAD4DF',
+    fontSize: Typography.size.body,
+    fontFamily: Fonts.semiBold,
+    color: Colors.textLightMutedAlt,
     lineHeight: 20,
   },
   taskSubtitleText: {
-    fontSize: 13,
-    color: '#8A97AB',
+    fontSize: Typography.size.bodySmall,
+    fontFamily: Fonts.regular,
+    color: Colors.textSecondaryMuted,
     marginTop: 2,
     lineHeight: 18,
   },

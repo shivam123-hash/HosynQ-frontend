@@ -14,6 +14,8 @@ import Ionicons from '@react-native-vector-icons/ionicons';
 import { TripPackingItem } from './types';
 import AppOptionsMenu from '../../../common/AppOptionsMenu';
 
+import { Colors, Fonts, Typography } from '../../../../../units';
+
 export interface TripPackingModalProps {
   visible?: boolean;
   asModal?: boolean;
@@ -93,7 +95,7 @@ export const TripPackingModal: React.FC<TripPackingModalProps> = ({
       >
         {it.isPacked ? (
           <View style={styles.checkedCircle}>
-            <Feather name="check" size={14} color="#0B1A2F" />
+            <Feather name="check" size={14} color={Colors.background} />
           </View>
         ) : (
           <View style={styles.uncheckedCircle} />
@@ -151,7 +153,7 @@ export const TripPackingModal: React.FC<TripPackingModalProps> = ({
           accessibilityRole="button"
           accessibilityLabel="Back"
         >
-          <Feather name="chevron-left" size={24} color="#FFFFFF" />
+          <Feather name="chevron-left" size={24} color={Colors.white} />
         </TouchableOpacity>
 
         <TouchableOpacity
@@ -161,7 +163,7 @@ export const TripPackingModal: React.FC<TripPackingModalProps> = ({
           accessibilityRole="button"
           accessibilityLabel="Packing options"
         >
-          <Feather name="more-horizontal" size={22} color="#FFFFFF" />
+          <Feather name="more-horizontal" size={22} color={Colors.white} />
         </TouchableOpacity>
       </View>
 
@@ -200,7 +202,7 @@ export const TripPackingModal: React.FC<TripPackingModalProps> = ({
       >
         {/* Category Pill */}
         <View style={styles.categoryPill}>
-          <Ionicons name="bag-handle-outline" size={14} color="#2DD4BF" style={styles.bagIcon} />
+          <Ionicons name="bag-handle-outline" size={14} color={Colors.accentTealMint} style={styles.bagIcon} />
           <Text style={styles.categoryPillText}>{`Packing · ${cityName} trip`}</Text>
         </View>
 
@@ -319,7 +321,7 @@ export const TripPackingModal: React.FC<TripPackingModalProps> = ({
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#0B1A2F',
+    backgroundColor: Colors.background,
   },
   header: {
     flexDirection: 'row',
@@ -332,9 +334,9 @@ const styles = StyleSheet.create({
     width: 44,
     height: 44,
     borderRadius: 22,
-    backgroundColor: 'transparent',
+    backgroundColor: Colors.transparent,
     borderWidth: 1.5,
-    borderColor: '#3A4556',
+    borderColor: Colors.borderMutedAlt,
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -347,7 +349,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     borderWidth: 1.5,
-    borderColor: '#2DD4BF',
+    borderColor: Colors.accentTealMint,
     borderRadius: 8,
     paddingHorizontal: 12,
     paddingVertical: 5,
@@ -357,14 +359,14 @@ const styles = StyleSheet.create({
     marginRight: 6,
   },
   categoryPillText: {
-    color: '#2DD4BF',
-    fontSize: 13,
-    fontFamily: 'Roboto-SemiBold',
+    color: Colors.accentTealMint,
+    fontSize: Typography.size.bodySmall,
+    fontFamily: Fonts.semiBold,
   },
   titleText: {
-    fontSize: 26,
-    fontFamily: 'Roboto-Bold',
-    color: '#FFFFFF',
+    fontSize: Typography.size.header,
+    fontFamily: Fonts.bold,
+    color: Colors.white,
     marginTop: 12,
   },
   progressRow: {
@@ -376,18 +378,18 @@ const styles = StyleSheet.create({
     flex: 1,
     height: 6,
     borderRadius: 3,
-    backgroundColor: '#1F3352',
+    backgroundColor: Colors.borderBold,
     overflow: 'hidden',
   },
   progressFill: {
     height: 6,
     borderRadius: 3,
-    backgroundColor: '#2DD4BF',
+    backgroundColor: Colors.accentTealMint,
   },
   progressLabel: {
-    fontSize: 13,
-    fontFamily: 'Roboto-Medium',
-    color: '#CAD4DF',
+    fontSize: Typography.size.bodySmall,
+    fontFamily: Fonts.medium,
+    color: Colors.textLightMutedAlt,
     marginLeft: 12,
   },
   filterScroll: {
@@ -396,40 +398,40 @@ const styles = StyleSheet.create({
   },
   filterChip: {
     height: 36,
-    backgroundColor: 'transparent',
+    backgroundColor: Colors.transparent,
     borderRadius: 18,
     borderWidth: 1.5,
-    borderColor: '#3A4556',
+    borderColor: Colors.borderMutedAlt,
     paddingHorizontal: 16,
     justifyContent: 'center',
     alignItems: 'center',
   },
   filterChipActive: {
-    backgroundColor: '#F0913A',
-    borderColor: '#F0913A',
+    backgroundColor: Colors.primary,
+    borderColor: Colors.primary,
   },
   filterChipText: {
-    fontSize: 13,
-    fontFamily: 'Roboto-SemiBold',
-    color: '#CAD4DF',
+    fontSize: Typography.size.bodySmall,
+    fontFamily: Fonts.semiBold,
+    color: Colors.textLightMutedAlt,
   },
   filterChipTextActive: {
-    color: '#0B1A2F',
-    fontFamily: 'Roboto-Bold',
+    color: Colors.background,
+    fontFamily: Fonts.bold,
   },
   sectionHeader: {
-    fontSize: 11,
-    fontFamily: 'Roboto-Bold',
-    color: '#8A97AB',
+    fontSize: Typography.size.captionSmall,
+    fontFamily: Fonts.bold,
+    color: Colors.textSecondaryMuted,
     letterSpacing: 1.2,
     marginTop: 10,
     marginBottom: 10,
   },
   groupedCard: {
-    backgroundColor: '#122440',
+    backgroundColor: Colors.cardBackground,
     borderRadius: 20,
     borderWidth: 1,
-    borderColor: '#1F3352',
+    borderColor: Colors.borderBold,
     overflow: 'hidden',
     marginBottom: 16,
   },
@@ -444,15 +446,15 @@ const styles = StyleSheet.create({
     height: 24,
     borderRadius: 12,
     borderWidth: 2,
-    borderColor: '#2C3E55',
-    backgroundColor: 'transparent',
+    borderColor: Colors.tripItemBorder,
+    backgroundColor: Colors.transparent,
     marginRight: 14,
   },
   checkedCircle: {
     width: 24,
     height: 24,
     borderRadius: 12,
-    backgroundColor: '#34D399',
+    backgroundColor: Colors.tripGreenMint,
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 14,
@@ -462,22 +464,22 @@ const styles = StyleSheet.create({
     paddingRight: 8,
   },
   itemTitle: {
-    fontSize: 15,
-    fontFamily: 'Roboto-SemiBold',
-    color: '#FFFFFF',
+    fontSize: Typography.size.bodyMedium,
+    fontFamily: Fonts.semiBold,
+    color: Colors.white,
   },
   itemTitleDone: {
-    color: '#8A97AB',
+    color: Colors.textSecondaryMuted,
     textDecorationLine: 'line-through',
   },
   itemSubtitle: {
-    fontSize: 13,
-    fontFamily: 'Roboto-Regular',
-    color: '#8A97AB',
+    fontSize: Typography.size.bodySmall,
+    fontFamily: Fonts.regular,
+    color: Colors.textSecondaryMuted,
     marginTop: 2,
   },
   itemSubtitleDone: {
-    color: '#4B5E76',
+    color: Colors.textPlaceholder,
   },
   assigneeAvatar: {
     width: 24,
@@ -487,13 +489,13 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   assigneeInitial: {
-    color: '#FFFFFF',
-    fontSize: 11,
-    fontFamily: 'Roboto-Bold',
+    color: Colors.white,
+    fontSize: Typography.size.captionSmall,
+    fontFamily: Fonts.bold,
   },
   itemDivider: {
     height: 1,
-    backgroundColor: '#1F3352',
+    backgroundColor: Colors.borderBold,
     marginHorizontal: 16,
   },
 });

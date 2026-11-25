@@ -15,6 +15,8 @@ import Feather from '@react-native-vector-icons/feather';
 import Ionicons from '@react-native-vector-icons/ionicons';
 import { TripData } from './types';
 
+import { Colors, Fonts, Typography } from '../../../../../units';
+
 export interface TripDetailsModalProps {
   visible?: boolean;
   asModal?: boolean;
@@ -79,7 +81,7 @@ export const TripDetailsModal: React.FC<TripDetailsModalProps> = ({
           accessibilityRole="button"
           accessibilityLabel="Back"
         >
-          <Feather name="chevron-left" size={24} color="#FFFFFF" />
+          <Feather name="chevron-left" size={24} color={Colors.white} />
         </TouchableOpacity>
 
         <Text style={styles.headerTitle}>Trip details</Text>
@@ -94,13 +96,13 @@ export const TripDetailsModal: React.FC<TripDetailsModalProps> = ({
         {/* Where are you going? */}
         <Text style={styles.fieldLabel}>Where are you going?</Text>
         <View style={styles.inputContainer}>
-          <Ionicons name="location-outline" size={20} color="#F0913A" style={styles.pinIcon} />
+          <Ionicons name="location-outline" size={20} color={Colors.primary} style={styles.pinIcon} />
           <TextInput
             style={styles.textInput}
             value={destination}
             onChangeText={setDestination}
             placeholder="Destination city, state"
-            placeholderTextColor="#8A97AB"
+            placeholderTextColor={Colors.textSecondaryMuted}
             accessibilityLabel="Destination"
           />
         </View>
@@ -174,8 +176,8 @@ export const TripDetailsModal: React.FC<TripDetailsModalProps> = ({
           <Switch
             value={addToCalendar}
             onValueChange={setAddToCalendar}
-            trackColor={{ false: '#1F3352', true: '#F0913A' }}
-            thumbColor="#FFFFFF"
+            trackColor={{ false: Colors.borderBold, true: Colors.primary }}
+            thumbColor={Colors.white}
             accessibilityRole="switch"
             accessibilityLabel="Add to family calendar"
           />
@@ -238,7 +240,7 @@ export const TripDetailsModal: React.FC<TripDetailsModalProps> = ({
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#0B1A2F',
+    backgroundColor: Colors.background,
   },
   header: {
     flexDirection: 'row',
@@ -251,16 +253,16 @@ const styles = StyleSheet.create({
     width: 44,
     height: 44,
     borderRadius: 22,
-    backgroundColor: 'transparent',
+    backgroundColor: Colors.transparent,
     borderWidth: 1.5,
-    borderColor: '#3A4556',
+    borderColor: Colors.borderMutedAlt,
     justifyContent: 'center',
     alignItems: 'center',
   },
   headerTitle: {
-    fontSize: 18,
-    fontFamily: 'Roboto-Bold',
-    color: '#FFFFFF',
+    fontSize: Typography.size.titleSmall,
+    fontFamily: Fonts.bold,
+    color: Colors.white,
   },
   headerPlaceholder: {
     width: 44,
@@ -271,9 +273,9 @@ const styles = StyleSheet.create({
     paddingBottom: 24,
   },
   fieldLabel: {
-    fontSize: 13,
-    fontFamily: 'Roboto-Medium',
-    color: '#CAD4DF',
+    fontSize: Typography.size.bodySmall,
+    fontFamily: Fonts.medium,
+    color: Colors.textLightMutedAlt,
     marginBottom: 8,
   },
   sectionTopSpace: {
@@ -282,9 +284,9 @@ const styles = StyleSheet.create({
   inputContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'transparent',
+    backgroundColor: Colors.transparent,
     borderWidth: 1.5,
-    borderColor: '#F0913A',
+    borderColor: Colors.primary,
     borderRadius: 28,
     height: 56,
     paddingHorizontal: 18,
@@ -294,9 +296,9 @@ const styles = StyleSheet.create({
   },
   textInput: {
     flex: 1,
-    fontSize: 16,
-    fontFamily: 'Roboto-Medium',
-    color: '#FFFFFF',
+    fontSize: Typography.size.subtitle,
+    fontFamily: Fonts.medium,
+    color: Colors.white,
     paddingVertical: 0,
   },
   datesRow: {
@@ -305,22 +307,22 @@ const styles = StyleSheet.create({
   },
   dateCard: {
     flex: 1,
-    backgroundColor: 'transparent',
+    backgroundColor: Colors.transparent,
     borderRadius: 16,
     borderWidth: 1.5,
-    borderColor: '#3A4556',
+    borderColor: Colors.borderMutedAlt,
     padding: 14,
   },
   dateCardTag: {
-    fontSize: 11,
-    fontFamily: 'Roboto-Bold',
-    color: '#8A97AB',
+    fontSize: Typography.size.captionSmall,
+    fontFamily: Fonts.bold,
+    color: Colors.textSecondaryMuted,
     letterSpacing: 0.6,
   },
   dateCardValue: {
-    fontSize: 16,
-    fontFamily: 'Roboto-Bold',
-    color: '#FFFFFF',
+    fontSize: Typography.size.subtitle,
+    fontFamily: Fonts.bold,
+    color: Colors.white,
     marginTop: 4,
   },
   membersRow: {
@@ -340,26 +342,26 @@ const styles = StyleSheet.create({
   },
   memberAvatarSelected: {
     borderWidth: 2,
-    borderColor: '#F0913A',
+    borderColor: Colors.primary,
   },
   memberAvatarUnselected: {
     borderWidth: 2,
-    borderColor: '#1F3352',
+    borderColor: Colors.borderBold,
     opacity: 0.45,
   },
   memberInitial: {
-    fontSize: 16,
-    fontFamily: 'Roboto-Bold',
-    color: '#FFFFFF',
+    fontSize: Typography.size.subtitle,
+    fontFamily: Fonts.bold,
+    color: Colors.white,
   },
   memberName: {
-    fontSize: 13,
-    fontFamily: 'Roboto-Medium',
-    color: '#FFFFFF',
+    fontSize: Typography.size.bodySmall,
+    fontFamily: Fonts.medium,
+    color: Colors.white,
     marginTop: 6,
   },
   memberNameUnselected: {
-    color: '#8A97AB',
+    color: Colors.textSecondaryMuted,
   },
   switchRow: {
     flexDirection: 'row',
@@ -373,29 +375,29 @@ const styles = StyleSheet.create({
     paddingRight: 16,
   },
   switchTitle: {
-    fontSize: 16,
-    fontFamily: 'Roboto-SemiBold',
-    color: '#FFFFFF',
+    fontSize: Typography.size.subtitle,
+    fontFamily: Fonts.semiBold,
+    color: Colors.white,
   },
   switchSubtitle: {
-    fontSize: 13,
-    fontFamily: 'Roboto-Regular',
-    color: '#8A97AB',
+    fontSize: Typography.size.bodySmall,
+    fontFamily: Fonts.regular,
+    color: Colors.textSecondaryMuted,
     marginTop: 4,
   },
   previewSectionHeader: {
-    fontSize: 11,
-    fontFamily: 'Roboto-Bold',
-    color: '#8A97AB',
+    fontSize: Typography.size.captionSmall,
+    fontFamily: Fonts.bold,
+    color: Colors.textSecondaryMuted,
     letterSpacing: 1.2,
     marginTop: 24,
     marginBottom: 10,
   },
   previewCard: {
-    backgroundColor: '#122440',
+    backgroundColor: Colors.cardBackground,
     borderRadius: 16,
     borderWidth: 1,
-    borderColor: '#1F3352',
+    borderColor: Colors.borderBold,
     padding: 16,
     flexDirection: 'row',
     alignItems: 'center',
@@ -405,64 +407,64 @@ const styles = StyleSheet.create({
     minWidth: 32,
   },
   previewDateDay: {
-    fontSize: 18,
-    fontFamily: 'Roboto-Bold',
-    color: '#FFFFFF',
+    fontSize: Typography.size.titleSmall,
+    fontFamily: Fonts.bold,
+    color: Colors.white,
   },
   previewDateMonth: {
-    fontSize: 11,
-    fontFamily: 'Roboto-Bold',
-    color: '#8A97AB',
+    fontSize: Typography.size.captionSmall,
+    fontFamily: Fonts.bold,
+    color: Colors.textSecondaryMuted,
     marginTop: 2,
   },
   previewDivider: {
     width: 1,
     height: 32,
-    backgroundColor: '#1F3352',
+    backgroundColor: Colors.borderBold,
     marginHorizontal: 16,
   },
   previewDetailsCol: {
     flex: 1,
   },
   previewTitle: {
-    fontSize: 16,
-    fontFamily: 'Roboto-Bold',
-    color: '#FFFFFF',
+    fontSize: Typography.size.subtitle,
+    fontFamily: Fonts.bold,
+    color: Colors.white,
   },
   previewSubtitle: {
-    fontSize: 13,
-    fontFamily: 'Roboto-Medium',
-    color: '#8A97AB',
+    fontSize: Typography.size.bodySmall,
+    fontFamily: Fonts.medium,
+    color: Colors.textSecondaryMuted,
     marginTop: 3,
   },
   travelBadge: {
     borderWidth: 1.5,
-    borderColor: '#2DD4BF',
+    borderColor: Colors.accentTealMint,
     borderRadius: 14,
-    backgroundColor: 'transparent',
+    backgroundColor: Colors.transparent,
     paddingHorizontal: 12,
     paddingVertical: 4,
   },
   travelBadgeText: {
-    color: '#2DD4BF',
-    fontSize: 12,
-    fontFamily: 'Roboto-SemiBold',
+    color: Colors.accentTealMint,
+    fontSize: Typography.size.caption,
+    fontFamily: Fonts.semiBold,
   },
   bottomBar: {
     paddingHorizontal: 20,
     paddingTop: 8,
   },
   bottomButton: {
-    backgroundColor: '#F0913A',
+    backgroundColor: Colors.primary,
     height: 56,
     borderRadius: 28,
     justifyContent: 'center',
     alignItems: 'center',
   },
   bottomButtonText: {
-    color: '#FFFFFF',
-    fontSize: 16,
-    fontFamily: 'Roboto-Bold',
+    color: Colors.white,
+    fontSize: Typography.size.subtitle,
+    fontFamily: Fonts.bold,
   },
 });
 export default TripDetailsModal;

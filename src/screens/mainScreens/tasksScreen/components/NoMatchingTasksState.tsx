@@ -2,6 +2,8 @@ import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import Feather from '@react-native-vector-icons/feather';
 
+import { Colors, Fonts, Typography } from '../../../../units';
+
 export interface ActiveFilterTag {
   id: string;
   label: string;
@@ -31,7 +33,7 @@ const NoMatchingTasksState: React.FC<NoMatchingTasksStateProps> = ({
                 activeOpacity={0.7}
               >
                 <Text style={styles.tagText}>{tag.label}</Text>
-                <Feather name="x" size={14} color="#0B1A2F" />
+                <Feather name="x" size={14} color={Colors.background} />
               </TouchableOpacity>
             ))}
           </View>
@@ -78,9 +80,9 @@ const styles = StyleSheet.create({
     flexWrap: 'wrap',
   },
   filtersLabel: {
-    fontSize: 14,
-    color: '#8A97AB',
-    fontFamily: 'Roboto-Medium',
+    fontSize: Typography.size.body,
+    color: Colors.textSecondaryMuted,
+    fontFamily: Fonts.medium,
   },
   tagsContainer: {
     flexDirection: 'row',
@@ -90,33 +92,33 @@ const styles = StyleSheet.create({
   tagPill: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#F0913A',
+    backgroundColor: Colors.primary,
     borderRadius: 16,
     paddingVertical: 6,
     paddingHorizontal: 12,
     gap: 6,
   },
   tagText: {
-    fontSize: 13,
-    fontFamily: 'Roboto-Bold',
-    color: '#0B1A2F',
+    fontSize: Typography.size.bodySmall,
+    fontFamily: Fonts.bold,
+    color: Colors.background,
   },
   outerCircle: {
-    width: 140,
-    height: 140,
+    width: 100,
+    height: 100,
     borderRadius: 70,
     borderWidth: 1.5,
-    borderColor: '#1F3352',
+    borderColor: Colors.borderBold,
     justifyContent: 'center',
     alignItems: 'center',
   },
   innerCircle: {
-    width: 96,
-    height: 96,
+    width: 60,
+    height: 60,
     borderRadius: 48,
-    backgroundColor: '#122440',
+    backgroundColor: Colors.cardBackground,
     borderWidth: 1.5,
-    borderColor: '#2A3E5E',
+    borderColor: Colors.surfaceMutedAlt,
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -127,7 +129,7 @@ const styles = StyleSheet.create({
   filterBar: {
     height: 3,
     borderRadius: 1.5,
-    backgroundColor: '#F0913A',
+    backgroundColor: Colors.primary,
   },
   filterBarWide: {
     width: 28,
@@ -139,16 +141,16 @@ const styles = StyleSheet.create({
     width: 12,
   },
   headline: {
-    fontSize: 24,
-    fontFamily: 'Roboto-Bold',
-    color: '#CAD4DF',
+    fontSize: Typography.size.title,
+    fontFamily: Fonts.bold,
+    color: Colors.textLightMutedAlt,
     textAlign: 'center',
-    marginTop: 28,
-    lineHeight: 30,
+    marginTop: 15,
+    lineHeight: 20,
   },
   description: {
-    fontSize: 15,
-    color: '#8A97AB',
+    fontSize: Typography.size.bodyMedium,
+    color: Colors.textSecondaryMuted,
     textAlign: 'center',
     marginTop: 10,
     lineHeight: 22,

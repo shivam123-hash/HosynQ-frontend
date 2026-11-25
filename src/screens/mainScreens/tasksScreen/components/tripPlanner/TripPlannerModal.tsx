@@ -19,6 +19,8 @@ import TripBookingsModal from './TripBookingsModal';
 import TripPackingModal from './TripPackingModal';
 import AppOptionsMenu from '../../../common/AppOptionsMenu';
 
+import { Colors, Fonts, Typography } from '../../../../../units';
+
 export type TripScreenName = 'overview' | 'dates' | 'details' | 'bookings' | 'packing';
 
 export interface TripPlannerModalProps {
@@ -227,20 +229,20 @@ export const TripPlannerModal: React.FC<TripPlannerModalProps> = ({
     if (!isStep1Done) {
       return {
         label: 'Find common dates',
-        icon: <Ionicons name="calendar-outline" size={20} color="#FFFFFF" style={styles.trainIcon} />,
+        icon: <Ionicons name="calendar-outline" size={20} color={Colors.white} style={styles.trainIcon} />,
         action: handleOpenDates,
       };
     }
     if (!isStep2Done) {
       return {
         label: 'Set trip details',
-        icon: <Ionicons name="location-outline" size={20} color="#FFFFFF" style={styles.trainIcon} />,
+        icon: <Ionicons name="location-outline" size={20} color={Colors.white} style={styles.trainIcon} />,
         action: handleOpenDetails,
       };
     }
     return {
       label: 'Book train tickets',
-      icon: <Ionicons name="train-outline" size={20} color="#FFFFFF" style={styles.trainIcon} />,
+      icon: <Ionicons name="train-outline" size={20} color={Colors.white} style={styles.trainIcon} />,
       action: handleOpenBookings,
     };
   };
@@ -271,7 +273,7 @@ export const TripPlannerModal: React.FC<TripPlannerModalProps> = ({
             accessibilityRole="button"
             accessibilityLabel="Back"
           >
-            <Feather name="chevron-left" size={24} color="#FFFFFF" />
+            <Feather name="chevron-left" size={24} color={Colors.white} />
           </TouchableOpacity>
 
           <Text style={styles.headerTitle}>Trip plan</Text>
@@ -283,7 +285,7 @@ export const TripPlannerModal: React.FC<TripPlannerModalProps> = ({
             accessibilityRole="button"
             accessibilityLabel="Trip options"
           >
-            <Feather name="more-horizontal" size={22} color="#FFFFFF" />
+            <Feather name="more-horizontal" size={22} color={Colors.white} />
           </TouchableOpacity>
         </View>
 
@@ -342,7 +344,7 @@ export const TripPlannerModal: React.FC<TripPlannerModalProps> = ({
 
             {/* Date row */}
             <View style={styles.dateRow}>
-              <Ionicons name="calendar-outline" size={16} color="#2DD4BF" style={styles.calIcon} />
+              <Ionicons name="calendar-outline" size={16} color={Colors.accentTealMint} style={styles.calIcon} />
               <Text style={styles.dateText}>
                 {`${tripData.datesText} · ${tripData.durationText}`}
               </Text>
@@ -397,7 +399,7 @@ export const TripPlannerModal: React.FC<TripPlannerModalProps> = ({
             >
               {isStep1Done ? (
                 <View style={styles.stepCheckCircle}>
-                  <Feather name="check" size={16} color="#0B1A2F" />
+                  <Feather name="check" size={16} color={Colors.background} />
                 </View>
               ) : (
                 <View style={styles.stepNumberCircleOrange}>
@@ -433,7 +435,7 @@ export const TripPlannerModal: React.FC<TripPlannerModalProps> = ({
             >
               {isStep2Done ? (
                 <View style={styles.stepCheckCircle}>
-                  <Feather name="check" size={16} color="#0B1A2F" />
+                  <Feather name="check" size={16} color={Colors.background} />
                 </View>
               ) : (
                 <View style={styles.stepNumberCircleMuted}>
@@ -536,7 +538,7 @@ export const TripPlannerModal: React.FC<TripPlannerModalProps> = ({
 
           {/* Dashed Reminder Note */}
           <View style={styles.dashedCard}>
-            <Ionicons name="sparkles" size={18} color="#F0913A" style={styles.sparkleIcon} />
+            <Ionicons name="sparkles" size={18} color={Colors.primary} style={styles.sparkleIcon} />
             <Text style={styles.dashedCardText}>
               Diwali week trains fill fast. Book tickets by Monday so the family can travel together.
             </Text>
@@ -564,7 +566,7 @@ export const TripPlannerModal: React.FC<TripPlannerModalProps> = ({
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#0B1A2F',
+    backgroundColor: Colors.background,
   },
   header: {
     flexDirection: 'row',
@@ -577,16 +579,16 @@ const styles = StyleSheet.create({
     width: 44,
     height: 44,
     borderRadius: 22,
-    backgroundColor: 'transparent',
+    backgroundColor: Colors.transparent,
     borderWidth: 1.5,
-    borderColor: '#3A4556',
+    borderColor: Colors.borderMutedAlt,
     justifyContent: 'center',
     alignItems: 'center',
   },
   headerTitle: {
-    fontSize: 18,
-    fontFamily: 'Roboto-Bold',
-    color: '#FFFFFF',
+    fontSize: Typography.size.titleSmall,
+    fontFamily: Fonts.bold,
+    color: Colors.white,
   },
   scrollContent: {
     paddingHorizontal: 20,
@@ -594,23 +596,23 @@ const styles = StyleSheet.create({
     paddingBottom: 24,
   },
   heroCard: {
-    backgroundColor: '#0E2338',
+    backgroundColor: Colors.tripHeaderDarkBg,
     borderRadius: 20,
     borderWidth: 1.5,
-    borderColor: '#2DD4BF',
+    borderColor: Colors.accentTealMint,
     padding: 18,
     marginTop: 6,
   },
   heroTag: {
-    color: '#2DD4BF',
-    fontSize: 11,
-    fontFamily: 'Roboto-Bold',
+    color: Colors.accentTealMint,
+    fontSize: Typography.size.captionSmall,
+    fontFamily: Fonts.bold,
     letterSpacing: 1.2,
   },
   destinationTitle: {
-    fontSize: 24,
-    fontFamily: 'Roboto-Bold',
-    color: '#FFFFFF',
+    fontSize: Typography.size.header,
+    fontFamily: Fonts.bold,
+    color: Colors.white,
     marginTop: 6,
   },
   dateRow: {
@@ -622,9 +624,9 @@ const styles = StyleSheet.create({
     marginRight: 6,
   },
   dateText: {
-    fontSize: 14,
-    fontFamily: 'Roboto-Medium',
-    color: '#CAD4DF',
+    fontSize: Typography.size.body,
+    fontFamily: Fonts.medium,
+    color: Colors.textLightMutedAlt,
   },
   avatarRow: {
     flexDirection: 'row',
@@ -643,20 +645,20 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     borderWidth: 1.5,
-    borderColor: '#0E2338',
+    borderColor: Colors.tripHeaderDarkBg,
   },
   avatarCircleOverlap: {
     marginLeft: -8,
   },
   avatarInitial: {
-    color: '#FFFFFF',
-    fontSize: 10,
-    fontFamily: 'Roboto-Bold',
+    color: Colors.white,
+    fontSize: Typography.size.micro,
+    fontFamily: Fonts.bold,
   },
   membersGoingText: {
-    fontSize: 13,
-    fontFamily: 'Roboto-Medium',
-    color: '#8A97AB',
+    fontSize: Typography.size.bodySmall,
+    fontFamily: Fonts.medium,
+    color: Colors.textSecondaryMuted,
   },
   progressRow: {
     flexDirection: 'row',
@@ -667,13 +669,13 @@ const styles = StyleSheet.create({
     flex: 1,
     height: 6,
     borderRadius: 3,
-    backgroundColor: '#1F3352',
+    backgroundColor: Colors.borderBold,
     overflow: 'hidden',
   },
   progressFill: {
     height: 6,
     borderRadius: 3,
-    backgroundColor: '#2DD4BF',
+    backgroundColor: Colors.accentTealMint,
   },
   progressFill0: {
     width: '0%',
@@ -691,24 +693,24 @@ const styles = StyleSheet.create({
     width: '100%',
   },
   progressLabel: {
-    fontSize: 13,
-    fontFamily: 'Roboto-SemiBold',
-    color: '#2DD4BF',
+    fontSize: Typography.size.bodySmall,
+    fontFamily: Fonts.semiBold,
+    color: Colors.accentTealMint,
     marginLeft: 12,
   },
   sectionHeader: {
-    fontSize: 11,
-    fontFamily: 'Roboto-Bold',
-    color: '#8A97AB',
+    fontSize: Typography.size.captionSmall,
+    fontFamily: Fonts.bold,
+    color: Colors.textSecondaryMuted,
     letterSpacing: 1.2,
     marginTop: 24,
     marginBottom: 12,
   },
   stepsCard: {
-    backgroundColor: '#122440',
+    backgroundColor: Colors.cardBackground,
     borderRadius: 20,
     borderWidth: 1,
-    borderColor: '#1F3352',
+    borderColor: Colors.borderBold,
     overflow: 'hidden',
   },
   stepRow: {
@@ -721,7 +723,7 @@ const styles = StyleSheet.create({
     width: 32,
     height: 32,
     borderRadius: 16,
-    backgroundColor: '#34D399',
+    backgroundColor: Colors.tripGreenMint,
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 14,
@@ -730,106 +732,106 @@ const styles = StyleSheet.create({
     width: 32,
     height: 32,
     borderRadius: 16,
-    backgroundColor: '#122440',
+    backgroundColor: Colors.cardBackground,
     borderWidth: 1.5,
-    borderColor: '#F0913A',
+    borderColor: Colors.primary,
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 14,
   },
   stepNumberTextOrange: {
-    color: '#F0913A',
-    fontSize: 14,
-    fontFamily: 'Roboto-Bold',
+    color: Colors.primary,
+    fontSize: Typography.size.body,
+    fontFamily: Fonts.bold,
   },
   stepNumberCircleMuted: {
     width: 32,
     height: 32,
     borderRadius: 16,
-    backgroundColor: '#192841',
+    backgroundColor: Colors.tripCardAltBg,
     borderWidth: 1,
-    borderColor: '#2C3E55',
+    borderColor: Colors.tripItemBorder,
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 14,
   },
   stepNumberTextMuted: {
-    color: '#8A97AB',
-    fontSize: 14,
-    fontFamily: 'Roboto-Bold',
+    color: Colors.textSecondaryMuted,
+    fontSize: Typography.size.body,
+    fontFamily: Fonts.bold,
   },
   stepInfo: {
     flex: 1,
   },
   stepTitle: {
-    fontSize: 15,
-    fontFamily: 'Roboto-SemiBold',
-    color: '#FFFFFF',
+    fontSize: Typography.size.bodyMedium,
+    fontFamily: Fonts.semiBold,
+    color: Colors.white,
   },
   stepSubtitle: {
-    fontSize: 13,
-    fontFamily: 'Roboto-Medium',
-    color: '#8A97AB',
+    fontSize: Typography.size.bodySmall,
+    fontFamily: Fonts.medium,
+    color: Colors.textSecondaryMuted,
     marginTop: 2,
   },
   stepSubtitleOrange: {
-    fontSize: 13,
-    fontFamily: 'Roboto-Medium',
-    color: '#F0913A',
+    fontSize: Typography.size.bodySmall,
+    fontFamily: Fonts.medium,
+    color: Colors.primary,
     marginTop: 2,
   },
   doneBadge: {
     borderWidth: 1,
-    borderColor: '#2DD4BF',
+    borderColor: Colors.accentTealMint,
     borderRadius: 14,
-    backgroundColor: 'transparent',
+    backgroundColor: Colors.transparent,
     paddingHorizontal: 12,
     paddingVertical: 4,
   },
   doneBadgeText: {
-    color: '#2DD4BF',
-    fontSize: 12,
-    fontFamily: 'Roboto-SemiBold',
+    color: Colors.accentTealMint,
+    fontSize: Typography.size.caption,
+    fontFamily: Fonts.semiBold,
   },
   orangeBadge: {
     borderWidth: 1,
-    borderColor: '#F0913A',
+    borderColor: Colors.primary,
     borderRadius: 14,
-    backgroundColor: 'transparent',
+    backgroundColor: Colors.transparent,
     paddingHorizontal: 10,
     paddingVertical: 4,
   },
   orangeBadgeText: {
-    color: '#F0913A',
-    fontSize: 12,
-    fontFamily: 'Roboto-SemiBold',
+    color: Colors.primary,
+    fontSize: Typography.size.caption,
+    fontFamily: Fonts.semiBold,
   },
   startedBadge: {
-    backgroundColor: '#1A2C46',
+    backgroundColor: Colors.surfaceNavyAlt,
     borderRadius: 14,
     paddingHorizontal: 12,
     paddingVertical: 4,
   },
   startedBadgeText: {
-    color: '#8A97AB',
-    fontSize: 12,
-    fontFamily: 'Roboto-SemiBold',
+    color: Colors.textSecondaryMuted,
+    fontSize: Typography.size.caption,
+    fontFamily: Fonts.semiBold,
   },
   stepDivider: {
     height: 1,
-    backgroundColor: '#1F3352',
+    backgroundColor: Colors.borderBold,
     marginHorizontal: 16,
   },
   dashedCard: {
     flexDirection: 'row',
     alignItems: 'flex-start',
     borderWidth: 1.5,
-    borderColor: '#F0913A',
+    borderColor: Colors.primary,
     borderStyle: 'dashed',
     borderRadius: 16,
     padding: 16,
     marginTop: 20,
-    backgroundColor: 'transparent',
+    backgroundColor: Colors.transparent,
   },
   sparkleIcon: {
     marginRight: 10,
@@ -837,10 +839,10 @@ const styles = StyleSheet.create({
   },
   dashedCardText: {
     flex: 1,
-    fontSize: 13,
+    fontSize: Typography.size.bodySmall,
     lineHeight: 19,
-    color: '#CAD4DF',
-    fontFamily: 'Roboto-Regular',
+    color: Colors.textLightMutedAlt,
+    fontFamily: Fonts.regular,
   },
   bottomBar: {
     paddingHorizontal: 20,
@@ -850,7 +852,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#F0913A',
+    backgroundColor: Colors.primary,
     height: 56,
     borderRadius: 28,
   },
@@ -858,9 +860,9 @@ const styles = StyleSheet.create({
     marginRight: 6,
   },
   ctaButtonText: {
-    color: '#FFFFFF',
-    fontSize: 16,
-    fontFamily: 'Roboto-Bold',
+    color: Colors.white,
+    fontSize: Typography.size.subtitle,
+    fontFamily: Fonts.bold,
   },
 });
 export default TripPlannerModal;

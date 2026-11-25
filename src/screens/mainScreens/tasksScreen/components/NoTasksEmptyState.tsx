@@ -2,6 +2,8 @@ import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import Feather from '@react-native-vector-icons/feather';
 import { START_SUGGESTIONS } from '../constants';
+import CommonBtn from '../../../../components/CommonBtn';
+import { Colors, Fonts, Typography } from '../../../../units';
 
 export interface NoTasksEmptyStateProps {
   onAddTaskPress: () => void;
@@ -18,7 +20,7 @@ const NoTasksEmptyState: React.FC<NoTasksEmptyStateProps> = ({
       <View style={styles.outerCircle}>
         <View style={styles.innerCircle}>
           <View style={styles.checkSquare}>
-            <Feather name="check" size={24} color="#F0913A" />
+            <Feather name="check" size={24} color={Colors.primary} />
           </View>
         </View>
       </View>
@@ -33,16 +35,19 @@ const NoTasksEmptyState: React.FC<NoTasksEmptyStateProps> = ({
       </Text>
 
       {/* Add a task CTA */}
-      <TouchableOpacity
-        style={styles.addButton}
+      <CommonBtn
+        title="Add a task"
         onPress={onAddTaskPress}
-        activeOpacity={0.8}
-        accessibilityRole="button"
-        accessibilityLabel="Add a task"
-      >
-        <Feather name="plus" size={20} color="#FFFFFF" />
-        <Text style={styles.addButtonText}>Add a task</Text>
-      </TouchableOpacity>
+        backgroundColor={Colors.primary}
+        height={52}
+        borderRadius={26}
+        marginTop={24}
+        containerStyle={{ marginBottom: 32 }}
+        fontSize={16}
+        leftComponent={
+          <Feather name="plus" size={20} color={Colors.white} style={{ marginRight: 8 }} />
+        }
+      />
 
       {/* Start with one of these */}
       <Text style={styles.suggestionEyebrow}>OR START WITH ONE OF THESE</Text>
@@ -80,7 +85,7 @@ const styles = StyleSheet.create({
     height: 140,
     borderRadius: 70,
     borderWidth: 1.5,
-    borderColor: '#1F3352',
+    borderColor: Colors.borderBold,
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -88,9 +93,9 @@ const styles = StyleSheet.create({
     width: 96,
     height: 96,
     borderRadius: 48,
-    backgroundColor: '#122440',
+    backgroundColor: Colors.cardBackground,
     borderWidth: 1.5,
-    borderColor: '#2A3E5E',
+    borderColor: Colors.surfaceMutedAlt,
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -99,20 +104,20 @@ const styles = StyleSheet.create({
     height: 44,
     borderRadius: 10,
     borderWidth: 2.5,
-    borderColor: '#F0913A',
+    borderColor: Colors.primary,
     justifyContent: 'center',
     alignItems: 'center',
   },
   headline: {
-    fontSize: 26,
-    fontFamily: 'Roboto-Bold',
-    color: '#CAD4DF',
+    fontSize: Typography.size.header,
+    fontFamily: Fonts.bold,
+    color: Colors.textLightMutedAlt,
     textAlign: 'center',
     marginTop: 28,
   },
   description: {
-    fontSize: 15,
-    color: '#8A97AB',
+    fontSize: Typography.size.bodyMedium,
+    color: Colors.textSecondaryMuted,
     textAlign: 'center',
     marginTop: 10,
     lineHeight: 22,
@@ -122,7 +127,7 @@ const styles = StyleSheet.create({
     width: '100%',
     height: 52,
     borderRadius: 26,
-    backgroundColor: '#F0913A',
+    backgroundColor: Colors.primary,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
@@ -130,15 +135,15 @@ const styles = StyleSheet.create({
     marginTop: 24,
   },
   addButtonText: {
-    fontSize: 16,
-    fontFamily: 'Roboto-Bold',
-    color: '#FFFFFF',
+    fontSize: Typography.size.subtitle,
+    fontFamily: Fonts.bold,
+    color: Colors.white,
   },
   suggestionEyebrow: {
-    fontSize: 11,
-    fontFamily: 'Roboto-Bold',
+    fontSize: Typography.size.captionSmall,
+    fontFamily: Fonts.bold,
     letterSpacing: 1.2,
-    color: '#8A97AB',
+    color: Colors.textSecondaryMuted,
     marginTop: 36,
     marginBottom: 16,
   },
@@ -151,10 +156,10 @@ const styles = StyleSheet.create({
   suggestionPill: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'transparent',
+    backgroundColor: Colors.transparent,
     borderRadius: 8,
     borderWidth: 1.5,
-    borderColor: '#3A4556',
+    borderColor: Colors.borderMutedAlt,
     paddingVertical: 10,
     paddingHorizontal: 14,
     gap: 8,
@@ -165,9 +170,9 @@ const styles = StyleSheet.create({
     borderRadius: 4,
   },
   suggestionText: {
-    fontSize: 13,
-    color: '#CAD4DF',
-    fontFamily: 'Roboto-Medium',
+    fontSize: Typography.size.bodySmall,
+    color: Colors.textLightMutedAlt,
+    fontFamily: Fonts.medium,
   },
 });
 

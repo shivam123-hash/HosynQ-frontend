@@ -155,6 +155,97 @@ export const Colors = {
   toastBg: '#0A131F',
   toastBorder: '#1F3352',
   toastText: '#E6EDF5',
+
+  // Tasks & Lists Module Palette
+  tasksTrackBg: '#0F1E33', // Tab tracks / toggles background
+  tasksTabBorder: '#1A293D', // Sub-tabs border
+  tasksCardBg: '#0F1D30', // Task card background
+  tasksCardBorder: '#1E3557', // Task card border
+  tasksCardDivider: '#172B47', // Card dividers / inner rows
+  tasksOverdueBorder: '#6B3024', // Overdue alert card border
+  tasksOverdueBg: '#201824', // Overdue alert card background
+  tasksDueWeekBorder: '#1E3557', // Due this week alert card border
+  tasksBadgeBg: '#1E324E', // Inactive badge / counter background
+  tasksBadgeDarkBg: '#15253C', // Small category counter badge
+  tasksBadgeBorder: '#243A58',
+  tasksCheckboxBorder: '#2C415F', // Unchecked task circle border
+  tasksSearchBg: '#122440', // Search bar background
+  tasksTextMuted: '#7E8B9B', // Muted tab text
+  tasksDashedBorder: '#1E324E', // Dashed add card border
+  tasksMemberFilterBg: 'rgba(15, 30, 51, 0.65)', // Member filter card wrapper
+  tasksMemberSelectedBg: 'rgba(240, 144, 52, 0.12)', // Selected member background
+  tasksOrangeTintSubtle: 'rgba(240, 145, 58, 0.05)', // Subtle orange highlight
+  tasksOrangeTint: 'rgba(240, 145, 58, 0.1)', // Orange tint
+  tasksDarkOverlay: 'rgba(0, 0, 0, 0.65)', // Bottom sheet dark backdrop
+  tasksInputPlaceholder: '#8A97AB',
+
+  // Categories & Priority Tags in Tasks
+  tagHousehold: '#F0913A',
+  tagFinance: '#EF4444',
+  tagTravel: '#2DD4BF',
+  tagFamily: '#3B82F6',
+  tagHealth: '#8B5CF6',
+  tagPersonal: '#10B981',
+  tagPriorityHigh: '#EF4444',
+  tagPriorityMedium: '#F59E0B',
+  tagPriorityLow: '#10B981',
+
+  // Trip Planner Palette
+  tripBannerBg: '#0F2A33',
+  tripBannerBorder: '#13383B',
+  tripCardBg: '#0F1E33',
+  tripCardBorder: '#1F3352',
+  tripTealAccent: '#2DD4BF',
+  tripTealBg: '#0F2329',
+  tripTealBorder: '#164E48',
+  tripGreenAccent: '#4ADE80',
+  tripGreenBg: '#064E3B',
+  tripBlueAccent: '#60A5FA',
+  tripBlueBg: '#1E3A8A',
+  tripPurpleAccent: '#C084FC',
+  tripPurpleBg: '#581C87',
+  tripYellowAccent: '#FBBF24',
+  tripYellowBg: '#78350F',
+  tripOrangeAccent: '#F0913A',
+  tripOrangeBg: '#6B3A2A',
+  tripPinkAccent: '#F472B6',
+  tripPinkBg: '#831843',
+
+  // Extended Tasks & Detail Palette
+  tripGreenMint: '#34D399',
+  tripCompletedGreen: '#6FDAA6',
+  tripMintBorder: '#2F6B52',
+  tripItemBorder: '#2C3E55',
+  surfaceNavyAlt2: '#1E2D44',
+  tagRedSoft: '#F87171',
+  avatarGreenDark: '#215C33',
+  avatarWineDark: '#5C2149',
+  avatarOliveDark: '#5C5221',
+  avatarBrownDark: '#3D2517',
+  avatarNavyDark: '#152B4D',
+  avatarPurpleDark: '#2B1B40',
+  avatarTealDark: '#14382B',
+  borderSlate: '#3A4D6B',
+  borderNavyLight: '#2E415E',
+  borderDividerNavy: '#26354A',
+  dangerBorderSubtle: '#4A2833',
+  dangerBorderDark: '#552B36',
+  dangerTextMuted: '#7D4753',
+  completedDarkBg: '#0F2229',
+  textLightGray: '#CBD2D9',
+  tripHeaderDarkBg: '#0E2338',
+  tripCardAltBg: '#192841',
+  tripBookingCardBg: '#162843',
+  tripAvailableGreen: '#166534',
+  emerald: '#059669',
+  royalBlue: '#2563EB',
+  vibrantPurple: '#9333EA',
+  amberAccent: '#D97706',
+  amberBrown: '#B45309',
+  amberDeep: '#854D0E',
+  borderGreenDark: '#1E4E38',
+  borderPurpleDark: '#3C2166',
+  tasksDashedCardBg: 'rgba(240, 145, 58, 0.04)',
 };
 
 export type ColorsType = typeof Colors;

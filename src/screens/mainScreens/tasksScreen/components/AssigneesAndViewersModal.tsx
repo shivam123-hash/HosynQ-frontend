@@ -9,6 +9,8 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Feather from '@react-native-vector-icons/feather';
 import { useAppSelector } from '../../../../redux';
+import CommonBtn from '../../../../components/CommonBtn';
+import { Colors, Fonts, Typography } from '../../../../units';
 
 export type ViewersOption = 'everyone' | 'adults' | 'assignees';
 
@@ -56,6 +58,15 @@ const AssigneesAndViewersModal: React.FC<AssigneesAndViewersModalProps> = ({
   members: propMembers,
 }) => {
   const insets = useSafeAreaInsets();
+  const currentUser = useAppSelector((state) => state.auth?.user);
+  const myMemberId = useAppSelector(
+    (state) =>
+      state.family.myMemberId ||
+      state.family.myFamilyData?.family?.myMemberId ||
+      state.family.family?.myMemberId ||
+      (state.family.myFamilyData as any)?.myMemberId ||
+      null
+  );
   const familyMembers = useAppSelector(
     (state) =>
       ((state.family.myFamilyData?.family as any)?.members as any[]) ||
@@ -64,36 +75,52 @@ const AssigneesAndViewersModal: React.FC<AssigneesAndViewersModalProps> = ({
       []
   );
 
+  const userInitial = useMemo(() => {
+    const raw =
+      currentUser?.fullName ||
+      currentUser?.name ||
+      currentUser?.displayName ||
+      'Y';
+    return (raw.trim()[0] || 'Y').toUpperCase();
+  }, [currentUser]);
+
   const members = useMemo(() => {
     if (propMembers && propMembers.length > 0) {
       return propMembers;
     }
-    if (familyMembers.length > 0) {
+    if (familyMembers && familyMembers.length > 0) {
       return familyMembers.map((m: any) => {
-        const rawName = m.fullName || m.name || (m.isYou ? 'You' : 'Member');
-        const name = m.isYou
-          ? 'You'
-          : rawName.toLowerCase() === 'priya'
-          ? 'You'
-          : rawName;
+        const isCurrentMember =
+          m.isYou ||
+          (myMemberId && (m.memberId === myMemberId || m.id === myMemberId)) ||
+          (currentUser?.id && (m.userId === currentUser.id || m.id === currentUser.id));
+
+        const rawName = m.fullName || m.name || (isCurrentMember ? 'You' : 'Member');
+        const name = isCurrentMember ? 'You' : rawName;
         return {
           id: m.memberId || m.id || name,
           name,
-          initial: (name === 'You' ? 'P' : rawName[0] || 'M').toUpperCase(),
-          avatarBg: m.avatarColor || '#1E3A66',
-          avatarColor: '#FFFFFF',
+          initial: (isCurrentMember ? userInitial : rawName[0] || 'M').toUpperCase(),
+          avatarBg: m.avatarColor || (isCurrentMember ? Colors.primary : Colors.avatarNavy),
+          avatarColor: Colors.white,
         };
       });
     }
-    return [];
-  }, [familyMembers]);
+    return [
+      {
+        id: myMemberId || 'you',
+        name: 'You',
+        initial: userInitial,
+        avatarBg: Colors.primary,
+        avatarColor: Colors.white,
+      },
+    ];
+  }, [familyMembers, myMemberId, currentUser, userInitial, propMembers]);
 
   // Normalize initial selection to match member names or 'You'
   const [currentAssignees, setCurrentAssignees] = useState<string[]>(() => {
     if (!selectedAssignees || selectedAssignees.length === 0) return ['You'];
-    return selectedAssignees.map((name) =>
-      name.toLowerCase() === 'priya' ? 'You' : name
-    );
+    return selectedAssignees;
   });
 
   const [currentViewers, setCurrentViewers] =
@@ -101,11 +128,7 @@ const AssigneesAndViewersModal: React.FC<AssigneesAndViewersModalProps> = ({
 
   React.useEffect(() => {
     if (selectedAssignees && selectedAssignees.length > 0) {
-      setCurrentAssignees(
-        selectedAssignees.map((name) =>
-          name.toLowerCase() === 'priya' ? 'You' : name
-        )
-      );
+      setCurrentAssignees(selectedAssignees);
     }
     if (selectedViewers) {
       setCurrentViewers(selectedViewers);
@@ -113,14 +136,13 @@ const AssigneesAndViewersModal: React.FC<AssigneesAndViewersModalProps> = ({
   }, [selectedAssignees, selectedViewers, visible]);
 
   const toggleAssignee = (memberName: string) => {
-    const displayName = memberName === 'Priya' ? 'You' : memberName;
     setCurrentAssignees((prev) => {
-      if (prev.includes(displayName)) {
+      if (prev.includes(memberName)) {
         // Keep at least one assignee
         if (prev.length === 1) return prev;
-        return prev.filter((n) => n !== displayName);
+        return prev.filter((n) => n !== memberName);
       }
-      return [...prev, displayName];
+      return [...prev, memberName];
     });
   };
 
@@ -195,7 +217,7 @@ const AssigneesAndViewersModal: React.FC<AssigneesAndViewersModalProps> = ({
                     {/* Small Checkmark Badge */}
                     {isSelected && (
                       <View style={styles.checkBadge}>
-                        <Feather name="check" size={10} color="#0B1A2F" />
+                        <Feather name="check" size={10} color={Colors.background} />
                       </View>
                     )}
                   </View>
@@ -252,13 +274,15 @@ const AssigneesAndViewersModal: React.FC<AssigneesAndViewersModalProps> = ({
           </View>
 
           {/* Done Button */}
-          <TouchableOpacity
-            style={styles.doneBtn}
+          <CommonBtn
+            title="Done"
             onPress={handleDone}
-            activeOpacity={0.8}
-          >
-            <Text style={styles.doneBtnText}>Done</Text>
-          </TouchableOpacity>
+            backgroundColor={Colors.primary}
+            height={52}
+            borderRadius={26}
+            marginTop={24}
+            fontSize={16}
+          />
         </View>
       </View>
     </Modal>
@@ -271,7 +295,7 @@ const styles = StyleSheet.create({
   overlay: {
     flex: 1,
     justifyContent: 'flex-end',
-    backgroundColor: 'rgba(0, 0, 0, 0.65)',
+    backgroundColor: Colors.tasksDarkOverlay,
   },
   backdrop: {
     position: 'absolute',
@@ -281,11 +305,11 @@ const styles = StyleSheet.create({
     bottom: 0,
   },
   sheetContainer: {
-    backgroundColor: '#122440',
+    backgroundColor: Colors.cardBackground,
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
     borderTopWidth: 1,
-    borderColor: '#1F3352',
+    borderColor: Colors.borderBold,
     paddingHorizontal: 20,
     paddingTop: 12,
   },
@@ -293,19 +317,19 @@ const styles = StyleSheet.create({
     width: 40,
     height: 4,
     borderRadius: 2,
-    backgroundColor: '#3A4556',
+    backgroundColor: Colors.borderMutedAlt,
     alignSelf: 'center',
     marginBottom: 16,
   },
   title: {
-    fontSize: 22,
-    fontFamily: 'Roboto-Bold',
-    color: '#CAD4DF',
+    fontSize: Typography.size.titleLarge,
+    fontFamily: Fonts.bold,
+    color: Colors.textLightMutedAlt,
     textAlign: 'center',
   },
   subtitle: {
-    fontSize: 14,
-    color: '#8A97AB',
+    fontSize: Typography.size.body,
+    color: Colors.textSecondaryMuted,
     textAlign: 'center',
     marginTop: 4,
     marginBottom: 20,
@@ -325,13 +349,13 @@ const styles = StyleSheet.create({
     height: 56,
     borderRadius: 28,
     borderWidth: 2.5,
-    borderColor: 'transparent',
+    borderColor: Colors.transparent,
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: 8,
   },
   avatarWrapperSelected: {
-    borderColor: '#F0913A',
+    borderColor: Colors.primary,
   },
   avatarCircle: {
     width: 48,
@@ -341,8 +365,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   avatarInitial: {
-    fontSize: 18,
-    fontFamily: 'Roboto-Bold',
+    fontSize: Typography.size.titleSmall,
+    fontFamily: Fonts.bold,
   },
   checkBadge: {
     position: 'absolute',
@@ -351,33 +375,33 @@ const styles = StyleSheet.create({
     width: 18,
     height: 18,
     borderRadius: 9,
-    backgroundColor: '#F0913A',
+    backgroundColor: Colors.primary,
     justifyContent: 'center',
     alignItems: 'center',
     borderWidth: 1.5,
-    borderColor: '#0B1A2F',
+    borderColor: Colors.background,
   },
   memberName: {
-    fontSize: 13,
-    color: '#8A97AB',
-    fontFamily: 'Roboto-Medium',
+    fontSize: Typography.size.bodySmall,
+    color: Colors.textSecondaryMuted,
+    fontFamily: Fonts.medium,
   },
   memberNameSelected: {
-    color: '#F0913A',
-    fontFamily: 'Roboto-Bold',
+    color: Colors.primary,
+    fontFamily: Fonts.bold,
   },
   sectionHeader: {
-    fontSize: 11,
-    fontFamily: 'Roboto-Bold',
+    fontSize: Typography.size.captionSmall,
+    fontFamily: Fonts.bold,
     letterSpacing: 1.2,
-    color: '#8A97AB',
+    color: Colors.textSecondaryMuted,
     marginBottom: 12,
   },
   viewersCard: {
-    backgroundColor: 'transparent',
+    backgroundColor: Colors.transparent,
     borderRadius: 20,
     borderWidth: 1.5,
-    borderColor: '#3A4556',
+    borderColor: Colors.borderMutedAlt,
     overflow: 'hidden',
     marginBottom: 24,
   },
@@ -387,27 +411,27 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingVertical: 14,
     paddingHorizontal: 16,
-    backgroundColor: 'transparent',
+    backgroundColor: Colors.transparent,
   },
   viewerRowSelected: {
-    backgroundColor: '#1A2B47',
+    backgroundColor: Colors.cardSelected,
   },
   rowDivider: {
     borderBottomWidth: 1,
-    borderBottomColor: '#1F3352',
+    borderBottomColor: Colors.borderBold,
   },
   viewerTextCol: {
     flex: 1,
     marginRight: 12,
   },
   viewerTitle: {
-    fontSize: 15,
-    fontFamily: 'Roboto-SemiBold',
-    color: '#CAD4DF',
+    fontSize: Typography.size.bodyMedium,
+    fontFamily: Fonts.semiBold,
+    color: Colors.textLightMutedAlt,
   },
   viewerSubtitle: {
-    fontSize: 13,
-    color: '#8A97AB',
+    fontSize: Typography.size.bodySmall,
+    color: Colors.textSecondaryMuted,
     marginTop: 2,
   },
   radioCircle: {
@@ -415,29 +439,29 @@ const styles = StyleSheet.create({
     height: 22,
     borderRadius: 11,
     borderWidth: 2,
-    borderColor: '#3A4556',
+    borderColor: Colors.borderMutedAlt,
     justifyContent: 'center',
     alignItems: 'center',
   },
   radioCircleSelected: {
-    borderColor: '#F0913A',
+    borderColor: Colors.primary,
   },
   radioInnerDot: {
     width: 10,
     height: 10,
     borderRadius: 5,
-    backgroundColor: '#F0913A',
+    backgroundColor: Colors.primary,
   },
   doneBtn: {
     height: 52,
     borderRadius: 26,
-    backgroundColor: '#F0913A',
+    backgroundColor: Colors.primary,
     justifyContent: 'center',
     alignItems: 'center',
   },
   doneBtnText: {
-    fontSize: 16,
-    fontFamily: 'Roboto-Bold',
-    color: '#FFFFFF',
+    fontSize: Typography.size.subtitle,
+    fontFamily: Fonts.bold,
+    color: Colors.white,
   },
 });

@@ -1,4 +1,5 @@
 import React from 'react';
+import { Colors } from '../../../../units';
 import AppDialog from '../../../../components/AppDialog';
 
 export interface DiscardChangesModalProps {
@@ -21,19 +22,19 @@ const DiscardChangesModal: React.FC<DiscardChangesModalProps> = ({
       visible={visible}
       type="danger"
       iconName="alert-circle"
-      iconColor="#F06A6A"
-      iconCircleBorderColor="#F06A6A"
+      iconColor={Colors.dangerCoral}
+      iconCircleBorderColor={Colors.dangerCoral}
       iconCircleBgColor="transparent"
       title={title}
       description={subtitle}
       primaryButtonText="Keep editing"
       primaryButtonVariant="primary"
-      primaryButtonColor="#F0913A"
-      primaryButtonTextColor="#FFFFFF"
+      primaryButtonColor={Colors.primary}
+      primaryButtonTextColor={Colors.white}
       primaryButtonAccessibilityLabel="Keep editing"
       onPrimaryPress={onKeepEditing}
       secondaryButtonText="Discard"
-      secondaryButtonColor="#F06A6A"
+      secondaryButtonColor={Colors.dangerCoral}
       secondaryButtonAccessibilityLabel="Discard"
       onSecondaryPress={onDiscard}
       onClose={onKeepEditing}

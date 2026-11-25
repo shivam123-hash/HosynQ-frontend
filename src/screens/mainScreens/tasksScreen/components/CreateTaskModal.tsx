@@ -16,7 +16,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Feather from '@react-native-vector-icons/feather';
 import { useAppDispatch, useAppSelector } from '../../../../redux';
 import { createTask, updateTask } from '../../../../redux/features/tasks/tasksSlice';
-import { getMyFamilyThunk } from '../../../../redux/features/family/familySlice';
+import { getMyFamilyBasicThunk } from '../../../../redux/features/family/familySlice';
 import { CreateTaskPayload } from '../../../../services/tasksServices';
 import { TaskItem, TaskCategory, TaskPriority } from '../types';
 import { CATEGORY_META, PRIORITY_META } from '../constants';
@@ -33,9 +33,12 @@ import AssigneesAndViewersModal, {
 } from './AssigneesAndViewersModal';
 import DueDateTimeModal from './DueDateTimeModal';
 import RepeatModal from './RepeatModal';
+import CommonBtn from '../../../../components/CommonBtn';
 import RemindersModal from './RemindersModal';
 import CategoryPriorityModal from './CategoryPriorityModal';
 import DiscardChangesModal from './DiscardChangesModal';
+
+import { Colors, Fonts, Typography } from '../../../../units';
 
 const getTodayIsoString = (): string => {
   const d = new Date();
@@ -82,7 +85,7 @@ const CreateTaskModal: React.FC<CreateTaskModalProps> = ({
 
   useEffect(() => {
     if (visible && (!myMemberId || familyMembers.length === 0)) {
-      dispatch(getMyFamilyThunk());
+      dispatch(getMyFamilyBasicThunk());
     }
   }, [visible, myMemberId, familyMembers.length, dispatch]);
 
@@ -96,7 +99,7 @@ const CreateTaskModal: React.FC<CreateTaskModalProps> = ({
       return nameOrId;
     }
     const lower = nameOrId.toLowerCase();
-    if (lower === 'you' || lower === 'priya') {
+    if (lower === 'you') {
       return (
         myMemberId ||
         familyMembers.find((m: any) => m.isYou)?.memberId ||
@@ -364,7 +367,7 @@ const CreateTaskModal: React.FC<CreateTaskModalProps> = ({
             accessibilityRole="button"
             accessibilityLabel="Close create task"
           >
-            <Feather name="x" size={20} color="#CAD4DF" />
+            <Feather name="x" size={20} color={Colors.textLightMutedAlt} />
           </TouchableOpacity>
 
           <Text style={styles.headerTitle}>
@@ -387,7 +390,7 @@ const CreateTaskModal: React.FC<CreateTaskModalProps> = ({
             <TextInput
               style={styles.titleInput}
               placeholder="e.g. Book train tickets to Jaipur"
-              placeholderTextColor="#8A97AB"
+              placeholderTextColor={Colors.textSecondaryMuted}
               value={title}
               onChangeText={setTitle}
               autoFocus
@@ -403,7 +406,7 @@ const CreateTaskModal: React.FC<CreateTaskModalProps> = ({
               activeOpacity={0.7}
             >
               <View style={styles.optionIconBox}>
-                <Feather name="user" size={18} color="#8A97AB" />
+                <Feather name="user" size={18} color={Colors.textSecondaryMuted} />
               </View>
               <View style={styles.optionContent}>
                 <Text style={styles.optionLabel}>Assigned to</Text>
@@ -416,7 +419,7 @@ const CreateTaskModal: React.FC<CreateTaskModalProps> = ({
                   <Text style={styles.optionValue}>{assignee}</Text>
                 </View>
               </View>
-              <Feather name="chevron-right" size={18} color="#8A97AB" />
+              <Feather name="chevron-right" size={18} color={Colors.textSecondaryMuted} />
             </TouchableOpacity>
 
             {/* Who can see it */}
@@ -426,13 +429,13 @@ const CreateTaskModal: React.FC<CreateTaskModalProps> = ({
               activeOpacity={0.7}
             >
               <View style={styles.optionIconBox}>
-                <Feather name="eye" size={18} color="#8A97AB" />
+                <Feather name="eye" size={18} color={Colors.textSecondaryMuted} />
               </View>
               <View style={styles.optionContent}>
                 <Text style={styles.optionLabel}>Who can see it</Text>
                 <Text style={styles.optionValue}>{viewers}</Text>
               </View>
-              <Feather name="chevron-right" size={18} color="#8A97AB" />
+              <Feather name="chevron-right" size={18} color={Colors.textSecondaryMuted} />
             </TouchableOpacity>
 
             {/* Due */}
@@ -442,13 +445,13 @@ const CreateTaskModal: React.FC<CreateTaskModalProps> = ({
               activeOpacity={0.7}
             >
               <View style={styles.optionIconBox}>
-                <Feather name="calendar" size={18} color="#8A97AB" />
+                <Feather name="calendar" size={18} color={Colors.textSecondaryMuted} />
               </View>
               <View style={styles.optionContent}>
                 <Text style={styles.optionLabel}>Due</Text>
                 <Text style={styles.optionValue}>{dueFormatted}</Text>
               </View>
-              <Feather name="chevron-right" size={18} color="#8A97AB" />
+              <Feather name="chevron-right" size={18} color={Colors.textSecondaryMuted} />
             </TouchableOpacity>
 
             {/* Repeat */}
@@ -458,13 +461,13 @@ const CreateTaskModal: React.FC<CreateTaskModalProps> = ({
               activeOpacity={0.7}
             >
               <View style={styles.optionIconBox}>
-                <Feather name="repeat" size={18} color="#8A97AB" />
+                <Feather name="repeat" size={18} color={Colors.textSecondaryMuted} />
               </View>
               <View style={styles.optionContent}>
                 <Text style={styles.optionLabel}>Repeat</Text>
                 <Text style={styles.optionValue}>{repeat}</Text>
               </View>
-              <Feather name="chevron-right" size={18} color="#8A97AB" />
+              <Feather name="chevron-right" size={18} color={Colors.textSecondaryMuted} />
             </TouchableOpacity>
 
             {/* Reminders */}
@@ -474,13 +477,13 @@ const CreateTaskModal: React.FC<CreateTaskModalProps> = ({
               activeOpacity={0.7}
             >
               <View style={styles.optionIconBox}>
-                <Feather name="bell" size={18} color="#8A97AB" />
+                <Feather name="bell" size={18} color={Colors.textSecondaryMuted} />
               </View>
               <View style={styles.optionContent}>
                 <Text style={styles.optionLabel}>Reminders</Text>
                 <Text style={styles.optionValue}>{reminders}</Text>
               </View>
-              <Feather name="chevron-right" size={18} color="#8A97AB" />
+              <Feather name="chevron-right" size={18} color={Colors.textSecondaryMuted} />
             </TouchableOpacity>
 
             {/* Category */}
@@ -490,7 +493,7 @@ const CreateTaskModal: React.FC<CreateTaskModalProps> = ({
               activeOpacity={0.7}
             >
               <View style={styles.optionIconBox}>
-                <Feather name="tag" size={18} color="#8A97AB" />
+                <Feather name="tag" size={18} color={Colors.textSecondaryMuted} />
               </View>
               <View style={styles.optionContent}>
                 <Text style={styles.optionLabel}>Category</Text>
@@ -504,7 +507,7 @@ const CreateTaskModal: React.FC<CreateTaskModalProps> = ({
                   <Text style={styles.optionValue}>{categoryMeta.label}</Text>
                 </View>
               </View>
-              <Feather name="chevron-right" size={18} color="#8A97AB" />
+              <Feather name="chevron-right" size={18} color={Colors.textSecondaryMuted} />
             </TouchableOpacity>
 
             {/* Priority */}
@@ -514,7 +517,7 @@ const CreateTaskModal: React.FC<CreateTaskModalProps> = ({
               activeOpacity={0.7}
             >
               <View style={styles.optionIconBox}>
-                <Feather name="flag" size={18} color="#8A97AB" />
+                <Feather name="flag" size={18} color={Colors.textSecondaryMuted} />
               </View>
               <View style={styles.optionContent}>
                 <Text style={styles.optionLabel}>Priority</Text>
@@ -528,7 +531,7 @@ const CreateTaskModal: React.FC<CreateTaskModalProps> = ({
                   <Text style={styles.optionValue}>{priorityMeta.label}</Text>
                 </View>
               </View>
-              <Feather name="chevron-right" size={18} color="#8A97AB" />
+              <Feather name="chevron-right" size={18} color={Colors.textSecondaryMuted} />
             </TouchableOpacity>
           </View>
 
@@ -538,7 +541,7 @@ const CreateTaskModal: React.FC<CreateTaskModalProps> = ({
             <TextInput
               style={styles.notesInput}
               placeholder="Add details, an amount or a link (optional)"
-              placeholderTextColor="#8A97AB"
+              placeholderTextColor={Colors.textSecondaryMuted}
               value={notes}
               onChangeText={setNotes}
               multiline
@@ -553,19 +556,15 @@ const CreateTaskModal: React.FC<CreateTaskModalProps> = ({
             { paddingBottom: Math.max(insets.bottom, 16) + 6 },
           ]}
         >
-          <TouchableOpacity
-            style={[
-              styles.createButton,
-              !title.trim() && styles.createButtonDisabled,
-            ]}
+          <CommonBtn
+            title={taskToEdit ? 'Save changes' : 'Create task'}
             onPress={handleCreate}
             disabled={!title.trim()}
-            activeOpacity={0.8}
-          >
-            <Text style={styles.createButtonText}>
-              {taskToEdit ? 'Save changes' : 'Create task'}
-            </Text>
-          </TouchableOpacity>
+            backgroundColor={Colors.primary}
+            height={52}
+            borderRadius={26}
+            fontSize={16}
+          />
         </View>
 
         {/* Sub-Modals */}
@@ -640,7 +639,7 @@ export default CreateTaskModal;
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#0B1A2F',
+    backgroundColor: Colors.background,
   },
   header: {
     height: 52,
@@ -655,15 +654,15 @@ const styles = StyleSheet.create({
     height: 44,
     borderRadius: 22,
     borderWidth: 1.5,
-    borderColor: '#3A4556',
+    borderColor: Colors.borderMutedAlt,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: 'transparent',
+    backgroundColor: Colors.transparent,
   },
   headerTitle: {
-    fontSize: 18,
-    fontFamily: 'Roboto-Bold',
-    color: '#CAD4DF',
+    fontSize: Typography.size.titleSmall,
+    fontFamily: Fonts.bold,
+    color: Colors.textLightMutedAlt,
   },
   spacer: {
     width: 44,
@@ -673,31 +672,31 @@ const styles = StyleSheet.create({
     paddingTop: 16,
   },
   inputLabel: {
-    fontSize: 14,
-    fontFamily: 'Roboto-SemiBold',
-    color: '#CAD4DF',
+    fontSize: Typography.size.body,
+    fontFamily: Fonts.semiBold,
+    color: Colors.textLightMutedAlt,
     marginBottom: 8,
   },
   titleInputWrapper: {
-    backgroundColor: 'transparent',
+    backgroundColor: Colors.transparent,
     borderRadius: 16,
     borderWidth: 1.5,
-    borderColor: '#F0913A',
+    borderColor: Colors.primary,
     paddingHorizontal: 16,
     height: 56,
     justifyContent: 'center',
     marginBottom: 20,
   },
   titleInput: {
-    fontSize: 16,
-    fontFamily: 'Roboto-SemiBold',
-    color: '#CAD4DF',
+    fontSize: Typography.size.subtitle,
+    fontFamily: Fonts.semiBold,
+    color: Colors.textLightMutedAlt,
   },
   optionsCard: {
-    backgroundColor: 'transparent',
+    backgroundColor: Colors.transparent,
     borderRadius: 20,
     borderWidth: 1.5,
-    borderColor: '#3A4556',
+    borderColor: Colors.borderMutedAlt,
     overflow: 'hidden',
     marginBottom: 20,
   },
@@ -709,7 +708,7 @@ const styles = StyleSheet.create({
   },
   divider: {
     borderTopWidth: 1,
-    borderTopColor: '#1F3352',
+    borderTopColor: Colors.borderBold,
   },
   optionIconBox: {
     marginRight: 14,
@@ -718,14 +717,14 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   optionLabel: {
-    fontSize: 12,
-    color: '#8A97AB',
+    fontSize: Typography.size.caption,
+    color: Colors.textSecondaryMuted,
     marginBottom: 2,
   },
   optionValue: {
-    fontSize: 15,
-    fontFamily: 'Roboto-SemiBold',
-    color: '#CAD4DF',
+    fontSize: Typography.size.bodyMedium,
+    fontFamily: Fonts.semiBold,
+    color: Colors.textLightMutedAlt,
   },
   assigneeBadgeRow: {
     flexDirection: 'row',
@@ -736,14 +735,14 @@ const styles = StyleSheet.create({
     width: 20,
     height: 20,
     borderRadius: 10,
-    backgroundColor: '#5C3A21',
+    backgroundColor: Colors.avatarBrown,
     justifyContent: 'center',
     alignItems: 'center',
   },
   assigneeMiniText: {
-    fontSize: 11,
-    fontFamily: 'Roboto-Bold',
-    color: '#F0913A',
+    fontSize: Typography.size.captionSmall,
+    fontFamily: Fonts.bold,
+    color: Colors.primary,
   },
   badgeRow: {
     flexDirection: 'row',
@@ -756,22 +755,22 @@ const styles = StyleSheet.create({
     borderRadius: 4,
   },
   notesLabel: {
-    fontSize: 14,
-    fontFamily: 'Roboto-SemiBold',
-    color: '#CAD4DF',
+    fontSize: Typography.size.body,
+    fontFamily: Fonts.semiBold,
+    color: Colors.textLightMutedAlt,
     marginBottom: 8,
   },
   notesInputCard: {
-    backgroundColor: 'transparent',
+    backgroundColor: Colors.transparent,
     borderRadius: 16,
     borderWidth: 1.5,
-    borderColor: '#3A4556',
+    borderColor: Colors.borderMutedAlt,
     padding: 14,
     minHeight: 80,
   },
   notesInput: {
-    fontSize: 14,
-    color: '#CAD4DF',
+    fontSize: Typography.size.body,
+    color: Colors.textLightMutedAlt,
     lineHeight: 20,
     paddingTop: 0,
   },
@@ -780,16 +779,16 @@ const styles = StyleSheet.create({
     bottom: 0,
     left: 0,
     right: 0,
-    backgroundColor: '#0B1A2F',
+    backgroundColor: Colors.background,
     borderTopWidth: 1,
-    borderTopColor: '#1F3352',
+    borderTopColor: Colors.borderBold,
     paddingHorizontal: 20,
     paddingTop: 12,
   },
   createButton: {
     height: 52,
     borderRadius: 26,
-    backgroundColor: '#F0913A',
+    backgroundColor: Colors.primary,
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -797,8 +796,8 @@ const styles = StyleSheet.create({
     opacity: 0.5,
   },
   createButtonText: {
-    fontSize: 16,
-    fontFamily: 'Roboto-Bold',
-    color: '#FFFFFF',
+    fontSize: Typography.size.subtitle,
+    fontFamily: Fonts.bold,
+    color: Colors.white,
   },
 });

@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useCallback, useEffect } from 'react';
+import React, { useState, useMemo, useCallback, useEffect, useRef } from 'react';
 import {
   StyleSheet,
   ScrollView,
@@ -6,6 +6,8 @@ import {
   View,
   Text,
   Alert,
+  RefreshControl,
+  Animated,
 } from 'react-native';
 import Feather from '@react-native-vector-icons/feather';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -30,7 +32,7 @@ import {
   updateList,
   deleteList,
 } from '../../../redux/features/lists/listsSlice';
-import { getMyFamilyThunk } from '../../../redux/features/family/familySlice';
+import { getMyFamilyBasicThunk } from '../../../redux/features/family/familySlice';
 import { CreateTaskPayload, TaskItemData } from '../../../services/tasksServices';
 import { mapApiListSummaryToUiList } from './listApiHelpers';
 import {
@@ -77,6 +79,7 @@ import {
   resolveMemberDisplayName,
   isUUID,
 } from './taskApiHelpers';
+import { Typography, Fonts } from '../../../units';
 
 export const mapApiTaskToUiTask = (apiTask: TaskItemData): TaskItem => {
   const assigneesList = apiTask.assignees || [];
@@ -125,8 +128,8 @@ export const mapApiTaskToUiTask = (apiTask: TaskItemData): TaskItem => {
     dueFormatted: apiTask.dueFormatted || formattedDueWithTime,
     assignee: assigneeName,
     assigneeInitial,
-    assigneeAvatarBg: firstAssignee?.avatarColor || '#5C3A21',
-    assigneeAvatarColor: '#FFFFFF',
+    assigneeAvatarBg: firstAssignee?.avatarColor || Colors.avatarBrown,
+    assigneeAvatarColor: Colors.white,
     category: categoryLower,
     categoryLabel: apiTask.category,
     priority: priorityLower,
@@ -137,8 +140,8 @@ export const mapApiTaskToUiTask = (apiTask: TaskItemData): TaskItem => {
       apiTask.visibility === 'EVERYONE'
         ? 'Everyone in the family'
         : apiTask.visibility === 'ADULTS_ONLY'
-        ? 'Adults only'
-        : 'Assignees only',
+          ? 'Adults only'
+          : 'Assignees only',
     notes: apiTask.notes || undefined,
     createdBy: apiTask.createdBy?.fullName || undefined,
     isCompleted,
@@ -200,32 +203,84 @@ const TasksScreen: React.FC<TasksScreenProps> = ({
       ((state.family.family as any)?.members as any[]) ||
       []
   );
+  const currentUser = useAppSelector((state) => state.auth?.user);
+  const myMemberId = useAppSelector(
+    (state) =>
+      state.family.myMemberId ||
+      state.family.myFamilyData?.family?.myMemberId ||
+      state.family.family?.myMemberId ||
+      (state.family.myFamilyData as any)?.myMemberId ||
+      null
+  );
 
   const memberFilterOptions = useMemo(() => {
-    if (initialFamilyMembers && initialFamilyMembers.length > 0) {
-      return initialFamilyMembers;
+    const everyoneOpt = {
+      id: 'everyone',
+      name: 'Everyone',
+      realName: 'Everyone',
+      isYou: false,
+      initial: 'All',
+      avatarBg: Colors.avatarNavy,
+      avatarColor: Colors.white,
+    };
+
+    const currentUserName =
+      currentUser?.fullName ||
+      currentUser?.firstName ||
+      (currentUser?.name ? currentUser.name : '');
+
+    if (!familyMembers || familyMembers.length === 0) {
+      const userInitial = (currentUserName?.trim()[0] || 'Y').toUpperCase();
+      const displayName = currentUserName ? `You (${currentUserName})` : 'You';
+      return [
+        everyoneOpt,
+        {
+          id: myMemberId || 'you',
+          name: displayName,
+          realName: currentUserName || 'You',
+          isYou: true,
+          initial: userInitial,
+          avatarBg: Colors.primary,
+          avatarColor: Colors.white,
+        },
+      ];
     }
+
     return [
-      {
-        id: 'everyone',
-        name: 'Everyone',
-        initial: 'All',
-        avatarBg: '#1E3A66',
-        avatarColor: '#FFFFFF',
-      },
-      ...(familyMembers || []).map((m: any) => {
-        const name = m.fullName || m.name || 'Member';
-        const initial = (name.trim()[0] || 'M').toUpperCase();
+      everyoneOpt,
+      ...familyMembers.map((m: any) => {
+        const isCurrentMember =
+          m.isYou ||
+          (myMemberId && (m.memberId === myMemberId || m.id === myMemberId || m._id === myMemberId)) ||
+          (currentUser?.id && (m.userId === currentUser.id || m.id === currentUser.id || m._id === currentUser.id));
+
+        const rawName =
+          m.fullName ||
+          m.personal?.fullName ||
+          m.name ||
+          (isCurrentMember ? (currentUserName || 'You') : 'Member');
+
+        const memberRealName = isCurrentMember ? (currentUserName || rawName) : rawName;
+        const displayName = isCurrentMember
+          ? (memberRealName && memberRealName !== 'You' ? `You (${memberRealName})` : 'You')
+          : rawName;
+
+        const initial = (
+          (memberRealName || rawName).trim()[0] || (isCurrentMember ? 'Y' : 'M')
+        ).toUpperCase();
+
         return {
-          id: m.memberId || m.id,
-          name,
+          id: m.memberId || m.id || m._id || (isCurrentMember ? 'you' : rawName),
+          name: displayName,
+          realName: memberRealName,
+          isYou: Boolean(isCurrentMember),
           initial,
-          avatarBg: m.avatarColor || Colors.primary,
-          avatarColor: '#FFFFFF',
+          avatarBg: m.avatarColor || (isCurrentMember ? Colors.primary : Colors.primary),
+          avatarColor: Colors.white,
         };
       }),
     ];
-  }, [familyMembers, initialFamilyMembers]);
+  }, [familyMembers, myMemberId, currentUser]);
 
   const isTestEnv =
     typeof (globalThis as any).process !== 'undefined' &&
@@ -235,6 +290,28 @@ const TasksScreen: React.FC<TasksScreenProps> = ({
   );
   const [mainTab, setMainTab] = useState<TasksMainTab>(initialMainTab);
   const [statusTab, setStatusTab] = useState<TasksStatusTab>(initialStatus);
+  const statusContentOpacity = useRef(new Animated.Value(1)).current;
+
+  const handleSelectStatusTab = useCallback(
+    (newStatus: TasksStatusTab) => {
+      if (newStatus === statusTab) return;
+      // Fluid micro-fade so switching lists doesn't feel abrupt
+      Animated.sequence([
+        Animated.timing(statusContentOpacity, {
+          toValue: 0.6,
+          duration: 70,
+          useNativeDriver: true,
+        }),
+        Animated.timing(statusContentOpacity, {
+          toValue: 1,
+          duration: 150,
+          useNativeDriver: true,
+        }),
+      ]).start();
+      setStatusTab(newStatus);
+    },
+    [statusTab, statusContentOpacity]
+  );
   const [selectedMemberId, setSelectedMemberId] = useState<string>('everyone');
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [isSearchVisible, setIsSearchVisible] = useState(false);
@@ -276,53 +353,87 @@ const TasksScreen: React.FC<TasksScreenProps> = ({
   const [tripPlannerVisible, setTripPlannerVisible] = useState(false);
   const [tripInitialScreen, setTripInitialScreen] = useState<TripScreenName>('dates');
 
-  const loadTasks = useCallback(() => {
-    const statusParam = statusTab === 'completed' ? 'DONE' : 'PENDING';
-    const assigneeId = selectedMemberId === 'everyone' ? undefined : selectedMemberId;
+  // Task cache by status using useRef to avoid re-rendering and flickering on tab toggles
+  const tasksCacheRef = useRef<{
+    pending: TaskItem[] | null;
+    completed: TaskItem[] | null;
+  }>({
+    pending: null,
+    completed: null,
+  });
 
-    console.log('[TasksScreen] Loading tasks for tab:', statusParam, 'assignee:', assigneeId);
-    dispatch(
-      fetchTasks({
-        status: statusParam,
-        assigneeMemberId: assigneeId,
-        today: new Date().toISOString().slice(0, 10),
-      })
-    );
-  }, [statusTab, selectedMemberId, dispatch]);
+  const isFetchingRef = useRef<{
+    pending: boolean;
+    completed: boolean;
+  }>({
+    pending: false,
+    completed: false,
+  });
+
+  const [refreshing, setRefreshing] = useState(false);
+
+  const fetchTasksByStatus = useCallback(
+    async (status: 'PENDING' | 'DONE', forceRefresh = false) => {
+      const key = status === 'PENDING' ? 'pending' : 'completed';
+      if (!forceRefresh && tasksCacheRef.current[key] !== null) {
+        return;
+      }
+      if (isFetchingRef.current[key]) return;
+      isFetchingRef.current[key] = true;
+
+      try {
+        console.log(`[TasksScreen] Fetching ${status} tasks from server...`);
+        const res = await dispatch(
+          fetchTasks({
+            status,
+            today: new Date().toISOString().slice(0, 10),
+          })
+        ).unwrap();
+
+        const uiItems = (res.tasks || []).map(mapApiTaskToUiTask);
+        tasksCacheRef.current[key] = uiItems;
+
+        setTasks((prev) => {
+          const otherKey = key === 'pending' ? 'completed' : 'pending';
+          const otherItems =
+            tasksCacheRef.current[otherKey] ||
+            prev.filter((t) => (key === 'pending' ? t.isCompleted : !t.isCompleted));
+          return key === 'pending'
+            ? [...uiItems, ...otherItems]
+            : [...otherItems, ...uiItems];
+        });
+      } catch (e) {
+        console.log(`[TasksScreen] Failed to fetch ${status} tasks:`, e);
+      } finally {
+        isFetchingRef.current[key] = false;
+      }
+    },
+    [dispatch]
+  );
 
   const loadLists = useCallback(() => {
     dispatch(fetchLists());
   }, [dispatch]);
 
+  // Initial load: fetch family, lists, and both task statuses (pending + done)
   useEffect(() => {
-    dispatch(getMyFamilyThunk());
+    dispatch(getMyFamilyBasicThunk());
     loadLists();
-  }, [dispatch, loadLists]);
+    fetchTasksByStatus('PENDING');
+    fetchTasksByStatus('DONE');
+  }, [dispatch, loadLists, fetchTasksByStatus]);
 
-  useEffect(() => {
-    if (mainTab === 'lists') {
-      loadLists();
-    }
-  }, [mainTab, loadLists]);
-
-  useEffect(() => {
-    dispatch(clearTasksError());
-    loadTasks();
-  }, [loadTasks, dispatch]);
-
-  useEffect(() => {
-    if (apiTasks) {
-      if (isTestEnv) {
-        if (apiTasks.length > 0) {
-          setTasks(apiTasks.map(mapApiTaskToUiTask));
-        } else if (forceEmpty) {
-          setTasks([]);
-        }
-        return;
-      }
-      setTasks(apiTasks.map(mapApiTaskToUiTask));
-    }
-  }, [apiTasks, isTestEnv, forceEmpty]);
+  // Pull to refresh handler: pulls fresh data without flickers
+  const onRefresh = useCallback(async () => {
+    setRefreshing(true);
+    await Promise.all([
+      dispatch(getMyFamilyBasicThunk()),
+      loadLists(),
+      fetchTasksByStatus('PENDING', true),
+      fetchTasksByStatus('DONE', true),
+    ]);
+    setRefreshing(false);
+  }, [dispatch, loadLists, fetchTasksByStatus]);
 
   useEffect(() => {
     if (apiLists) {
@@ -389,18 +500,24 @@ const TasksScreen: React.FC<TasksScreenProps> = ({
   // Mark task completed
   const handleCompleteTask = useCallback(async (task: TaskItem) => {
     // 1. Optimistic update
+    const updatedTask: TaskItem = {
+      ...task,
+      isCompleted: true,
+      completedAt: 'Just now',
+      completedBy: 'You',
+    };
+
+    if (tasksCacheRef.current.pending) {
+      tasksCacheRef.current.pending = tasksCacheRef.current.pending.filter((t) => t.id !== task.id);
+    }
+    if (tasksCacheRef.current.completed) {
+      tasksCacheRef.current.completed = [updatedTask, ...tasksCacheRef.current.completed];
+    }
+
     setTasks((prev) =>
-      prev.map((t) =>
-        t.id === task.id
-          ? {
-              ...t,
-              isCompleted: true,
-              completedAt: 'Just now',
-              completedBy: 'You',
-            }
-          : t
-      )
+      prev.map((t) => (t.id === task.id ? updatedTask : t))
     );
+
     try {
       if (isUUID(task.id)) {
         console.log('[TasksScreen] Completing task:', task.id);
@@ -408,73 +525,55 @@ const TasksScreen: React.FC<TasksScreenProps> = ({
           completeTask({ taskId: task.id, today: new Date().toISOString().slice(0, 10) })
         ).unwrap();
         console.log('[TasksScreen] ✅ Task marked as completed:', task.id);
-        loadTasks(); // Refresh live state from database
       }
     } catch (err: any) {
       console.log('[TasksScreen] ❌ Complete error:', err);
-      // 2. Revert optimistic update on failure!
-      setTasks((prev) =>
-        prev.map((t) =>
-          t.id === task.id
-            ? {
-                ...t,
-                isCompleted: false,
-                completedAt: undefined,
-                completedBy: undefined,
-              }
-            : t
-        )
-      );
+      fetchTasksByStatus('PENDING', true);
+      fetchTasksByStatus('DONE', true);
       Alert.alert(
         'Action Failed',
         typeof err === 'string' ? err : err?.message || 'Failed to complete task. Please try again.'
       );
     }
-  }, [dispatch, loadTasks]);
+  }, [dispatch, fetchTasksByStatus]);
 
   // Reopen task
   const handleReopenTask = useCallback(async (task: TaskItem) => {
     // 1. Optimistic update
+    const updatedTask: TaskItem = {
+      ...task,
+      isCompleted: false,
+      completedAt: undefined,
+      completedBy: undefined,
+    };
+
+    if (tasksCacheRef.current.completed) {
+      tasksCacheRef.current.completed = tasksCacheRef.current.completed.filter((t) => t.id !== task.id);
+    }
+    if (tasksCacheRef.current.pending) {
+      tasksCacheRef.current.pending = [updatedTask, ...tasksCacheRef.current.pending];
+    }
+
     setTasks((prev) =>
-      prev.map((t) =>
-        t.id === task.id
-          ? {
-              ...t,
-              isCompleted: false,
-              completedAt: undefined,
-              completedBy: undefined,
-            }
-          : t
-      )
+      prev.map((t) => (t.id === task.id ? updatedTask : t))
     );
+
     try {
       if (isUUID(task.id)) {
         console.log('[TasksScreen] Reopening task:', task.id);
         await dispatch(reopenTask(task.id)).unwrap();
         console.log('[TasksScreen] ✅ Task reopened:', task.id);
-        loadTasks(); // Refresh live state from database
       }
     } catch (err: any) {
       console.log('[TasksScreen] ❌ Reopen error:', err);
-      // 2. Revert optimistic update on failure
-      setTasks((prev) =>
-        prev.map((t) =>
-          t.id === task.id
-            ? {
-                ...t,
-                isCompleted: true,
-                completedAt: task.completedAt || 'Just now',
-                completedBy: task.completedBy || 'You',
-              }
-            : t
-        )
-      );
+      fetchTasksByStatus('PENDING', true);
+      fetchTasksByStatus('DONE', true);
       Alert.alert(
         'Action Failed',
         typeof err === 'string' ? err : err?.message || 'Failed to reopen task. Please try again.'
       );
     }
-  }, [dispatch, loadTasks]);
+  }, [dispatch, fetchTasksByStatus]);
 
   // Reassign task
   const handleReassignTask = useCallback(
@@ -486,16 +585,25 @@ const TasksScreen: React.FC<TasksScreenProps> = ({
       const resolvedId = resolveMemberId(newAssigneeIdOrName, familyMembers, myMemberId);
       const displayName = resolveMemberDisplayName(newAssigneeIdOrName, familyMembers);
 
+      const updatedTask = {
+        ...task,
+        assignee: displayName,
+        assigneeInitial: displayName === 'You' ? 'P' : displayName[0],
+      };
+
+      if (tasksCacheRef.current.pending) {
+        tasksCacheRef.current.pending = tasksCacheRef.current.pending.map((t) =>
+          t.id === task.id ? updatedTask : t
+        );
+      }
+      if (tasksCacheRef.current.completed) {
+        tasksCacheRef.current.completed = tasksCacheRef.current.completed.map((t) =>
+          t.id === task.id ? updatedTask : t
+        );
+      }
+
       setTasks((prev) =>
-        prev.map((t) =>
-          t.id === task.id
-            ? {
-                ...t,
-                assignee: displayName,
-                assigneeInitial: displayName === 'You' ? 'P' : displayName[0],
-              }
-            : t
-        )
+        prev.map((t) => (t.id === task.id ? updatedTask : t))
       );
       Alert.alert('Task Reassigned', `Assigned to ${displayName}.`);
 
@@ -508,50 +616,59 @@ const TasksScreen: React.FC<TasksScreenProps> = ({
               reassignTask({ taskId: task.id, payload: { memberId: targetMemberId } })
             ).unwrap();
             console.log('[TasksScreen] ✅ Task reassigned:', task.id);
-            loadTasks();
           } catch (err) {
             console.log('[TasksScreen] ❌ Reassign error:', err);
           }
-        } else {
-          console.log('[TasksScreen] ⚠️ Skipping reassign API: could not resolve UUID for member:', newAssigneeIdOrName);
         }
       }
     },
-    [dispatch, loadTasks, familyMembers]
+    [dispatch, familyMembers]
   );
 
   // Delete task
   const handleDeleteTask = useCallback(async (task: TaskItem) => {
     const previousTasks = tasks;
+    if (tasksCacheRef.current.pending) {
+      tasksCacheRef.current.pending = tasksCacheRef.current.pending.filter((t) => t.id !== task.id);
+    }
+    if (tasksCacheRef.current.completed) {
+      tasksCacheRef.current.completed = tasksCacheRef.current.completed.filter((t) => t.id !== task.id);
+    }
     setTasks((prev) => prev.filter((t) => t.id !== task.id));
+
     try {
       if (isUUID(task.id)) {
         console.log('[TasksScreen] Deleting task:', task.id);
         await dispatch(deleteTask(task.id)).unwrap();
         console.log('[TasksScreen] ✅ Task deleted:', task.id);
-        loadTasks();
       }
       Alert.alert('Task Deleted', `"${task.title}" has been deleted.`);
     } catch (err: any) {
       console.log('[TasksScreen] ❌ Delete error:', err);
       setTasks(previousTasks);
+      fetchTasksByStatus('PENDING', true);
+      fetchTasksByStatus('DONE', true);
       Alert.alert(
         'Action Failed',
         typeof err === 'string' ? err : err?.message || 'Failed to delete task. Please try again.'
       );
     }
-  }, [dispatch, loadTasks, tasks]);
+  }, [dispatch, fetchTasksByStatus, tasks]);
 
   // Create new task (optimistically adds to UI and refreshes from DB)
   const handleCreateTask = useCallback(
     (newTaskData: Partial<TaskItem>) => {
       if (newTaskData.id) {
-        setTasks((prev) => [newTaskData as TaskItem, ...prev]);
+        const item = newTaskData as TaskItem;
+        if (tasksCacheRef.current.pending) {
+          tasksCacheRef.current.pending = [item, ...tasksCacheRef.current.pending];
+        }
+        setTasks((prev) => [item, ...prev]);
       }
       setStatusTab('pending');
-      loadTasks();
+      fetchTasksByStatus('PENDING', true);
     },
-    [loadTasks]
+    [fetchTasksByStatus]
   );
 
   // Pending count & Completed count
@@ -586,20 +703,25 @@ const TasksScreen: React.FC<TasksScreenProps> = ({
       apiSummary?.dueThisWeek !== undefined
         ? apiSummary.dueThisWeek
         : pendingTasksAll.filter(
-            (t) => t.dueType === 'this_week' || t.dueType === 'today'
-          ).length,
+          (t) => t.dueType === 'this_week' || t.dueType === 'today'
+        ).length,
     [apiSummary?.dueThisWeek, pendingTasksAll]
   );
 
   // Active filter count check
   const isFilterActive = useMemo(() => {
-    return (
-      filters.assignedTo !== 'everyone' ||
-      filters.priority !== 'all' ||
-      filters.category !== 'all' ||
-      filters.due !== 'any'
+    const isMemberActive = Boolean(
+      selectedMemberId &&
+      selectedMemberId !== 'everyone' &&
+      filters.assignedTo &&
+      filters.assignedTo !== 'everyone'
     );
-  }, [filters]);
+    const isPriorityActive = Boolean(filters.priority && filters.priority !== 'all');
+    const isCategoryActive = Boolean(filters.category && filters.category !== 'all');
+    const isDueActive = Boolean(filters.due && filters.due !== 'any');
+
+    return isMemberActive || isPriorityActive || isCategoryActive || isDueActive;
+  }, [filters, selectedMemberId]);
 
   // Filtering logic
   const filteredTasks = useMemo(() => {
@@ -615,16 +737,21 @@ const TasksScreen: React.FC<TasksScreenProps> = ({
       }
 
       // 2. Member filter
-      if (filters.assignedTo !== 'everyone') {
-        const member = memberFilterOptions.find((m) => m.id === filters.assignedTo);
+      if (selectedMemberId !== 'everyone') {
+        const member = memberFilterOptions.find((m) => m.id === selectedMemberId);
         if (member) {
-          const mName = member.name.toLowerCase();
           const itemAssignee = item.assignee.toLowerCase();
-          if (mName === 'priya') {
-            if (!itemAssignee.includes('priya') && !itemAssignee.includes('you'))
-              return false;
+          if (member.isYou || member.id === 'you' || member.id === myMemberId) {
+            // Logged-in user (You / Rupesh)
+            const userName = (member.realName || currentUser?.fullName || currentUser?.firstName || '').toLowerCase();
+            const matchesYou =
+              itemAssignee.includes('you') ||
+              (userName.length > 0 && itemAssignee.includes(userName));
+            if (!matchesYou) return false;
           } else {
-            if (!itemAssignee.includes(mName)) return false;
+            // Other family member (e.g. Arman)
+            const targetName = (member.realName || member.name).toLowerCase();
+            if (!itemAssignee.includes(targetName)) return false;
           }
         }
       }
@@ -661,6 +788,10 @@ const TasksScreen: React.FC<TasksScreenProps> = ({
     pendingTasksAll,
     completedTasksAll,
     searchQuery,
+    selectedMemberId,
+    memberFilterOptions,
+    myMemberId,
+    currentUser,
     filters,
   ]);
 
@@ -688,7 +819,7 @@ const TasksScreen: React.FC<TasksScreenProps> = ({
         groups.push({
           category: cat,
           title: CATEGORY_META[cat]?.label || cat,
-          color: CATEGORY_META[cat]?.color || '#F0913A',
+          color: CATEGORY_META[cat]?.color || Colors.primary,
           items,
         });
       }
@@ -724,10 +855,10 @@ const TasksScreen: React.FC<TasksScreenProps> = ({
           filters.due === 'overdue'
             ? 'Overdue'
             : filters.due === 'today'
-            ? 'Due today'
-            : filters.due === 'this_week'
-            ? 'Due this week'
-            : 'Due this month',
+              ? 'Due today'
+              : filters.due === 'this_week'
+                ? 'Due this week'
+                : 'Due this month',
         onRemove: () => setFilters((prev) => ({ ...prev, due: 'any' })),
       });
     }
@@ -745,8 +876,17 @@ const TasksScreen: React.FC<TasksScreenProps> = ({
         !isFilterActive &&
         searchQuery.trim().length === 0));
 
+  const isCardDueFilterOnly =
+    (filters.due === 'overdue' || filters.due === 'this_week') &&
+    filters.priority === 'all' &&
+    filters.category === 'all' &&
+    searchQuery.trim().length === 0;
+
   const hasZeroMatchingFilters =
-    !hasZeroTasksOverall && filteredTasks.length === 0 && isFilterActive;
+    !hasZeroTasksOverall &&
+    !isCardDueFilterOnly &&
+    filteredTasks.length === 0 &&
+    isFilterActive;
 
   return (
     <SafeAreaView style={styles.safeArea} edges={['top', 'left', 'right']}>
@@ -769,6 +909,14 @@ const TasksScreen: React.FC<TasksScreenProps> = ({
       <ScrollView
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.scrollContent}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            tintColor={Colors.primary}
+            colors={[Colors.primary]}
+          />
+        }
       >
         {/* Main Segmented Tabs (Tasks / Lists) */}
         <TasksSegmentedTabs
@@ -810,7 +958,7 @@ const TasksScreen: React.FC<TasksScreenProps> = ({
             {/* Status Tabs (Pending / Completed) */}
             <TasksStatusTabs
               status={statusTab}
-              onSelectStatus={setStatusTab}
+              onSelectStatus={handleSelectStatusTab}
               pendingCount={pendingCount}
               completedCount={completedCount}
             />
@@ -822,77 +970,89 @@ const TasksScreen: React.FC<TasksScreenProps> = ({
               onSelectMember={handleSelectMember}
             />
 
-            {/* If filters result in 0 tasks: TSK-05 */}
-            {hasZeroMatchingFilters ? (
-              <NoMatchingTasksState
-                activeTags={activeTags}
-                onClearAll={() =>
-                  setFilters({
-                    assignedTo: 'everyone',
-                    priority: 'all',
-                    category: 'all',
-                    due: 'any',
-                  })
-                }
-              />
-            ) : statusTab === 'pending' ? (
-              <>
-                {/* Overdue & Due This Week Alert Cards */}
-                <PendingAlertCardsRow
-                  overdueCount={overdueCount}
-                  dueThisWeekCount={dueThisWeekCount}
-                  isOverdueActive={filters.due === 'overdue'}
-                  isDueThisWeekActive={filters.due === 'this_week'}
-                  onPressOverdue={() =>
-                    setFilters((prev) => ({
-                      ...prev,
-                      due: prev.due === 'overdue' ? 'any' : 'overdue',
-                    }))
-                  }
-                  onPressDueThisWeek={() =>
-                    setFilters((prev) => ({
-                      ...prev,
-                      due: prev.due === 'this_week' ? 'any' : 'this_week',
-                    }))
-                  }
-                />
+            <Animated.View style={{ opacity: statusContentOpacity }}>
+              {statusTab === 'pending' ? (
+                <>
+                  {/* Overdue & Due This Week Alert Cards ALWAYS VISIBLE */}
+                  <PendingAlertCardsRow
+                    overdueCount={overdueCount}
+                    dueThisWeekCount={dueThisWeekCount}
+                    isOverdueActive={filters.due === 'overdue'}
+                    isDueThisWeekActive={filters.due === 'this_week'}
+                    onPressOverdue={() =>
+                      setFilters((prev) => ({
+                        ...prev,
+                        due: prev.due === 'overdue' ? 'any' : 'overdue',
+                      }))
+                    }
+                    onPressDueThisWeek={() =>
+                      setFilters((prev) => ({
+                        ...prev,
+                        due: prev.due === 'this_week' ? 'any' : 'this_week',
+                      }))
+                    }
+                  />
 
-                {/* Categorized Pending Task Accordions */}
-                {categorizedPendingTasks.length === 0 ? (
-                  <View style={styles.emptyPendingContainer}>
-                    <View style={styles.emptyPendingOuterCircle}>
-                      <View style={styles.emptyPendingInnerCircle}>
-                        <Feather name="check" size={24} color="#F0913A" />
-                      </View>
-                    </View>
-                    <Text style={styles.emptyPendingTitle}>All caught up!</Text>
-                    <Text style={styles.emptyPendingSubtitle}>
-                      No pending tasks right now.
-                    </Text>
-                  </View>
-                ) : (
-                  categorizedPendingTasks.map((group) => (
-                    <TaskCategoryAccordion
-                      key={group.category}
-                      categoryTitle={group.title}
-                      categoryColor={group.color}
-                      items={group.items}
-                      isExpanded={!!expandedCategories[group.category]}
-                      onToggleExpand={() => handleToggleCategory(group.category)}
-                      onToggleComplete={handleCompleteTask}
-                      onSelectTask={handleTaskPress}
+                  {/* If filters result in 0 tasks: TSK-05 */}
+                  {hasZeroMatchingFilters ? (
+                    <NoMatchingTasksState
+                      activeTags={activeTags}
+                      onClearAll={() => {
+                        setSelectedMemberId('everyone');
+                        setFilters({
+                          assignedTo: 'everyone',
+                          priority: 'all',
+                          category: 'all',
+                          due: 'any',
+                        });
+                      }}
                     />
-                  ))
-                )}
-              </>
-            ) : (
-              /* Completed Tasks List */
-              <CompletedTasksList
-                tasks={filteredTasks}
-                onReopenTask={handleReopenTask}
-                onSelectTask={handleTaskPress}
-              />
-            )}
+                  ) : categorizedPendingTasks.length === 0 ? (
+                    <View style={styles.emptyPendingContainer}>
+                      <View style={styles.emptyPendingOuterCircle}>
+                        <View style={styles.emptyPendingInnerCircle}>
+                          <Feather name="check" size={24} color={Colors.primary} />
+                        </View>
+                      </View>
+                      <Text style={styles.emptyPendingTitle}>
+                        {filters.due === 'overdue'
+                          ? 'No overdue tasks!'
+                          : filters.due === 'this_week'
+                            ? 'No tasks due this week!'
+                            : 'All caught up!'}
+                      </Text>
+                      <Text style={styles.emptyPendingSubtitle}>
+                        {filters.due === 'overdue'
+                          ? 'Great job! There are no overdue tasks.'
+                          : filters.due === 'this_week'
+                            ? 'You have no tasks due this week.'
+                            : 'No pending tasks right now.'}
+                      </Text>
+                    </View>
+                  ) : (
+                    categorizedPendingTasks.map((group) => (
+                      <TaskCategoryAccordion
+                        key={group.category}
+                        categoryTitle={group.title}
+                        categoryColor={group.color}
+                        items={group.items}
+                        isExpanded={!!expandedCategories[group.category]}
+                        onToggleExpand={() => handleToggleCategory(group.category)}
+                        onToggleComplete={handleCompleteTask}
+                        onSelectTask={handleTaskPress}
+                      />
+                    ))
+                  )}
+                </>
+              ) : (
+                /* Completed Tasks List */
+                <CompletedTasksList
+                  tasks={filteredTasks}
+                  onReopenTask={handleReopenTask}
+                  onSelectTask={handleTaskPress}
+                />
+              )}
+            </Animated.View>
           </>
         )}
       </ScrollView>
@@ -926,7 +1086,10 @@ const TasksScreen: React.FC<TasksScreenProps> = ({
         visible={filterModalVisible}
         onClose={() => setFilterModalVisible(false)}
         filters={filters}
-        onApplyFilters={setFilters}
+        onApplyFilters={(newFilters) => {
+          setFilters(newFilters);
+          setSelectedMemberId(newFilters.assignedTo || 'everyone');
+        }}
         matchCount={filteredTasks.length}
         members={memberFilterOptions}
       />
@@ -1014,7 +1177,7 @@ const styles = StyleSheet.create({
   },
   emptyPendingContainer: {
     alignItems: 'center',
-    paddingVertical: 48,
+    paddingVertical: 20,
     paddingHorizontal: 24,
   },
   emptyPendingOuterCircle: {
@@ -1022,7 +1185,7 @@ const styles = StyleSheet.create({
     height: 80,
     borderRadius: 40,
     borderWidth: 1.5,
-    borderColor: '#1F3352',
+    borderColor: Colors.borderBold,
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -1030,22 +1193,22 @@ const styles = StyleSheet.create({
     width: 52,
     height: 52,
     borderRadius: 26,
-    backgroundColor: '#122440',
+    backgroundColor: Colors.cardBackground,
     borderWidth: 1.5,
-    borderColor: '#2A3E5E',
+    borderColor: Colors.surfaceMutedAlt,
     justifyContent: 'center',
     alignItems: 'center',
   },
   emptyPendingTitle: {
-    fontSize: 18,
+    fontSize: Typography.size.titleSmall,
     fontWeight: '700',
-    color: '#FFFFFF',
+    color: Colors.white,
     marginTop: 16,
     textAlign: 'center',
   },
   emptyPendingSubtitle: {
-    fontSize: 14,
-    color: '#8A97AB',
+    fontSize: Typography.size.body,
+    color: Colors.textSecondaryMuted,
     marginTop: 6,
     textAlign: 'center',
   },

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import {
   View,
   Text,
@@ -11,11 +11,13 @@ import {
   Platform,
   StatusBar,
   ActivityIndicator,
+  RefreshControl,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Feather from '@react-native-vector-icons/feather';
 import { TaskComment } from '../types';
 import { tasksServices } from '../../../../services';
+import { Colors, Fonts, Typography } from '../../../../units';
 
 export interface CommentsModalProps {
   visible: boolean;
@@ -37,8 +39,8 @@ const mapApiCommentToUiComment = (c: any): TaskComment => {
     id: c.id,
     author: authorName,
     authorInitial,
-    avatarBg: c.author?.avatarColor || '#1E3A66',
-    avatarColor: '#8DB8F5',
+    avatarBg: c.author?.avatarColor || Colors.avatarNavy,
+    avatarColor: Colors.accentBlueSoft,
     time: c.createdAt
       ? new Date(c.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
       : 'Just now',
@@ -58,54 +60,109 @@ const CommentsModal: React.FC<CommentsModalProps> = ({
   onAddComment,
 }) => {
   const insets = useSafeAreaInsets();
+  const scrollViewRef = useRef<any>(null);
   const [commentList, setCommentList] = useState<TaskComment[]>(comments);
   const [totalCount, setTotalCount] = useState<number>(comments?.length || 0);
   const [inputText, setInputText] = useState('');
   const [loading, setLoading] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
   const [loadingOlder, setLoadingOlder] = useState(false);
   const [hasOlder, setHasOlder] = useState(false);
   const [olderCursor, setOlderCursor] = useState<string | null>(null);
 
-  const fetchAllComments = useCallback(async () => {
-    if (!taskId || !isUUID(taskId)) {
-      setCommentList(comments);
-      setTotalCount(comments?.length || 0);
-      return;
-    }
-    try {
-      setLoading(true);
-      console.log('[CommentsModal] Fetching all comments for task:', taskId);
-      const res = await tasksServices.getComments(taskId, undefined, 50);
-      const rawList = Array.isArray(res) ? res : res?.comments || [];
-      const uiComments: TaskComment[] = rawList.map(mapApiCommentToUiComment);
-
-      // Sort oldest to newest so conversation reads top to bottom
-      uiComments.sort((a, b) => {
-        const timeA = a.rawCreatedAt ? new Date(a.rawCreatedAt).getTime() : 0;
-        const timeB = b.rawCreatedAt ? new Date(b.rawCreatedAt).getTime() : 0;
-        return timeA - timeB;
-      });
-
-      setCommentList(uiComments);
-      setTotalCount(res?.pagination?.total ?? uiComments.length);
-      setHasOlder(Boolean(res?.pagination?.hasOlder));
-      setOlderCursor(res?.pagination?.olderCursor || null);
-    } catch (err) {
-      console.log('[CommentsModal] ❌ Error fetching comments:', err);
-      if (comments && comments.length > 0) {
+  const fetchAllComments = useCallback(
+    async (isSilent = false) => {
+      if (!taskId || !isUUID(taskId)) {
         setCommentList(comments);
-        setTotalCount(comments.length);
+        setTotalCount(comments?.length || 0);
+        return;
       }
-    } finally {
-      setLoading(false);
-    }
-  }, [taskId]);
+      try {
+        if (!isSilent) {
+          setLoading(true);
+        }
+        console.log('[CommentsModal] Fetching all comments for task:', taskId, 'silent:', isSilent);
+        const res = await tasksServices.getComments(taskId, undefined, 50);
+        const rawList = Array.isArray(res) ? res : res?.comments || [];
+        const uiComments: TaskComment[] = rawList.map(mapApiCommentToUiComment);
 
+        // Sort oldest to newest so conversation reads top to bottom
+        uiComments.sort((a, b) => {
+          const timeA = a.rawCreatedAt ? new Date(a.rawCreatedAt).getTime() : 0;
+          const timeB = b.rawCreatedAt ? new Date(b.rawCreatedAt).getTime() : 0;
+          return timeA - timeB;
+        });
+
+        setCommentList((prev) => {
+          const prevIds = prev.map((c) => c.id).join(',');
+          const newIds = uiComments.map((c) => c.id).join(',');
+          if (prevIds !== newIds || prev.length !== uiComments.length) {
+            return uiComments;
+          }
+          return prev;
+        });
+        setTotalCount(res?.pagination?.total ?? uiComments.length);
+        setHasOlder(Boolean(res?.pagination?.hasOlder));
+        setOlderCursor(res?.pagination?.olderCursor || null);
+      } catch (err) {
+        console.log('[CommentsModal] ❌ Error fetching comments:', err);
+        if (!isSilent && comments && comments.length > 0) {
+          setCommentList(comments);
+          setTotalCount(comments.length);
+        }
+      } finally {
+        if (!isSilent) {
+          setLoading(false);
+        }
+      }
+    },
+    [taskId, comments]
+  );
+
+  // Initial fetch when opened
   useEffect(() => {
     if (visible) {
-      fetchAllComments();
+      fetchAllComments(false);
     }
   }, [visible, fetchAllComments]);
+
+  // Sync if taskId is not a UUID (mock data or offline fallback)
+  useEffect(() => {
+    if (!isUUID(taskId) && comments) {
+      setCommentList(comments);
+      setTotalCount(comments.length);
+    }
+  }, [comments, taskId]);
+
+  // Real-time auto-sync: Poll every 5s silently while modal is open so comments posted by others (e.g. Rupesh) appear automatically
+  useEffect(() => {
+    if (!visible || !taskId || !isUUID(taskId)) return;
+
+    const interval = setInterval(() => {
+      fetchAllComments(true);
+    }, 5000);
+
+    return () => clearInterval(interval);
+  }, [visible, taskId, fetchAllComments]);
+
+  // Scroll to bottom when new comments arrive
+  useEffect(() => {
+    if (commentList.length > 0) {
+      const timer = setTimeout(() => {
+        scrollViewRef.current?.scrollToEnd({ animated: true });
+      }, 200);
+      return () => clearTimeout(timer);
+    }
+  }, [commentList.length]);
+
+  const handleRefresh = async () => {
+    try {
+      setRefreshing(true);
+      await fetchAllComments(true);
+    } finally {
+      setRefreshing(false);
+    }
+  };
 
   const handleLoadOlder = async () => {
     if (!taskId || !olderCursor || loadingOlder) return;
@@ -143,9 +200,9 @@ const CommentsModal: React.FC<CommentsModalProps> = ({
     const tempComment: TaskComment = {
       id: `c-${Date.now()}`,
       author: 'You',
-      authorInitial: 'P',
-      avatarBg: '#5C3A21',
-      avatarColor: '#F0913A',
+      authorInitial: 'Y',
+      avatarBg: Colors.avatarBrown,
+      avatarColor: Colors.primary,
       time: 'Just now',
       text: trimmed,
       isYou: true,
@@ -156,26 +213,16 @@ const CommentsModal: React.FC<CommentsModalProps> = ({
     setTotalCount((prev) => prev + 1);
     setInputText('');
 
+    setTimeout(() => {
+      scrollViewRef.current?.scrollToEnd({ animated: true });
+    }, 100);
+
     try {
       if (onAddComment) {
         await onAddComment(trimmed);
       }
-      // Re-fetch all comments from server to sync official IDs and pagination
       if (taskId && isUUID(taskId)) {
-        const res = await tasksServices.getComments(taskId, undefined, 50);
-        const rawList = Array.isArray(res) ? res : res?.comments || [];
-        if (rawList.length > 0) {
-          const uiComments: TaskComment[] = rawList.map(mapApiCommentToUiComment);
-          uiComments.sort((a, b) => {
-            const timeA = a.rawCreatedAt ? new Date(a.rawCreatedAt).getTime() : 0;
-            const timeB = b.rawCreatedAt ? new Date(b.rawCreatedAt).getTime() : 0;
-            return timeA - timeB;
-          });
-          setCommentList(uiComments);
-          setTotalCount(res?.pagination?.total ?? uiComments.length);
-          setHasOlder(Boolean(res?.pagination?.hasOlder));
-          setOlderCursor(res?.pagination?.olderCursor || null);
-        }
+        await fetchAllComments(true);
       }
     } catch (err) {
       console.log('[CommentsModal] Error sending comment:', err);
@@ -183,7 +230,6 @@ const CommentsModal: React.FC<CommentsModalProps> = ({
   };
 
   const renderCommentText = (text: string) => {
-    // Highlight @mentions in orange
     const parts = text.split(/(@\w+)/g);
     return (
       <Text style={styles.bubbleText}>
@@ -206,13 +252,15 @@ const CommentsModal: React.FC<CommentsModalProps> = ({
       visible={visible}
       animationType="slide"
       onRequestClose={onClose}
+      statusBarTranslucent={true}
     >
       <KeyboardAvoidingView
         style={[
           styles.container,
           { paddingTop: Math.max(insets.top, 16) },
         ]}
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        keyboardVerticalOffset={Platform.OS === 'android' ? (StatusBar.currentHeight || 0) : 0}
       >
         <StatusBar barStyle="light-content" />
 
@@ -222,18 +270,39 @@ const CommentsModal: React.FC<CommentsModalProps> = ({
             style={styles.circleBtn}
             onPress={onClose}
             activeOpacity={0.7}
+            accessibilityRole="button"
+            accessibilityLabel="Back"
           >
-            <Feather name="chevron-left" size={22} color="#FFFFFF" />
+            <Feather name="chevron-left" size={22} color={Colors.white} />
           </TouchableOpacity>
-          <Text style={styles.headerTitle}>
-            {totalCount > 0 ? `Comments · ${totalCount}` : 'Comments'}
-          </Text>
-          <View style={styles.spacer} />
+
+          <Text style={styles.headerTitle}>Comments</Text>
+
+          <View style={styles.rightHeaderContainer}>
+            {totalCount > 0 ? (
+              <View style={styles.countBadge}>
+                <Feather name="message-square" size={12} color={Colors.primary} />
+                <Text style={styles.countBadgeText}>{totalCount}</Text>
+              </View>
+            ) : (
+              <View style={styles.spacer} />
+            )}
+          </View>
         </View>
 
         <ScrollView
+          ref={scrollViewRef}
           showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled"
           contentContainerStyle={styles.scrollContent}
+          refreshControl={
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={handleRefresh}
+              tintColor={Colors.primary}
+              colors={[Colors.primary]}
+            />
+          }
         >
           {/* Task Snapshot Card */}
           <View style={styles.taskCard}>
@@ -255,7 +324,7 @@ const CommentsModal: React.FC<CommentsModalProps> = ({
               activeOpacity={0.7}
             >
               {loadingOlder ? (
-                <ActivityIndicator size="small" color="#F0913A" />
+                <ActivityIndicator size="small" color={Colors.primary} />
               ) : (
                 <Text style={styles.loadOlderText}>Load older comments</Text>
               )}
@@ -265,12 +334,12 @@ const CommentsModal: React.FC<CommentsModalProps> = ({
           {/* Comments List / Loading / Empty State */}
           {loading && commentList.length === 0 ? (
             <View style={styles.loadingContainer}>
-              <ActivityIndicator size="small" color="#F0913A" />
+              <ActivityIndicator size="small" color={Colors.primary} />
               <Text style={styles.loadingText}>Loading comments...</Text>
             </View>
           ) : commentList.length === 0 ? (
             <View style={styles.emptyContainer}>
-              <Feather name="message-square" size={32} color="#3A4556" />
+              <Feather name="message-square" size={32} color={Colors.borderMutedAlt} />
               <Text style={styles.emptyText}>No comments yet</Text>
               <Text style={styles.emptySubtext}>
                 Start the conversation or ask a question.
@@ -282,13 +351,13 @@ const CommentsModal: React.FC<CommentsModalProps> = ({
                 <View
                   style={[
                     styles.avatar,
-                    { backgroundColor: c.avatarBg || '#1E3A66' },
+                    { backgroundColor: c.avatarBg || Colors.avatarNavy },
                   ]}
                 >
                   <Text
                     style={[
                       styles.avatarText,
-                      { color: c.avatarColor || '#8DB8F5' },
+                      { color: c.avatarColor || Colors.accentBlueSoft },
                     ]}
                   >
                     {c.authorInitial}
@@ -319,15 +388,20 @@ const CommentsModal: React.FC<CommentsModalProps> = ({
         <View
           style={[
             styles.inputBar,
-            { paddingBottom: Math.max(insets.bottom, 16) + 4 },
+            { paddingBottom: Math.max(insets.bottom, 12) + (Platform.OS === 'android' ? 6 : 4) },
           ]}
         >
           <TextInput
             style={styles.inputField}
             placeholder="Write a comment. Use @ to mention."
-            placeholderTextColor="#8A97AB"
+            placeholderTextColor={Colors.textSecondaryMuted}
             value={inputText}
             onChangeText={setInputText}
+            onFocus={() => {
+              setTimeout(() => {
+                scrollViewRef.current?.scrollToEnd({ animated: true });
+              }, 250);
+            }}
           />
           <TouchableOpacity
             style={styles.sendButton}
@@ -339,7 +413,7 @@ const CommentsModal: React.FC<CommentsModalProps> = ({
             <Feather
               name="send"
               size={18}
-              color="#FFFFFF"
+              color={Colors.white}
               style={styles.sendIcon}
             />
           </TouchableOpacity>
@@ -354,7 +428,7 @@ export default CommentsModal;
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#0B1A2F',
+    backgroundColor: Colors.background,
   },
   header: {
     height: 52,
@@ -369,14 +443,37 @@ const styles = StyleSheet.create({
     height: 44,
     borderRadius: 22,
     borderWidth: 1.5,
-    borderColor: '#3A4556',
+    borderColor: Colors.borderMutedAlt,
     justifyContent: 'center',
     alignItems: 'center',
   },
   headerTitle: {
-    fontSize: 18,
-    fontFamily: 'Roboto-Bold',
-    color: '#FFFFFF',
+    fontSize: Typography.size.titleSmall,
+    fontFamily: Fonts.bold,
+    color: Colors.white,
+    textAlign: 'center',
+  },
+  rightHeaderContainer: {
+    minWidth: 44,
+    height: 44,
+    justifyContent: 'center',
+    alignItems: 'flex-end',
+  },
+  countBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: Colors.tasksTrackBg,
+    borderWidth: 1.5,
+    borderColor: Colors.borderBold,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 14,
+    gap: 5,
+  },
+  countBadgeText: {
+    fontSize: Typography.size.caption,
+    fontFamily: Fonts.bold,
+    color: Colors.white,
   },
   spacer: {
     width: 44,
@@ -390,10 +487,10 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    backgroundColor: 'transparent',
+    backgroundColor: Colors.transparent,
     borderRadius: 16,
     borderWidth: 1.5,
-    borderColor: '#1F3352',
+    borderColor: Colors.borderBold,
     paddingVertical: 14,
     paddingHorizontal: 16,
     marginBottom: 20,
@@ -409,17 +506,17 @@ const styles = StyleSheet.create({
     width: 8,
     height: 8,
     borderRadius: 4,
-    backgroundColor: '#F06A6A',
+    backgroundColor: Colors.dangerCoral,
   },
   taskTitle: {
-    fontSize: 15,
-    fontFamily: 'Roboto-Bold',
-    color: '#FFFFFF',
+    fontSize: Typography.size.bodyMedium,
+    fontFamily: Fonts.bold,
+    color: Colors.white,
     flex: 1,
   },
   dueDateText: {
-    fontSize: 13,
-    color: '#8A97AB',
+    fontSize: Typography.size.bodySmall,
+    color: Colors.textSecondaryMuted,
   },
   commentItem: {
     flexDirection: 'row',
@@ -434,8 +531,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   avatarText: {
-    fontSize: 15,
-    fontFamily: 'Roboto-Bold',
+    fontSize: Typography.size.bodyMedium,
+    fontFamily: Fonts.bold,
   },
   commentBody: {
     flex: 1,
@@ -447,39 +544,39 @@ const styles = StyleSheet.create({
     marginBottom: 6,
   },
   authorText: {
-    fontSize: 14,
-    fontFamily: 'Roboto-Bold',
-    color: '#CAD4DF',
+    fontSize: Typography.size.body,
+    fontFamily: Fonts.bold,
+    color: Colors.textLightMutedAlt,
   },
   timeText: {
-    fontSize: 12,
-    color: '#8A97AB',
+    fontSize: Typography.size.caption,
+    color: Colors.textSecondaryMuted,
   },
   bubble: {
-    backgroundColor: 'transparent',
+    backgroundColor: Colors.transparent,
     borderRadius: 16,
     borderWidth: 1.5,
-    borderColor: '#3A4556',
+    borderColor: Colors.borderMutedAlt,
     padding: 14,
   },
   bubbleYou: {
-    borderColor: '#F0913A',
+    borderColor: Colors.primary,
   },
   bubbleText: {
-    fontSize: 14,
-    color: '#CAD4DF',
+    fontSize: Typography.size.body,
+    color: Colors.textLightMutedAlt,
     lineHeight: 20,
   },
   mentionText: {
-    color: '#F0913A',
-    fontFamily: 'Roboto-Bold',
+    color: Colors.primary,
+    fontFamily: Fonts.bold,
   },
   inputBar: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#0B1A2F',
+    backgroundColor: Colors.background,
     borderTopWidth: 1,
-    borderTopColor: '#1F3352',
+    borderTopColor: Colors.borderBold,
     paddingHorizontal: 20,
     paddingVertical: 12,
     gap: 12,
@@ -488,19 +585,19 @@ const styles = StyleSheet.create({
   inputField: {
     flex: 1,
     height: 48,
-    backgroundColor: 'transparent',
+    backgroundColor: Colors.transparent,
     borderRadius: 24,
     borderWidth: 1.5,
-    borderColor: '#3A4556',
+    borderColor: Colors.borderMutedAlt,
     paddingHorizontal: 18,
-    color: '#FFFFFF',
-    fontSize: 14,
+    color: Colors.white,
+    fontSize: Typography.size.body,
   },
   sendButton: {
     width: 48,
     height: 48,
     borderRadius: 24,
-    backgroundColor: '#F0913A',
+    backgroundColor: Colors.primary,
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -513,15 +610,15 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     paddingHorizontal: 16,
     borderRadius: 16,
-    backgroundColor: '#122440',
+    backgroundColor: Colors.cardBackground,
     borderWidth: 1,
-    borderColor: '#1F3352',
+    borderColor: Colors.borderBold,
     marginBottom: 16,
   },
   loadOlderText: {
-    fontSize: 13,
+    fontSize: Typography.size.bodySmall,
     fontWeight: '600',
-    color: '#8DB8F5',
+    color: Colors.accentBlueSoft,
   },
   loadingContainer: {
     paddingVertical: 32,
@@ -529,8 +626,8 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   loadingText: {
-    fontSize: 13,
-    color: '#8A97AB',
+    fontSize: Typography.size.bodySmall,
+    color: Colors.textSecondaryMuted,
   },
   emptyContainer: {
     paddingVertical: 48,
@@ -538,14 +635,13 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   emptyText: {
-    fontSize: 16,
+    fontSize: Typography.size.subtitle,
     fontWeight: '600',
-    color: '#CAD4DF',
+    color: Colors.textLightMutedAlt,
   },
   emptySubtext: {
-    fontSize: 13,
-    color: '#8A97AB',
+    fontSize: Typography.size.bodySmall,
+    color: Colors.textSecondaryMuted,
     textAlign: 'center',
   },
 });
-

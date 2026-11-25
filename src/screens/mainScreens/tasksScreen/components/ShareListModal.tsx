@@ -14,6 +14,8 @@ import Feather from '@react-native-vector-icons/feather';
 import { useAppSelector } from '../../../../redux';
 import { ListGroup } from '../types';
 
+import { Colors, Fonts, Typography } from '../../../../units';
+
 export interface ShareListModalProps {
   visible: boolean;
   list: ListGroup | null;
@@ -40,32 +42,32 @@ const MEMBERS: ShareMemberState[] = [
     id: 'priya',
     name: 'Priya (you)',
     initial: 'P',
-    avatarBg: '#78350F',
+    avatarBg: Colors.tripYellowBg,
     isOwner: true,
   },
   {
     id: 'rohan',
     name: 'Rohan',
     initial: 'R',
-    avatarBg: '#1E3A8A',
+    avatarBg: Colors.tripBlueBg,
   },
   {
     id: 'dadi',
     name: 'Dadi',
     initial: 'D',
-    avatarBg: '#064E3B',
+    avatarBg: Colors.tripGreenBg,
   },
   {
     id: 'anaya',
     name: 'Anaya',
     initial: 'A',
-    avatarBg: '#831843',
+    avatarBg: Colors.tripPinkBg,
   },
   {
     id: 'aarav',
     name: 'Aarav',
     initial: 'Aa',
-    avatarBg: '#78350F',
+    avatarBg: Colors.tripYellowBg,
   },
 ];
 
@@ -93,7 +95,7 @@ const ShareListModal: React.FC<ShareListModalProps> = ({
           id: m.memberId || m.id,
           name,
           initial: (rawName.trim()[0] || 'M').toUpperCase(),
-          avatarBg: m.avatarColor || '#1E3A8A',
+          avatarBg: m.avatarColor || Colors.tripBlueBg,
           isOwner: Boolean(m.isYou || m.role === 'ADMIN'),
         };
       });
@@ -232,8 +234,8 @@ const ShareListModal: React.FC<ShareListModalProps> = ({
                         onValueChange={(val) =>
                           handleToggleMember(member.id, val)
                         }
-                        trackColor={{ false: '#3A4556', true: '#F0913A' }}
-                        thumbColor="#FFFFFF"
+                        trackColor={{ false: Colors.borderMutedAlt, true: Colors.primary }}
+                        thumbColor={Colors.white}
                       />
                     )}
                   </View>
@@ -252,7 +254,7 @@ const ShareListModal: React.FC<ShareListModalProps> = ({
               <Feather
                 name="message-square"
                 size={18}
-                color="#F0913A"
+                color={Colors.primary}
                 style={styles.chatIcon}
               />
               <Text style={styles.chatBtnText}>Send to family chat</Text>
@@ -281,7 +283,7 @@ const styles = StyleSheet.create({
   overlay: {
     flex: 1,
     justifyContent: 'flex-end',
-    backgroundColor: 'rgba(0, 0, 0, 0.65)',
+    backgroundColor: Colors.tasksDarkOverlay,
   },
   backdrop: {
     position: 'absolute',
@@ -291,11 +293,11 @@ const styles = StyleSheet.create({
     bottom: 0,
   },
   sheetContainer: {
-    backgroundColor: '#122440',
+    backgroundColor: Colors.cardBackground,
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
     borderTopWidth: 1,
-    borderColor: '#1F3352',
+    borderColor: Colors.borderBold,
     paddingHorizontal: 20,
     paddingTop: 12,
     maxHeight: '90%',
@@ -304,20 +306,20 @@ const styles = StyleSheet.create({
     width: 40,
     height: 4,
     borderRadius: 2,
-    backgroundColor: '#3A4556',
+    backgroundColor: Colors.borderMutedAlt,
     alignSelf: 'center',
     marginBottom: 16,
   },
   title: {
-    fontSize: 22,
-    fontFamily: 'Roboto-Bold',
-    color: '#CAD4DF',
+    fontSize: Typography.size.titleLarge,
+    fontFamily: Fonts.bold,
+    color: Colors.textLightMutedAlt,
     textAlign: 'center',
     marginBottom: 4,
   },
   subtitle: {
-    fontSize: 14,
-    color: '#8A97AB',
+    fontSize: Typography.size.body,
+    color: Colors.textSecondaryMuted,
     textAlign: 'center',
     marginBottom: 20,
   },
@@ -325,10 +327,10 @@ const styles = StyleSheet.create({
     paddingBottom: 16,
   },
   membersCard: {
-    backgroundColor: 'transparent',
+    backgroundColor: Colors.transparent,
     borderRadius: 20,
     borderWidth: 1.5,
-    borderColor: '#3A4556',
+    borderColor: Colors.borderMutedAlt,
     marginBottom: 20,
     overflow: 'hidden',
   },
@@ -340,7 +342,7 @@ const styles = StyleSheet.create({
   },
   memberRowDivider: {
     borderTopWidth: 1,
-    borderColor: '#1A2C46',
+    borderColor: Colors.surfaceNavyAlt,
   },
   avatarCircle: {
     width: 40,
@@ -351,35 +353,35 @@ const styles = StyleSheet.create({
     marginRight: 14,
   },
   avatarText: {
-    fontSize: 14,
-    fontFamily: 'Roboto-Bold',
-    color: '#FFFFFF',
+    fontSize: Typography.size.body,
+    fontFamily: Fonts.bold,
+    color: Colors.white,
   },
   memberTextCol: {
     flex: 1,
   },
   memberName: {
-    fontSize: 16,
-    fontFamily: 'Roboto-Bold',
-    color: '#FFFFFF',
+    fontSize: Typography.size.subtitle,
+    fontFamily: Fonts.bold,
+    color: Colors.white,
     marginBottom: 2,
   },
   memberSubtitle: {
-    fontSize: 12,
-    color: '#8A97AB',
+    fontSize: Typography.size.caption,
+    color: Colors.textSecondaryMuted,
   },
   ownerBadge: {
     paddingHorizontal: 12,
     paddingVertical: 5,
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: '#F0913A',
-    backgroundColor: 'rgba(240, 145, 58, 0.1)',
+    borderColor: Colors.primary,
+    backgroundColor: Colors.tasksOrangeTint,
   },
   ownerBadgeText: {
-    fontSize: 12,
-    fontFamily: 'Roboto-Bold',
-    color: '#F0913A',
+    fontSize: Typography.size.caption,
+    fontFamily: Fonts.bold,
+    color: Colors.primary,
   },
   chatBtn: {
     flexDirection: 'row',
@@ -387,31 +389,31 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     height: 52,
     borderRadius: 26,
-    backgroundColor: 'transparent',
+    backgroundColor: Colors.transparent,
     borderWidth: 1.5,
-    borderColor: '#3A4556',
+    borderColor: Colors.borderMutedAlt,
     marginBottom: 12,
   },
   chatIcon: {
     marginRight: 8,
   },
   chatBtnText: {
-    fontSize: 15,
-    fontFamily: 'Roboto-Bold',
-    color: '#FFFFFF',
+    fontSize: Typography.size.bodyMedium,
+    fontFamily: Fonts.bold,
+    color: Colors.white,
   },
   doneBtn: {
     height: 52,
     borderRadius: 26,
-    backgroundColor: '#F0913A',
+    backgroundColor: Colors.primary,
     justifyContent: 'center',
     alignItems: 'center',
     marginTop: 4,
   },
   doneBtnText: {
-    fontSize: 16,
-    fontFamily: 'Roboto-Bold',
-    color: '#FFFFFF',
+    fontSize: Typography.size.subtitle,
+    fontFamily: Fonts.bold,
+    color: Colors.white,
   },
 });
 

@@ -10,6 +10,8 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { TaskFilterState, TaskPriority, TaskCategory, FamilyMemberOption } from '../types';
 import { CATEGORY_META, PRIORITY_META } from '../constants';
+import CommonBtn from '../../../../components/CommonBtn';
+import { Colors, Fonts, Typography } from '../../../../units';
 
 export interface FilterTasksModalProps {
   visible: boolean;
@@ -91,7 +93,10 @@ const FilterTasksModal: React.FC<FilterTasksModalProps> = ({
             {/* ASSIGNED TO */}
             <Text style={styles.sectionHeader}>ASSIGNED TO</Text>
             <View style={styles.chipsRow}>
-              {displayMembers.map((member) => {
+              {(displayMembers && displayMembers.length > 0
+                ? displayMembers
+                : [{ id: 'everyone', name: 'Everyone', initial: 'All' }]
+              ).map((member: any) => {
                 const isSelected = localFilters.assignedTo === member.id;
                 return (
                   <TouchableOpacity
@@ -254,23 +259,29 @@ const FilterTasksModal: React.FC<FilterTasksModalProps> = ({
 
           {/* Bottom Action Buttons */}
           <View style={styles.bottomButtonsRow}>
-            <TouchableOpacity
-              style={styles.clearButton}
+            <CommonBtn
+              title="Clear all"
               onPress={handleClearAll}
-              activeOpacity={0.7}
-            >
-              <Text style={styles.clearButtonText}>Clear all</Text>
-            </TouchableOpacity>
+              backgroundColor="transparent"
+              borderColor={Colors.borderMutedAlt}
+              borderWidth={1.5}
+              textColor={Colors.white}
+              height={50}
+              borderRadius={25}
+              containerStyle={{ flex: 1 }}
+              fontSize={15}
+            />
 
-            <TouchableOpacity
-              style={styles.showButton}
+            <CommonBtn
+              title={`Show ${matchCount} tasks`}
               onPress={handleSave}
-              activeOpacity={0.8}
-            >
-              <Text style={styles.showButtonText}>
-                {`Show ${matchCount} tasks`}
-              </Text>
-            </TouchableOpacity>
+              backgroundColor={Colors.primary}
+              textColor={Colors.white}
+              height={50}
+              borderRadius={25}
+              containerStyle={{ flex: 1.3 }}
+              fontSize={15}
+            />
           </View>
         </View>
       </View>
@@ -283,18 +294,18 @@ export default FilterTasksModal;
 const styles = StyleSheet.create({
   overlay: {
     flex: 1,
-    backgroundColor: 'rgba(5, 12, 22, 0.75)',
+    backgroundColor: Colors.modalOverlay,
     justifyContent: 'flex-end',
   },
   backdrop: {
     flex: 1,
   },
   sheetContainer: {
-    backgroundColor: '#122440',
+    backgroundColor: Colors.cardBackground,
     borderTopLeftRadius: 28,
     borderTopRightRadius: 28,
     borderWidth: 1.5,
-    borderColor: '#1F3352',
+    borderColor: Colors.borderBold,
     maxHeight: '85%',
     paddingTop: 12,
     paddingHorizontal: 20,
@@ -304,14 +315,14 @@ const styles = StyleSheet.create({
     width: 40,
     height: 4,
     borderRadius: 2,
-    backgroundColor: '#3A4556',
+    backgroundColor: Colors.borderMutedAlt,
     alignSelf: 'center',
     marginBottom: 14,
   },
   sheetTitle: {
-    fontSize: 22,
-    fontFamily: 'Roboto-Bold',
-    color: '#FFFFFF',
+    fontSize: Typography.size.titleLarge,
+    fontFamily: Fonts.bold,
+    color: Colors.white,
     textAlign: 'center',
     marginBottom: 20,
   },
@@ -319,10 +330,10 @@ const styles = StyleSheet.create({
     paddingBottom: 16,
   },
   sectionHeader: {
-    fontSize: 12,
-    fontFamily: 'Roboto-Bold',
+    fontSize: Typography.size.caption,
+    fontFamily: Fonts.bold,
     letterSpacing: 1.2,
-    color: '#8A97AB',
+    color: Colors.textSecondaryMuted,
     marginTop: 14,
     marginBottom: 10,
   },
@@ -341,12 +352,12 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   activeChip: {
-    backgroundColor: '#F0913A',
+    backgroundColor: Colors.primary,
   },
   inactiveChip: {
-    backgroundColor: 'transparent',
+    backgroundColor: Colors.transparent,
     borderWidth: 1.5,
-    borderColor: '#3A4556',
+    borderColor: Colors.borderMutedAlt,
   },
   chipDot: {
     width: 8,
@@ -354,15 +365,15 @@ const styles = StyleSheet.create({
     borderRadius: 4,
   },
   chipText: {
-    fontSize: 14,
+    fontSize: Typography.size.body,
   },
   activeChipText: {
-    color: '#0B1A2F',
-    fontFamily: 'Roboto-Bold',
+    color: Colors.background,
+    fontFamily: Fonts.bold,
   },
   inactiveChipText: {
-    color: '#C9D1DC',
-    fontFamily: 'Roboto-Medium',
+    color: Colors.chipInactive,
+    fontFamily: Fonts.medium,
   },
   bottomButtonsRow: {
     flexDirection: 'row',
@@ -375,28 +386,28 @@ const styles = StyleSheet.create({
     height: 50,
     borderRadius: 25,
     borderWidth: 1.5,
-    borderColor: '#3A4556',
+    borderColor: Colors.borderMutedAlt,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: 'transparent',
+    backgroundColor: Colors.transparent,
   },
   clearButtonText: {
-    fontSize: 16,
-    fontFamily: 'Roboto-SemiBold',
-    color: '#FFFFFF',
+    fontSize: Typography.size.subtitle,
+    fontFamily: Fonts.semiBold,
+    color: Colors.white,
   },
   showButton: {
     flex: 1.3,
     height: 50,
     borderRadius: 25,
-    backgroundColor: '#F0913A',
+    backgroundColor: Colors.primary,
     justifyContent: 'center',
     alignItems: 'center',
   },
   showButtonText: {
-    fontSize: 16,
-    fontFamily: 'Roboto-Bold',
-    color: '#FFFFFF',
+    fontSize: Typography.size.subtitle,
+    fontFamily: Fonts.bold,
+    color: Colors.white,
   },
 });
 

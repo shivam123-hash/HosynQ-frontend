@@ -13,6 +13,8 @@ import Feather from '@react-native-vector-icons/feather';
 import Ionicons from '@react-native-vector-icons/ionicons';
 import { BookingItem, DocumentItem } from './types';
 
+import { Colors, Fonts, Typography } from '../../../../../units';
+
 export interface TripBookingsModalProps {
   visible?: boolean;
   asModal?: boolean;
@@ -58,7 +60,7 @@ export const TripBookingsModal: React.FC<TripBookingsModalProps> = ({
         <Ionicons
           name={iconName}
           size={18}
-          color={hasOrangeBorder ? '#F0913A' : '#8A97AB'}
+          color={hasOrangeBorder ? Colors.primary : Colors.textSecondaryMuted}
         />
       </View>
     );
@@ -71,7 +73,7 @@ export const TripBookingsModal: React.FC<TripBookingsModalProps> = ({
 
     return (
       <View style={styles.iconCircle}>
-        <Ionicons name={iconName} size={18} color="#8A97AB" />
+        <Ionicons name={iconName} size={18} color={Colors.textSecondaryMuted} />
       </View>
     );
   };
@@ -94,7 +96,7 @@ export const TripBookingsModal: React.FC<TripBookingsModalProps> = ({
           accessibilityRole="button"
           accessibilityLabel="Back"
         >
-          <Feather name="chevron-left" size={24} color="#FFFFFF" />
+          <Feather name="chevron-left" size={24} color={Colors.white} />
         </TouchableOpacity>
 
         <Text style={styles.headerTitle}>Bookings</Text>
@@ -130,7 +132,7 @@ export const TripBookingsModal: React.FC<TripBookingsModalProps> = ({
                         <Ionicons
                           name="notifications-outline"
                           size={12}
-                          color="#8A97AB"
+                          color={Colors.textSecondaryMuted}
                           style={styles.bellIcon}
                         />
                         <Text style={styles.reminderText}>{booking.reminder}</Text>
@@ -211,7 +213,7 @@ export const TripBookingsModal: React.FC<TripBookingsModalProps> = ({
           accessibilityRole="button"
           accessibilityLabel="Add a booking or reminder"
         >
-          <Feather name="plus" size={18} color="#F0913A" style={styles.plusIcon} />
+          <Feather name="plus" size={18} color={Colors.primary} style={styles.plusIcon} />
           <Text style={styles.dashedAddText}>Add a booking or reminder</Text>
         </TouchableOpacity>
       </ScrollView>
@@ -237,7 +239,7 @@ export const TripBookingsModal: React.FC<TripBookingsModalProps> = ({
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#0B1A2F',
+    backgroundColor: Colors.background,
   },
   header: {
     flexDirection: 'row',
@@ -250,16 +252,16 @@ const styles = StyleSheet.create({
     width: 44,
     height: 44,
     borderRadius: 22,
-    backgroundColor: 'transparent',
+    backgroundColor: Colors.transparent,
     borderWidth: 1.5,
-    borderColor: '#3A4556',
+    borderColor: Colors.borderMutedAlt,
     justifyContent: 'center',
     alignItems: 'center',
   },
   headerTitle: {
-    fontSize: 18,
-    fontFamily: 'Roboto-Bold',
-    color: '#FFFFFF',
+    fontSize: Typography.size.titleSmall,
+    fontFamily: Fonts.bold,
+    color: Colors.white,
   },
   headerPlaceholder: {
     width: 44,
@@ -270,17 +272,17 @@ const styles = StyleSheet.create({
     paddingBottom: 24,
   },
   subtitle: {
-    fontSize: 15,
-    fontFamily: 'Roboto-Light',
-    color: '#8A97AB',
+    fontSize: Typography.size.bodyMedium,
+    fontFamily: Fonts.light,
+    color: Colors.textSecondaryMuted,
     lineHeight: 22,
     marginBottom: 20,
   },
   groupedCard: {
-    backgroundColor: '#122440',
+    backgroundColor: Colors.cardBackground,
     borderRadius: 20,
     borderWidth: 1,
-    borderColor: '#1F3352',
+    borderColor: Colors.borderBold,
     overflow: 'hidden',
   },
   bookingItemRow: {
@@ -291,37 +293,37 @@ const styles = StyleSheet.create({
   },
   itemDivider: {
     height: 1,
-    backgroundColor: '#1F3352',
+    backgroundColor: Colors.borderBold,
     marginHorizontal: 16,
   },
   iconCircle: {
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: '#162843',
+    backgroundColor: Colors.tripBookingCardBg,
     borderWidth: 1,
-    borderColor: '#1F3352',
+    borderColor: Colors.borderBold,
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 14,
   },
   iconCircleOrange: {
     borderWidth: 1.5,
-    borderColor: '#F0913A',
+    borderColor: Colors.primary,
   },
   itemContent: {
     flex: 1,
     paddingRight: 8,
   },
   itemTitle: {
-    fontSize: 15,
-    fontFamily: 'Roboto-Bold',
-    color: '#FFFFFF',
+    fontSize: Typography.size.bodyMedium,
+    fontFamily: Fonts.bold,
+    color: Colors.white,
   },
   itemSubtitle: {
-    fontSize: 13,
-    fontFamily: 'Roboto-Medium',
-    color: '#8A97AB',
+    fontSize: Typography.size.bodySmall,
+    fontFamily: Fonts.medium,
+    color: Colors.textSecondaryMuted,
     marginTop: 2,
   },
   reminderRow: {
@@ -333,9 +335,9 @@ const styles = StyleSheet.create({
     marginRight: 4,
   },
   reminderText: {
-    fontSize: 12,
-    fontFamily: 'Roboto-Medium',
-    color: '#8A97AB',
+    fontSize: Typography.size.caption,
+    fontFamily: Fonts.medium,
+    color: Colors.textSecondaryMuted,
   },
   rightActionCol: {
     alignItems: 'flex-end',
@@ -343,105 +345,105 @@ const styles = StyleSheet.create({
   },
   bookedBadge: {
     borderWidth: 1,
-    borderColor: '#2DD4BF',
+    borderColor: Colors.accentTealMint,
     borderRadius: 14,
-    backgroundColor: 'transparent',
+    backgroundColor: Colors.transparent,
     paddingHorizontal: 12,
     paddingVertical: 4,
   },
   bookedBadgeText: {
-    color: '#2DD4BF',
-    fontSize: 12,
-    fontFamily: 'Roboto-SemiBold',
+    color: Colors.accentTealMint,
+    fontSize: Typography.size.caption,
+    fontFamily: Fonts.semiBold,
   },
   orangeNotBookedBadge: {
     borderWidth: 1,
-    borderColor: '#F0913A',
+    borderColor: Colors.primary,
     borderRadius: 14,
-    backgroundColor: 'transparent',
+    backgroundColor: Colors.transparent,
     paddingHorizontal: 10,
     paddingVertical: 4,
   },
   orangeNotBookedText: {
-    color: '#F0913A',
-    fontSize: 12,
-    fontFamily: 'Roboto-SemiBold',
+    color: Colors.primary,
+    fontSize: Typography.size.caption,
+    fontFamily: Fonts.semiBold,
   },
   slateNotBookedBadge: {
     borderWidth: 1,
-    borderColor: '#2C3E55',
+    borderColor: Colors.tripItemBorder,
     borderRadius: 14,
-    backgroundColor: 'transparent',
+    backgroundColor: Colors.transparent,
     paddingHorizontal: 10,
     paddingVertical: 4,
   },
   slateNotBookedText: {
-    color: '#CAD4DF',
-    fontSize: 12,
-    fontFamily: 'Roboto-SemiBold',
+    color: Colors.textLightMutedAlt,
+    fontSize: Typography.size.caption,
+    fontFamily: Fonts.semiBold,
   },
   markBookedBtn: {
     marginTop: 8,
     paddingVertical: 2,
   },
   markBookedText: {
-    color: '#F0913A',
-    fontSize: 13,
-    fontFamily: 'Roboto-Bold',
+    color: Colors.primary,
+    fontSize: Typography.size.bodySmall,
+    fontFamily: Fonts.bold,
   },
   sectionHeader: {
-    fontSize: 11,
-    fontFamily: 'Roboto-Bold',
-    color: '#8A97AB',
+    fontSize: Typography.size.captionSmall,
+    fontFamily: Fonts.bold,
+    color: Colors.textSecondaryMuted,
     letterSpacing: 1.2,
     marginTop: 24,
     marginBottom: 12,
   },
   checkBadge: {
     borderWidth: 1,
-    borderColor: '#2C3E55',
+    borderColor: Colors.tripItemBorder,
     borderRadius: 14,
-    backgroundColor: 'transparent',
+    backgroundColor: Colors.transparent,
     paddingHorizontal: 14,
     paddingVertical: 4,
   },
   checkBadgeText: {
-    color: '#CAD4DF',
-    fontSize: 12,
-    fontFamily: 'Roboto-SemiBold',
+    color: Colors.textLightMutedAlt,
+    fontSize: Typography.size.caption,
+    fontFamily: Fonts.semiBold,
   },
   notNeededBadge: {
     borderWidth: 1,
-    borderColor: '#2DD4BF',
+    borderColor: Colors.accentTealMint,
     borderRadius: 14,
-    backgroundColor: 'transparent',
+    backgroundColor: Colors.transparent,
     paddingHorizontal: 12,
     paddingVertical: 4,
   },
   notNeededBadgeText: {
-    color: '#2DD4BF',
-    fontSize: 12,
-    fontFamily: 'Roboto-SemiBold',
+    color: Colors.accentTealMint,
+    fontSize: Typography.size.caption,
+    fontFamily: Fonts.semiBold,
   },
   dashedAddBtn: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 1.5,
-    borderColor: '#F0913A',
+    borderColor: Colors.primary,
     borderStyle: 'dashed',
     borderRadius: 28,
     height: 56,
     marginTop: 22,
-    backgroundColor: 'transparent',
+    backgroundColor: Colors.transparent,
   },
   plusIcon: {
     marginRight: 8,
   },
   dashedAddText: {
-    fontSize: 15,
-    fontFamily: 'Roboto-SemiBold',
-    color: '#F0913A',
+    fontSize: Typography.size.bodyMedium,
+    fontFamily: Fonts.semiBold,
+    color: Colors.primary,
   },
 });
 export default TripBookingsModal;

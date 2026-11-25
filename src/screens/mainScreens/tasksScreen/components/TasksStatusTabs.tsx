@@ -1,6 +1,16 @@
-import React from 'react';
-import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import React, { useRef, useEffect, useState } from 'react';
+import {
+  View,
+  Text,
+  TouchableOpacity,
+  StyleSheet,
+  Animated,
+  LayoutChangeEvent,
+} from 'react-native';
 import { TasksStatusTab } from '../types';
+import Fonts from '../../../../units/FontsStyle';
+import Colors from '../../../../units/Colors';
+import Typography from '../../../../units/Typography';
 
 export interface TasksStatusTabsProps {
   status: TasksStatusTab;
@@ -15,43 +25,121 @@ const TasksStatusTabs: React.FC<TasksStatusTabsProps> = ({
   pendingCount = 0,
   completedCount = 0,
 }) => {
+  const isPending = status === 'pending';
+  const [barWidth, setBarWidth] = useState<number>(0);
+  const animValue = useRef(new Animated.Value(isPending ? 0 : 1)).current;
+
+  useEffect(() => {
+    Animated.spring(animValue, {
+      toValue: status === 'pending' ? 0 : 1,
+      useNativeDriver: true,
+      tension: 68,
+      friction: 10,
+    }).start();
+  }, [status, animValue]);
+
+  const handleBarLayout = (e: LayoutChangeEvent) => {
+    const width = e.nativeEvent.layout.width;
+    if (width > 0 && width !== barWidth) {
+      setBarWidth(width);
+    }
+  };
+
+  const tabWidth = barWidth > 0 ? barWidth / 2 : 0;
+  const translateX = animValue.interpolate({
+    inputRange: [0, 1],
+    outputRange: [0, tabWidth],
+  });
+
   return (
     <View style={styles.container}>
-      <TouchableOpacity
-        style={[styles.pill, status === 'pending' ? styles.activePill : styles.inactivePill]}
-        onPress={() => onSelectStatus('pending')}
-        activeOpacity={0.7}
-        accessibilityRole="button"
-        accessibilityState={{ selected: status === 'pending' }}
-        accessibilityLabel={`Pending tasks ${pendingCount}`}
-      >
-        <Text
-          style={[
-            styles.pillText,
-            status === 'pending' ? styles.activeText : styles.inactiveText,
-          ]}
+      <View style={styles.tabBar} onLayout={handleBarLayout}>
+        {/* Pending Tab */}
+        <TouchableOpacity
+          style={styles.tabItem}
+          onPress={() => onSelectStatus('pending')}
+          activeOpacity={0.7}
+          accessibilityRole="tab"
+          accessibilityState={{ selected: isPending }}
+          accessibilityLabel={`Pending tasks ${pendingCount}`}
         >
-          {`Pending ${pendingCount}`}
-        </Text>
-      </TouchableOpacity>
+          <View style={styles.tabContent}>
+            <Text
+              style={[
+                styles.tabText,
+                isPending ? styles.activeText : styles.inactiveText,
+              ]}
+            >
+              Pending
+            </Text>
+            <View
+              style={[
+                styles.countBadge,
+                isPending ? styles.activeBadge : styles.inactiveBadge,
+              ]}
+            >
+              <Text
+                style={[
+                  styles.badgeText,
+                  isPending ? styles.activeBadgeText : styles.inactiveBadgeText,
+                ]}
+              >
+                {pendingCount}
+              </Text>
+            </View>
+          </View>
+        </TouchableOpacity>
 
-      <TouchableOpacity
-        style={[styles.pill, status === 'completed' ? styles.activePill : styles.inactivePill]}
-        onPress={() => onSelectStatus('completed')}
-        activeOpacity={0.7}
-        accessibilityRole="button"
-        accessibilityState={{ selected: status === 'completed' }}
-        accessibilityLabel={`Completed tasks ${completedCount}`}
-      >
-        <Text
-          style={[
-            styles.pillText,
-            status === 'completed' ? styles.activeText : styles.inactiveText,
-          ]}
+        {/* Completed Tab */}
+        <TouchableOpacity
+          style={styles.tabItem}
+          onPress={() => onSelectStatus('completed')}
+          activeOpacity={0.7}
+          accessibilityRole="tab"
+          accessibilityState={{ selected: !isPending }}
+          accessibilityLabel={`Completed tasks ${completedCount}`}
         >
-          {`Completed ${completedCount}`}
-        </Text>
-      </TouchableOpacity>
+          <View style={styles.tabContent}>
+            <Text
+              style={[
+                styles.tabText,
+                !isPending ? styles.activeText : styles.inactiveText,
+              ]}
+            >
+              Completed
+            </Text>
+            <View
+              style={[
+                styles.countBadge,
+                !isPending ? styles.activeBadge : styles.inactiveBadge,
+              ]}
+            >
+              <Text
+                style={[
+                  styles.badgeText,
+                  !isPending ? styles.activeBadgeText : styles.inactiveBadgeText,
+                ]}
+              >
+                {completedCount}
+              </Text>
+            </View>
+          </View>
+        </TouchableOpacity>
+
+        {/* Smooth Animated Indicator Bar */}
+        {tabWidth > 0 && (
+          <Animated.View
+            style={[
+              styles.animatedIndicator,
+              {
+                width: tabWidth - 32, // Padding 16 on each side
+                left: 16,
+                transform: [{ translateX }],
+              },
+            ]}
+          />
+        )}
+      </View>
     </View>
   );
 };
@@ -60,38 +148,69 @@ export default TasksStatusTabs;
 
 const styles = StyleSheet.create({
   container: {
-    flexDirection: 'row',
-    alignItems: 'center',
     paddingHorizontal: 20,
-    gap: 10,
     marginBottom: 16,
   },
-  pill: {
-    height: 38,
-    borderRadius: 20,
-    paddingHorizontal: 20,
-    justifyContent: 'center',
+  tabBar: {
+    flexDirection: 'row',
+    borderBottomWidth: 1.5,
+    borderBottomColor: Colors.tasksTabBorder,
+    position: 'relative',
+  },
+  tabItem: {
+    flex: 1,
+    paddingVertical: 12,
     alignItems: 'center',
+    justifyContent: 'center',
   },
-  activePill: {
-    backgroundColor: '#F0913A',
+  tabContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
   },
-  inactivePill: {
-    backgroundColor: '#112035',
-    borderWidth: 1.5,
-    borderColor: '#1F3352',
-  },
-  pillText: {
-    fontSize: 14,
-    lineHeight: 18,
+  tabText: {
+    fontSize: Typography.size.bodyMedium,
+    lineHeight: 22,
   },
   activeText: {
-    fontFamily: 'Roboto-Bold',
-    color: '#0B1A2F',
+    fontFamily: Fonts.bold,
+    color: Colors.white,
   },
   inactiveText: {
-    fontFamily: 'Roboto-Medium',
-    color: '#CAD4DF',
+    fontFamily: Fonts.medium,
+    color: Colors.tasksTextMuted,
+  },
+  countBadge: {
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 12,
+    minWidth: 22,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  activeBadge: {
+    backgroundColor: Colors.primary,
+  },
+  inactiveBadge: {
+    backgroundColor: Colors.tasksBadgeBg,
+  },
+  badgeText: {
+    fontSize: Typography.size.caption,
+    lineHeight: 16,
+    fontFamily: Fonts.bold,
+  },
+  activeBadgeText: {
+    color: Colors.background,
+  },
+  inactiveBadgeText: {
+    color: Colors.textSecondaryMuted,
+  },
+  animatedIndicator: {
+    position: 'absolute',
+    bottom: -1.5,
+    height: 3,
+    backgroundColor: Colors.primary,
+    borderRadius: 2,
   },
 });
 

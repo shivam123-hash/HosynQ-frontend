@@ -1,4 +1,5 @@
 import React from 'react';
+import { Colors } from '../../../../units';
 import AppDialog from '../../../../components/AppDialog';
 
 export interface DeleteTaskModalProps {
@@ -35,18 +36,18 @@ const DeleteTaskModal: React.FC<DeleteTaskModalProps> = ({
     <AppDialog
       visible={visible}
       type="danger"
-      iconCircleBorderColor="#F06A6A"
+      iconCircleBorderColor={Colors.dangerCoral}
       iconCircleBgColor="transparent"
       title="Delete this task?"
       description={`“${taskTitle}” and its comments will be removed for everyone. ${reminderText}`}
       primaryButtonText="Delete task"
       primaryButtonVariant="danger"
-      primaryButtonColor="#F06A6A"
-      primaryButtonTextColor="#0B1A2F"
+      primaryButtonColor={Colors.dangerCoral}
+      primaryButtonTextColor={Colors.background}
       primaryButtonAccessibilityLabel="Delete task"
       onPrimaryPress={onConfirmDelete}
       secondaryButtonText="Cancel"
-      secondaryButtonColor="#F0913A"
+      secondaryButtonColor={Colors.primary}
       secondaryButtonAccessibilityLabel="Cancel"
       onSecondaryPress={onClose}
       onClose={onClose}

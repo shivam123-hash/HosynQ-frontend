@@ -17,6 +17,9 @@ import { createList } from '../../../../redux/features/lists/listsSlice';
 import { ListGroup, ListType } from '../types';
 import { LIST_TYPE_CONFIG } from '../constants';
 import { mapUiListTypeToBackend, mapApiListDetailToUiList } from '../listApiHelpers';
+import CommonBtn from '../../../../components/CommonBtn';
+
+import { Colors, Fonts, Typography } from '../../../../units';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
@@ -211,8 +214,8 @@ const NewListModal: React.FC<NewListModalProps> = ({
                 value={listName}
                 onChangeText={setListName}
                 placeholder="Enter list name..."
-                placeholderTextColor="#8A97AB"
-                selectionColor="#F0913A"
+                placeholderTextColor={Colors.textSecondaryMuted}
+                selectionColor={Colors.primary}
               />
             </View>
 
@@ -222,22 +225,22 @@ const NewListModal: React.FC<NewListModalProps> = ({
               <Switch
                 value={shareWithFamily}
                 onValueChange={setShareWithFamily}
-                trackColor={{ false: '#3A4556', true: '#F0913A' }}
-                thumbColor="#FFFFFF"
+                trackColor={{ false: Colors.borderMutedAlt, true: Colors.primary }}
+                thumbColor={Colors.white}
               />
             </View>
           </ScrollView>
 
           {/* Create Button */}
-          <TouchableOpacity
-            style={styles.createBtn}
+          <CommonBtn
+            title="Create list"
             onPress={handleCreate}
-            activeOpacity={0.8}
-            accessibilityRole="button"
-            accessibilityLabel="Create list"
-          >
-            <Text style={styles.createBtnText}>Create list</Text>
-          </TouchableOpacity>
+            backgroundColor={Colors.primary}
+            height={52}
+            borderRadius={26}
+            marginTop={16}
+            fontSize={16}
+          />
         </View>
       </View>
     </Modal>
@@ -250,7 +253,7 @@ const styles = StyleSheet.create({
   overlay: {
     flex: 1,
     justifyContent: 'flex-end',
-    backgroundColor: 'rgba(0, 0, 0, 0.65)',
+    backgroundColor: Colors.tasksDarkOverlay,
   },
   backdrop: {
     position: 'absolute',
@@ -260,11 +263,11 @@ const styles = StyleSheet.create({
     bottom: 0,
   },
   sheetContainer: {
-    backgroundColor: '#122440',
+    backgroundColor: Colors.cardBackground,
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
     borderTopWidth: 1,
-    borderColor: '#1F3352',
+    borderColor: Colors.borderBold,
     paddingHorizontal: 20,
     paddingTop: 12,
     maxHeight: '90%',
@@ -273,14 +276,14 @@ const styles = StyleSheet.create({
     width: 40,
     height: 4,
     borderRadius: 2,
-    backgroundColor: '#3A4556',
+    backgroundColor: Colors.borderMutedAlt,
     alignSelf: 'center',
     marginBottom: 16,
   },
   sheetTitle: {
-    fontSize: 22,
-    fontFamily: 'Roboto-Bold',
-    color: '#FFFFFF',
+    fontSize: Typography.size.titleLarge,
+    fontFamily: Fonts.bold,
+    color: Colors.white,
     textAlign: 'center',
     marginBottom: 20,
   },
@@ -288,10 +291,10 @@ const styles = StyleSheet.create({
     paddingBottom: 16,
   },
   sectionEyebrow: {
-    fontSize: 11,
-    fontFamily: 'Roboto-Bold',
+    fontSize: Typography.size.captionSmall,
+    fontFamily: Fonts.bold,
     letterSpacing: 1.2,
-    color: '#8A97AB',
+    color: Colors.textSecondaryMuted,
     marginBottom: 12,
   },
   typesGrid: {
@@ -302,10 +305,10 @@ const styles = StyleSheet.create({
   },
   typeCard: {
     width: (SCREEN_WIDTH - 50) / 2,
-    backgroundColor: 'transparent',
+    backgroundColor: Colors.transparent,
     borderRadius: 16,
     borderWidth: 1.5,
-    borderColor: '#3A4556',
+    borderColor: Colors.borderMutedAlt,
     paddingHorizontal: 12,
     paddingVertical: 12,
     flexDirection: 'row',
@@ -313,7 +316,7 @@ const styles = StyleSheet.create({
     minHeight: 70,
   },
   typeCardSelected: {
-    borderColor: '#F0913A',
+    borderColor: Colors.primary,
   },
   iconCircle: {
     width: 38,
@@ -323,43 +326,43 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 10,
-    backgroundColor: 'transparent',
+    backgroundColor: Colors.transparent,
   },
   typeTextCol: {
     flex: 1,
     justifyContent: 'center',
   },
   typeLabel: {
-    fontSize: 15,
-    fontFamily: 'Roboto-Bold',
-    color: '#FFFFFF',
+    fontSize: Typography.size.bodyMedium,
+    fontFamily: Fonts.bold,
+    color: Colors.white,
     marginBottom: 2,
   },
   typeSubtitle: {
-    fontSize: 12,
-    color: '#8A97AB',
+    fontSize: Typography.size.caption,
+    color: Colors.textSecondaryMuted,
     lineHeight: 16,
   },
   inputLabel: {
-    fontSize: 13,
-    fontFamily: 'Roboto-SemiBold',
-    color: '#CAD4DF',
+    fontSize: Typography.size.bodySmall,
+    fontFamily: Fonts.semiBold,
+    color: Colors.textLightMutedAlt,
     marginBottom: 8,
   },
   inputContainer: {
-    backgroundColor: 'transparent',
+    backgroundColor: Colors.transparent,
     borderRadius: 26,
     borderWidth: 1.5,
-    borderColor: '#F0913A',
+    borderColor: Colors.primary,
     paddingHorizontal: 18,
     height: 52,
     justifyContent: 'center',
     marginBottom: 20,
   },
   textInput: {
-    fontSize: 16,
-    fontFamily: 'Roboto-Medium',
-    color: '#FFFFFF',
+    fontSize: Typography.size.subtitle,
+    fontFamily: Fonts.medium,
+    color: Colors.white,
     padding: 0,
   },
   switchRow: {
@@ -370,21 +373,21 @@ const styles = StyleSheet.create({
     marginBottom: 10,
   },
   switchLabel: {
-    fontSize: 15,
-    fontFamily: 'Roboto-SemiBold',
-    color: '#FFFFFF',
+    fontSize: Typography.size.bodyMedium,
+    fontFamily: Fonts.semiBold,
+    color: Colors.white,
   },
   createBtn: {
     height: 52,
     borderRadius: 26,
-    backgroundColor: '#F0913A',
+    backgroundColor: Colors.primary,
     justifyContent: 'center',
     alignItems: 'center',
     marginTop: 8,
   },
   createBtnText: {
-    fontSize: 16,
-    fontFamily: 'Roboto-Bold',
-    color: '#FFFFFF',
+    fontSize: Typography.size.subtitle,
+    fontFamily: Fonts.bold,
+    color: Colors.white,
   },
 });

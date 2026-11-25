@@ -15,6 +15,7 @@ import {
   AVAILABILITY_DAYS,
   MEMBER_AVAILABILITY,
 } from './tripConstants';
+import { Colors, Fonts, Typography } from '../../../../../units';
 
 export interface FindCommonDatesModalProps {
   visible?: boolean;
@@ -35,11 +36,11 @@ export const FindCommonDatesModal: React.FC<FindCommonDatesModalProps> = ({
   const getCellColor = (status: 'free' | 'busy' | 'best') => {
     switch (status) {
       case 'best':
-        return '#2DD4BF';
+        return Colors.accentTealMint;
       case 'free':
-        return '#166534';
+        return Colors.tripAvailableGreen;
       case 'busy':
-        return '#1E293B';
+        return Colors.avatarPlaceholderBg;
     }
   };
 
@@ -69,7 +70,7 @@ export const FindCommonDatesModal: React.FC<FindCommonDatesModalProps> = ({
           accessibilityRole="button"
           accessibilityLabel="Back"
         >
-          <Feather name="chevron-left" size={24} color="#FFFFFF" />
+          <Feather name="chevron-left" size={24} color={Colors.white} />
         </TouchableOpacity>
 
         <Text style={styles.headerTitle}>Find common dates</Text>
@@ -171,7 +172,7 @@ export const FindCommonDatesModal: React.FC<FindCommonDatesModalProps> = ({
           accessibilityState={{ checked: selectedOptionId === 'option1' }}
         >
           <View style={styles.optionIconContainer}>
-            <Ionicons name="checkmark-circle-outline" size={24} color="#34D399" />
+            <Ionicons name="checkmark-circle-outline" size={24} color={Colors.tripGreenMint} />
           </View>
           <View style={styles.optionInfo}>
             <Text style={styles.optionTitle}>Fri 13 – Mon 16 Nov</Text>
@@ -199,7 +200,7 @@ export const FindCommonDatesModal: React.FC<FindCommonDatesModalProps> = ({
           accessibilityState={{ checked: selectedOptionId === 'option2' }}
         >
           <View style={styles.optionIconContainer}>
-            <Ionicons name="alert-circle-outline" size={24} color="#F0913A" />
+            <Ionicons name="alert-circle-outline" size={24} color={Colors.primary} />
           </View>
           <View style={styles.optionInfo}>
             <Text style={styles.optionTitle}>Sat 21 – Sun 22 Nov</Text>
@@ -252,7 +253,7 @@ export const FindCommonDatesModal: React.FC<FindCommonDatesModalProps> = ({
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#0B1A2F',
+    backgroundColor: Colors.background,
   },
   header: {
     flexDirection: 'row',
@@ -265,16 +266,16 @@ const styles = StyleSheet.create({
     width: 44,
     height: 44,
     borderRadius: 22,
-    backgroundColor: 'transparent',
+    backgroundColor: Colors.transparent,
     borderWidth: 1.5,
-    borderColor: '#3A4556',
+    borderColor: Colors.borderMutedAlt,
     justifyContent: 'center',
     alignItems: 'center',
   },
   headerTitle: {
-    fontSize: 18,
-    fontFamily: 'Roboto-Bold',
-    color: '#FFFFFF',
+    fontSize: Typography.size.titleSmall,
+    fontFamily: Fonts.bold,
+    color: Colors.white,
   },
   headerPlaceholder: {
     width: 44,
@@ -285,17 +286,17 @@ const styles = StyleSheet.create({
     paddingBottom: 24,
   },
   subtitle: {
-    fontSize: 15,
-    fontFamily: 'Roboto-Light',
-    color: '#8A97AB',
+    fontSize: Typography.size.bodyMedium,
+    fontFamily: Fonts.light,
+    color: Colors.textSecondaryMuted,
     lineHeight: 22,
     marginBottom: 20,
   },
   heatmapCard: {
-    backgroundColor: 'transparent',
+    backgroundColor: Colors.transparent,
     borderRadius: 20,
     borderWidth: 1.5,
-    borderColor: '#3A4556',
+    borderColor: Colors.borderMutedAlt,
     padding: 16,
   },
   daysHeaderRow: {
@@ -318,13 +319,13 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   dayNumberText: {
-    fontSize: 11,
-    fontFamily: 'Roboto-SemiBold',
-    color: '#8A97AB',
+    fontSize: Typography.size.captionSmall,
+    fontFamily: Fonts.semiBold,
+    color: Colors.textSecondaryMuted,
   },
   dayNumberBest: {
-    color: '#2DD4BF',
-    fontFamily: 'Roboto-Bold',
+    color: Colors.accentTealMint,
+    fontFamily: Fonts.bold,
   },
   memberRow: {
     flexDirection: 'row',
@@ -340,9 +341,9 @@ const styles = StyleSheet.create({
     marginRight: 8,
   },
   memberInitial: {
-    color: '#FFFFFF',
-    fontSize: 11,
-    fontFamily: 'Roboto-Bold',
+    color: Colors.white,
+    fontSize: Typography.size.captionSmall,
+    fontFamily: Fonts.bold,
   },
   heatmapCell: {
     width: '85%',
@@ -367,40 +368,40 @@ const styles = StyleSheet.create({
     marginRight: 6,
   },
   legendFree: {
-    backgroundColor: '#166534',
+    backgroundColor: Colors.tripAvailableGreen,
   },
   legendBusy: {
-    backgroundColor: '#1E293B',
+    backgroundColor: Colors.avatarPlaceholderBg,
   },
   legendBest: {
-    backgroundColor: '#2DD4BF',
+    backgroundColor: Colors.accentTealMint,
   },
   legendText: {
-    fontSize: 12,
-    fontFamily: 'Roboto-Medium',
-    color: '#8A97AB',
+    fontSize: Typography.size.caption,
+    fontFamily: Fonts.medium,
+    color: Colors.textSecondaryMuted,
   },
   sectionHeader: {
-    fontSize: 11,
-    fontFamily: 'Roboto-Bold',
-    color: '#8A97AB',
+    fontSize: Typography.size.captionSmall,
+    fontFamily: Fonts.bold,
+    color: Colors.textSecondaryMuted,
     letterSpacing: 1.2,
     marginTop: 24,
     marginBottom: 12,
   },
   optionCard: {
-    backgroundColor: 'transparent',
+    backgroundColor: Colors.transparent,
     borderRadius: 16,
     borderWidth: 1.5,
-    borderColor: '#3A4556',
+    borderColor: Colors.borderMutedAlt,
     padding: 16,
     flexDirection: 'row',
     alignItems: 'center',
     marginBottom: 12,
   },
   optionCardSelected: {
-    backgroundColor: '#1A2B47',
-    borderColor: '#F0913A',
+    backgroundColor: Colors.cardSelected,
+    borderColor: Colors.primary,
     borderWidth: 1.5,
   },
   optionIconContainer: {
@@ -410,20 +411,20 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   optionTitle: {
-    fontSize: 16,
-    fontFamily: 'Roboto-Bold',
-    color: '#FFFFFF',
+    fontSize: Typography.size.subtitle,
+    fontFamily: Fonts.bold,
+    color: Colors.white,
   },
   optionSubtitle: {
-    fontSize: 13,
-    fontFamily: 'Roboto-Medium',
-    color: '#8A97AB',
+    fontSize: Typography.size.bodySmall,
+    fontFamily: Fonts.medium,
+    color: Colors.textSecondaryMuted,
     marginTop: 3,
   },
   optionSubtitleAlert: {
-    fontSize: 13,
-    fontFamily: 'Roboto-Medium',
-    color: '#F0913A',
+    fontSize: Typography.size.bodySmall,
+    fontFamily: Fonts.medium,
+    color: Colors.primary,
     marginTop: 3,
   },
   radioOuter: {
@@ -431,35 +432,35 @@ const styles = StyleSheet.create({
     height: 22,
     borderRadius: 11,
     borderWidth: 2,
-    borderColor: '#3A4556',
+    borderColor: Colors.borderMutedAlt,
     justifyContent: 'center',
     alignItems: 'center',
     marginLeft: 10,
   },
   radioOuterSelected: {
-    borderColor: '#F0913A',
+    borderColor: Colors.primary,
   },
   radioInner: {
     width: 12,
     height: 12,
     borderRadius: 6,
-    backgroundColor: '#F0913A',
+    backgroundColor: Colors.primary,
   },
   bottomBar: {
     paddingHorizontal: 20,
     paddingTop: 8,
   },
   bottomButton: {
-    backgroundColor: '#F0913A',
+    backgroundColor: Colors.primary,
     height: 56,
     borderRadius: 28,
     justifyContent: 'center',
     alignItems: 'center',
   },
   bottomButtonText: {
-    color: '#FFFFFF',
-    fontSize: 16,
-    fontFamily: 'Roboto-Bold',
+    color: Colors.white,
+    fontSize: Typography.size.subtitle,
+    fontFamily: Fonts.bold,
   },
 });
 export default FindCommonDatesModal;

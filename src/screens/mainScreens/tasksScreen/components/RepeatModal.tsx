@@ -9,6 +9,8 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { Colors, Fonts, Typography } from '../../../../units';
+
 export interface RepeatModalProps {
   visible: boolean;
   initialRepeat?: string;
@@ -194,7 +196,7 @@ const styles = StyleSheet.create({
   overlay: {
     flex: 1,
     justifyContent: 'flex-end',
-    backgroundColor: 'rgba(0, 0, 0, 0.65)',
+    backgroundColor: Colors.tasksDarkOverlay,
   },
   backdrop: {
     position: 'absolute',
@@ -204,11 +206,11 @@ const styles = StyleSheet.create({
     bottom: 0,
   },
   sheetContainer: {
-    backgroundColor: '#122440',
+    backgroundColor: Colors.cardBackground,
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
     borderTopWidth: 1,
-    borderColor: '#1F3352',
+    borderColor: Colors.borderBold,
     paddingHorizontal: 20,
     paddingTop: 12,
     maxHeight: '88%',
@@ -217,14 +219,14 @@ const styles = StyleSheet.create({
     width: 40,
     height: 4,
     borderRadius: 2,
-    backgroundColor: '#3A4556',
+    backgroundColor: Colors.borderMutedAlt,
     alignSelf: 'center',
     marginBottom: 16,
   },
   title: {
-    fontSize: 22,
-    fontFamily: 'Roboto-Bold',
-    color: '#CAD4DF',
+    fontSize: Typography.size.titleLarge,
+    fontFamily: Fonts.bold,
+    color: Colors.textLightMutedAlt,
     textAlign: 'center',
     marginBottom: 16,
   },
@@ -232,10 +234,10 @@ const styles = StyleSheet.create({
     paddingBottom: 16,
   },
   optionsCard: {
-    backgroundColor: 'transparent',
+    backgroundColor: Colors.transparent,
     borderRadius: 20,
     borderWidth: 1.5,
-    borderColor: '#3A4556',
+    borderColor: Colors.borderMutedAlt,
     overflow: 'hidden',
   },
   optionRow: {
@@ -244,27 +246,27 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingVertical: 14,
     paddingHorizontal: 16,
-    backgroundColor: 'transparent',
+    backgroundColor: Colors.transparent,
   },
   optionRowSelected: {
-    backgroundColor: '#1A2B47',
+    backgroundColor: Colors.cardSelected,
   },
   rowDivider: {
     borderBottomWidth: 1,
-    borderBottomColor: '#1F3352',
+    borderBottomColor: Colors.borderBold,
   },
   optionTextCol: {
     flex: 1,
     marginRight: 12,
   },
   optionTitle: {
-    fontSize: 15,
-    fontFamily: 'Roboto-SemiBold',
-    color: '#CAD4DF',
+    fontSize: Typography.size.bodyMedium,
+    fontFamily: Fonts.semiBold,
+    color: Colors.textLightMutedAlt,
   },
   optionSubtitle: {
-    fontSize: 13,
-    color: '#8A97AB',
+    fontSize: Typography.size.bodySmall,
+    color: Colors.textSecondaryMuted,
     marginTop: 2,
   },
   radioCircle: {
@@ -272,30 +274,30 @@ const styles = StyleSheet.create({
     height: 22,
     borderRadius: 11,
     borderWidth: 2,
-    borderColor: '#3A4556',
+    borderColor: Colors.borderMutedAlt,
     justifyContent: 'center',
     alignItems: 'center',
   },
   radioCircleSelected: {
-    borderColor: '#F0913A',
+    borderColor: Colors.primary,
   },
   radioInnerDot: {
     width: 10,
     height: 10,
     borderRadius: 5,
-    backgroundColor: '#F0913A',
+    backgroundColor: Colors.primary,
   },
   doneBtn: {
     height: 52,
     borderRadius: 26,
-    backgroundColor: '#F0913A',
+    backgroundColor: Colors.primary,
     justifyContent: 'center',
     alignItems: 'center',
     marginTop: 8,
   },
   doneBtnText: {
-    fontSize: 16,
-    fontFamily: 'Roboto-Bold',
-    color: '#FFFFFF',
+    fontSize: Typography.size.subtitle,
+    fontFamily: Fonts.bold,
+    color: Colors.white,
   },
 });

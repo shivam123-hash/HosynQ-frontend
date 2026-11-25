@@ -43,6 +43,8 @@ import CreateTaskModal from './CreateTaskModal';
 import AppOptionsMenu from '../../common/AppOptionsMenu';
 import Colors from '../../../../units/Colors';
 
+import { Fonts, Typography } from '../../../../units';
+
 export interface TaskDetailModalProps {
   visible: boolean;
   task: TaskItem | null;
@@ -195,8 +197,8 @@ const TaskDetailModal: React.FC<TaskDetailModalProps> = ({
         id: c.id,
         author: c.author?.fullName || (c.isMine ? 'You' : 'Member'),
         authorInitial: ((c.author?.fullName || (c.isMine ? 'You' : 'M')).trim()[0] || 'M').toUpperCase(),
-        avatarBg: c.author?.avatarColor || '#1E3A66',
-        avatarColor: '#8DB8F5',
+        avatarBg: c.author?.avatarColor || Colors.avatarNavy,
+        avatarColor: Colors.accentBlueSoft,
         time: c.createdAt
           ? new Date(c.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
           : 'Just now',
@@ -474,7 +476,7 @@ const TaskDetailModal: React.FC<TaskDetailModalProps> = ({
             accessibilityRole="button"
             accessibilityLabel="Close task detail"
           >
-            <Feather name="chevron-left" size={22} color="#CAD4DF" />
+            <Feather name="chevron-left" size={22} color={Colors.textLightMutedAlt} />
           </TouchableOpacity>
 
           <Text style={styles.headerTitle}>Task</Text>
@@ -487,7 +489,7 @@ const TaskDetailModal: React.FC<TaskDetailModalProps> = ({
             accessibilityRole="button"
             accessibilityLabel="More options"
           >
-            <Feather name="more-horizontal" size={20} color="#CAD4DF" />
+            <Feather name="more-horizontal" size={20} color={Colors.textLightMutedAlt} />
           </TouchableOpacity>
         </View>
 
@@ -543,7 +545,7 @@ const TaskDetailModal: React.FC<TaskDetailModalProps> = ({
                 <Feather
                   name="alert-circle"
                   size={20}
-                  color="#F06A6A"
+                  color={Colors.dangerCoral}
                   style={styles.overdueIcon}
                 />
                 <Text style={styles.overdueTitle}>Overdue</Text>
@@ -576,7 +578,10 @@ const TaskDetailModal: React.FC<TaskDetailModalProps> = ({
 
                 <TouchableOpacity
                   style={styles.bannerActionBtnChangeDate}
-                  onPress={() => setShowDueModal(true)}
+                  onPress={() => {
+                    setShowEditModal(true);
+                    onEditTask?.(currentTask);
+                  }}
                   activeOpacity={0.7}
                   accessibilityRole="button"
                   accessibilityLabel="Change due date"
@@ -593,7 +598,7 @@ const TaskDetailModal: React.FC<TaskDetailModalProps> = ({
           {currentTask.isCompleted && (
             <View style={styles.completedBanner}>
               <View style={styles.completedContentRow}>
-                <Feather name="check-circle" size={20} color="#6FDAA6" style={styles.completedIcon} />
+                <Feather name="check-circle" size={20} color={Colors.tripCompletedGreen} style={styles.completedIcon} />
                 <View style={styles.completedTextCol}>
                   <Text style={styles.completedTitle}>Completed by you</Text>
                   <Text style={styles.completedSubtitle}>
@@ -604,16 +609,14 @@ const TaskDetailModal: React.FC<TaskDetailModalProps> = ({
             </View>
           )}
 
-          {/* Badges Row */}
+          {/* Badges Row (View-only presentation) */}
           <View style={styles.badgesRow}>
             {categoryMeta && (
-              <TouchableOpacity
+              <View
                 style={[
                   styles.badge,
                   { borderColor: categoryMeta.color },
                 ]}
-                onPress={() => setShowCategoryPriorityModal(true)}
-                activeOpacity={0.7}
               >
                 <View
                   style={[
@@ -626,17 +629,15 @@ const TaskDetailModal: React.FC<TaskDetailModalProps> = ({
                 >
                   {categoryMeta.label}
                 </Text>
-              </TouchableOpacity>
+              </View>
             )}
 
             {priorityMeta && (
-              <TouchableOpacity
+              <View
                 style={[
                   styles.badge,
                   { borderColor: priorityMeta.color },
                 ]}
-                onPress={() => setShowCategoryPriorityModal(true)}
-                activeOpacity={0.7}
               >
                 <View
                   style={[
@@ -649,14 +650,12 @@ const TaskDetailModal: React.FC<TaskDetailModalProps> = ({
                 >
                   {priorityMeta.label}
                 </Text>
-              </TouchableOpacity>
+              </View>
             )}
 
             {Boolean(currentTask.repeat) && (
-              <TouchableOpacity
+              <View
                 style={[styles.badge, styles.repeatBadge]}
-                onPress={handleRepeatRowPress}
-                activeOpacity={0.7}
               >
                 <View style={[styles.badgeDot, styles.repeatBadgeDot]} />
                 <Text style={[styles.badgeText, styles.repeatBadgeText]}>
@@ -664,7 +663,7 @@ const TaskDetailModal: React.FC<TaskDetailModalProps> = ({
                     ? formatRepeatBadge(currentTask.repeat || '')
                     : "Doesn't repeat"}
                 </Text>
-              </TouchableOpacity>
+              </View>
             )}
           </View>
 
@@ -693,16 +692,12 @@ const TaskDetailModal: React.FC<TaskDetailModalProps> = ({
               : `${currentTask.amount ? `${currentTask.amount} · ` : ''}Due ${currentTask.dueDate || 'today'}`}
           </Text>
 
-          {/* Configuration Card */}
+          {/* Configuration Card (View-only presentation) */}
           <View style={styles.infoCard}>
             {/* Due */}
-            <TouchableOpacity
-              style={styles.infoRow}
-              onPress={() => setShowDueModal(true)}
-              activeOpacity={0.7}
-            >
+            <View style={styles.infoRow}>
               <View style={styles.infoIconBox}>
-                <Feather name="calendar" size={18} color="#8A97AB" />
+                <Feather name="calendar" size={18} color={Colors.textSecondaryMuted} />
               </View>
               <View style={styles.infoContent}>
                 <Text style={styles.infoLabel}>Due</Text>
@@ -717,17 +712,12 @@ const TaskDetailModal: React.FC<TaskDetailModalProps> = ({
                   {currentTask.dueFormatted || currentTask.dueDate}
                 </Text>
               </View>
-              <Feather name="chevron-right" size={18} color="#8A97AB" />
-            </TouchableOpacity>
+            </View>
 
             {/* Repeat */}
-            <TouchableOpacity
-              style={[styles.infoRow, styles.divider]}
-              onPress={handleRepeatRowPress}
-              activeOpacity={0.7}
-            >
+            <View style={[styles.infoRow, styles.divider]}>
               <View style={styles.infoIconBox}>
-                <Feather name="repeat" size={18} color="#8A97AB" />
+                <Feather name="repeat" size={18} color={Colors.textSecondaryMuted} />
               </View>
               <View style={styles.infoContent}>
                 <Text style={styles.infoLabel}>Repeat</Text>
@@ -735,17 +725,12 @@ const TaskDetailModal: React.FC<TaskDetailModalProps> = ({
                   {currentTask.repeat || 'Doesn’t repeat'}
                 </Text>
               </View>
-              <Feather name="chevron-right" size={18} color="#8A97AB" />
-            </TouchableOpacity>
+            </View>
 
             {/* Reminders */}
-            <TouchableOpacity
-              style={[styles.infoRow, styles.divider]}
-              onPress={() => setShowRemindersModal(true)}
-              activeOpacity={0.7}
-            >
+            <View style={[styles.infoRow, styles.divider]}>
               <View style={styles.infoIconBox}>
-                <Feather name="bell" size={18} color="#8A97AB" />
+                <Feather name="bell" size={18} color={Colors.textSecondaryMuted} />
               </View>
               <View style={styles.infoContent}>
                 <Text style={styles.infoLabel}>Reminders</Text>
@@ -753,17 +738,12 @@ const TaskDetailModal: React.FC<TaskDetailModalProps> = ({
                   {currentTask.reminders || 'None'}
                 </Text>
               </View>
-              <Feather name="chevron-right" size={18} color="#8A97AB" />
-            </TouchableOpacity>
+            </View>
 
             {/* Assigned to */}
-            <TouchableOpacity
-              style={[styles.infoRow, styles.divider]}
-              onPress={() => setShowAssigneesModal(true)}
-              activeOpacity={0.7}
-            >
+            <View style={[styles.infoRow, styles.divider]}>
               <View style={styles.infoIconBox}>
-                <Feather name="user" size={18} color="#8A97AB" />
+                <Feather name="user" size={18} color={Colors.textSecondaryMuted} />
               </View>
               <View style={styles.infoContent}>
                 <Text style={styles.infoLabel}>Assigned to</Text>
@@ -791,17 +771,12 @@ const TaskDetailModal: React.FC<TaskDetailModalProps> = ({
                   </Text>
                 </View>
               </View>
-              <Feather name="chevron-right" size={18} color="#8A97AB" />
-            </TouchableOpacity>
+            </View>
 
             {/* Who can see it */}
-            <TouchableOpacity
-              style={[styles.infoRow, styles.divider]}
-              onPress={() => setShowAssigneesModal(true)}
-              activeOpacity={0.7}
-            >
+            <View style={[styles.infoRow, styles.divider]}>
               <View style={styles.infoIconBox}>
-                <Feather name="eye" size={18} color="#8A97AB" />
+                <Feather name="eye" size={18} color={Colors.textSecondaryMuted} />
               </View>
               <View style={styles.infoContent}>
                 <Text style={styles.infoLabel}>Who can see it</Text>
@@ -845,8 +820,7 @@ const TaskDetailModal: React.FC<TaskDetailModalProps> = ({
                   </Text>
                 </View>
               </View>
-              <Feather name="chevron-right" size={18} color="#8A97AB" />
-            </TouchableOpacity>
+            </View>
           </View>
 
           {/* Created by note (below card, matching Figma TSK-11) */}
@@ -889,13 +863,13 @@ const TaskDetailModal: React.FC<TaskDetailModalProps> = ({
                   <View
                     style={[
                       styles.commentAvatar,
-                      { backgroundColor: comment.avatarBg || '#1E3A66' },
+                      { backgroundColor: comment.avatarBg || Colors.avatarNavy },
                     ]}
                   >
                     <Text
                       style={[
                         styles.commentAvatarText,
-                        { color: comment.avatarColor || '#8DB8F5' },
+                        { color: comment.avatarColor || Colors.accentBlueSoft },
                       ]}
                     >
                       {comment.authorInitial}
@@ -942,7 +916,7 @@ const TaskDetailModal: React.FC<TaskDetailModalProps> = ({
             ]}
           >
             <View style={styles.toastLeftRow}>
-              <Feather name="check-circle" size={18} color="#10B981" />
+              <Feather name="check-circle" size={18} color={Colors.success} />
               <Text style={styles.toastText}>Marked as done</Text>
             </View>
             <TouchableOpacity
@@ -991,7 +965,7 @@ const TaskDetailModal: React.FC<TaskDetailModalProps> = ({
               onPress={handleReopenPress}
               activeOpacity={0.8}
             >
-              <Feather name="repeat" size={18} color="#F0913A" />
+              <Feather name="repeat" size={18} color={Colors.primary} />
               <Text style={styles.reopenTaskBtnText}>Reopen task</Text>
             </TouchableOpacity>
           )}
@@ -1188,7 +1162,7 @@ export default TaskDetailModal;
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#0B1A2F',
+    backgroundColor: Colors.background,
   },
   header: {
     height: 52,
@@ -1203,24 +1177,24 @@ const styles = StyleSheet.create({
     height: 44,
     borderRadius: 22,
     borderWidth: 1.5,
-    borderColor: '#3A4556',
+    borderColor: Colors.borderMutedAlt,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: 'transparent',
+    backgroundColor: Colors.transparent,
   },
   headerTitle: {
-    fontSize: 18,
-    fontFamily: 'Roboto-Bold',
-    color: '#CAD4DF',
+    fontSize: Typography.size.titleSmall,
+    fontFamily: Fonts.bold,
+    color: Colors.textLightMutedAlt,
   },
   scrollContent: {
     paddingHorizontal: 20,
     paddingTop: 12,
   },
   overdueBanner: {
-    backgroundColor: '#201824',
+    backgroundColor: Colors.tasksOverdueBg,
     borderWidth: 1.5,
-    borderColor: '#4A2833',
+    borderColor: Colors.dangerBorderSubtle,
     borderRadius: 20,
     padding: 18,
     marginBottom: 20,
@@ -1243,13 +1217,13 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   overdueTitle: {
-    fontSize: 15,
-    fontFamily: 'Roboto-Bold',
-    color: '#F06A6A',
+    fontSize: Typography.size.bodyMedium,
+    fontFamily: Fonts.bold,
+    color: Colors.dangerCoral,
   },
   overdueSubtitle: {
-    fontSize: 15,
-    color: '#CAD4DF',
+    fontSize: Typography.size.bodyMedium,
+    color: Colors.textLightMutedAlt,
     lineHeight: 22,
     marginBottom: 16,
   },
@@ -1268,66 +1242,66 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     borderRadius: 21,
     borderWidth: 1.5,
-    borderColor: '#F06A6A',
-    backgroundColor: 'transparent',
+    borderColor: Colors.dangerCoral,
+    backgroundColor: Colors.transparent,
     alignSelf: 'flex-start',
     justifyContent: 'center',
     alignItems: 'center',
   },
   bannerActionBtnRemindActive: {
-    borderColor: '#F06A6A',
+    borderColor: Colors.dangerCoral,
   },
   bannerActionBtnDisabled: {
-    borderColor: '#552B36',
+    borderColor: Colors.dangerBorderDark,
     opacity: 0.5,
   },
   bannerActionTextRemind: {
-    fontSize: 15,
+    fontSize: Typography.size.bodyMedium,
     fontWeight: '600',
-    color: '#F06A6A',
+    color: Colors.dangerCoral,
   },
   bannerActionTextRemindActive: {
-    color: '#F06A6A',
+    color: Colors.dangerCoral,
   },
   bannerActionTextDisabled: {
-    color: '#7D4753',
+    color: Colors.dangerTextMuted,
   },
   bannerActionBtnChangeDate: {
     height: 42,
     paddingHorizontal: 20,
     borderRadius: 21,
     borderWidth: 1.5,
-    borderColor: '#F06A6A',
-    backgroundColor: 'transparent',
+    borderColor: Colors.dangerCoral,
+    backgroundColor: Colors.transparent,
     alignSelf: 'flex-start',
     justifyContent: 'center',
     alignItems: 'center',
   },
   bannerActionTextChangeDate: {
-    fontSize: 15,
+    fontSize: Typography.size.bodyMedium,
     fontWeight: '600',
-    color: '#F06A6A',
+    color: Colors.dangerCoral,
   },
   bannerActionBtn: {
     height: 42,
     paddingHorizontal: 20,
     borderRadius: 21,
     borderWidth: 1.5,
-    borderColor: '#F06A6A',
-    backgroundColor: 'transparent',
+    borderColor: Colors.dangerCoral,
+    backgroundColor: Colors.transparent,
     alignSelf: 'flex-start',
     justifyContent: 'center',
     alignItems: 'center',
   },
   bannerActionText: {
-    fontSize: 13,
-    fontFamily: 'Roboto-SemiBold',
-    color: '#F06A6A',
+    fontSize: Typography.size.bodySmall,
+    fontFamily: Fonts.semiBold,
+    color: Colors.dangerCoral,
   },
   completedBanner: {
-    backgroundColor: '#0F2229',
+    backgroundColor: Colors.completedDarkBg,
     borderWidth: 1.5,
-    borderColor: '#2F6B52',
+    borderColor: Colors.tripMintBorder,
     borderRadius: 18,
     padding: 16,
     marginBottom: 20,
@@ -1344,14 +1318,14 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   completedTitle: {
-    fontSize: 15,
-    fontFamily: 'Roboto-Bold',
-    color: '#6FDAA6',
+    fontSize: Typography.size.bodyMedium,
+    fontFamily: Fonts.bold,
+    color: Colors.tripCompletedGreen,
   },
   completedSubtitle: {
-    fontSize: 13,
-    fontFamily: 'Roboto-Regular',
-    color: '#CBD2D9',
+    fontSize: Typography.size.bodySmall,
+    fontFamily: Fonts.regular,
+    color: Colors.textLightGray,
     marginTop: 4,
   },
   badgesRow: {
@@ -1368,17 +1342,17 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     paddingHorizontal: 12,
     borderWidth: 1.5,
-    backgroundColor: 'transparent',
+    backgroundColor: Colors.transparent,
   },
   repeatBadge: {
-    borderColor: '#8A97AB',
+    borderColor: Colors.textSecondaryMuted,
   },
   priorityBadge: {},
   repeatBadgeDot: {
-    backgroundColor: '#8A97AB',
+    backgroundColor: Colors.textSecondaryMuted,
   },
   repeatBadgeText: {
-    color: '#C9D1DC',
+    color: Colors.chipInactive,
   },
   badgeDot: {
     width: 6,
@@ -1386,33 +1360,33 @@ const styles = StyleSheet.create({
     borderRadius: 3,
   },
   badgeText: {
-    fontSize: 12,
-    fontFamily: 'Roboto-SemiBold',
+    fontSize: Typography.size.caption,
+    fontFamily: Fonts.semiBold,
   },
   taskTitle: {
-    fontSize: 26,
-    fontFamily: 'Roboto-Bold',
-    color: '#CAD4DF',
+    fontSize: Typography.size.header,
+    fontFamily: Fonts.bold,
+    color: Colors.textLightMutedAlt,
     lineHeight: 32,
     marginBottom: 6,
   },
   taskTitleCompleted: {
     textDecorationLine: 'line-through',
-    color: '#8A97AB',
+    color: Colors.textSecondaryMuted,
   },
   taskMetaSubtitle: {
-    fontSize: 15,
-    color: '#8A97AB',
+    fontSize: Typography.size.bodyMedium,
+    color: Colors.textSecondaryMuted,
     marginBottom: 20,
   },
   overdueSubtitleText: {
-    color: '#F0913A',
+    color: Colors.primary,
   },
   infoCard: {
-    backgroundColor: 'transparent',
+    backgroundColor: Colors.transparent,
     borderRadius: 20,
     borderWidth: 1.5,
-    borderColor: '#3A4556',
+    borderColor: Colors.borderMutedAlt,
     overflow: 'hidden',
     marginBottom: 16,
   },
@@ -1424,7 +1398,7 @@ const styles = StyleSheet.create({
   },
   divider: {
     borderTopWidth: 1,
-    borderTopColor: '#26354A',
+    borderTopColor: Colors.borderDividerNavy,
   },
   infoIconBox: {
     marginRight: 14,
@@ -1433,17 +1407,17 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   infoLabel: {
-    fontSize: 12,
-    color: '#8A97AB',
+    fontSize: Typography.size.caption,
+    color: Colors.textSecondaryMuted,
     marginBottom: 2,
   },
   infoValue: {
-    fontSize: 15,
-    fontFamily: 'Roboto-SemiBold',
-    color: '#CAD4DF',
+    fontSize: Typography.size.bodyMedium,
+    fontFamily: Fonts.semiBold,
+    color: Colors.textLightMutedAlt,
   },
   overdueValueText: {
-    color: '#F0913A',
+    color: Colors.primary,
   },
   assigneeBadgeRow: {
     flexDirection: 'row',
@@ -1458,20 +1432,20 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   avatarBgPriya: {
-    backgroundColor: '#5C3A21',
+    backgroundColor: Colors.avatarBrown,
   },
   avatarTextPriya: {
-    color: '#F0913A',
+    color: Colors.primary,
   },
   avatarBgRohan: {
-    backgroundColor: '#1E3A66',
+    backgroundColor: Colors.avatarNavy,
   },
   avatarTextRohan: {
-    color: '#8DB8F5',
+    color: Colors.accentBlueSoft,
   },
   assigneeMiniText: {
-    fontSize: 12,
-    fontFamily: 'Roboto-Bold',
+    fontSize: Typography.size.caption,
+    fontFamily: Fonts.bold,
   },
   viewersBadgeRow: {
     flexDirection: 'row',
@@ -1489,7 +1463,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     borderWidth: 1.5,
-    borderColor: '#122440',
+    borderColor: Colors.cardBackground,
   },
   stackedAvatarFirst: {
     zIndex: 2,
@@ -1499,46 +1473,46 @@ const styles = StyleSheet.create({
     zIndex: 1,
   },
   avatarBgBlue: {
-    backgroundColor: '#1E3A66',
+    backgroundColor: Colors.avatarNavy,
   },
   avatarTextBlue: {
-    color: '#8DB8F5',
+    color: Colors.accentBlueSoft,
   },
   avatarBgGreen: {
-    backgroundColor: '#215C33',
+    backgroundColor: Colors.avatarGreenDark,
   },
   avatarTextGreen: {
-    color: '#4ADE80',
+    color: Colors.tripGreenAccent,
   },
   stackedAvatarText: {
-    fontSize: 10,
-    fontFamily: 'Roboto-Bold',
+    fontSize: Typography.size.micro,
+    fontFamily: Fonts.bold,
   },
   createdByText: {
-    fontSize: 13,
-    color: '#8A97AB',
+    fontSize: Typography.size.bodySmall,
+    color: Colors.textSecondaryMuted,
     textAlign: 'center',
     marginTop: -4,
     marginBottom: 16,
   },
   notesCard: {
-    backgroundColor: 'transparent',
+    backgroundColor: Colors.transparent,
     borderRadius: 20,
     borderWidth: 1.5,
-    borderColor: '#3A4556',
+    borderColor: Colors.borderMutedAlt,
     padding: 16,
     marginBottom: 16,
   },
   notesLabel: {
-    fontSize: 11,
-    fontFamily: 'Roboto-Bold',
+    fontSize: Typography.size.captionSmall,
+    fontFamily: Fonts.bold,
     letterSpacing: 1.2,
-    color: '#8A97AB',
+    color: Colors.textSecondaryMuted,
     marginBottom: 6,
   },
   notesText: {
-    fontSize: 14,
-    color: '#CAD4DF',
+    fontSize: Typography.size.body,
+    color: Colors.textLightMutedAlt,
     lineHeight: 20,
   },
   commentsSection: {
@@ -1551,14 +1525,14 @@ const styles = StyleSheet.create({
     marginBottom: 14,
   },
   commentsTitle: {
-    fontSize: 16,
-    fontFamily: 'Roboto-Bold',
-    color: '#CAD4DF',
+    fontSize: Typography.size.subtitle,
+    fontFamily: Fonts.bold,
+    color: Colors.textLightMutedAlt,
   },
   viewAllText: {
-    fontSize: 14,
-    fontFamily: 'Roboto-SemiBold',
-    color: '#F0913A',
+    fontSize: Typography.size.body,
+    fontFamily: Fonts.semiBold,
+    color: Colors.primary,
   },
   commentItem: {
     flexDirection: 'row',
@@ -1573,8 +1547,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   commentAvatarText: {
-    fontSize: 14,
-    fontFamily: 'Roboto-Bold',
+    fontSize: Typography.size.body,
+    fontFamily: Fonts.bold,
   },
   commentBody: {
     flex: 1,
@@ -1586,41 +1560,41 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   commentAuthor: {
-    fontSize: 13,
-    fontFamily: 'Roboto-Bold',
-    color: '#CAD4DF',
+    fontSize: Typography.size.bodySmall,
+    fontFamily: Fonts.bold,
+    color: Colors.textLightMutedAlt,
   },
   commentTime: {
-    fontSize: 12,
-    color: '#8A97AB',
+    fontSize: Typography.size.caption,
+    color: Colors.textSecondaryMuted,
   },
   commentBubble: {
-    backgroundColor: 'transparent',
+    backgroundColor: Colors.transparent,
     borderRadius: 14,
     borderWidth: 1.5,
-    borderColor: '#3A4556',
+    borderColor: Colors.borderMutedAlt,
     padding: 12,
   },
   commentBubbleYou: {
-    borderColor: '#F0913A',
+    borderColor: Colors.primary,
   },
   commentText: {
-    fontSize: 14,
-    color: '#CAD4DF',
+    fontSize: Typography.size.body,
+    color: Colors.textLightMutedAlt,
     lineHeight: 20,
   },
   toastPill: {
     position: 'absolute',
     left: 20,
     right: 20,
-    backgroundColor: '#F1F5F9',
+    backgroundColor: Colors.textNearWhite,
     borderRadius: 22,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: 16,
     paddingVertical: 12,
-    shadowColor: '#000',
+    shadowColor: Colors.black,
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.25,
     shadowRadius: 8,
@@ -1633,23 +1607,23 @@ const styles = StyleSheet.create({
     gap: 10,
   },
   toastText: {
-    fontSize: 15,
-    fontFamily: 'Roboto-SemiBold',
-    color: '#0B1A2F',
+    fontSize: Typography.size.bodyMedium,
+    fontFamily: Fonts.semiBold,
+    color: Colors.background,
   },
   toastUndoText: {
-    fontSize: 15,
-    fontFamily: 'Roboto-Bold',
-    color: '#F0913A',
+    fontSize: Typography.size.bodyMedium,
+    fontFamily: Fonts.bold,
+    color: Colors.primary,
   },
   bottomBar: {
     position: 'absolute',
     bottom: 0,
     left: 0,
     right: 0,
-    backgroundColor: '#0B1A2F',
+    backgroundColor: Colors.background,
     borderTopWidth: 1,
-    borderTopColor: '#1F3352',
+    borderTopColor: Colors.borderBold,
     flexDirection: 'row',
     paddingHorizontal: 20,
     paddingTop: 12,
@@ -1660,58 +1634,58 @@ const styles = StyleSheet.create({
     height: 50,
     borderRadius: 25,
     borderWidth: 1.5,
-    borderColor: '#3A4556',
+    borderColor: Colors.borderMutedAlt,
     justifyContent: 'center',
     alignItems: 'center',
   },
   reassignBtnText: {
-    fontSize: 16,
-    fontFamily: 'Roboto-SemiBold',
-    color: '#CAD4DF',
+    fontSize: Typography.size.subtitle,
+    fontFamily: Fonts.semiBold,
+    color: Colors.textLightMutedAlt,
   },
   markDoneBtn: {
     flex: 1.3,
     height: 50,
     borderRadius: 25,
-    backgroundColor: '#F0913A',
+    backgroundColor: Colors.primary,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     gap: 8,
   },
   markDoneBtnText: {
-    fontSize: 16,
-    fontFamily: 'Roboto-Bold',
+    fontSize: Typography.size.subtitle,
+    fontFamily: Fonts.bold,
     color: Colors.white,
   },
   writeCommentPill: {
     height: 48,
     borderRadius: 24,
-    backgroundColor: 'transparent',
+    backgroundColor: Colors.transparent,
     borderWidth: 1.5,
-    borderColor: '#3A4556',
+    borderColor: Colors.borderMutedAlt,
     justifyContent: 'center',
     paddingHorizontal: 18,
     marginTop: 6,
   },
   writeCommentPlaceholder: {
-    fontSize: 14,
-    color: '#8A97AB',
+    fontSize: Typography.size.body,
+    color: Colors.textSecondaryMuted,
   },
   reopenTaskBtn: {
     flex: 1,
     height: 50,
     borderRadius: 25,
     borderWidth: 1.5,
-    borderColor: '#3A4556',
+    borderColor: Colors.borderMutedAlt,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     gap: 8,
   },
   reopenTaskBtnText: {
-    fontSize: 16,
-    fontFamily: 'Roboto-SemiBold',
-    color: '#CAD4DF',
+    fontSize: Typography.size.subtitle,
+    fontFamily: Fonts.semiBold,
+    color: Colors.textLightMutedAlt,
   },
 });

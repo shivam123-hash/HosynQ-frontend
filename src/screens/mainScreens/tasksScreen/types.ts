@@ -66,6 +66,8 @@ export interface TaskFilterState {
 export interface FamilyMemberOption {
   id: string;
   name: string;
+  realName?: string;
+  isYou?: boolean;
   initial: string;
   avatarBg: string;
   avatarColor: string;

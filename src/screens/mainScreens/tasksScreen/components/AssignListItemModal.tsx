@@ -11,6 +11,9 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAppSelector } from '../../../../redux';
 import { ListItemEntry } from '../types';
+import CommonBtn from '../../../../components/CommonBtn';
+
+import { Colors, Fonts, Typography } from '../../../../units';
 
 export interface AssignListItemModalProps {
   visible: boolean;
@@ -39,28 +42,28 @@ const MEMBERS: AssigneeChoice[] = [
     name: 'Priya (you)',
     roleSubtitle: '2 items on this list',
     initial: 'P',
-    avatarBg: '#78350F',
+    avatarBg: Colors.tripYellowBg,
   },
   {
     id: 'rohan',
     name: 'Rohan',
     roleSubtitle: 'Going to the market Saturday',
     initial: 'R',
-    avatarBg: '#1E3A8A',
+    avatarBg: Colors.tripBlueBg,
   },
   {
     id: 'dadi',
     name: 'Dadi',
     roleSubtitle: '1 item',
     initial: 'D',
-    avatarBg: '#064E3B',
+    avatarBg: Colors.tripGreenBg,
   },
   {
     id: 'anaya',
     name: 'Anaya',
     roleSubtitle: '1 item',
     initial: 'A',
-    avatarBg: '#831843',
+    avatarBg: Colors.tripPinkBg,
   },
 ];
 
@@ -88,7 +91,7 @@ const AssignListItemModal: React.FC<AssignListItemModalProps> = ({
           name,
           roleSubtitle: m.isYou ? 'You' : m.role || 'Family Member',
           initial: (rawName.trim()[0] || 'M').toUpperCase(),
-          avatarBg: m.avatarColor || '#1E3A8A',
+          avatarBg: m.avatarColor || Colors.tripBlueBg,
         };
       });
     }
@@ -227,26 +230,26 @@ const AssignListItemModal: React.FC<AssignListItemModalProps> = ({
               <Switch
                 value={anyoneCanPick}
                 onValueChange={setAnyoneCanPick}
-                trackColor={{ false: '#3A4556', true: '#F0913A' }}
-                thumbColor="#FFFFFF"
+                trackColor={{ false: Colors.borderMutedAlt, true: Colors.primary }}
+                thumbColor={Colors.white}
               />
             </View>
           </ScrollView>
 
           {/* Action Button */}
-          <TouchableOpacity
-            style={styles.giveBtn}
-            onPress={handleConfirm}
-            activeOpacity={0.8}
-            accessibilityRole="button"
-            accessibilityLabel={`Give to ${selectedMember?.name || 'Anyone'}`}
-          >
-            <Text style={styles.giveBtnText}>
-              {anyoneCanPick
+          <CommonBtn
+            title={
+              anyoneCanPick
                 ? 'Save as unassigned'
-                : `Give to ${selectedMember?.name.replace(' (you)', '') || 'Priya'}`}
-            </Text>
-          </TouchableOpacity>
+                : `Give to ${selectedMember?.name.replace(' (you)', '') || 'Priya'}`
+            }
+            onPress={handleConfirm}
+            backgroundColor={Colors.primary}
+            height={52}
+            borderRadius={26}
+            marginTop={16}
+            fontSize={16}
+          />
         </View>
       </View>
     </Modal>
@@ -259,7 +262,7 @@ const styles = StyleSheet.create({
   overlay: {
     flex: 1,
     justifyContent: 'flex-end',
-    backgroundColor: 'rgba(0, 0, 0, 0.65)',
+    backgroundColor: Colors.tasksDarkOverlay,
   },
   backdrop: {
     position: 'absolute',
@@ -269,11 +272,11 @@ const styles = StyleSheet.create({
     bottom: 0,
   },
   sheetContainer: {
-    backgroundColor: '#122440',
+    backgroundColor: Colors.cardBackground,
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
     borderTopWidth: 1,
-    borderColor: '#1F3352',
+    borderColor: Colors.borderBold,
     paddingHorizontal: 20,
     paddingTop: 12,
     maxHeight: '90%',
@@ -282,21 +285,21 @@ const styles = StyleSheet.create({
     width: 38,
     height: 4,
     borderRadius: 2,
-    backgroundColor: '#3A4556',
+    backgroundColor: Colors.borderMutedAlt,
     alignSelf: 'center',
     marginBottom: 14,
   },
   title: {
-    fontSize: 20,
-    fontFamily: 'Roboto-Bold',
-    color: '#FFFFFF',
+    fontSize: Typography.size.title,
+    fontFamily: Fonts.bold,
+    color: Colors.white,
     textAlign: 'center',
     marginBottom: 4,
   },
   subtitle: {
-    fontSize: 14,
-    fontFamily: 'Roboto-Light',
-    color: '#8A97AB',
+    fontSize: Typography.size.body,
+    fontFamily: Fonts.light,
+    color: Colors.textSecondaryMuted,
     textAlign: 'center',
     marginBottom: 16,
   },
@@ -304,10 +307,10 @@ const styles = StyleSheet.create({
     paddingBottom: 0,
   },
   membersCard: {
-    backgroundColor: 'transparent',
+    backgroundColor: Colors.transparent,
     borderRadius: 20,
     borderWidth: 1.5,
-    borderColor: '#3A4556',
+    borderColor: Colors.borderMutedAlt,
     marginBottom: 14,
     overflow: 'hidden',
   },
@@ -318,11 +321,11 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
   },
   memberRowSelected: {
-    backgroundColor: '#1A2B47',
+    backgroundColor: Colors.cardSelected,
   },
   memberRowDivider: {
     borderTopWidth: 1,
-    borderTopColor: '#1F3352',
+    borderTopColor: Colors.borderBold,
   },
   avatarCircle: {
     width: 38,
@@ -333,41 +336,41 @@ const styles = StyleSheet.create({
     marginRight: 14,
   },
   avatarText: {
-    fontSize: 14,
-    fontFamily: 'Roboto-Bold',
-    color: '#FFFFFF',
+    fontSize: Typography.size.body,
+    fontFamily: Fonts.bold,
+    color: Colors.white,
   },
   memberTextCol: {
     flex: 1,
   },
   memberName: {
-    fontSize: 15,
-    fontFamily: 'Roboto-Bold',
-    color: '#FFFFFF',
+    fontSize: Typography.size.bodyMedium,
+    fontFamily: Fonts.bold,
+    color: Colors.white,
     marginBottom: 2,
   },
   memberSub: {
-    fontSize: 13,
-    color: '#8A97AB',
+    fontSize: Typography.size.bodySmall,
+    color: Colors.textSecondaryMuted,
   },
   radioOuter: {
     width: 22,
     height: 22,
     borderRadius: 11,
     borderWidth: 2,
-    borderColor: '#3A4556',
+    borderColor: Colors.borderMutedAlt,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: 'transparent',
+    backgroundColor: Colors.transparent,
   },
   radioOuterSelected: {
-    borderColor: '#F0913A',
+    borderColor: Colors.primary,
   },
   radioInner: {
     width: 10,
     height: 10,
     borderRadius: 5,
-    backgroundColor: '#F0913A',
+    backgroundColor: Colors.primary,
   },
   switchRow: {
     flexDirection: 'row',
@@ -378,21 +381,21 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   switchLabel: {
-    fontSize: 15,
-    fontFamily: 'Roboto-SemiBold',
-    color: '#FFFFFF',
+    fontSize: Typography.size.bodyMedium,
+    fontFamily: Fonts.semiBold,
+    color: Colors.white,
   },
   giveBtn: {
     height: 52,
     borderRadius: 26,
-    backgroundColor: '#F0913A',
+    backgroundColor: Colors.primary,
     justifyContent: 'center',
     alignItems: 'center',
     marginTop: 0,
   },
   giveBtnText: {
-    fontSize: 16,
-    fontFamily: 'Roboto-Bold',
-    color: '#FFFFFF',
+    fontSize: Typography.size.subtitle,
+    fontFamily: Fonts.bold,
+    color: Colors.white,
   },
 });

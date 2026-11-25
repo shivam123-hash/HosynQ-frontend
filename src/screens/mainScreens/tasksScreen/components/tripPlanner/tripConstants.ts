@@ -1,5 +1,6 @@
 import { TripData, MemberAvailability } from './types';
 
+import { Colors } from '../../../../../units';
 export const INITIAL_TRIP_DATA: TripData = {
   id: 'trip-jaipur-2026',
   destination: 'Jaipur, Rajasthan',
@@ -11,11 +12,11 @@ export const INITIAL_TRIP_DATA: TripData = {
   step1Done: false,
   step2Done: false,
   members: [
-    { id: 'm1', name: 'Priya', initial: 'P', color: '#B45309', selected: true },
-    { id: 'm2', name: 'Rohan', initial: 'R', color: '#2563EB', selected: true },
-    { id: 'm3', name: 'Anaya', initial: 'A', color: '#9333EA', selected: true },
-    { id: 'm4', name: 'Aarav', initial: 'Aa', color: '#D97706', selected: true },
-    { id: 'm5', name: 'Dadi', initial: 'D', color: '#059669', selected: true },
+    { id: 'm1', name: 'Priya', initial: 'P', color: Colors.amberBrown, selected: true },
+    { id: 'm2', name: 'Rohan', initial: 'R', color: Colors.royalBlue, selected: true },
+    { id: 'm3', name: 'Anaya', initial: 'A', color: Colors.vibrantPurple, selected: true },
+    { id: 'm4', name: 'Aarav', initial: 'Aa', color: Colors.amberAccent, selected: true },
+    { id: 'm5', name: 'Dadi', initial: 'D', color: Colors.emerald, selected: true },
   ],
   bookings: [
     {
@@ -66,7 +67,7 @@ export const INITIAL_TRIP_DATA: TripData = {
       category: 'shared',
       assignedTo: 'Rohan',
       assignedInitial: 'R',
-      assignedBg: '#2563EB',
+      assignedBg: Colors.royalBlue,
       isPacked: false,
     },
     {
@@ -76,7 +77,7 @@ export const INITIAL_TRIP_DATA: TripData = {
       category: 'shared',
       assignedTo: 'Priya',
       assignedInitial: 'P',
-      assignedBg: '#B45309',
+      assignedBg: Colors.amberBrown,
       isPacked: false,
     },
     {
@@ -85,7 +86,7 @@ export const INITIAL_TRIP_DATA: TripData = {
       category: 'shared',
       assignedTo: 'Dadi',
       assignedInitial: 'D',
-      assignedBg: '#059669',
+      assignedBg: Colors.emerald,
       isPacked: false,
     },
     {
@@ -95,7 +96,7 @@ export const INITIAL_TRIP_DATA: TripData = {
       category: 'shared',
       assignedTo: 'Rohan',
       assignedInitial: 'R',
-      assignedBg: '#2563EB',
+      assignedBg: Colors.royalBlue,
       isPacked: true,
     },
     {
@@ -105,7 +106,7 @@ export const INITIAL_TRIP_DATA: TripData = {
       category: 'kids',
       assignedTo: 'Anaya',
       assignedInitial: 'A',
-      assignedBg: '#9333EA',
+      assignedBg: Colors.vibrantPurple,
       isPacked: false,
     },
     {
@@ -115,7 +116,7 @@ export const INITIAL_TRIP_DATA: TripData = {
       category: 'kids',
       assignedTo: 'Aarav',
       assignedInitial: 'Aa',
-      assignedBg: '#D97706',
+      assignedBg: Colors.amberAccent,
       isPacked: false,
     },
   ],
@@ -130,7 +131,7 @@ export const MEMBER_AVAILABILITY: MemberAvailability[] = [
   {
     memberId: 'm1',
     initial: 'P',
-    color: '#B45309',
+    color: Colors.amberBrown,
     days: [
       { day: 9, status: 'free' },
       { day: 10, status: 'busy' },
@@ -151,7 +152,7 @@ export const MEMBER_AVAILABILITY: MemberAvailability[] = [
   {
     memberId: 'm2',
     initial: 'R',
-    color: '#2563EB',
+    color: Colors.royalBlue,
     days: [
       { day: 9, status: 'busy' },
       { day: 10, status: 'busy' },
@@ -172,7 +173,7 @@ export const MEMBER_AVAILABILITY: MemberAvailability[] = [
   {
     memberId: 'm3',
     initial: 'A',
-    color: '#9333EA',
+    color: Colors.vibrantPurple,
     days: [
       { day: 9, status: 'free' },
       { day: 10, status: 'free' },
@@ -193,7 +194,7 @@ export const MEMBER_AVAILABILITY: MemberAvailability[] = [
   {
     memberId: 'm4',
     initial: 'Aa',
-    color: '#D97706',
+    color: Colors.amberAccent,
     days: [
       { day: 9, status: 'free' },
       { day: 10, status: 'free' },
@@ -214,7 +215,7 @@ export const MEMBER_AVAILABILITY: MemberAvailability[] = [
   {
     memberId: 'm5',
     initial: 'D',
-    color: '#059669',
+    color: Colors.emerald,
     days: [
       { day: 9, status: 'free' },
       { day: 10, status: 'free' },

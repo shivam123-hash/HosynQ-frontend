@@ -8,6 +8,9 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { TaskCategory, TaskPriority } from '../types';
+import CommonBtn from '../../../../components/CommonBtn';
+
+import { Colors, Fonts, Typography } from '../../../../units';
 
 export interface CategoryPriorityModalProps {
   visible: boolean;
@@ -18,13 +21,13 @@ export interface CategoryPriorityModalProps {
 }
 
 const CATEGORY_LIST: { id: TaskCategory; label: string; dotColor: string }[] = [
-  { id: 'household', label: 'Household', dotColor: '#F0913A' },
-  { id: 'family', label: 'Family', dotColor: '#3B82F6' },
-  { id: 'personal', label: 'Personal', dotColor: '#10B981' },
-  { id: 'finance', label: 'Finance', dotColor: '#EF4444' },
-  { id: 'health', label: 'Health', dotColor: '#8B5CF6' },
-  { id: 'travel', label: 'Travel', dotColor: '#14B8A6' },
-  { id: 'work', label: 'Work', dotColor: '#94A3B8' },
+  { id: 'household', label: 'Household', dotColor: Colors.primary },
+  { id: 'family', label: 'Family', dotColor: Colors.info },
+  { id: 'personal', label: 'Personal', dotColor: Colors.success },
+  { id: 'finance', label: 'Finance', dotColor: Colors.danger },
+  { id: 'health', label: 'Health', dotColor: Colors.tagHealth },
+  { id: 'travel', label: 'Travel', dotColor: Colors.accentTeal },
+  { id: 'work', label: 'Work', dotColor: Colors.slateLight },
 ];
 
 const PRIORITY_CARDS: {
@@ -33,9 +36,9 @@ const PRIORITY_CARDS: {
   subtitle: string;
   dotColor: string;
 }[] = [
-  { id: 'high', title: 'High', subtitle: 'Do first', dotColor: '#F87171' },
-  { id: 'medium', title: 'Medium', subtitle: 'This week', dotColor: '#FBBF24' },
-  { id: 'low', title: 'Low', subtitle: 'When free', dotColor: '#8A97AB' },
+  { id: 'high', title: 'High', subtitle: 'Do first', dotColor: Colors.tagRedSoft },
+  { id: 'medium', title: 'Medium', subtitle: 'This week', dotColor: Colors.tripYellowAccent },
+  { id: 'low', title: 'Low', subtitle: 'When free', dotColor: Colors.textSecondaryMuted },
 ];
 
 const CategoryPriorityModal: React.FC<CategoryPriorityModalProps> = ({
@@ -149,13 +152,15 @@ const CategoryPriorityModal: React.FC<CategoryPriorityModalProps> = ({
           </View>
 
           {/* Done Button */}
-          <TouchableOpacity
-            style={styles.doneBtn}
+          <CommonBtn
+            title="Done"
             onPress={handleDone}
-            activeOpacity={0.8}
-          >
-            <Text style={styles.doneBtnText}>Done</Text>
-          </TouchableOpacity>
+            backgroundColor={Colors.primary}
+            height={52}
+            borderRadius={26}
+            marginTop={24}
+            fontSize={16}
+          />
         </View>
       </View>
     </Modal>
@@ -168,7 +173,7 @@ const styles = StyleSheet.create({
   overlay: {
     flex: 1,
     justifyContent: 'flex-end',
-    backgroundColor: 'rgba(0, 0, 0, 0.65)',
+    backgroundColor: Colors.tasksDarkOverlay,
   },
   backdrop: {
     position: 'absolute',
@@ -178,11 +183,11 @@ const styles = StyleSheet.create({
     bottom: 0,
   },
   sheetContainer: {
-    backgroundColor: '#122440',
+    backgroundColor: Colors.cardBackground,
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
     borderTopWidth: 1,
-    borderColor: '#1F3352',
+    borderColor: Colors.borderBold,
     paddingHorizontal: 20,
     paddingTop: 12,
   },
@@ -190,22 +195,22 @@ const styles = StyleSheet.create({
     width: 40,
     height: 4,
     borderRadius: 2,
-    backgroundColor: '#3A4556',
+    backgroundColor: Colors.borderMutedAlt,
     alignSelf: 'center',
     marginBottom: 16,
   },
   title: {
-    fontSize: 22,
-    fontFamily: 'Roboto-Bold',
-    color: '#CAD4DF',
+    fontSize: Typography.size.titleLarge,
+    fontFamily: Fonts.bold,
+    color: Colors.textLightMutedAlt,
     textAlign: 'center',
     marginBottom: 20,
   },
   sectionHeader: {
-    fontSize: 11,
-    fontFamily: 'Roboto-Bold',
+    fontSize: Typography.size.captionSmall,
+    fontFamily: Fonts.bold,
     letterSpacing: 1.2,
-    color: '#8A97AB',
+    color: Colors.textSecondaryMuted,
     marginBottom: 12,
   },
   categoryChipsRow: {
@@ -221,13 +226,13 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     borderRadius: 8,
     borderWidth: 1.5,
-    borderColor: '#3A4556',
-    backgroundColor: 'transparent',
+    borderColor: Colors.borderMutedAlt,
+    backgroundColor: Colors.transparent,
     gap: 8,
   },
   categoryChipSelected: {
-    backgroundColor: '#F0913A',
-    borderColor: '#F0913A',
+    backgroundColor: Colors.primary,
+    borderColor: Colors.primary,
   },
   dot: {
     width: 7,
@@ -235,13 +240,13 @@ const styles = StyleSheet.create({
     borderRadius: 3.5,
   },
   categoryChipText: {
-    fontSize: 14,
-    fontFamily: 'Roboto-SemiBold',
-    color: '#CAD4DF',
+    fontSize: Typography.size.body,
+    fontFamily: Fonts.semiBold,
+    color: Colors.textLightMutedAlt,
   },
   categoryChipTextSelected: {
-    color: '#0B1A2F',
-    fontFamily: 'Roboto-Bold',
+    color: Colors.background,
+    fontFamily: Fonts.bold,
   },
   priorityCardsRow: {
     flexDirection: 'row',
@@ -250,17 +255,17 @@ const styles = StyleSheet.create({
   },
   priorityCard: {
     flex: 1,
-    backgroundColor: 'transparent',
+    backgroundColor: Colors.transparent,
     borderRadius: 18,
     borderWidth: 1.5,
-    borderColor: '#3A4556',
+    borderColor: Colors.borderMutedAlt,
     paddingVertical: 16,
     paddingHorizontal: 12,
     alignItems: 'center',
   },
   priorityCardSelected: {
-    borderColor: '#F0913A',
-    backgroundColor: 'transparent',
+    borderColor: Colors.primary,
+    backgroundColor: Colors.transparent,
     borderWidth: 2,
   },
   priorityDot: {
@@ -270,26 +275,26 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   priorityTitle: {
-    fontSize: 16,
-    fontFamily: 'Roboto-Bold',
-    color: '#FFFFFF',
+    fontSize: Typography.size.subtitle,
+    fontFamily: Fonts.bold,
+    color: Colors.white,
     marginBottom: 4,
   },
   prioritySubtitle: {
-    fontSize: 12,
-    color: '#8A97AB',
+    fontSize: Typography.size.caption,
+    color: Colors.textSecondaryMuted,
   },
   doneBtn: {
     height: 52,
     borderRadius: 26,
-    backgroundColor: '#F0913A',
+    backgroundColor: Colors.primary,
     justifyContent: 'center',
     alignItems: 'center',
     marginTop: 8,
   },
   doneBtnText: {
-    fontSize: 16,
-    fontFamily: 'Roboto-Bold',
-    color: '#FFFFFF',
+    fontSize: Typography.size.subtitle,
+    fontFamily: Fonts.bold,
+    color: Colors.white,
   },
 });

@@ -11,6 +11,9 @@ import Ionicons from '@react-native-vector-icons/ionicons';
 import { ListGroup, ListType } from '../types';
 import { LIST_TYPE_CONFIG } from '../constants';
 import { TripData } from './tripPlanner';
+import CommonBtn from '../../../../components/CommonBtn';
+
+import { Colors, Fonts, Typography } from '../../../../units';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
@@ -65,7 +68,7 @@ const ListsOverviewSection: React.FC<ListsOverviewSectionProps> = ({
         <View style={styles.concentricOuter}>
           <View style={styles.concentricMiddle}>
             <View style={styles.concentricInner}>
-              <Feather name="list" size={32} color="#F0913A" />
+              <Feather name="list" size={32} color={Colors.primary} />
             </View>
           </View>
         </View>
@@ -127,16 +130,18 @@ const ListsOverviewSection: React.FC<ListsOverviewSectionProps> = ({
         </View>
 
         {/* Create List Button */}
-        <TouchableOpacity
-          style={styles.createBtn}
+        <CommonBtn
+          title="Create a list"
           onPress={() => onCreateNewList()}
-          activeOpacity={0.8}
-          accessibilityRole="button"
-          accessibilityLabel="Create a list"
-        >
-          <Feather name="plus" size={20} color="#FFFFFF" style={styles.btnPlus} />
-          <Text style={styles.createBtnText}>Create a list</Text>
-        </TouchableOpacity>
+          backgroundColor={Colors.primary}
+          height={52}
+          borderRadius={26}
+          marginTop={28}
+          fontSize={16}
+          leftComponent={
+            <Feather name="plus" size={20} color={Colors.white} style={styles.btnPlus} />
+          }
+        />
       </View>
     );
   }
@@ -152,7 +157,7 @@ const ListsOverviewSection: React.FC<ListsOverviewSectionProps> = ({
         accessibilityLabel="Vacation Planner: Jaipur, 13-16 Nov"
       >
         <View style={styles.airplaneCircle}>
-          <Ionicons name="airplane-outline" size={24} color="#0B1A2F" />
+          <Ionicons name="airplane-outline" size={24} color={Colors.background} />
         </View>
 
         <View style={styles.vacationTextCol}>
@@ -161,7 +166,7 @@ const ListsOverviewSection: React.FC<ListsOverviewSectionProps> = ({
           <Text style={styles.vacationSubtitle}>{tripSubtitle}</Text>
         </View>
 
-        <Feather name="chevron-right" size={20} color="#2DD4BF" />
+        <Feather name="chevron-right" size={20} color={Colors.accentTealMint} />
       </TouchableOpacity>
 
       {/* 2-Column Grid of Lists (LST-01) */}
@@ -193,7 +198,7 @@ const ListsOverviewSection: React.FC<ListsOverviewSectionProps> = ({
                 <View style={styles.avatarCluster}>
                   {list.sharedWith.slice(0, 3).map((name, idx) => {
                     const initial = name.slice(0, name === 'Aarav' ? 2 : 1);
-                    const bgColors = ['#78350F', '#1E3A8A', '#064E3B', '#581C87'];
+                    const bgColors = [Colors.tripYellowBg, Colors.tripBlueBg, Colors.tripGreenBg, Colors.tripPurpleBg];
                     const bg = bgColors[idx % bgColors.length];
                     return (
                       <View
@@ -248,7 +253,7 @@ const ListsOverviewSection: React.FC<ListsOverviewSectionProps> = ({
           accessibilityLabel="Add new list"
         >
           <View style={styles.dashedCenterCircle}>
-            <Feather name="plus" size={24} color="#F0913A" />
+            <Feather name="plus" size={24} color={Colors.primary} />
           </View>
         </TouchableOpacity>
       </View>
@@ -265,10 +270,10 @@ const styles = StyleSheet.create({
     paddingBottom: 40,
   },
   vacationBanner: {
-    backgroundColor: '#0F2A33',
+    backgroundColor: Colors.tripBannerBg,
     borderRadius: 24,
     borderWidth: 1.5,
-    borderColor: '#2DD4BF',
+    borderColor: Colors.accentTealMint,
     paddingVertical: 14,
     paddingHorizontal: 16,
     flexDirection: 'row',
@@ -279,7 +284,7 @@ const styles = StyleSheet.create({
     width: 48,
     height: 48,
     borderRadius: 24,
-    backgroundColor: '#2DD4BF',
+    backgroundColor: Colors.accentTealMint,
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 14,
@@ -288,22 +293,22 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   vacationEyebrow: {
-    fontSize: 11,
-    fontFamily: 'Roboto-Bold',
-    color: '#2DD4BF',
+    fontSize: Typography.size.captionSmall,
+    fontFamily: Fonts.bold,
+    color: Colors.accentTealMint,
     letterSpacing: 1.2,
     marginBottom: 4,
   },
   vacationTitle: {
-    fontSize: 17,
-    fontFamily: 'Roboto-Bold',
-    color: '#FFFFFF',
+    fontSize: Typography.size.subtitle,
+    fontFamily: Fonts.bold,
+    color: Colors.white,
     marginBottom: 3,
   },
   vacationSubtitle: {
-    fontSize: 13,
-    fontFamily: 'Roboto-Medium',
-    color: '#8A97AB',
+    fontSize: Typography.size.bodySmall,
+    fontFamily: Fonts.medium,
+    color: Colors.textSecondaryMuted,
   },
   gridContainer: {
     flexDirection: 'row',
@@ -313,10 +318,10 @@ const styles = StyleSheet.create({
   },
   listCard: {
     width: (SCREEN_WIDTH - 52) / 2,
-    backgroundColor: 'transparent',
+    backgroundColor: Colors.transparent,
     borderRadius: 20,
     borderWidth: 1.5,
-    borderColor: '#3A4556',
+    borderColor: Colors.borderMutedAlt,
     padding: 14,
     minHeight: 156,
     justifyContent: 'space-between',
@@ -333,7 +338,7 @@ const styles = StyleSheet.create({
     borderWidth: 1.5,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: 'transparent',
+    backgroundColor: Colors.transparent,
   },
   avatarCluster: {
     flexDirection: 'row',
@@ -346,30 +351,30 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     borderWidth: 1.5,
-    borderColor: '#122440',
+    borderColor: Colors.cardBackground,
   },
   clusterInitial: {
-    fontSize: 10,
-    fontFamily: 'Roboto-Bold',
-    color: '#FFFFFF',
+    fontSize: Typography.size.micro,
+    fontFamily: Fonts.bold,
+    color: Colors.white,
   },
   listCardTitle: {
-    fontSize: 15,
-    fontFamily: 'Roboto-Bold',
-    color: '#FFFFFF',
+    fontSize: Typography.size.bodyMedium,
+    fontFamily: Fonts.bold,
+    color: Colors.white,
     marginTop: 10,
     lineHeight: 20,
   },
   listCardSubtitle: {
-    fontSize: 13,
-    fontFamily: 'Roboto-Medium',
-    color: '#8A97AB',
+    fontSize: Typography.size.bodySmall,
+    fontFamily: Fonts.medium,
+    color: Colors.textSecondaryMuted,
     marginVertical: 6,
   },
   progressTrack: {
     height: 4,
     borderRadius: 2,
-    backgroundColor: '#1A2C46',
+    backgroundColor: Colors.surfaceNavyAlt,
     overflow: 'hidden',
   },
   progressFill: {
@@ -382,43 +387,43 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     borderWidth: 1.5,
     borderStyle: 'dashed',
-    borderColor: '#F0913A',
+    borderColor: Colors.primary,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: 'rgba(240, 145, 58, 0.04)',
+    backgroundColor: Colors.tasksDashedCardBg,
   },
   dashedCenterCircle: {
     width: 44,
     height: 44,
     borderRadius: 22,
     borderWidth: 1.5,
-    borderColor: '#F0913A',
+    borderColor: Colors.primary,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: 'transparent',
+    backgroundColor: Colors.transparent,
   },
 
   // Empty state styles
   emptyContainer: {
     alignItems: 'center',
     paddingHorizontal: 24,
-    paddingTop: 40,
+    paddingTop: 20,
     paddingBottom: 40,
   },
   concentricOuter: {
-    width: 140,
-    height: 140,
+    width: 120,
+    height: 120,
     borderRadius: 70,
-    backgroundColor: 'rgba(240, 145, 58, 0.05)',
+    backgroundColor: Colors.tasksOrangeTintSubtle,
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 24,
+    marginBottom: 10,
   },
   concentricMiddle: {
     width: 104,
     height: 104,
     borderRadius: 52,
-    backgroundColor: 'rgba(240, 145, 58, 0.1)',
+    backgroundColor: Colors.tasksOrangeTint,
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -426,20 +431,20 @@ const styles = StyleSheet.create({
     width: 72,
     height: 72,
     borderRadius: 36,
-    backgroundColor: '#172B47',
+    backgroundColor: Colors.tasksCardDivider,
     justifyContent: 'center',
     alignItems: 'center',
   },
   emptyTitle: {
-    fontSize: 22,
-    fontFamily: 'Roboto-Bold',
-    color: '#FFFFFF',
+    fontSize: Typography.size.titleLarge,
+    fontFamily: Fonts.bold,
+    color: Colors.white,
     marginBottom: 10,
     textAlign: 'center',
   },
   emptySubtitle: {
-    fontSize: 14,
-    color: '#8A97AB',
+    fontSize: Typography.size.body,
+    color: Colors.textSecondaryMuted,
     textAlign: 'center',
     lineHeight: 22,
     marginBottom: 24,
@@ -457,8 +462,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     borderRadius: 8,
     borderWidth: 1.5,
-    borderColor: '#3A4556',
-    backgroundColor: 'transparent',
+    borderColor: Colors.borderMutedAlt,
+    backgroundColor: Colors.transparent,
   },
   dot: {
     width: 8,
@@ -467,27 +472,27 @@ const styles = StyleSheet.create({
     marginRight: 6,
   },
   dotOrange: {
-    backgroundColor: '#F0913A',
+    backgroundColor: Colors.primary,
   },
   dotTeal: {
-    backgroundColor: '#2DD4BF',
+    backgroundColor: Colors.accentTealMint,
   },
   dotBlue: {
-    backgroundColor: '#60A5FA',
+    backgroundColor: Colors.tripBlueAccent,
   },
   dotPurple: {
-    backgroundColor: '#C084FC',
+    backgroundColor: Colors.tripPurpleAccent,
   },
   dotGreen: {
-    backgroundColor: '#34D399',
+    backgroundColor: Colors.tripGreenMint,
   },
   clusterAvatarOverlap: {
     marginLeft: -6,
   },
   suggestionText: {
-    fontSize: 13,
-    fontFamily: 'Roboto-SemiBold',
-    color: '#CAD4DF',
+    fontSize: Typography.size.bodySmall,
+    fontFamily: Fonts.semiBold,
+    color: Colors.textLightMutedAlt,
   },
   createBtn: {
     flexDirection: 'row',
@@ -496,15 +501,15 @@ const styles = StyleSheet.create({
     width: '100%',
     height: 52,
     borderRadius: 26,
-    backgroundColor: '#F0913A',
+    backgroundColor: Colors.primary,
     marginTop: 28,
   },
   btnPlus: {
     marginRight: 8,
   },
   createBtnText: {
-    fontSize: 16,
-    fontFamily: 'Roboto-Bold',
-    color: '#FFFFFF',
+    fontSize: Typography.size.subtitle,
+    fontFamily: Fonts.bold,
+    color: Colors.white,
   },
 });

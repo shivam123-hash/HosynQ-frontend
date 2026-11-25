@@ -1,6 +1,9 @@
 import React from 'react';
-import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, Platform } from 'react-native';
 import Feather from '@react-native-vector-icons/feather';
+import Fonts from '../../../../units/FontsStyle';
+import Colors from '../../../../units/Colors';
+import Typography from '../../../../units/Typography';
 
 export interface PendingAlertCardsRowProps {
   overdueCount: number;
@@ -36,7 +39,7 @@ const PendingAlertCardsRow: React.FC<PendingAlertCardsRowProps> = ({
         <Feather
           name="alert-circle"
           size={20}
-          color="#F0913A"
+          color={Colors.primary}
           style={styles.icon}
         />
         <View style={styles.textColumn}>
@@ -62,7 +65,7 @@ const PendingAlertCardsRow: React.FC<PendingAlertCardsRowProps> = ({
         <Feather
           name="clock"
           size={20}
-          color="#CAD4DF"
+          color={Colors.textLightMutedAlt}
           style={styles.icon}
         />
         <View style={styles.textColumn}>
@@ -88,7 +91,7 @@ const styles = StyleSheet.create({
   card: {
     flex: 1,
     height: 64,
-    backgroundColor: '#0F1D30',
+    backgroundColor: Colors.tasksCardBg,
     borderRadius: 16,
     borderWidth: 1.5,
     flexDirection: 'row',
@@ -96,13 +99,13 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
   },
   overdueCard: {
-    borderColor: '#6B3024',
+    borderColor: Colors.tasksOverdueBorder,
   },
   dueThisWeekCard: {
-    borderColor: '#1E3557',
+    borderColor: Colors.tasksCardBorder,
   },
   activeCardBorder: {
-    borderColor: '#F0913A',
+    borderColor: Colors.primary,
   },
   icon: {
     marginRight: 10,
@@ -111,15 +114,15 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   cardEyebrow: {
-    fontSize: 11,
-    fontFamily: 'Roboto-Bold',
-    letterSpacing: 1.2,
-    color: '#8A97AB',
+    fontSize: Platform.OS === "android" ? Typography.size.captionSmall : Typography.size.caption,
+    fontFamily: Fonts.bold,
+    letterSpacing: 1.1,
+    color: Colors.textSecondaryMuted,
     marginBottom: 2,
   },
   cardValue: {
-    fontSize: 16,
-    fontFamily: 'Roboto-Bold',
-    color: '#FFFFFF',
+    fontSize: Typography.size.bodySmall,
+    fontFamily: Fonts.light,
+    color: Colors.white,
   },
 });

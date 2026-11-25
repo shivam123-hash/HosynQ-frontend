@@ -8,6 +8,7 @@ import BorderRadius from '../../../../units/BorderRadius';
 import Typography from '../../../../units/Typography';
 import tasksServices, { WorkloadMemberData } from '../../../../services/tasksServices';
 import { isUUID } from '../taskApiHelpers';
+import { Fonts } from '../../../../units';
 
 export interface ReassignModalProps {
   visible: boolean;
@@ -81,7 +82,7 @@ const ReassignModal: React.FC<ReassignModalProps> = ({
         name: wm.fullName,
         initial: ((wm.fullName || 'M').trim()[0] || 'M').toUpperCase(),
         avatarBg: wm.avatarColor || Colors.primary,
-        avatarColor: '#FFFFFF',
+        avatarColor: Colors.white,
         taskCount: wm.activeTasksCount ?? 0,
         isChild: false,
       }));
@@ -89,10 +90,10 @@ const ReassignModal: React.FC<ReassignModalProps> = ({
     if (familyMembers && familyMembers.length > 0) {
       return familyMembers.map((m: any) => ({
         id: m.memberId || m.id,
-        name: m.fullName || m.name || 'Member',
+        name: m.fullName || m.name || (m.isYou ? 'You' : 'Member'),
         initial: ((m.fullName || m.name || 'M').trim()[0] || 'M').toUpperCase(),
         avatarBg: m.avatarColor || Colors.primary,
-        avatarColor: '#FFFFFF',
+        avatarColor: Colors.white,
         taskCount: 1,
         isChild:
           m.role === 'CHILD' ||
@@ -101,21 +102,35 @@ const ReassignModal: React.FC<ReassignModalProps> = ({
           m.relationship === 'CHILD',
       }));
     }
-    return [];
-  }, [familyMembers, workloadMembers]);
+    return [
+      {
+        id: 'you',
+        name: 'You',
+        initial: 'Y',
+        avatarBg: Colors.primary,
+        avatarColor: Colors.white,
+        taskCount: 1,
+        isChild: false,
+      },
+    ];
+  }, [workloadMembers, familyMembers]);
 
   const [selectedId, setSelectedId] = useState<string>(() => {
-    const rohan = members.find((m: ReassignMemberOption) => m.name.toLowerCase() === 'rohan' || m.id === 'rohan');
-    return rohan?.id || members.find((m: ReassignMemberOption) => m.name.toLowerCase() !== currentAssignee.toLowerCase())?.id || members[0]?.id || 'rohan';
+    const target =
+      members.find((m: ReassignMemberOption) => m.name.toLowerCase() !== currentAssignee.toLowerCase()) ||
+      members[0];
+    return target?.id || 'you';
   });
   const [notifyAssignee, setNotifyAssignee] = useState(true);
 
   useEffect(() => {
     if (members.length > 0 && !members.some((m: ReassignMemberOption) => m.id === selectedId)) {
-      const rohan = members.find((m: ReassignMemberOption) => m.name.toLowerCase() === 'rohan' || m.id === 'rohan');
-      setSelectedId(rohan?.id || members[0].id);
+      const target =
+        members.find((m: ReassignMemberOption) => m.name.toLowerCase() !== currentAssignee.toLowerCase()) ||
+        members[0];
+      setSelectedId(target?.id || members[0].id);
     }
-  }, [members, selectedId]);
+  }, [members, selectedId, currentAssignee]);
 
   const selectedMember =
     members.find((m: ReassignMemberOption) => m.id === selectedId) ||
@@ -257,14 +272,14 @@ const styles = StyleSheet.create({
   },
   avatarText: {
     fontSize: Typography.size.bodyMedium,
-    fontFamily: 'Roboto-Bold',
+    fontFamily: Fonts.bold,
   },
   memberInfo: {
     flex: 1,
   },
   memberName: {
     fontSize: Typography.size.bodyMedium,
-    fontFamily: 'Roboto-SemiBold',
+    fontFamily: Fonts.semiBold,
     color: Colors.textLightMutedAlt,
   },
   memberSub: {
@@ -299,7 +314,7 @@ const styles = StyleSheet.create({
   },
   switchLabel: {
     fontSize: Typography.size.bodyMedium,
-    fontFamily: 'Roboto-SemiBold',
+    fontFamily: Fonts.semiBold,
     color: Colors.textLightMutedAlt,
   },
 });

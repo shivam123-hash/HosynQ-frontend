@@ -10,7 +10,9 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Feather from '@react-native-vector-icons/feather';
-import { AppDateTimePicker, parseDateTimeString } from '../../../../components';
+import { AppDateTimePicker, parseDateTimeString, CommonBtn } from '../../../../components';
+
+import { Colors, Fonts, Typography } from '../../../../units';
 
 export interface DueDateTimeModalProps {
   visible: boolean;
@@ -528,7 +530,7 @@ const DueDateTimeModal: React.FC<DueDateTimeModalProps> = ({
                   accessibilityRole="button"
                   accessibilityLabel="Previous month"
                 >
-                  <Feather name="chevron-left" size={20} color="#CAD4DF" />
+                  <Feather name="chevron-left" size={20} color={Colors.textLightMutedAlt} />
                 </TouchableOpacity>
 
                 <Text style={styles.monthTitle}>
@@ -542,7 +544,7 @@ const DueDateTimeModal: React.FC<DueDateTimeModalProps> = ({
                   accessibilityRole="button"
                   accessibilityLabel="Next month"
                 >
-                  <Feather name="chevron-right" size={20} color="#CAD4DF" />
+                  <Feather name="chevron-right" size={20} color={Colors.textLightMutedAlt} />
                 </TouchableOpacity>
               </View>
 
@@ -719,21 +721,21 @@ const DueDateTimeModal: React.FC<DueDateTimeModalProps> = ({
             <Switch
               value={noSpecificTime}
               onValueChange={setNoSpecificTime}
-              trackColor={{ false: '#3A4556', true: '#F0913A' }}
-              thumbColor="#FFFFFF"
+              trackColor={{ false: Colors.borderMutedAlt, true: Colors.primary }}
+              thumbColor={Colors.white}
             />
           </View>
 
           {/* Done Button */}
-          <TouchableOpacity
-            style={styles.doneBtn}
+          <CommonBtn
+            title="Done"
             onPress={handleDone}
-            activeOpacity={0.8}
-            accessibilityRole="button"
-            accessibilityLabel="Done"
-          >
-            <Text style={styles.doneBtnText}>Done</Text>
-          </TouchableOpacity>
+            backgroundColor={Colors.primary}
+            height={52}
+            borderRadius={26}
+            marginTop={24}
+            fontSize={16}
+          />
         </View>
 
         {/* Integrated Native Wheel Time Picker */}
@@ -744,8 +746,8 @@ const DueDateTimeModal: React.FC<DueDateTimeModalProps> = ({
           confirmText="Confirm"
           cancelText="Cancel"
           theme="dark"
-          buttonColor="#F0913A"
-          dividerColor="#1F3352"
+          buttonColor={Colors.primary}
+          dividerColor={Colors.borderBold}
           date={parseDateTimeString(selectedTimeStr, 'time')}
           onConfirm={handleConfirmCustomTime}
           onCancel={() => setIsTimePickerVisible(false)}
@@ -761,7 +763,7 @@ const styles = StyleSheet.create({
   overlay: {
     flex: 1,
     justifyContent: 'flex-end',
-    backgroundColor: 'rgba(0, 0, 0, 0.65)',
+    backgroundColor: Colors.tasksDarkOverlay,
   },
   backdrop: {
     position: 'absolute',
@@ -771,11 +773,11 @@ const styles = StyleSheet.create({
     bottom: 0,
   },
   sheetContainer: {
-    backgroundColor: '#122440',
+    backgroundColor: Colors.cardBackground,
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
     borderTopWidth: 1,
-    borderColor: '#1F3352',
+    borderColor: Colors.borderBold,
     paddingHorizontal: 20,
     paddingTop: 12,
     maxHeight: '92%',
@@ -784,14 +786,14 @@ const styles = StyleSheet.create({
     width: 40,
     height: 4,
     borderRadius: 2,
-    backgroundColor: '#3A4556',
+    backgroundColor: Colors.borderMutedAlt,
     alignSelf: 'center',
     marginBottom: 16,
   },
   title: {
-    fontSize: 22,
-    fontFamily: 'Roboto-Bold',
-    color: '#FFFFFF',
+    fontSize: Typography.size.titleLarge,
+    fontFamily: Fonts.bold,
+    color: Colors.white,
     textAlign: 'center',
     marginBottom: 16,
   },
@@ -815,35 +817,35 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     borderRadius: 8,
     borderWidth: 1.5,
-    borderColor: '#3A4556',
-    backgroundColor: 'transparent',
+    borderColor: Colors.borderMutedAlt,
+    backgroundColor: Colors.transparent,
     justifyContent: 'center',
     alignItems: 'center',
   },
   quickChipSelected: {
-    backgroundColor: '#F0913A',
-    borderColor: '#F0913A',
+    backgroundColor: Colors.primary,
+    borderColor: Colors.primary,
   },
   quickChipText: {
-    fontSize: 14,
-    fontFamily: 'Roboto-SemiBold',
-    color: '#CAD4DF',
+    fontSize: Typography.size.body,
+    fontFamily: Fonts.semiBold,
+    color: Colors.textLightMutedAlt,
   },
   quickChipTextSelected: {
-    color: '#0B1A2F',
-    fontFamily: 'Roboto-Bold',
+    color: Colors.background,
+    fontFamily: Fonts.bold,
   },
   chipDisabled: {
     opacity: 0.4,
   },
   chipDisabledText: {
-    color: '#8A97AB',
+    color: Colors.textSecondaryMuted,
   },
   calendarCard: {
-    backgroundColor: 'transparent',
+    backgroundColor: Colors.transparent,
     borderRadius: 20,
     borderWidth: 1.5,
-    borderColor: '#3A4556',
+    borderColor: Colors.borderMutedAlt,
     padding: 14,
     marginBottom: 16,
   },
@@ -861,9 +863,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   monthTitle: {
-    fontSize: 16,
-    fontFamily: 'Roboto-Bold',
-    color: '#FFFFFF',
+    fontSize: Typography.size.subtitle,
+    fontFamily: Fonts.bold,
+    color: Colors.white,
   },
   weekHeadersRow: {
     flexDirection: 'row',
@@ -873,9 +875,9 @@ const styles = StyleSheet.create({
   weekHeaderText: {
     flex: 1,
     textAlign: 'center',
-    fontSize: 12,
-    fontFamily: 'Roboto-SemiBold',
-    color: '#8A97AB',
+    fontSize: Typography.size.caption,
+    fontFamily: Fonts.semiBold,
+    color: Colors.textSecondaryMuted,
   },
   daysGrid: {
     flexDirection: 'row',
@@ -900,31 +902,28 @@ const styles = StyleSheet.create({
   },
   todayCircle: {
     borderWidth: 1.5,
-    borderColor: '#3A4D6B',
+    borderColor: Colors.borderSlate,
   },
   selectedDayCircle: {
-    backgroundColor: '#F0913A',
-    borderWidth: 0,
+    backgroundColor: Colors.primary,
   },
   dayText: {
-    fontSize: 14,
-    fontFamily: 'Roboto-SemiBold',
-    color: '#FFFFFF',
-    includeFontPadding: false,
-    textAlign: 'center',
+    fontSize: Typography.size.body,
+    fontFamily: Fonts.semiBold,
+    color: Colors.white,
   },
   otherMonthDayText: {
-    color: '#4B5970',
+    color: Colors.textPlaceholder,
   },
   selectedDayText: {
-    color: '#0B1A2F',
-    fontFamily: 'Roboto-Bold',
+    color: Colors.background,
+    fontFamily: Fonts.bold,
   },
   sectionHeader: {
-    fontSize: 11,
-    fontFamily: 'Roboto-Bold',
+    fontSize: Typography.size.captionSmall,
+    fontFamily: Fonts.bold,
     letterSpacing: 1.2,
-    color: '#8A97AB',
+    color: Colors.textSecondaryMuted,
     marginBottom: 10,
   },
   quickTimeRow: {
@@ -934,23 +933,23 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   timePickerCard: {
-    backgroundColor: 'transparent',
+    backgroundColor: Colors.transparent,
     borderRadius: 16,
     borderWidth: 1.5,
-    borderColor: '#3A4556',
+    borderColor: Colors.borderMutedAlt,
     padding: 14,
     marginBottom: 16,
   },
   timePickerTitle: {
-    fontSize: 14,
-    fontFamily: 'Roboto-Bold',
-    color: '#CAD4DF',
+    fontSize: Typography.size.body,
+    fontFamily: Fonts.bold,
+    color: Colors.textLightMutedAlt,
     marginBottom: 8,
   },
   timePickerSubLabel: {
-    fontSize: 11,
-    fontFamily: 'Roboto-SemiBold',
-    color: '#8A97AB',
+    fontSize: Typography.size.captionSmall,
+    fontFamily: Fonts.semiBold,
+    color: Colors.textSecondaryMuted,
     marginBottom: 6,
     textTransform: 'uppercase',
   },
@@ -982,39 +981,39 @@ const styles = StyleSheet.create({
     height: 34,
     paddingHorizontal: 12,
     borderRadius: 8,
-    backgroundColor: 'transparent',
+    backgroundColor: Colors.transparent,
     borderWidth: 1.5,
-    borderColor: '#3A4556',
+    borderColor: Colors.borderMutedAlt,
     justifyContent: 'center',
     alignItems: 'center',
   },
   timeNumberPillActive: {
-    backgroundColor: '#F0913A',
-    borderColor: '#F0913A',
+    backgroundColor: Colors.primary,
+    borderColor: Colors.primary,
   },
   timeNumberText: {
-    fontSize: 13,
-    fontFamily: 'Roboto-SemiBold',
-    color: '#CAD4DF',
+    fontSize: Typography.size.bodySmall,
+    fontFamily: Fonts.semiBold,
+    color: Colors.textLightMutedAlt,
   },
   timeNumberTextActive: {
-    color: '#0B1A2F',
-    fontFamily: 'Roboto-Bold',
+    color: Colors.background,
+    fontFamily: Fonts.bold,
   },
   applyTimeBtn: {
     height: 40,
     borderRadius: 20,
-    backgroundColor: 'transparent',
+    backgroundColor: Colors.transparent,
     borderWidth: 1.5,
-    borderColor: '#F0913A',
+    borderColor: Colors.primary,
     justifyContent: 'center',
     alignItems: 'center',
     marginTop: 6,
   },
   applyTimeBtnText: {
-    fontSize: 14,
-    fontFamily: 'Roboto-Bold',
-    color: '#F0913A',
+    fontSize: Typography.size.body,
+    fontFamily: Fonts.bold,
+    color: Colors.primary,
   },
   switchRow: {
     flexDirection: 'row',
@@ -1024,21 +1023,21 @@ const styles = StyleSheet.create({
     marginBottom: 10,
   },
   switchLabel: {
-    fontSize: 16,
-    fontFamily: 'Roboto-SemiBold',
-    color: '#FFFFFF',
+    fontSize: Typography.size.subtitle,
+    fontFamily: Fonts.semiBold,
+    color: Colors.white,
   },
   doneBtn: {
     height: 52,
     borderRadius: 26,
-    backgroundColor: '#F0913A',
+    backgroundColor: Colors.primary,
     justifyContent: 'center',
     alignItems: 'center',
     marginTop: 4,
   },
   doneBtnText: {
-    fontSize: 16,
-    fontFamily: 'Roboto-Bold',
-    color: '#FFFFFF',
+    fontSize: Typography.size.subtitle,
+    fontFamily: Fonts.bold,
+    color: Colors.white,
   },
 });

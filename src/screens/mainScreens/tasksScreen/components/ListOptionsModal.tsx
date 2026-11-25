@@ -13,6 +13,8 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Feather from '@react-native-vector-icons/feather';
 import { ListGroup } from '../types';
 
+import { Colors, Fonts, Typography } from '../../../../units';
+
 export interface ListOptionsModalProps {
   visible: boolean;
   list: ListGroup | null;
@@ -157,8 +159,8 @@ const ListOptionsModal: React.FC<ListOptionsModalProps> = ({
                 value={titleInput}
                 onChangeText={setTitleInput}
                 placeholder="List name..."
-                placeholderTextColor="#8A97AB"
-                selectionColor="#F0913A"
+                placeholderTextColor={Colors.textSecondaryMuted}
+                selectionColor={Colors.primary}
               />
             </View>
 
@@ -173,7 +175,7 @@ const ListOptionsModal: React.FC<ListOptionsModalProps> = ({
                 accessibilityLabel="Duplicate list"
               >
                 <View style={styles.actionIconBox}>
-                  <Feather name="copy" size={20} color="#F0913A" />
+                  <Feather name="copy" size={20} color={Colors.primary} />
                 </View>
                 <View style={styles.actionTextCol}>
                   <Text style={styles.actionTitle}>Duplicate list</Text>
@@ -190,7 +192,7 @@ const ListOptionsModal: React.FC<ListOptionsModalProps> = ({
                 accessibilityLabel={`Clear done items, removes ${doneCount} items`}
               >
                 <View style={styles.actionIconBox}>
-                  <Feather name="check-circle" size={20} color="#F0913A" />
+                  <Feather name="check-circle" size={20} color={Colors.primary} />
                 </View>
                 <View style={styles.actionTextCol}>
                   <Text style={styles.actionTitle}>Clear done items</Text>
@@ -211,7 +213,7 @@ const ListOptionsModal: React.FC<ListOptionsModalProps> = ({
                 accessibilityLabel="Archive list"
               >
                 <View style={styles.actionIconBox}>
-                  <Feather name="archive" size={20} color="#F0913A" />
+                  <Feather name="archive" size={20} color={Colors.primary} />
                 </View>
                 <View style={styles.actionTextCol}>
                   <Text style={styles.actionTitle}>Archive list</Text>
@@ -228,7 +230,7 @@ const ListOptionsModal: React.FC<ListOptionsModalProps> = ({
                 accessibilityLabel="Delete list"
               >
                 <View style={styles.actionIconBox}>
-                  <Feather name="trash-2" size={20} color="#F06A6A" />
+                  <Feather name="trash-2" size={20} color={Colors.dangerCoral} />
                 </View>
                 <View style={styles.actionTextCol}>
                   <Text style={[styles.actionTitle, styles.destructiveText]}>
@@ -262,7 +264,7 @@ const styles = StyleSheet.create({
   overlay: {
     flex: 1,
     justifyContent: 'flex-end',
-    backgroundColor: 'rgba(0, 0, 0, 0.65)',
+    backgroundColor: Colors.tasksDarkOverlay,
   },
   backdrop: {
     position: 'absolute',
@@ -272,11 +274,11 @@ const styles = StyleSheet.create({
     bottom: 0,
   },
   sheetContainer: {
-    backgroundColor: '#122440',
+    backgroundColor: Colors.cardBackground,
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
     borderTopWidth: 1,
-    borderColor: '#1F3352',
+    borderColor: Colors.borderBold,
     paddingHorizontal: 20,
     paddingTop: 12,
     maxHeight: '90%',
@@ -285,14 +287,14 @@ const styles = StyleSheet.create({
     width: 40,
     height: 4,
     borderRadius: 2,
-    backgroundColor: '#3A4556',
+    backgroundColor: Colors.borderMutedAlt,
     alignSelf: 'center',
     marginBottom: 16,
   },
   sheetTitle: {
-    fontSize: 20,
-    fontFamily: 'Roboto-Bold',
-    color: '#FFFFFF',
+    fontSize: Typography.size.title,
+    fontFamily: Fonts.bold,
+    color: Colors.white,
     textAlign: 'center',
     marginBottom: 20,
   },
@@ -300,31 +302,31 @@ const styles = StyleSheet.create({
     paddingBottom: 16,
   },
   inputLabel: {
-    fontSize: 13,
-    fontFamily: 'Roboto-SemiBold',
-    color: '#CAD4DF',
+    fontSize: Typography.size.bodySmall,
+    fontFamily: Fonts.semiBold,
+    color: Colors.textLightMutedAlt,
     marginBottom: 8,
   },
   inputContainer: {
-    backgroundColor: 'transparent',
+    backgroundColor: Colors.transparent,
     borderRadius: 24,
     borderWidth: 1.5,
-    borderColor: '#F0913A',
+    borderColor: Colors.primary,
     paddingHorizontal: 16,
     height: 50,
     justifyContent: 'center',
     marginBottom: 20,
   },
   textInput: {
-    fontSize: 15,
-    fontFamily: 'Roboto-SemiBold',
-    color: '#FFFFFF',
+    fontSize: Typography.size.bodyMedium,
+    fontFamily: Fonts.semiBold,
+    color: Colors.white,
   },
   actionsCard: {
-    backgroundColor: 'transparent',
+    backgroundColor: Colors.transparent,
     borderRadius: 20,
     borderWidth: 1.5,
-    borderColor: '#3A4556',
+    borderColor: Colors.borderMutedAlt,
     overflow: 'hidden',
     marginBottom: 12,
   },
@@ -335,7 +337,7 @@ const styles = StyleSheet.create({
   },
   rowDivider: {
     borderTopWidth: 1,
-    borderTopColor: '#1F3352',
+    borderTopColor: Colors.borderBold,
   },
   actionIconBox: {
     width: 40,
@@ -349,30 +351,30 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   actionTitle: {
-    fontSize: 16,
-    fontFamily: 'Roboto-Bold',
-    color: '#FFFFFF',
+    fontSize: Typography.size.subtitle,
+    fontFamily: Fonts.bold,
+    color: Colors.white,
     marginBottom: 2,
   },
   actionSub: {
-    fontSize: 13,
-    color: '#8A97AB',
+    fontSize: Typography.size.bodySmall,
+    color: Colors.textSecondaryMuted,
   },
   destructiveText: {
-    color: '#F06A6A',
+    color: Colors.dangerCoral,
   },
   saveBtn: {
     height: 52,
     borderRadius: 26,
-    backgroundColor: '#F0913A',
+    backgroundColor: Colors.primary,
     justifyContent: 'center',
     alignItems: 'center',
     marginTop: 8,
   },
   saveBtnText: {
-    fontSize: 16,
-    fontFamily: 'Roboto-Bold',
-    color: '#FFFFFF',
+    fontSize: Typography.size.subtitle,
+    fontFamily: Fonts.bold,
+    color: Colors.white,
   },
 });
 
