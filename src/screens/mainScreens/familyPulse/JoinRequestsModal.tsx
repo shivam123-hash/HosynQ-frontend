@@ -640,6 +640,9 @@ const styles = StyleSheet.create({
     marginTop: 20,
     marginBottom: 8,
   },
+  buttonDisabled: {
+    opacity: 0.6,
+  },
 });
 
 export default JoinRequestsModal;

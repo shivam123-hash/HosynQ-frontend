@@ -3,6 +3,7 @@
   "include": [
     "**/*.ts",
     "**/*.tsx",
+    "**/*.d.ts",
     "src/screens/authScreens/emailScreens",
     "src/screens/authScreens/mobileNumberScreens"
   ],

@@ -14,6 +14,8 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Feather from '@react-native-vector-icons/feather';
 import { CalendarEvent, EventComment } from '../types';
+import calendarServices from '../../../../services/calendarServices';
+import { isUUID, mapApiCommentsToUi } from '../calendarApiHelpers';
 
 export interface EventCommentsModalProps {
   visible: boolean;
@@ -36,6 +38,7 @@ export const EventCommentsModal: React.FC<EventCommentsModalProps> = ({
   const [cachedEvent, setCachedEvent] = useState<CalendarEvent | null>(
     eventProp
   );
+  const [fetchedComments, setFetchedComments] = useState<EventComment[] | null>(null);
 
   useEffect(() => {
     if (eventProp) {
@@ -45,12 +48,42 @@ export const EventCommentsModal: React.FC<EventCommentsModalProps> = ({
 
   const event = eventProp || cachedEvent;
 
+  useEffect(() => {
+    if (visible && event?.id && isUUID(event.id)) {
+      calendarServices
+        .getComments(event.id)
+        .then((res: any) => {
+          if (res?.comments && Array.isArray(res.comments)) {
+            setFetchedComments(mapApiCommentsToUi(res.comments));
+          }
+        })
+        .catch((err) => {
+          console.log('[EventCommentsModal] Fetch comments error:', err);
+        });
+    } else if (!visible) {
+      setFetchedComments(null);
+    }
+  }, [visible, event?.id]);
+
   if (!visible || !event) return null;
+
+  const displayedComments = fetchedComments !== null ? fetchedComments : (event.comments || []);
 
   const handleSend = () => {
     const trimmed = commentText.trim();
     if (!trimmed) return;
     onAddComment(event.id, trimmed);
+    const optimistic: EventComment = {
+      id: `c-${Date.now()}`,
+      authorId: 'you',
+      authorName: 'You',
+      authorInitial: 'Y',
+      authorColor: '#F0913A',
+      time: 'Just now',
+      text: trimmed,
+      isCurrentUser: true,
+    };
+    setFetchedComments((prev) => (prev ? [...prev, optimistic] : [optimistic]));
     setCommentText('');
     setTimeout(() => {
       scrollViewRef.current?.scrollToEnd({ animated: true });
@@ -138,7 +171,7 @@ export const EventCommentsModal: React.FC<EventCommentsModalProps> = ({
           scrollViewRef.current?.scrollToEnd({ animated: false })
         }
       >
-        {event.comments.map((c: EventComment) => {
+        {displayedComments.map((c: EventComment) => {
           const isUser = Boolean(c.isCurrentUser);
           return (
             <View key={c.id} style={styles.commentItem}>

@@ -8,7 +8,7 @@ import {
   Modal,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { CALENDAR_CATEGORIES } from '../mockData';
+import { CALENDAR_CATEGORIES } from '../constants';
 
 export interface CategoryPickerModalProps {
   visible: boolean;

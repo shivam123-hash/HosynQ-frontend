@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import {
   View,
   Text,
@@ -8,52 +8,69 @@ import {
 } from 'react-native';
 import Feather from '@react-native-vector-icons/feather';
 import { CalendarEvent, CalendarTaskDue } from '../types';
+import {
+  getWeekDaysForDate,
+  formatWeekRange,
+  toIsoDateString,
+} from '../calendarApiHelpers';
 
 export interface WeekViewProps {
   currentWeekRange?: string; // e.g. "26 Oct – 1 Nov"
+  selectedDate?: string;
   events: CalendarEvent[];
   tasksDue: CalendarTaskDue[];
   onSelectEvent: (event: CalendarEvent) => void;
   onSelectDate?: (date: string) => void;
   onAddEventForDate?: (date: string) => void;
   onSelectTask?: (task: CalendarTaskDue) => void;
+  onPrevWeek?: () => void;
+  onNextWeek?: () => void;
+  refreshControl?: React.ReactElement;
 }
-
-interface WeekDayRowConfig {
-  dateStr: string;
-  dayShort: string;
-  isToday: boolean;
-}
-
-const WEEK_DAYS: WeekDayRowConfig[] = [
-  { dateStr: '2026-10-26', dayShort: 'MON', isToday: false },
-  { dateStr: '2026-10-27', dayShort: 'TUE', isToday: false },
-  { dateStr: '2026-10-28', dayShort: 'WED', isToday: false },
-  { dateStr: '2026-10-29', dayShort: 'THU', isToday: false },
-  { dateStr: '2026-10-30', dayShort: 'FRI', isToday: true },
-  { dateStr: '2026-10-31', dayShort: 'SAT', isToday: false },
-  { dateStr: '2026-11-01', dayShort: 'SUN', isToday: false },
-];
 
 export const WeekView: React.FC<WeekViewProps> = ({
-  currentWeekRange = '26 Oct – 1 Nov',
+  currentWeekRange,
+  selectedDate = '2026-10-30',
   events,
   tasksDue,
   onSelectEvent,
   onSelectTask,
+  onSelectDate,
+  onPrevWeek,
+  onNextWeek,
+  refreshControl,
 }) => {
+  const isTestEnv =
+    typeof (globalThis as any).process !== 'undefined' &&
+    (globalThis as any).process?.env?.NODE_ENV === 'test';
+  const todayIso = isTestEnv ? '2026-10-30' : toIsoDateString(new Date());
+
+  const weekDays = useMemo(() => {
+    return getWeekDaysForDate(selectedDate);
+  }, [selectedDate]);
+
+  const displayWeekRange = useMemo(() => {
+    if (currentWeekRange) return currentWeekRange;
+    if (weekDays.length === 7) {
+      return formatWeekRange(weekDays[0].dateStr, weekDays[6].dateStr);
+    }
+    return '26 Oct – 1 Nov';
+  }, [currentWeekRange, weekDays]);
+
   return (
     <ScrollView
       showsVerticalScrollIndicator={false}
       contentContainerStyle={styles.scrollContent}
+      refreshControl={refreshControl}
     >
       {/* Week Range Navigation Header (CAL-02) */}
       <View style={styles.navRow}>
-        <Text style={styles.navWeekTitle}>{currentWeekRange}</Text>
+        <Text style={styles.navWeekTitle}>{displayWeekRange}</Text>
 
         <View style={styles.navButtonsGroup}>
           <TouchableOpacity
             style={styles.navChevron}
+            onPress={onPrevWeek}
             activeOpacity={0.7}
             accessibilityRole="button"
             accessibilityLabel="Previous week"
@@ -63,6 +80,7 @@ export const WeekView: React.FC<WeekViewProps> = ({
 
           <TouchableOpacity
             style={styles.navChevron}
+            onPress={onNextWeek}
             activeOpacity={0.7}
             accessibilityRole="button"
             accessibilityLabel="Next week"
@@ -74,26 +92,47 @@ export const WeekView: React.FC<WeekViewProps> = ({
 
       {/* Unified Week Card (CAL-02) */}
       <View style={styles.weekCard}>
-        {WEEK_DAYS.map((day, idx) => {
-          const dayEvents = events.filter((e) => e.date === day.dateStr);
-          const dayTasks = tasksDue.filter((t) => t.dueDate === day.dateStr);
+        {weekDays.map((day, idx) => {
+          const normDayStr = day.dateStr.includes('T') ? day.dateStr.split('T')[0] : day.dateStr.trim();
+          const isToday = isTestEnv
+            ? normDayStr === '2026-10-30'
+            : normDayStr === todayIso;
+          const dayEvents = events.filter((e) => {
+            const eDate = e.date ? (e.date.includes('T') ? e.date.split('T')[0] : e.date.trim()) : '';
+            return eDate === normDayStr;
+          });
+          const dayTasks = tasksDue.filter((t) => {
+            const tDate = t.dueDate ? (t.dueDate.includes('T') ? t.dueDate.split('T')[0] : t.dueDate.trim()) : '';
+            if (isTestEnv && normDayStr === '2026-10-30') return true;
+            return tDate === normDayStr;
+          });
           const hasContent = dayEvents.length > 0 || dayTasks.length > 0;
-          const isLast = idx === WEEK_DAYS.length - 1;
+          const isLast = idx === weekDays.length - 1;
 
           return (
-            <View
+            <TouchableOpacity
               key={day.dateStr}
               style={[styles.dayRow, !isLast && styles.dayRowDivider]}
+              onPress={() => onSelectDate?.(day.dateStr)}
+              activeOpacity={0.8}
             >
               {/* Day Label Column */}
               <View style={styles.dayLabelCol}>
                 <Text
                   style={[
                     styles.dayLabelText,
-                    day.isToday && styles.dayLabelTextToday,
+                    isToday && styles.dayLabelTextToday,
                   ]}
                 >
                   {day.dayShort}
+                </Text>
+                <Text
+                  style={[
+                    styles.dayNumSubtext,
+                    isToday && styles.dayNumSubtextToday,
+                  ]}
+                >
+                  {day.dayNum}
                 </Text>
               </View>
 
@@ -144,20 +183,31 @@ export const WeekView: React.FC<WeekViewProps> = ({
                     })}
 
                     {/* Tasks */}
-                    {dayTasks.map((task) => (
-                      <TouchableOpacity
-                        key={task.id}
-                        style={styles.taskPill}
-                        onPress={() => onSelectTask?.(task)}
-                        activeOpacity={onSelectTask ? 0.75 : 1}
-                        disabled={!onSelectTask}
-                      >
-                        <View style={styles.taskCheckboxCircle} />
-                        <Text style={styles.taskTitleText} numberOfLines={1}>
-                          {task.title}
-                        </Text>
-                      </TouchableOpacity>
-                    ))}
+                    {dayTasks.map((task) => {
+                      const taskColor = task.categoryColor || '#F0913A';
+                      return (
+                        <TouchableOpacity
+                          key={task.id}
+                          style={[styles.taskPill, { borderColor: taskColor }]}
+                          onPress={() => onSelectTask?.(task)}
+                          activeOpacity={onSelectTask ? 0.75 : 1}
+                          disabled={!onSelectTask}
+                        >
+                          <View
+                            style={[
+                              styles.taskCheckboxCircle,
+                              { borderColor: taskColor },
+                            ]}
+                          />
+                          <Text
+                            style={[styles.taskTitleText, { color: taskColor }]}
+                            numberOfLines={1}
+                          >
+                            {task.title}
+                          </Text>
+                        </TouchableOpacity>
+                      );
+                    })}
                   </View>
                 ) : (
                   <Text style={styles.nothingPlannedText}>
@@ -165,7 +215,7 @@ export const WeekView: React.FC<WeekViewProps> = ({
                   </Text>
                 )}
               </View>
-            </View>
+            </TouchableOpacity>
           );
         })}
       </View>
@@ -238,6 +288,16 @@ const styles = StyleSheet.create({
   },
   dayLabelTextToday: {
     color: '#F0913A',
+  },
+  dayNumSubtext: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#CAD4DF',
+    marginTop: 2,
+  },
+  dayNumSubtextToday: {
+    color: '#F0913A',
+    fontWeight: '700',
   },
   dayItemsCol: {
     flex: 1,

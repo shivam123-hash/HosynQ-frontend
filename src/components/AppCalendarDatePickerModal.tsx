@@ -435,7 +435,7 @@ export const AppCalendarDatePickerModal: React.FC<
                       <View
                         style={[
                           styles.dayCircle,
-                          cell.isToday && styles.todayCircle,
+                          !cell.isSelected && cell.isToday && styles.todayCircle,
                           cell.isSelected && styles.selectedDayCircle,
                           cell.isDisabled && styles.disabledDayCircle,
                         ]}
@@ -669,6 +669,9 @@ const styles = StyleSheet.create({
     width: 32,
     height: 32,
     borderRadius: 16,
+    overflow: 'hidden',
+    backgroundColor: 'transparent',
+    borderWidth: 0,
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -678,6 +681,7 @@ const styles = StyleSheet.create({
   },
   selectedDayCircle: {
     backgroundColor: '#F0913A',
+    borderWidth: 0,
   },
   disabledDayCircle: {
     opacity: 0.25,
@@ -686,6 +690,8 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '600',
     color: '#FFFFFF',
+    includeFontPadding: false,
+    textAlign: 'center',
   },
   otherMonthDayText: {
     color: '#4B5970',

@@ -8,6 +8,8 @@ import lifeProfileReducer from './features/lifeProfile/lifeProfileSlice';
 import medicineReducer from './features/medicine/medicineSlice';
 import tasksReducer from './features/tasks/tasksSlice';
 import listsReducer from './features/lists/listsSlice';
+import calendarReducer from './features/calendar/calendarSlice';
+import notificationsReducer from './features/notifications/notificationsSlice';
 import { setStore } from './storeRegistry';
 
 export const store = configureStore({
@@ -20,6 +22,8 @@ export const store = configureStore({
     medicine: medicineReducer,
     tasks: tasksReducer,
     lists: listsReducer,
+    calendar: calendarReducer,
+    notifications: notificationsReducer,
   },
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware({

@@ -7,7 +7,7 @@ import {
 } from 'react-native';
 import Feather from '@react-native-vector-icons/feather';
 import { TaskItem } from '../types';
-import { PRIORITY_META } from '../mockData';
+import { PRIORITY_META } from '../constants';
 
 export interface TaskCategoryAccordionProps {
   categoryTitle: string;

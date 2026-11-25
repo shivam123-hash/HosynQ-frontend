@@ -2,16 +2,16 @@ import { Platform, NativeModules } from 'react-native';
 
 /**
  * Local development host configuration:
- * Current Mac Wi-Fi IP: 192.168.1.18
+ * Current Mac Wi-Fi IP: 192.168.1.11
  * (Find by running `ifconfig | grep "inet 192"` in Mac terminal)
  */
-export const DEV_MACHINE_IP = '192.168.1.18';
+export const DEV_MACHINE_IP = '192.168.1.11';
 
 /**
  * Automatically extracts the development host IP:
  * 1. Checks NativeModules.SourceCode.scriptURL (Metro packager IP)
- *    If Metro is accessed from 192.168.1.18, this dynamically resolves it!
- * 2. Falls back to DEV_MACHINE_IP (192.168.1.18) so real devices never call
+ *    If Metro is accessed from 192.168.1.11, this dynamically resolves it!
+ * 2. Falls back to DEV_MACHINE_IP (192.168.1.11) so real devices never call
  *    "localhost" (which points to the mobile device itself and causes Network Error).
  */
 export const resolveDevHost = (): string => {
@@ -83,6 +83,7 @@ const API_ROUTES = {
   FAMILY_INVITATION_BY_ID: (invitationId: string) => `family/invitations/${invitationId}`,
   FAMILY_INVITATION_PREVIEW: 'family/invitations/preview',
   FAMILY_MY_FAMILY: 'family/my-family',
+  FAMILY_MY_FAMILY_BASIC: 'family/my-family/basic',
   FAMILY_TRANSFER_OWNERSHIP: 'family/transfer-ownership',
   FAMILY_LEAVE: 'family/leave',
   FAMILY_DELETE: 'family',
@@ -148,6 +149,24 @@ const API_ROUTES = {
   LIST_SUGGESTIONS: (listId: string) => `lists/${listId}/suggestions`,
   LIST_ITEMS: (listId: string) => `lists/${listId}/items`,
   LIST_ITEM_BY_ID: (listId: string, itemId: string) => `lists/${listId}/items/${itemId}`,
+
+  // Calendar Management Endpoints
+  CALENDAR_FEED: 'calendar',
+  CALENDAR_AVAILABILITY: 'calendar/availability',
+  CALENDAR_EVENTS: 'calendar/events',
+  CALENDAR_EVENT_BY_ID: (id: string, on?: string) =>
+    `calendar/events/${id}${on ? `?on=${on}` : ''}`,
+  CALENDAR_EVENT_CANCEL: (id: string) => `calendar/events/${id}/cancel`,
+  CALENDAR_EVENT_RESPONSE: (id: string) => `calendar/events/${id}/response`,
+  CALENDAR_EVENT_COMMENTS: (id: string) => `calendar/events/${id}/comments`,
+
+  // Notifications Endpoints
+  NOTIFICATIONS: 'notifications',
+  NOTIFICATIONS_UNREAD_COUNT: 'notifications/unread-count',
+  NOTIFICATIONS_READ_ALL: 'notifications/read-all',
+  NOTIFICATION_MARK_READ: (id: string) => `notifications/${id}/read`,
+  NOTIFICATIONS_REGISTER_DEVICE: 'notifications/devices',
+  NOTIFICATIONS_SEND_TEST: 'notifications/test',
 };
 
 export default API_ROUTES;

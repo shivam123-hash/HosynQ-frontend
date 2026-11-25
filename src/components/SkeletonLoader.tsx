@@ -282,6 +282,75 @@ export const FamilyHubSkeleton: React.FC = () => {
   );
 };
 
+/** Skeleton representation of Calendar Screen (CAL-01) */
+export const CalendarSkeleton: React.FC = () => {
+  return (
+    <View style={styles.calendarContainer}>
+      {/* Segmented Tabs (Day / Week / Month) Skeleton */}
+      <View style={styles.calendarTabsSkeleton}>
+        <SkeletonBox width="31%" height={40} borderRadius={20} />
+        <SkeletonBox width="31%" height={40} borderRadius={20} />
+        <SkeletonBox width="31%" height={40} borderRadius={20} />
+      </View>
+
+      {/* Member Avatar Filter Row Skeleton */}
+      <View style={styles.memberFilterRowSkeleton}>
+        {[1, 2, 3, 4, 5].map((idx) => (
+          <View key={idx} style={styles.memberItemSkeleton}>
+            <SkeletonBox width={46} height={46} borderRadius={23} />
+            <SkeletonBox width={36} height={10} borderRadius={4} style={{ marginTop: 6 }} />
+          </View>
+        ))}
+      </View>
+
+      {/* Date Header Skeleton */}
+      <View style={styles.calendarDateHeaderSkeleton}>
+        <SkeletonBox width={160} height={20} borderRadius={6} />
+        <View style={{ flexDirection: 'row', gap: 8 }}>
+          <SkeletonBox width={32} height={32} borderRadius={16} />
+          <SkeletonBox width={32} height={32} borderRadius={16} />
+        </View>
+      </View>
+
+      {/* Week Strip Skeleton (7 days) */}
+      <View style={styles.calendarWeekStripSkeleton}>
+        {[1, 2, 3, 4, 5, 6, 7].map((idx) => (
+          <View key={idx} style={styles.calendarDayCellSkeleton}>
+            <SkeletonBox width={24} height={10} borderRadius={3} style={{ marginBottom: 6 }} />
+            <SkeletonBox width={26} height={26} borderRadius={13} />
+          </View>
+        ))}
+      </View>
+
+      {/* All-Day Events Section Skeleton */}
+      <View style={styles.calendarAllDayHeaderSkeleton}>
+        <SkeletonBox width={110} height={11} borderRadius={3} />
+      </View>
+      <View style={styles.calendarAllDayCardSkeleton}>
+        <SkeletonBox width="60%" height={15} borderRadius={4} style={{ marginBottom: 6 }} />
+        <SkeletonBox width="35%" height={12} borderRadius={4} />
+      </View>
+
+      {/* Timeline Schedule Slots Skeleton */}
+      {[1, 2, 3].map((slot) => (
+        <View key={slot} style={styles.calendarTimelineRowSkeleton}>
+          <View style={styles.calendarTimeColSkeleton}>
+            <SkeletonBox width={48} height={12} borderRadius={4} />
+          </View>
+          <View style={styles.calendarTimelineCardSkeleton}>
+            <SkeletonBox width="70%" height={15} borderRadius={4} style={{ marginBottom: 6 }} />
+            <SkeletonBox width="40%" height={12} borderRadius={4} style={{ marginBottom: 8 }} />
+            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+              <SkeletonBox width={65} height={18} borderRadius={9} />
+              <SkeletonBox width={20} height={20} borderRadius={10} />
+            </View>
+          </View>
+        </View>
+      ))}
+    </View>
+  );
+};
+
 export default {
   SkeletonBox,
   ListsSkeleton,
@@ -289,6 +358,7 @@ export default {
   MembersSkeleton,
   JoinRequestsSkeleton,
   FamilyHubSkeleton,
+  CalendarSkeleton,
 };
 
 const styles = StyleSheet.create({
@@ -508,5 +578,63 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 16,
     marginBottom: 14,
+  },
+  calendarContainer: {
+    paddingHorizontal: 20,
+    paddingTop: 8,
+  },
+  calendarTabsSkeleton: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    backgroundColor: '#112238',
+    borderRadius: 24,
+    padding: 4,
+    marginBottom: 16,
+  },
+  calendarDateHeaderSkeleton: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 14,
+  },
+  calendarWeekStripSkeleton: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    backgroundColor: '#112238',
+    borderRadius: 16,
+    padding: 12,
+    marginBottom: 18,
+  },
+  calendarDayCellSkeleton: {
+    alignItems: 'center',
+    width: 38,
+  },
+  calendarAllDayHeaderSkeleton: {
+    marginBottom: 8,
+  },
+  calendarAllDayCardSkeleton: {
+    backgroundColor: '#112238',
+    borderRadius: 14,
+    padding: 14,
+    borderWidth: 1,
+    borderColor: '#1D324F',
+    marginBottom: 18,
+  },
+  calendarTimelineRowSkeleton: {
+    flexDirection: 'row',
+    marginBottom: 16,
+    alignItems: 'flex-start',
+  },
+  calendarTimeColSkeleton: {
+    width: 56,
+    paddingTop: 6,
+  },
+  calendarTimelineCardSkeleton: {
+    flex: 1,
+    backgroundColor: '#112238',
+    borderRadius: 14,
+    padding: 14,
+    borderWidth: 1,
+    borderColor: '#1D324F',
   },
 });

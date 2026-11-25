@@ -1785,28 +1785,6 @@ PODS:
     - React-perflogger (= 0.87.1)
     - React-utils (= 0.87.1)
     - ReactNativeDependencies
-  - ReactNativeCameraKit (18.0.1):
-    - hermes-engine
-    - RCTRequired
-    - RCTTypeSafety
-    - React-bridging
-    - React-Core
-    - React-Core-prebuilt
-    - React-debug
-    - React-Fabric
-    - React-featureflags
-    - React-graphics
-    - React-ImageManager
-    - React-jsi
-    - React-NativeModulesApple
-    - React-RCTFabric
-    - React-renderercss
-    - React-rendererdebug
-    - React-utils
-    - ReactCodegen
-    - ReactCommon/turbomodule/core
-    - ReactNativeDependencies
-    - Yoga
   - ReactNativeDependencies (0.87.1)
   - RecaptchaInterop (101.0.0)
   - RNAppleAuthentication (2.5.1):
@@ -2028,7 +2006,6 @@ DEPENDENCIES:
   - ReactAppDependencyProvider (from `build/generated/ios/ReactAppDependencyProvider`)
   - ReactCodegen (from `build/generated/ios/ReactCodegen`)
   - ReactCommon/turbomodule/core (from `../node_modules/react-native/ReactCommon`)
-  - ReactNativeCameraKit (from `../node_modules/react-native-camera-kit`)
   - ReactNativeDependencies (from `../node_modules/react-native/third-party-podspecs/ReactNativeDependencies.podspec`)
   - RecaptchaInterop
   - "RNAppleAuthentication (from `../node_modules/@invertase/react-native-apple-authentication`)"
@@ -2231,8 +2208,6 @@ EXTERNAL SOURCES:
     :path: build/generated/ios/ReactCodegen
   ReactCommon:
     :path: "../node_modules/react-native/ReactCommon"
-  ReactNativeCameraKit:
-    :path: "../node_modules/react-native-camera-kit"
   ReactNativeDependencies:
     :podspec: "../node_modules/react-native/third-party-podspecs/ReactNativeDependencies.podspec"
   RNAppleAuthentication:
@@ -2346,7 +2321,6 @@ SPEC CHECKSUMS:
   ReactAppDependencyProvider: 3949ea6b2df0d96295128aae79f068cb6c5f81dc
   ReactCodegen: 13d2ebfe2d8f1200052509b4fc4abf7a6825a7fc
   ReactCommon: 749169e12aa3461a3df3656a00e48dbe0456b2d6
-  ReactNativeCameraKit: 0ea2cbbc379912ecb937befda4f802f8d98fe129
   ReactNativeDependencies: 94c922c39e0e6150ee9ad05e2ca1946e0ef55783
   RecaptchaInterop: 11e0b637842dfb48308d242afc3f448062325aba
   RNAppleAuthentication: a89c9804592b38ed4ab11f0aee68d05ba12ad432
@@ -2359,4 +2333,4 @@ SPEC CHECKSUMS:
 
 PODFILE CHECKSUM: 90193b390df64b5e9d541044ff4d1367832312c3
 
-COCOAPODS: 1.16.2
+COCOAPODS: 1.15.2

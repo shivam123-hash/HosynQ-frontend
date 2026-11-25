@@ -547,6 +547,15 @@ const styles = StyleSheet.create({
     fontFamily: 'Roboto-Medium',
     padding: 0,
   },
+  textInputDisplay: {
+    flex: 1,
+    fontSize: 15,
+    color: '#FFFFFF',
+    fontFamily: 'Roboto-Medium',
+  },
+  placeholderText: {
+    color: '#6F8099',
+  },
   ageHelperText: {
     fontSize: 12.5,
     color: '#CAD4DF',
@@ -658,6 +667,9 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontFamily: 'Roboto-Bold',
     color: '#FFFFFF',
+  },
+  buttonDisabled: {
+    opacity: 0.6,
   },
 });
 

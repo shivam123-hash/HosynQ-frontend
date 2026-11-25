@@ -52,9 +52,10 @@ const PendingTasksSection: React.FC<PendingTasksSectionProps> = ({
   };
 
   const renderTaskItem = (task: TaskItem, isLastInGroup: boolean) => {
+    const taskKey = task.id ? String(task.id) : `task-${task.title}`;
     return (
       <TouchableOpacity
-        key={task.id}
+        key={taskKey}
         onPress={() => onTaskPress?.(task)}
         activeOpacity={0.7}
         style={[styles.taskRow, !isLastInGroup && styles.rowDivider]}

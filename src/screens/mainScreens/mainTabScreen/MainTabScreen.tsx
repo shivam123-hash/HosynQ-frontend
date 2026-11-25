@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
   View,
   StyleSheet,
@@ -16,6 +16,10 @@ import { CreateEventModal } from '../calendarScreen/components';
 import { TaskItem } from '../tasksScreen/types';
 import { CalendarEvent } from '../calendarScreen/types';
 import {
+  buildCreateEventPayload,
+  extractFamilyMembersFromState,
+} from '../calendarScreen/calendarApiHelpers';
+import {
   AddSheetModal,
   CreateReminderModal,
   ScanDocumentModal,
@@ -30,10 +34,20 @@ import { SideMenuModal, LogoutConfirmationModal } from '../menuScreens';
 import { CompassModal } from '../compassScreen';
 import {
   useAppDispatch,
+  useAppSelector,
   logout,
   resetFamilyState,
   resetLifeProfileState,
 } from '../../../redux';
+import { fetchTasks } from '../../../redux/features/tasks/tasksSlice';
+import {
+  fetchCalendarFeed,
+  createCalendarEvent,
+} from '../../../redux/features/calendar/calendarSlice';
+import {
+  getMyFamilyBasicThunk,
+  getMyFamilyThunk,
+} from '../../../redux/features/family/familySlice';
 import { clearUserData } from '../../../units/AsyncStorageManager';
 
 export interface MainTabScreenProps {
@@ -56,6 +70,17 @@ const MainTabScreen: React.FC<MainTabScreenProps> = ({
   onOpenNeedsAttention,
 }) => {
   const dispatch = useAppDispatch();
+  const familyState = useAppSelector((state) => state.family);
+  const familyMembersList = useMemo(() => {
+    return extractFamilyMembersFromState(familyState);
+  }, [familyState]);
+
+  useEffect(() => {
+    if (familyMembersList.length === 0) {
+      dispatch(getMyFamilyBasicThunk());
+      dispatch(getMyFamilyThunk());
+    }
+  }, [familyMembersList.length, dispatch]);
   const [activeTab, setActiveTab] = useState<NavigationTab>(initialTab);
   const [sideMenuVisible, setSideMenuVisible] = useState(false);
   const [showLogoutModal, setShowLogoutModal] = useState(false);
@@ -224,6 +249,12 @@ const MainTabScreen: React.FC<MainTabScreenProps> = ({
         visible={createTaskModalVisible}
         onClose={() => setCreateTaskModalVisible(false)}
         onCreateTask={(_task: Partial<TaskItem>) => {
+          dispatch(
+            fetchTasks({
+              status: 'PENDING',
+              today: new Date().toISOString().slice(0, 10),
+            })
+          );
           setActiveTab('tasks');
           setCreateTaskModalVisible(false);
           showToast('Task added to your family');
@@ -233,11 +264,38 @@ const MainTabScreen: React.FC<MainTabScreenProps> = ({
       {/* Quick Event Creator (Calendar screen modal) */}
       <CreateEventModal
         visible={createEventModalVisible}
+        members={familyMembersList}
+        initialDate={new Date().toISOString().slice(0, 10)}
         onClose={() => setCreateEventModalVisible(false)}
-        onSaveEvent={(_event: Partial<CalendarEvent>) => {
-          setActiveTab('calendar');
-          setCreateEventModalVisible(false);
-          showToast('Event added to your family');
+        onSaveEvent={async (eventData: Partial<CalendarEvent>) => {
+          try {
+            const payload = buildCreateEventPayload(eventData);
+            console.log('[MainTabScreen.onSaveEvent] Creating event payload:', payload);
+            try {
+              console.log(
+                '[MainTabScreen.onSaveEvent] Backend Create Payload (formatted):\n',
+                JSON.stringify(payload, null, 2)
+              );
+            } catch {
+              // ignore serialization error
+            }
+            const created = await dispatch(createCalendarEvent(payload)).unwrap();
+            console.log('[MainTabScreen.onSaveEvent] Create success, created event:', created);
+            if (activeTab === 'calendar') {
+              dispatch(
+                fetchCalendarFeed({
+                  from: new Date().toISOString().slice(0, 10),
+                  to: new Date(Date.now() + 30 * 86400000).toISOString().slice(0, 10),
+                })
+              );
+            }
+            setActiveTab('calendar');
+            setCreateEventModalVisible(false);
+            showToast('Event added to your family');
+          } catch (err: any) {
+            console.log('[MainTabScreen.onSaveEvent] Create event error:', err);
+            showToast(err?.message || 'Failed to create event', 'cancelled');
+          }
         }}
       />
 

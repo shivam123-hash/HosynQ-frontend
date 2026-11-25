@@ -16,19 +16,36 @@ import {
   DeleteTaskModal,
   CreateTaskModal,
 } from '../src/screens/mainScreens/tasksScreen/components';
-import { INITIAL_TASKS } from '../src/screens/mainScreens/tasksScreen/mockData';
+import { TEST_TASKS, TEST_FAMILY_MEMBERS } from '../src/__test_fixtures__/tasksFixtures';
 
 const mockMetrics = {
   insets: { top: 44, left: 0, right: 0, bottom: 34 },
   frame: { x: 0, y: 0, width: 375, height: 812 },
 };
 
-const renderWithProvider = async (component: React.ReactElement) => {
+const renderWithProvider = async (component: React.ReactElement<any>) => {
+  let elementToRender = component;
+  if (component.type === TasksScreen) {
+    elementToRender = React.cloneElement(component, {
+      initialTasks: TEST_TASKS,
+      initialFamilyMembers: TEST_FAMILY_MEMBERS,
+      ...component.props,
+    });
+  } else if (
+    component.type === ReassignModal ||
+    component.type === AssigneesAndViewersModal ||
+    component.type === TaskDetailModal
+  ) {
+    elementToRender = React.cloneElement(component, {
+      members: TEST_FAMILY_MEMBERS.filter((m) => m.id !== 'everyone'),
+      ...component.props,
+    });
+  }
   let renderer: ReactTestRenderer.ReactTestRenderer;
   await ReactTestRenderer.act(() => {
     renderer = ReactTestRenderer.create(
       <SafeAreaProvider initialMetrics={mockMetrics}>
-        {component}
+        {elementToRender}
       </SafeAreaProvider>
     );
   });
@@ -100,7 +117,7 @@ describe('TasksScreen', () => {
   });
 
   it('renders TaskDetailModal correctly matching design for task without comments (repeat badge, comments 0, and write comment pill)', async () => {
-    const task = INITIAL_TASKS.find((t) => t.id === 'tsk-1')!; // Buy Diwali sweets and diyas
+    const task = TEST_TASKS.find((t) => t.id === 'tsk-1')!; // Buy Diwali sweets and diyas
     const renderer = await renderWithProvider(
       <TaskDetailModal
         visible={true}
@@ -132,7 +149,7 @@ describe('TasksScreen', () => {
   });
 
   it('renders TaskDetailModal correctly for task with comments and repeating interval', async () => {
-    const task = INITIAL_TASKS.find((t) => t.id === 'tsk-4')!; // Pay electricity bill
+    const task = TEST_TASKS.find((t) => t.id === 'tsk-4')!; // Pay electricity bill
     const renderer = await renderWithProvider(
       <TaskDetailModal
         visible={true}
@@ -391,7 +408,7 @@ describe('TasksScreen', () => {
   });
 
   it('opens ReassignModal when tapping Reassign in TaskDetailModal', async () => {
-    const task = INITIAL_TASKS.find((t) => t.id === 'tsk-4')!; // Pay electricity bill
+    const task = TEST_TASKS.find((t) => t.id === 'tsk-4')!; // Pay electricity bill
     const onReassign = jest.fn();
     const renderer = await renderWithProvider(
       <TaskDetailModal
@@ -478,7 +495,7 @@ describe('TasksScreen', () => {
       );
     });
 
-    const sampleTask = INITIAL_TASKS[0];
+    const sampleTask = TEST_TASKS[0];
     await ReactTestRenderer.act(() => {
       renderer.update(
         <SafeAreaProvider initialMetrics={mockMetrics}>
@@ -659,7 +676,7 @@ describe('TasksScreen', () => {
   });
 
   it('renders strictly 2 options (Edit Task and Delete Task) in TaskDetailModal options menu', async () => {
-    const sampleTask = INITIAL_TASKS[0];
+    const sampleTask = TEST_TASKS[0];
 
     let renderer: any;
     await ReactTestRenderer.act(async () => {

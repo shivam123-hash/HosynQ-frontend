@@ -1,57 +1,10 @@
 import {
-  CalendarCategory,
   CalendarFamilyMember,
   CalendarEvent,
   CalendarTaskDue,
-  ImportantDateItem,
-} from './types';
+} from '../../src/screens/mainScreens/calendarScreen/types';
 
-export const CALENDAR_CATEGORIES: CalendarCategory[] = [
-  {
-    id: 'family',
-    name: 'Family',
-    color: '#3B82F6',
-    description: 'Birthdays, dinners, school events',
-  },
-  {
-    id: 'personal',
-    name: 'Personal',
-    color: '#10B981',
-    description: 'Classes, hobbies, your own plans',
-  },
-  {
-    id: 'household',
-    name: 'Household',
-    color: '#F59E0B',
-    description: 'Deliveries, repairs, services',
-  },
-  {
-    id: 'health',
-    name: 'Health',
-    color: '#A855F7',
-    description: 'Doctor visits, check-ups',
-  },
-  {
-    id: 'travel',
-    name: 'Travel',
-    color: '#06B6D4',
-    description: 'Trips and journeys',
-  },
-  {
-    id: 'bills',
-    name: 'Bills and renewals',
-    color: '#F43F5E',
-    description: 'EMIs, insurance, subscriptions',
-  },
-  {
-    id: 'work',
-    name: 'Work',
-    color: '#64748B',
-    description: 'Meetings, deadlines',
-  },
-];
-
-export const CALENDAR_FAMILY_MEMBERS: CalendarFamilyMember[] = [
+export const TEST_FAMILY_MEMBERS: CalendarFamilyMember[] = [
   { id: 'm1', name: 'Priya', initial: 'P', color: '#4A2E1A', textColor: '#F7C08E' },
   { id: 'm2', name: 'Rohan', initial: 'R', color: '#1F3A66', textColor: '#8DB8F5' },
   { id: 'm3', name: 'Anaya', initial: 'A', color: '#4B1F3A', textColor: '#F3A3CC' },
@@ -59,7 +12,7 @@ export const CALENDAR_FAMILY_MEMBERS: CalendarFamilyMember[] = [
   { id: 'm5', name: 'Dadi', initial: 'D', color: '#253F2D', textColor: '#9BD4A8' },
 ];
 
-export const INITIAL_CALENDAR_EVENTS: CalendarEvent[] = [
+export const TEST_CALENDAR_EVENTS: CalendarEvent[] = [
   {
     id: 'evt-ptm',
     title: 'Aarav’s PTM',
@@ -83,6 +36,8 @@ export const INITIAL_CALENDAR_EVENTS: CalendarEvent[] = [
       { id: 'm2', name: 'Rohan', initial: 'R', color: '#1F3A66', textColor: '#8DB8F5' },
       { id: 'm1', name: 'Priya', initial: 'P', color: '#4A2E1A', textColor: '#F7C08E' },
     ],
+    askToConfirm: true,
+    canRespond: true,
     reminders: 'Thursday, 7:00 PM · 1 hour before',
     repeat: 'Doesn’t repeat',
     sourceNote: 'Added from a scanned school circular on 28 Oct',
@@ -231,7 +186,7 @@ export const INITIAL_CALENDAR_EVENTS: CalendarEvent[] = [
   },
 ];
 
-export const INITIAL_TASKS_DUE: CalendarTaskDue[] = [
+export const TEST_TASKS_DUE: CalendarTaskDue[] = [
   {
     id: 'td-1',
     title: 'Buy Diwali sweets and diyas',
@@ -249,105 +204,5 @@ export const INITIAL_TASKS_DUE: CalendarTaskDue[] = [
     overdueText: 'Overdue by 2 days',
     isCompleted: false,
     memberId: 'm2',
-  },
-];
-
-export const INITIAL_IMPORTANT_DATES: ImportantDateItem[] = [
-  {
-    id: 'imp-1',
-    title: 'Nani’s birthday',
-    subtitle: 'Turning 78',
-    dateFormatted: '4 Nov',
-    daysLeft: 5,
-    timeRemainingText: 'in 5 days',
-    type: 'birthday',
-    section: 'this_month',
-    personName: 'Nani',
-    personInitial: 'N',
-    personColor: '#F59E0B',
-    reminders: '1 week before, 1 day before',
-    whoSeesIt: 'Everyone',
-  },
-  {
-    id: 'imp-2',
-    title: 'Car insurance renewal',
-    subtitle: 'Rohan’s car',
-    dateFormatted: '18 Nov',
-    daysLeft: 19,
-    timeRemainingText: 'in 19 days',
-    type: 'document',
-    section: 'this_month',
-    personName: 'Rohan',
-    personInitial: 'R',
-    personColor: '#2563EB',
-    reminders: '30 days and 7 days before',
-    whoSeesIt: 'Rohan and you',
-    documentTitle: 'Insurance Policy · HDFC ERGO',
-    documentPath: 'Life Profile › Vehicles',
-  },
-  {
-    id: 'imp-3',
-    title: 'Rohan’s passport expires',
-    subtitle: 'From Rohan’s Life Profile',
-    dateFormatted: '14 Dec',
-    daysLeft: 45,
-    timeRemainingText: 'in 45 days',
-    type: 'document',
-    section: 'next_3_months',
-    personName: 'Rohan',
-    personInitial: 'R',
-    personColor: '#2563EB',
-    reminders: '60 days, 30 days and 7 days before',
-    whoSeesIt: 'Rohan and you',
-    documentTitle: 'Passport · Rohan Sharma',
-    documentPath: 'Life Profile › Important documents',
-    aiSuggestion: 'Add a task for Rohan to book his passport renewal appointment by 20 November?',
-  },
-  {
-    id: 'imp-4',
-    title: 'Dadi’s birthday',
-    subtitle: 'Turning 81',
-    dateFormatted: '9 Jan',
-    daysLeft: 71,
-    timeRemainingText: 'in 71 days',
-    type: 'birthday',
-    section: 'next_3_months',
-    personName: 'Dadi',
-    personInitial: 'D',
-    personColor: '#059669',
-    reminders: '1 week before',
-    whoSeesIt: 'Everyone',
-  },
-  {
-    id: 'imp-5',
-    title: 'Priya and Rohan’s anniversary',
-    subtitle: '15 years',
-    dateFormatted: '22 Jan',
-    daysLeft: 84,
-    timeRemainingText: 'in 84 days',
-    type: 'anniversary',
-    section: 'next_3_months',
-    personName: 'Priya & Rohan',
-    personInitial: 'P',
-    personColor: '#9333EA',
-    reminders: '2 weeks before, 1 day before',
-    whoSeesIt: 'Everyone',
-  },
-  {
-    id: 'imp-6',
-    title: 'Priya’s driving licence',
-    subtitle: 'From Priya’s Life Profile',
-    dateFormatted: '3 Jun 2027',
-    daysLeft: 215,
-    timeRemainingText: '7 months',
-    type: 'document',
-    section: 'later',
-    personName: 'Priya',
-    personInitial: 'P',
-    personColor: '#B45309',
-    reminders: '60 days and 30 days before',
-    whoSeesIt: 'Priya and Rohan',
-    documentTitle: 'Driving Licence · Delhi RTO',
-    documentPath: 'Life Profile › Identity',
   },
 ];

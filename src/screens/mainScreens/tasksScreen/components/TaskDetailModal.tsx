@@ -20,7 +20,7 @@ import {
 } from '../../../../redux/features/tasks/tasksSlice';
 import { TaskDetailResponse, TaskReminderState } from '../../../../services/tasksServices';
 import { TaskItem, TaskCategory, TaskPriority, TaskComment } from '../types';
-import { CATEGORY_META, PRIORITY_META } from '../mockData';
+import { CATEGORY_META, PRIORITY_META } from '../constants';
 import {
   isUUID,
   isTaskOverdue,
@@ -53,6 +53,7 @@ export interface TaskDetailModalProps {
   onUpdateTask?: (updatedTask: TaskItem) => void;
   onDelete?: (task: TaskItem) => void;
   onEditTask?: (task: TaskItem) => void;
+  members?: any[];
 }
 
 const TaskDetailModal: React.FC<TaskDetailModalProps> = ({
@@ -65,6 +66,7 @@ const TaskDetailModal: React.FC<TaskDetailModalProps> = ({
   onUpdateTask,
   onDelete,
   onEditTask,
+  members,
 }) => {
   const insets = useSafeAreaInsets();
   const dispatch = useAppDispatch();
@@ -1026,6 +1028,7 @@ const TaskDetailModal: React.FC<TaskDetailModalProps> = ({
           visible={showReassignModal}
           taskTitle={currentTask.title}
           currentAssignee={currentTask.assignee || 'You'}
+          members={members}
           onClose={() => setShowReassignModal(false)}
           onSelectAssignee={(newAssigneeId, newAssigneeName) => {
             const displayName = newAssigneeName || newAssigneeId;

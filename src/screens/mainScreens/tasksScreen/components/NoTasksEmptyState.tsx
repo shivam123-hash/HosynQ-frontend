@@ -1,7 +1,7 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import Feather from '@react-native-vector-icons/feather';
-import { START_SUGGESTIONS } from '../mockData';
+import { START_SUGGESTIONS } from '../constants';
 
 export interface NoTasksEmptyStateProps {
   onAddTaskPress: () => void;

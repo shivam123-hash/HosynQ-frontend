@@ -122,7 +122,9 @@ export const INITIAL_TRIP_DATA: TripData = {
 };
 
 // Availability heatmap data for days 9 to 22
-export const AVAILABILITY_DAYS = [9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22];
+export const AVAILABILITY_DAYS: number[] = [
+  9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22,
+];
 
 export const MEMBER_AVAILABILITY: MemberAvailability[] = [
   {
@@ -231,4 +233,3 @@ export const MEMBER_AVAILABILITY: MemberAvailability[] = [
     ],
   },
 ];
-

@@ -11,19 +11,26 @@ import {
   ShareListModal,
   ListOptionsModal,
 } from '../src/screens/mainScreens/tasksScreen/components';
-import { INITIAL_LISTS } from '../src/screens/mainScreens/tasksScreen/mockData';
+import { TEST_LISTS } from '../src/__test_fixtures__/tasksFixtures';
 
 const mockMetrics = {
   insets: { top: 44, left: 0, right: 0, bottom: 34 },
   frame: { x: 0, y: 0, width: 375, height: 812 },
 };
 
-const renderWithProvider = async (component: React.ReactElement) => {
+const renderWithProvider = async (component: React.ReactElement<any>) => {
+  let elementToRender = component;
+  if (component.type === TasksScreen) {
+    elementToRender = React.cloneElement(component, {
+      initialLists: TEST_LISTS,
+      ...component.props,
+    });
+  }
   let renderer: ReactTestRenderer.ReactTestRenderer;
   await ReactTestRenderer.act(() => {
     renderer = ReactTestRenderer.create(
       <SafeAreaProvider initialMetrics={mockMetrics}>
-        {component}
+        {elementToRender}
       </SafeAreaProvider>
     );
   });
@@ -71,7 +78,7 @@ describe('Lists Section', () => {
   });
 
   it('renders ListDetailModal with items, progress, and done section', async () => {
-    const list = INITIAL_LISTS.find((l) => l.id === 'lst-1')!; // Diwali shopping
+    const list = TEST_LISTS.find((l) => l.id === 'lst-1')!; // Diwali shopping
     const onUpdateList = jest.fn();
     const onDeleteList = jest.fn();
     const onClose = jest.fn();
@@ -124,8 +131,8 @@ describe('Lists Section', () => {
 
   it('renders ListDetailModal in celebration mode when all items are done', async () => {
     const allDoneList = {
-      ...INITIAL_LISTS[0],
-      items: INITIAL_LISTS[0].items.map((it) => ({ ...it, isCompleted: true })),
+      ...TEST_LISTS[0],
+      items: TEST_LISTS[0].items.map((it) => ({ ...it, isCompleted: true })),
     };
 
     const renderer = await renderWithProvider(
@@ -194,7 +201,7 @@ describe('Lists Section', () => {
   it('renders AssignListItemModal with family members and anyone option', async () => {
     const onAssign = jest.fn();
     const onClose = jest.fn();
-    const item = INITIAL_LISTS[0].items[0];
+    const item = TEST_LISTS[0].items[0];
 
     const renderer = await renderWithProvider(
       <AssignListItemModal
@@ -215,7 +222,7 @@ describe('Lists Section', () => {
   });
 
   it('renders ShareListModal with switches and family chat button', async () => {
-    const list = INITIAL_LISTS[0];
+    const list = TEST_LISTS[0];
     const onUpdateShare = jest.fn();
     const onClose = jest.fn();
 
@@ -238,7 +245,7 @@ describe('Lists Section', () => {
   });
 
   it('renders ListOptionsModal with rename, duplicate, clear, archive, and delete', async () => {
-    const list = INITIAL_LISTS[0];
+    const list = TEST_LISTS[0];
     const onRename = jest.fn();
     const onDuplicate = jest.fn();
     const onClearDone = jest.fn();

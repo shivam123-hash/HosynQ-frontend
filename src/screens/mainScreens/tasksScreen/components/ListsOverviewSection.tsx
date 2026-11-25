@@ -9,7 +9,7 @@ import {
 import Feather from '@react-native-vector-icons/feather';
 import Ionicons from '@react-native-vector-icons/ionicons';
 import { ListGroup, ListType } from '../types';
-import { LIST_TYPE_CONFIG } from '../mockData';
+import { LIST_TYPE_CONFIG } from '../constants';
 import { TripData } from './tripPlanner';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');

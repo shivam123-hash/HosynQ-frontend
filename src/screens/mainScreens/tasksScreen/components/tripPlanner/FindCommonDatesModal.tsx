@@ -14,7 +14,7 @@ import Ionicons from '@react-native-vector-icons/ionicons';
 import {
   AVAILABILITY_DAYS,
   MEMBER_AVAILABILITY,
-} from './mockTripData';
+} from './tripConstants';
 
 export interface FindCommonDatesModalProps {
   visible?: boolean;

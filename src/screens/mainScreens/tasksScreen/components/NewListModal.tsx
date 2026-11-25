@@ -15,7 +15,7 @@ import Ionicons from '@react-native-vector-icons/ionicons';
 import { useAppDispatch } from '../../../../redux';
 import { createList } from '../../../../redux/features/lists/listsSlice';
 import { ListGroup, ListType } from '../types';
-import { LIST_TYPE_CONFIG } from '../mockData';
+import { LIST_TYPE_CONFIG } from '../constants';
 import { mapUiListTypeToBackend, mapApiListDetailToUiList } from '../listApiHelpers';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');

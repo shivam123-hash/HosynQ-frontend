@@ -17,6 +17,7 @@ export interface EventRemindersModalProps {
   onClose: () => void;
   onSaveReminders: (reminderText: string) => void;
   asModal?: boolean;
+  isAllDay?: boolean;
 }
 
 const REMINDER_OPTIONS = [
@@ -26,7 +27,19 @@ const REMINDER_OPTIONS = [
   'The evening before (7:00 PM)',
   '1 day before',
   '1 week before',
-  'Custom time',
+];
+
+const TIME_BASED_OPTIONS = [
+  'When it starts',
+  '30 minutes before',
+  '2 hours before',
+];
+
+const ALL_DAY_OPTIONS = [
+  'On the day (9:00 AM)',
+  'The evening before (7:00 PM)',
+  '1 day before',
+  '1 week before',
 ];
 
 export const EventRemindersModal: React.FC<EventRemindersModalProps> = ({
@@ -35,20 +48,34 @@ export const EventRemindersModal: React.FC<EventRemindersModalProps> = ({
   onClose,
   onSaveReminders,
   asModal = true,
+  isAllDay = false,
 }) => {
   const insets = useSafeAreaInsets();
+  const availableOptions = isAllDay ? ALL_DAY_OPTIONS : REMINDER_OPTIONS;
+
+  const sanitizeList = (rawList: string[]) => {
+    if (isAllDay) {
+      const filtered = rawList.filter((opt) => !TIME_BASED_OPTIONS.includes(opt));
+      return filtered.length > 0 ? filtered : ['1 day before'];
+    }
+    return rawList.length > 0 ? rawList : ['2 hours before'];
+  };
+
   const [selectedList, setSelectedList] = useState<string[]>(() => {
-    return selectedReminder
+    const initial = selectedReminder
       ? selectedReminder.split(' · ')
-      : ['1 day before', '2 hours before'];
+      : isAllDay
+        ? ['1 day before']
+        : ['1 day before', '2 hours before'];
+    return sanitizeList(initial);
   });
   const [remindEveryone, setRemindEveryone] = useState(true);
 
   useEffect(() => {
     if (selectedReminder) {
-      setSelectedList(selectedReminder.split(' · '));
+      setSelectedList(sanitizeList(selectedReminder.split(' · ')));
     }
-  }, [selectedReminder, visible]);
+  }, [selectedReminder, isAllDay, visible]);
 
   if (!visible) return null;
 
@@ -60,7 +87,11 @@ export const EventRemindersModal: React.FC<EventRemindersModalProps> = ({
 
   const handleDone = () => {
     const finalStr =
-      selectedList.length > 0 ? selectedList.join(' · ') : 'No reminder';
+      selectedList.length > 0
+        ? selectedList.join(' · ')
+        : isAllDay
+          ? '1 day before'
+          : '2 hours before';
     onSaveReminders(finalStr);
     onClose();
   };
@@ -93,7 +124,7 @@ export const EventRemindersModal: React.FC<EventRemindersModalProps> = ({
           contentContainerStyle={styles.scrollContent}
         >
           <View style={styles.optionsCard}>
-            {REMINDER_OPTIONS.map((opt, idx) => {
+            {availableOptions.map((opt, idx) => {
               const isChecked = selectedList.includes(opt);
               return (
                 <TouchableOpacity

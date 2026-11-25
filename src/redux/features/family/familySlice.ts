@@ -22,6 +22,7 @@ import familyServices, {
   JoinFamilyResponse,
   JoinRequestItemData,
   LeaveFamilyResponse,
+  MyFamilyBasicResponse,
   MyFamilyResponse,
   MyInviteData,
   PendingJoinRequestData,
@@ -56,6 +57,9 @@ export interface FamilyState {
   myFamilyData: MyFamilyResponse | null;
   myFamilyLoading: boolean;
   myFamilyError: string | null;
+  basicFamilyData: MyFamilyBasicResponse | null;
+  basicFamilyLoading: boolean;
+  basicFamilyError: string | null;
 
   // 22 APIs Extensions:
   pendingRequests: JoinRequestItemData[];
@@ -96,6 +100,9 @@ const initialState: FamilyState = {
   myFamilyData: null,
   myFamilyLoading: false,
   myFamilyError: null,
+  basicFamilyData: null,
+  basicFamilyLoading: false,
+  basicFamilyError: null,
 
   pendingRequests: [],
   requestsLoading: false,
@@ -657,6 +664,39 @@ export const getMyFamilyThunk = createAsyncThunk<
 });
 export const getMyFamily = getMyFamilyThunk;
 
+// 24. Get My Family Basic Details Thunk (GET /api/v1/family/my-family/basic)
+export const getMyFamilyBasicThunk = createAsyncThunk<
+  MyFamilyBasicResponse,
+  void,
+  { rejectValue: string }
+>('family/getMyFamilyBasic', async (_, { rejectWithValue }) => {
+  try {
+    console.log('[getMyFamilyBasic API] Fetching basic family details...');
+    const response = await familyServices.getMyFamilyBasic();
+    console.log('[getMyFamilyBasic API] Success Response (raw):', response);
+    try {
+      console.log('[getMyFamilyBasic API] Success Response (formatted):\n', JSON.stringify(response, null, 2));
+    } catch {
+      // ignore serialization errors
+    }
+    return response;
+  } catch (error: any) {
+    const errorMsg =
+      error?.response?.data?.message ||
+      error?.message ||
+      'Failed to fetch basic family details.';
+    console.log('[getMyFamilyBasic API] Error Response:', {
+      status: error?.response?.status,
+      data: error?.response?.data,
+      message: errorMsg,
+    });
+    return rejectWithValue(
+      Array.isArray(errorMsg) ? errorMsg.join(', ') : errorMsg
+    );
+  }
+});
+export const getMyFamilyBasic = getMyFamilyBasicThunk;
+
 /** Add Child Member Thunk (POST /api/v1/family/members) */
 export const addFamilyMemberThunk = createAsyncThunk<
   AddChildMemberResponse,
@@ -712,6 +752,7 @@ const familySlice = createSlice({
       state.actionLoading = false;
       state.actionError = null;
       state.actionSuccess = null;
+    },
     clearAddMemberError: (state) => {
       state.addMemberError = null;
     },
@@ -1067,6 +1108,70 @@ const familySlice = createSlice({
       .addCase(getMyFamilyThunk.rejected, (state, action) => {
         state.myFamilyLoading = false;
         state.myFamilyError = action.payload || 'Failed to check family status.';
+      })
+
+      // 24. Get My Family Basic Details
+      .addCase(getMyFamilyBasicThunk.pending, (state) => {
+        state.basicFamilyLoading = true;
+        state.basicFamilyError = null;
+      })
+      .addCase(getMyFamilyBasicThunk.fulfilled, (state, action) => {
+        state.basicFamilyLoading = false;
+        state.basicFamilyData = action.payload;
+        state.basicFamilyError = null;
+
+        const res = action.payload as any;
+        const resFamily = res?.family || res?.data?.family || res?.data || res;
+        if (resFamily) {
+          const membersList =
+            resFamily.members ||
+            resFamily.familyMembers ||
+            res?.members ||
+            res?.data?.members ||
+            (Array.isArray(resFamily) ? resFamily : undefined);
+          let normalizedMembers = state.family?.members || [];
+          if (Array.isArray(membersList) && membersList.length > 0) {
+            normalizedMembers = membersList.map((m: any, idx: number) => ({
+              ...m,
+              id: m.id || m.memberId || m._id || m.userId || `member-${idx}`,
+            }));
+          }
+          if (state.family) {
+            state.family = {
+              ...state.family,
+              ...(resFamily.id ? { id: resFamily.id } : {}),
+              ...(resFamily.name ? { name: resFamily.name } : {}),
+              ...(resFamily.familyCode ? { familyCode: resFamily.familyCode } : {}),
+              ...(resFamily.myRole ? { myRole: resFamily.myRole } : {}),
+              ...(resFamily.myMemberId ? { myMemberId: resFamily.myMemberId } : {}),
+              members: normalizedMembers,
+            };
+          } else if (resFamily.id || Array.isArray(membersList)) {
+            state.family = {
+              id: resFamily.id || '',
+              name: resFamily.name || '',
+              familyCode: resFamily.familyCode || '',
+              familyType: resFamily.familyType || 'NUCLEAR',
+              memberCount: resFamily.memberCount || normalizedMembers.length,
+              myRole: resFamily.myRole || 'FAMILY_OWNER',
+              myMemberId: resFamily.myMemberId,
+              members: normalizedMembers,
+            };
+          }
+          if (resFamily.familyCode) {
+            state.familyCode = resFamily.familyCode;
+          }
+          if (resFamily.myMemberId) {
+            state.myMemberId = resFamily.myMemberId;
+          }
+        }
+        if (!state.myFamilyData && res) {
+          state.myFamilyData = res;
+        }
+      })
+      .addCase(getMyFamilyBasicThunk.rejected, (state, action) => {
+        state.basicFamilyLoading = false;
+        state.basicFamilyError = action.payload || 'Failed to fetch basic family details.';
       })
       .addCase(addFamilyMemberThunk.pending, (state) => {
         state.addMemberLoading = true;

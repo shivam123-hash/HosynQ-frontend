@@ -16,12 +16,6 @@ export type { WeekViewProps } from './WeekView';
 export { default as MonthView } from './MonthView';
 export type { MonthViewProps } from './MonthView';
 
-export { default as ImportantDatesView } from './ImportantDatesView';
-export type { ImportantDatesViewProps } from './ImportantDatesView';
-
-export { default as ImportantDateDetailModal } from './ImportantDateDetailModal';
-export type { ImportantDateDetailModalProps } from './ImportantDateDetailModal';
-
 export { default as FilterCalendarModal } from './FilterCalendarModal';
 export type { FilterCalendarModalProps } from './FilterCalendarModal';
 
@@ -48,6 +42,9 @@ export type { EventRemindersModalProps } from './EventRemindersModal';
 
 export { default as EditRepeatingEventModal } from './EditRepeatingEventModal';
 export type { EditRepeatingEventModalProps } from './EditRepeatingEventModal';
+
+export { default as RepeatPickerModal } from './RepeatPickerModal';
+export type { RepeatPickerModalProps, RepeatOption } from './RepeatPickerModal';
 
 export { default as EventDateTimePickerModal } from './EventDateTimePickerModal';
 export type { EventDateTimePickerModalProps } from './EventDateTimePickerModal';

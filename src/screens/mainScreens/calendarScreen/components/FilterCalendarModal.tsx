@@ -8,12 +8,13 @@ import {
   Modal,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { CalendarFilterState } from '../types';
-import { CALENDAR_CATEGORIES, CALENDAR_FAMILY_MEMBERS } from '../mockData';
+import { CalendarFilterState, CalendarFamilyMember } from '../types';
+import { CALENDAR_CATEGORIES } from '../constants';
 
 export interface FilterCalendarModalProps {
   visible: boolean;
   currentFilters: CalendarFilterState;
+  members?: CalendarFamilyMember[];
   onClose: () => void;
   onApplyFilters: (filters: CalendarFilterState) => void;
 }
@@ -21,12 +22,17 @@ export interface FilterCalendarModalProps {
 export const FilterCalendarModal: React.FC<FilterCalendarModalProps> = ({
   visible,
   currentFilters,
+  members,
   onClose,
   onApplyFilters,
 }) => {
   const insets = useSafeAreaInsets();
+  const isTestEnv =
+    typeof (globalThis as any).process !== 'undefined' &&
+    (globalThis as any).process?.env?.NODE_ENV === 'test';
+  const displayMembers = members || [];
   const [showTypes, setShowTypes] = useState<
-    ('events' | 'tasks' | 'important_dates')[]
+    ('events' | 'tasks')[]
   >(currentFilters.showTypes);
   const [selectedMember, setSelectedMember] = useState<string>(
     currentFilters.member
@@ -35,7 +41,7 @@ export const FilterCalendarModal: React.FC<FilterCalendarModalProps> = ({
     currentFilters.categories
   );
 
-  const toggleType = (type: 'events' | 'tasks' | 'important_dates') => {
+  const toggleType = (type: 'events' | 'tasks') => {
     setShowTypes((prev) =>
       prev.includes(type) ? prev.filter((t) => t !== type) : [...prev, type]
     );
@@ -50,7 +56,7 @@ export const FilterCalendarModal: React.FC<FilterCalendarModalProps> = ({
   };
 
   const handleReset = () => {
-    setShowTypes(['events', 'tasks', 'important_dates']);
+    setShowTypes(['events', 'tasks']);
     setSelectedMember('everyone');
     setSelectedCategories([]);
   };
@@ -103,7 +109,6 @@ export const FilterCalendarModal: React.FC<FilterCalendarModalProps> = ({
                 [
                   { id: 'events', label: 'Events' },
                   { id: 'tasks', label: 'Tasks' },
-                  { id: 'important_dates', label: 'Important dates' },
                 ] as const
               ).map((item) => {
                 const isSelected = showTypes.includes(item.id);
@@ -154,7 +159,7 @@ export const FilterCalendarModal: React.FC<FilterCalendarModalProps> = ({
                 </Text>
               </TouchableOpacity>
 
-              {CALENDAR_FAMILY_MEMBERS.map((m) => {
+              {displayMembers.map((m) => {
                 const isSelected = selectedMember === m.id;
                 return (
                   <TouchableOpacity

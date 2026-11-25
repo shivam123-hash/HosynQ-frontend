@@ -7,18 +7,21 @@ import {
   StyleSheet,
 } from 'react-native';
 import Feather from '@react-native-vector-icons/feather';
-import { CALENDAR_FAMILY_MEMBERS } from '../mockData';
+import { CalendarFamilyMember } from '../types';
 
 export interface CalendarMemberFilterProps {
   selectedMemberId: string;
   onSelectMember: (memberId: string) => void;
+  members?: CalendarFamilyMember[];
 }
 
 export const CalendarMemberFilter: React.FC<CalendarMemberFilterProps> = ({
   selectedMemberId,
   onSelectMember,
+  members,
 }) => {
   const isEveryone = selectedMemberId === 'everyone';
+  const displayMembers = members || [];
 
   return (
     <View style={styles.container}>
@@ -38,11 +41,15 @@ export const CalendarMemberFilter: React.FC<CalendarMemberFilterProps> = ({
           <View
             style={[
               styles.avatarCircle,
-              styles.everyoneCircle,
+              isEveryone ? styles.everyoneCircleActive : styles.everyoneCircleInactive,
               isEveryone && styles.avatarSelectedRing,
             ]}
           >
-            <Feather name="users" size={18} color="#0B1A2F" />
+            <Feather
+              name="users"
+              size={18}
+              color={isEveryone ? '#0B1A2F' : '#CAD4DF'}
+            />
           </View>
           <Text
             style={[
@@ -55,7 +62,7 @@ export const CalendarMemberFilter: React.FC<CalendarMemberFilterProps> = ({
         </TouchableOpacity>
 
         {/* Member Avatars */}
-        {CALENDAR_FAMILY_MEMBERS.map((member) => {
+        {displayMembers.map((member) => {
           const isSelected = selectedMemberId === member.id;
           return (
             <TouchableOpacity
@@ -124,11 +131,14 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 6,
   },
-  everyoneCircle: {
+  everyoneCircleActive: {
     backgroundColor: '#F0923A',
   },
+  everyoneCircleInactive: {
+    backgroundColor: '#1E3A66',
+  },
   avatarSelectedRing: {
-    borderWidth: 2,
+    borderWidth: 2.5,
     borderColor: '#F0923A',
   },
   avatarInitial: {
@@ -146,7 +156,7 @@ const styles = StyleSheet.create({
     fontFamily: 'Roboto-Bold',
   },
   memberNameActive: {
-    color: '#FFFFFF',
+    color: '#F0923A',
     fontFamily: 'Roboto-Bold',
   },
 });

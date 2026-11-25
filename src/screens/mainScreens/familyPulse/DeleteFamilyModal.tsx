@@ -371,13 +371,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  headerTitle: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: '#FFFFFF',
-    letterSpacing: -0.2,
-    textAlign: 'center',
-  },
   content: {
     paddingHorizontal: 20,
     paddingTop: 16,

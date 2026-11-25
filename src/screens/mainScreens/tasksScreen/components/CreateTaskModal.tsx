@@ -19,7 +19,7 @@ import { createTask, updateTask } from '../../../../redux/features/tasks/tasksSl
 import { getMyFamilyThunk } from '../../../../redux/features/family/familySlice';
 import { CreateTaskPayload } from '../../../../services/tasksServices';
 import { TaskItem, TaskCategory, TaskPriority } from '../types';
-import { CATEGORY_META, PRIORITY_META } from '../mockData';
+import { CATEGORY_META, PRIORITY_META } from '../constants';
 import {
   toIsoDateString,
   formatTimeTo24Hour,

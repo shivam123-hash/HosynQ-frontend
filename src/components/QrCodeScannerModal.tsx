@@ -86,7 +86,7 @@ const QrCodeScannerModal: React.FC<QrCodeScannerModalProps> = ({
   };
 
   const toggleTorch = () => {
-    setTorchMode((prev) => (prev === 'on' ? 'off' : 'on'));
+    setTorchMode((prev: string) => (prev === 'on' ? 'off' : 'on'));
   };
 
   return (

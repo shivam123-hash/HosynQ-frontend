@@ -30,6 +30,7 @@ export interface CalendarEvent {
   id: string;
   title: string;
   date: string; // YYYY-MM-DD
+  endDate?: string; // YYYY-MM-DD
   startTime: string; // e.g. "3:00 PM"
   endTime: string; // e.g. "3:45 PM"
   formattedDate: string; // e.g. "Fri, 30 Oct"
@@ -44,6 +45,15 @@ export interface CalendarEvent {
   forMemberInitial?: string;
   forMemberColor?: string;
   forMemberTextColor?: string;
+  createdByMemberId?: string;
+  createdById?: string;
+  isCreator?: boolean;
+  invitedMemberIds?: string[];
+  invitees?: Array<{
+    id: string;
+    name: string;
+    response?: 'GOING' | 'NOT_GOING' | null;
+  }>;
   goingMemberIds: string[];
   goingMembers: {
     id: string;
@@ -57,6 +67,13 @@ export interface CalendarEvent {
   notes?: string;
   sourceNote?: string;
   comments: EventComment[];
+  myResponse?: 'GOING' | 'NOT_GOING' | null;
+  askToConfirm?: boolean;
+  canEdit?: boolean;
+  canCancel?: boolean;
+  canRespond?: boolean;
+  backendCanRespond?: boolean;
+  scope?: 'THIS_ONE' | 'THIS_AND_FUTURE' | 'ALL';
 }
 
 export interface CalendarTaskDue {
@@ -69,29 +86,12 @@ export interface CalendarTaskDue {
   overdueText?: string;
   isCompleted: boolean;
   memberId?: string;
-}
-
-export interface ImportantDateItem {
-  id: string;
-  title: string;
-  subtitle: string;
-  dateFormatted: string;
-  daysLeft: number;
-  timeRemainingText: string;
-  type: 'birthday' | 'anniversary' | 'document' | 'other';
-  section: 'this_month' | 'next_3_months' | 'later';
-  personName: string;
-  personInitial: string;
-  personColor: string;
-  reminders: string;
-  whoSeesIt: string;
-  documentTitle?: string;
-  documentPath?: string;
-  aiSuggestion?: string;
+  category?: string;
+  categoryColor?: string;
 }
 
 export interface CalendarFilterState {
-  showTypes: ('events' | 'tasks' | 'important_dates')[];
+  showTypes: ('events' | 'tasks')[];
   member: string;
   categories: string[];
 }
