@@ -2,16 +2,16 @@ import { Platform, NativeModules } from 'react-native';
 
 /**
  * Local development host configuration:
- * Current Mac Wi-Fi IP: 192.168.1.11
+ * Current Mac Wi-Fi IP: 192.168.29.41
  * (Find by running `ifconfig | grep "inet 192"` in Mac terminal)
  */
-export const DEV_MACHINE_IP = '192.168.1.11';
+export const DEV_MACHINE_IP = '192.168.29.41';
 
 /**
  * Automatically extracts the development host IP:
  * 1. Checks NativeModules.SourceCode.scriptURL (Metro packager IP)
- *    If Metro is accessed from 192.168.1.11, this dynamically resolves it!
- * 2. Falls back to DEV_MACHINE_IP (192.168.1.11) so real devices never call
+ *    If Metro is accessed from 192.168.29.41, this dynamically resolves it!
+ * 2. Falls back to DEV_MACHINE_IP (192.168.29.41) so real devices never call
  *    "localhost" (which points to the mobile device itself and causes Network Error).
  */
 export const resolveDevHost = (): string => {
