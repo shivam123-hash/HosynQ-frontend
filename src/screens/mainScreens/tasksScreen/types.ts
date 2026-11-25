@@ -9,7 +9,7 @@ export type TaskCategory =
   | 'travel'
   | 'work';
 
-export type TaskDueDateType = 'overdue' | 'today' | 'this_week' | 'later';
+export type TaskDueDateType = 'overdue' | 'today' | 'this_week' | 'later' | 'upcoming';
 
 export interface TaskComment {
   id: string;
@@ -95,6 +95,12 @@ export interface ListGroup {
   sharedWith: string[];
   isSharedWithAll: boolean;
   isArchived?: boolean;
+  itemCount?: number;
+  completedCount?: number;
+  creator?: string;
+  creatorInitial?: string;
+  creatorColor?: string;
+  membersCount?: number;
 }
 
 
