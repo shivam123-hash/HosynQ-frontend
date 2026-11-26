@@ -58,6 +58,7 @@ export interface ChatConversationModalProps {
   isOffline?: boolean;
   initialMessages?: any[];
   onOpenVault?: () => void;
+  onNavigateToItem?: (type: 'TASK' | 'EVENT' | 'LIST', itemId: string, meta?: any) => void;
 }
 
 // RFC4122 v4 UUID generator safe for all RN/Hermes engines
@@ -112,6 +113,7 @@ export const ChatConversationModal: React.FC<ChatConversationModalProps> = ({
   title: propTitle,
   memberCountText: propMemberCount,
   onOpenVault,
+  onNavigateToItem,
 }) => {
   const insets = useSafeAreaInsets();
   const dispatch = useAppDispatch();
@@ -317,56 +319,25 @@ export const ChatConversationModal: React.FC<ChatConversationModalProps> = ({
     [activeThreadId, dispatch]
   );
 
-  // Interactive Card Action Handlers
+  // Interactive Card Action Handlers - Direct deep-navigation to screen & item focus
   const handleCardAction = useCallback(
     async (msg: ApiChatMessage) => {
       const item = msg.item;
       const card = msg.card;
       if (!item) return;
 
-      if (item.type === 'TASK') {
-        if (card?.task?.canMarkDone) {
-          try {
-            await dispatch(
-              completeTask({
-                taskId: item.id,
-                today: new Date().toISOString().slice(0, 10),
-              })
-            ).unwrap();
-            Alert.alert('Task Completed', `"${card?.task?.title || 'Task'}" marked as completed.`);
-            if (activeThreadId) {
-              dispatch(fetchChatMessages({ threadId: activeThreadId }));
-            }
-          } catch {
-            Alert.alert('Notice', 'Task updated.');
-          }
-        } else {
-          Alert.alert(
-            'Task Info',
-            card?.task?.done
-              ? `"${card?.task?.title || 'Task'}" is already completed.`
-              : `"${card?.task?.title || 'Task'}" is assigned to another member.`
-          );
+      onClose();
+      if (onNavigateToItem) {
+        if (item.type === 'TASK') {
+          onNavigateToItem('TASK', item.id);
+        } else if (item.type === 'EVENT') {
+          onNavigateToItem('EVENT', item.id, { date: card?.event?.startsOn });
+        } else if (item.type === 'LIST') {
+          onNavigateToItem('LIST', item.id);
         }
-      } else if (item.type === 'EVENT') {
-        if (card?.event?.onMyCalendar) {
-          Alert.alert('Calendar', `"${card?.event?.title || 'Event'}" is already on your calendar.`);
-        } else {
-          try {
-            await dispatch(addEventToMyCalendar(item.id)).unwrap();
-            Alert.alert('Calendar Updated', `"${card?.event?.title || 'Event'}" added to your calendar!`);
-            if (activeThreadId) {
-              dispatch(fetchChatMessages({ threadId: activeThreadId }));
-            }
-          } catch {
-            Alert.alert('Calendar', 'Added to calendar.');
-          }
-        }
-      } else if (item.type === 'LIST') {
-        Alert.alert('List', `Opening "${card?.list?.name || 'List'}"...`);
       }
     },
-    [activeThreadId, dispatch]
+    [onClose, onNavigateToItem]
   );
 
   // Reactions Handler
@@ -697,7 +668,11 @@ export const ChatConversationModal: React.FC<ChatConversationModalProps> = ({
     if (card.type === 'EVENT' && card.event) {
       const ev = card.event;
       return (
-        <View style={styles.sharedCardEvent}>
+        <TouchableOpacity
+          style={styles.sharedCardEvent}
+          onPress={() => handleCardAction(msg)}
+          activeOpacity={0.85}
+        >
           <View style={styles.sharedTagRow}>
             <Feather
               name="calendar"
@@ -712,29 +687,29 @@ export const ChatConversationModal: React.FC<ChatConversationModalProps> = ({
             {ev.startsOn} {ev.startTime ? `· ${ev.startTime}` : '· All day'}
             {ev.location ? ` · ${ev.location}` : ''}
           </Text>
-          <TouchableOpacity
-            style={styles.sharedEventBtn}
-            onPress={() => handleCardAction(msg)}
-            activeOpacity={0.7}
-          >
+          <View style={styles.sharedEventBtn}>
             <Feather
-              name={ev.onMyCalendar ? 'check' : 'plus'}
+              name="calendar"
               size={14}
               color={Colors.white}
               style={styles.sharedEventBtnIcon}
             />
             <Text style={styles.sharedEventBtnText}>
-              {ev.onMyCalendar ? 'On my calendar' : 'Add to my calendar'}
+              View in calendar
             </Text>
-          </TouchableOpacity>
-        </View>
+          </View>
+        </TouchableOpacity>
       );
     }
 
     if (card.type === 'TASK' && card.task) {
       const task = card.task;
       return (
-        <View style={styles.sharedCardTask}>
+        <TouchableOpacity
+          style={styles.sharedCardTask}
+          onPress={() => handleCardAction(msg)}
+          activeOpacity={0.85}
+        >
           <View style={styles.sharedTaskHeaderRow}>
             <View style={styles.sharedTagRow}>
               <Feather
@@ -758,25 +733,23 @@ export const ChatConversationModal: React.FC<ChatConversationModalProps> = ({
               ? ` · ${task.assignees.map((a: any) => a.fullName).join(', ')}`
               : ''}
           </Text>
-          <TouchableOpacity
+          <View
             style={[
               styles.markDoneBtn,
               task.done && styles.markDoneBtnCompleted,
             ]}
-            onPress={() => handleCardAction(msg)}
-            activeOpacity={0.7}
           >
             <Feather
-              name="check"
+              name={task.done ? 'check-circle' : 'arrow-right'}
               size={14}
               color={Colors.white}
               style={styles.markDoneIcon}
             />
             <Text style={styles.markDoneBtnText}>
-              {task.done ? 'Done' : 'Mark done'}
+              {task.done ? 'Completed · View task' : 'View task'}
             </Text>
-          </TouchableOpacity>
-        </View>
+          </View>
+        </TouchableOpacity>
       );
     }
 
@@ -785,7 +758,11 @@ export const ChatConversationModal: React.FC<ChatConversationModalProps> = ({
       const progressPercent =
         lst.totalCount > 0 ? (lst.doneCount / lst.totalCount) * 100 : 0;
       return (
-        <View style={styles.sharedCardList}>
+        <TouchableOpacity
+          style={styles.sharedCardList}
+          onPress={() => handleCardAction(msg)}
+          activeOpacity={0.85}
+        >
           <View style={styles.sharedTagRow}>
             <Feather
               name="list"
@@ -804,14 +781,11 @@ export const ChatConversationModal: React.FC<ChatConversationModalProps> = ({
               style={[styles.listProgressFill, { width: `${progressPercent}%` }]}
             />
           </View>
-          <TouchableOpacity
-            style={styles.openListBtn}
-            onPress={() => handleCardAction(msg)}
-            activeOpacity={0.7}
-          >
+          <View style={styles.openListBtn}>
             <Text style={styles.openListBtnText}>Open list</Text>
-          </TouchableOpacity>
-        </View>
+            <Feather name="arrow-right" size={14} color={Colors.white} style={{ marginLeft: 6 }} />
+          </View>
+        </TouchableOpacity>
       );
     }
 
@@ -1642,6 +1616,7 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.surfaceSubtle,
     borderWidth: 1,
     borderColor: Colors.border,
+    flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
   },

@@ -31,6 +31,7 @@ export interface ChatsScreenProps {
   onExplorePress?: () => void;
   onCompassPress?: () => void;
   onOpenVault?: () => void;
+  onNavigateToItem?: (type: 'TASK' | 'EVENT' | 'LIST', itemId: string, meta?: any) => void;
 }
 
 // Helpers
@@ -110,6 +111,7 @@ export const ChatsScreen: React.FC<ChatsScreenProps> = ({
   onExplorePress,
   onCompassPress,
   onOpenVault,
+  onNavigateToItem,
 }) => {
   const insets = useSafeAreaInsets();
   const dispatch = useAppDispatch();
@@ -492,7 +494,14 @@ export const ChatsScreen: React.FC<ChatsScreenProps> = ({
               {index > 0 && <View style={styles.divider} />}
               <TouchableOpacity
                 style={styles.sharedItemRow}
-                onPress={() => handleOpenFamilyChat()}
+                onPress={() => {
+                  const type = item.type === 'task' ? 'TASK' : item.type === 'event' ? 'EVENT' : 'LIST';
+                  if (onNavigateToItem) {
+                    onNavigateToItem(type, item.id);
+                  } else {
+                    handleOpenFamilyChat();
+                  }
+                }}
                 activeOpacity={0.7}
               >
                 {/* Icon */}
@@ -537,6 +546,11 @@ export const ChatsScreen: React.FC<ChatsScreenProps> = ({
         title="Family chat"
         memberCountText={familyMembersCount}
         onOpenVault={onOpenVault}
+        onNavigateToItem={(type, itemId, meta) => {
+          setShowFamilyChat(false);
+          dispatch(setActiveThreadId(null));
+          onNavigateToItem?.(type, itemId, meta);
+        }}
       />
 
       {/* Just Us Modal (CHT-10, CHT-11) */}

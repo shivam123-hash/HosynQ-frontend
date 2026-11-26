@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import {
   View,
   StyleSheet,
@@ -134,6 +134,29 @@ const MainTabScreen: React.FC<MainTabScreenProps> = ({
   const handleAvatarPress = () => setSideMenuVisible(true);
   const handleOpenCompass = () => setCompassVisible(true);
 
+  // Deep-navigation from Chat shared cards (Task, Event, List)
+  const [pendingItemNavigation, setPendingItemNavigation] = useState<{
+    type: 'TASK' | 'EVENT' | 'LIST';
+    id: string;
+    date?: string;
+  } | null>(null);
+
+  const handleNavigateToItem = useCallback(
+    (type: 'TASK' | 'EVENT' | 'LIST', itemId: string, meta?: any) => {
+      if (type === 'TASK') {
+        setActiveTab('tasks');
+        setPendingItemNavigation({ type: 'TASK', id: itemId });
+      } else if (type === 'LIST') {
+        setActiveTab('tasks');
+        setPendingItemNavigation({ type: 'LIST', id: itemId });
+      } else if (type === 'EVENT') {
+        setActiveTab('calendar');
+        setPendingItemNavigation({ type: 'EVENT', id: itemId, date: meta?.date });
+      }
+    },
+    []
+  );
+
   return (
     <View style={styles.container}>
       <StatusBar barStyle="light-content" />
@@ -168,6 +191,10 @@ const MainTabScreen: React.FC<MainTabScreenProps> = ({
             onTabChange={setActiveTab}
             onOpenCalendar={() => setActiveTab('calendar')}
             onOpenChat={() => setActiveTab('chat')}
+            initialMainTab={pendingItemNavigation?.type === 'LIST' ? 'lists' : 'tasks'}
+            initialTaskId={pendingItemNavigation?.type === 'TASK' ? pendingItemNavigation.id : undefined}
+            initialListId={pendingItemNavigation?.type === 'LIST' ? pendingItemNavigation.id : undefined}
+            onClearInitialIds={() => setPendingItemNavigation(null)}
           />
         )}
 
@@ -178,6 +205,9 @@ const MainTabScreen: React.FC<MainTabScreenProps> = ({
             onExplorePress={handleOpenMenu}
             onCompassPress={handleOpenCompass}
             onOpenChat={() => setActiveTab('chat')}
+            initialDate={pendingItemNavigation?.type === 'EVENT' ? pendingItemNavigation.date : undefined}
+            initialEventId={pendingItemNavigation?.type === 'EVENT' ? pendingItemNavigation.id : undefined}
+            onClearInitialEvent={() => setPendingItemNavigation(null)}
           />
         )}
 
@@ -188,6 +218,7 @@ const MainTabScreen: React.FC<MainTabScreenProps> = ({
             onExplorePress={handleOpenMenu}
             onCompassPress={handleOpenCompass}
             onOpenVault={() => setVaultModalVisible(true)}
+            onNavigateToItem={handleNavigateToItem}
           />
         )}
       </View>

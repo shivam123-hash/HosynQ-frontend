@@ -75,6 +75,8 @@ import {
 export interface CalendarScreenProps {
   initialViewMode?: CalendarViewMode;
   initialDate?: string;
+  initialEventId?: string | null;
+  onClearInitialEvent?: () => void;
   onProfilePress?: () => void;
   onNotificationsPress?: () => void;
   onExplorePress?: () => void;
@@ -88,6 +90,8 @@ export interface CalendarScreenProps {
 export const CalendarScreen: React.FC<CalendarScreenProps> = ({
   initialViewMode = 'day',
   initialDate,
+  initialEventId,
+  onClearInitialEvent,
   onProfilePress,
   onNotificationsPress,
   onExplorePress,
@@ -590,6 +594,44 @@ export const CalendarScreen: React.FC<CalendarScreenProps> = ({
         });
     }
   };
+
+  // Deep-navigation: sync selectedDate if initialDate prop is provided
+  useEffect(() => {
+    if (initialDate) {
+      setSelectedDate(initialDate);
+    }
+  }, [initialDate]);
+
+  // Deep-navigation: open event detail if initialEventId prop is provided
+  useEffect(() => {
+    if (initialEventId) {
+      const found = events.find((e) => e.id === initialEventId);
+      if (found) {
+        handleOpenEventDetail(found);
+      } else {
+        const placeholder: CalendarEvent = {
+          id: initialEventId,
+          title: 'Loading event...',
+          date: initialDate || selectedDate,
+          startTime: '',
+          endTime: '',
+          formattedDate: '',
+          formattedTime: '',
+          isAllDay: true,
+          category: 'other',
+          categoryColor: '#3A8EF0',
+          location: '',
+          goingMemberIds: [],
+          goingMembers: [],
+          reminders: 'None',
+          repeat: 'Never',
+          comments: [],
+        };
+        handleOpenEventDetail(placeholder);
+      }
+      onClearInitialEvent?.();
+    }
+  }, [initialEventId, events]);
 
   const handleSaveEvent = async (eventData: Partial<CalendarEvent>) => {
     const targetId = eventToEdit?.id || eventData.id;
