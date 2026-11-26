@@ -32,6 +32,7 @@ import {
   setActiveThreadId,
   addOptimisticPendingMessage,
 } from '../../../redux/features/chat/chatSlice';
+import { initChatSocketBridge } from '../../../redux/features/chat/chatSocketBridge';
 import { completeTask } from '../../../redux/features/tasks/tasksSlice';
 import chatServices, {
   ApiChatMessage,
@@ -118,8 +119,13 @@ export const ChatConversationModal: React.FC<ChatConversationModalProps> = ({
   const familyState = useAppSelector((state) => state.family);
   const currentUser = useAppSelector((state) => state.baseProfile.user);
 
-  // Active thread ID resolution
-  const activeThreadId = threadId || chatState.threads.familyChat?.id || '';
+  // Active thread ID resolution: Always resolve real backend UUID (never stay stuck on placeholder 'family')
+  const activeThreadId = useMemo(() => {
+    if (threadId && threadId !== 'family' && threadId !== 'just_us') {
+      return threadId;
+    }
+    return chatState.threads.familyChat?.id || '';
+  }, [threadId, chatState.threads.familyChat?.id]);
 
   // Messages list from Redux (descending: newest first at index 0)
   const messages = chatState.messagesByThread[activeThreadId] || [];
@@ -166,8 +172,9 @@ export const ChatConversationModal: React.FC<ChatConversationModalProps> = ({
     return `${count} members`;
   }, [propMemberCount, familyState]);
 
-  // Lifecycle: On open, set active thread, fetch messages, mark read, fetch quick messages
+  // Lifecycle: On open, ensure socket is connected, set active thread, fetch messages, mark read
   useEffect(() => {
+    initChatSocketBridge();
     if (visible && activeThreadId) {
       dispatch(setActiveThreadId(activeThreadId));
       dispatch(fetchChatMessages({ threadId: activeThreadId }));
@@ -921,6 +928,7 @@ export const ChatConversationModal: React.FC<ChatConversationModalProps> = ({
             <FlatList
               ref={flatListRef}
               data={messages}
+              extraData={messages}
               inverted
               keyExtractor={(item) => item.clientId || item.id}
               renderItem={renderMessageItem}

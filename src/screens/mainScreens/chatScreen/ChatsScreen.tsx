@@ -303,9 +303,12 @@ export const ChatsScreen: React.FC<ChatsScreenProps> = ({
   // Open Family Chat modal
   const handleOpenFamilyChat = useCallback(
     (threadId?: string) => {
-      const id = threadId || chatState.threads.familyChat?.id || 'family';
+      const realId = chatState.threads.familyChat?.id;
+      const id = threadId && threadId !== 'family' ? threadId : realId || 'family';
       setSelectedThreadId(id);
-      dispatch(setActiveThreadId(id));
+      if (id !== 'family') {
+        dispatch(setActiveThreadId(id));
+      }
       setShowFamilyChat(true);
     },
     [dispatch, chatState.threads.familyChat]

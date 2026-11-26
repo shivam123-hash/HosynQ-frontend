@@ -36,16 +36,38 @@ export const initChatSocketBridge = (accessToken?: string) => {
 
   // 1. Incoming live message
   chatSocket.onMessage((message) => {
+    console.log('[chatSocketBridge] 📩 onMessage dispatching to Redux:', message?.id, message?.threadId);
     const currentStore = getStore();
     if (!currentStore) return;
 
-    currentStore.dispatch(socketMessageReceived(message));
+    // Check if the message is from current user
+    const state = currentStore.getState() as any;
+    const myMemberId =
+      state.family?.myMemberId ||
+      state.family?.myFamilyData?.family?.myMemberId ||
+      state.family?.family?.myMemberId ||
+      state.baseProfile?.user?.memberId ||
+      state.baseProfile?.user?.myMemberId;
+    const currentUserId = state.baseProfile?.user?.id;
+    const isMine =
+      (Boolean(myMemberId) && message.sender?.memberId === myMemberId) ||
+      (Boolean(currentUserId) &&
+        ((message as any).senderId === currentUserId ||
+          (message.sender as any)?.userId === currentUserId ||
+          (message.sender as any)?.id === currentUserId));
+
+    const enrichedMessage = {
+      ...message,
+      isMine: message.isMine !== undefined ? message.isMine : isMine,
+    };
+
+    currentStore.dispatch(socketMessageReceived(enrichedMessage));
 
     // If this thread is currently open on user screen, auto-mark as read
-    const state = currentStore.getState() as any;
     const activeThreadId = state.chat?.activeThreadId;
-    if (activeThreadId && activeThreadId === message.threadId && !message.isMine) {
-      currentStore.dispatch(markChatThreadRead(message.threadId));
+    const threadId = message.threadId || (message as any).thread_id;
+    if (activeThreadId && threadId && activeThreadId === threadId && !isMine) {
+      currentStore.dispatch(markChatThreadRead(threadId));
     }
   });
 

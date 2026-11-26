@@ -43,13 +43,11 @@ class ChatSocketManager {
       (nextAppState: AppStateStatus) => {
         if (nextAppState === 'active') {
           console.log('[chatSocket] App resumed to foreground, verifying connection...');
-          if (this.currentToken) {
-            if (!this.socket || !this.socket.connected) {
-              this.connect(this.currentToken);
-            }
-            // Notify active screens to sync missed messages
-            this.notifyReconnect();
+          if (!this.socket || !this.socket.connected) {
+            this.connect(this.currentToken || undefined);
           }
+          // Notify active screens to sync missed messages
+          this.notifyReconnect();
         }
       }
     );
@@ -87,10 +85,10 @@ class ChatSocketManager {
       }
 
       this.socket = io(API_SOCKET_CHAT_URL, {
-        transports: ['websocket'],
+        transports: ['websocket', 'polling'],
         auth: { token: authToken },
         reconnection: true,
-        reconnectionAttempts: 10,
+        reconnectionAttempts: 20,
         reconnectionDelay: 1000,
         reconnectionDelayMax: 5000,
         timeout: 20000,

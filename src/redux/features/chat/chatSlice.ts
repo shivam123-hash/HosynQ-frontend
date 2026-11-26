@@ -393,15 +393,22 @@ export const chatSlice = createSlice({
     // Real-time socket event: Incoming message
     socketMessageReceived(state, action: PayloadAction<ApiChatMessage>) {
       const message = action.payload;
-      const threadId = message.threadId;
+      const threadId =
+        message.threadId ||
+        (message as any).thread_id ||
+        state.threads.familyChat?.id ||
+        state.activeThreadId ||
+        '';
+
+      if (!threadId) return;
 
       if (!state.messagesByThread[threadId]) {
         state.messagesByThread[threadId] = [];
       }
 
-      const list = state.messagesByThread[threadId];
+      const currentList = state.messagesByThread[threadId];
       // Check if message already exists by ID or by clientId
-      const existingIdx = list.findIndex(
+      const existingIdx = currentList.findIndex(
         (m) =>
           m.id === message.id ||
           (Boolean(message.clientId) && m.clientId === message.clientId)
@@ -409,10 +416,12 @@ export const chatSlice = createSlice({
 
       if (existingIdx !== -1) {
         // Replace optimistic placeholder with confirmed server message
-        list[existingIdx] = message;
+        const updated = [...currentList];
+        updated[existingIdx] = message;
+        state.messagesByThread[threadId] = updated;
       } else {
-        // Newest first: prepend
-        list.unshift(message);
+        // Newest first: prepend with brand-new array reference for reactive UI updates
+        state.messagesByThread[threadId] = [message, ...currentList];
       }
 
       // Update Threads list preview
