@@ -18,6 +18,7 @@ export interface QuickMessagesModalProps {
   onClose: () => void;
   onSelectQuickMessage: (text: string) => void;
   onEditQuickMessages?: () => void;
+  customMessages?: string[];
 }
 
 const QUICK_MESSAGES: QuickMessageItem[] = [
@@ -65,8 +66,19 @@ export const QuickMessagesModal: React.FC<QuickMessagesModalProps> = ({
   onClose,
   onSelectQuickMessage,
   onEditQuickMessages,
+  customMessages,
 }) => {
   const insets = useSafeAreaInsets();
+
+  const items: QuickMessageItem[] =
+    customMessages && customMessages.length > 0
+      ? customMessages.map((text, idx) => ({
+          id: `qm-server-${idx}`,
+          title: text,
+          iconName: 'message-circle',
+          iconColor: Colors.primary,
+        }))
+      : QUICK_MESSAGES;
 
   const handleSelect = (item: QuickMessageItem) => {
     onSelectQuickMessage(item.title);
@@ -104,7 +116,7 @@ export const QuickMessagesModal: React.FC<QuickMessagesModalProps> = ({
                 contentContainerStyle={styles.cardContainer}
                 showsVerticalScrollIndicator={false}
               >
-                {QUICK_MESSAGES.map((item, index) => (
+                {items.map((item, index) => (
                   <TouchableOpacity
                     key={item.id}
                     style={[

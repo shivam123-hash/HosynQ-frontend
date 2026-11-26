@@ -16,13 +16,13 @@ import { ChatMessage } from './types';
 
 export interface SmartReactionsModalProps {
   visible: boolean;
-  message?: ChatMessage;
+  message?: any;
   onClose: () => void;
   onSelectReaction: (emoji: string) => void;
   onSelectQuickReply: (replyText: string) => void;
   onTurnIntoTask: (taskTitle: string) => void;
   onTurnIntoReminder: (reminderTitle: string) => void;
-  onReply: (message: ChatMessage) => void;
+  onReply: (message: any) => void;
 }
 
 const EMOJIS = ['❤️', '👍', '😊', '✅', '+'];
