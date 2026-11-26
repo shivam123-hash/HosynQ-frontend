@@ -7,11 +7,11 @@ import {
   StyleSheet,
   Modal,
   ScrollView,
-  Alert,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Feather from '@react-native-vector-icons/feather';
 import Colors from '../../../units/Colors';
+import AppDialog from '../../../components/AppDialog';
 
 export interface QuickMessagesModalProps {
   visible: boolean;
@@ -41,6 +41,17 @@ export const QuickMessagesModal: React.FC<QuickMessagesModalProps> = ({
   const [isEditing, setIsEditing] = useState(false);
   const [messagesList, setMessagesList] = useState<string[]>(DEFAULT_QUICK_MESSAGES_LIST);
   const [newText, setNewText] = useState('');
+  const [dialogConfig, setDialogConfig] = useState<{
+    visible: boolean;
+    type: 'success' | 'warning' | 'info';
+    title: string;
+    description: string;
+  }>({
+    visible: false,
+    type: 'success',
+    title: '',
+    description: '',
+  });
 
   // Sync custom messages from props/Redux
   useEffect(() => {
@@ -68,7 +79,12 @@ export const QuickMessagesModal: React.FC<QuickMessagesModalProps> = ({
     const trimmed = newText.trim();
     if (!trimmed) return;
     if (messagesList.includes(trimmed)) {
-      Alert.alert('Duplicate', 'This quick message already exists.');
+      setDialogConfig({
+        visible: true,
+        type: 'warning',
+        title: 'Duplicate message',
+        description: 'This quick message already exists in your list.',
+      });
       return;
     }
     setMessagesList((prev) => [...prev, trimmed]);
@@ -81,14 +97,23 @@ export const QuickMessagesModal: React.FC<QuickMessagesModalProps> = ({
 
   const handleSave = () => {
     if (messagesList.length === 0) {
-      Alert.alert('Empty', 'You must have at least one quick message.');
+      setDialogConfig({
+        visible: true,
+        type: 'warning',
+        title: 'Empty List',
+        description: 'You must have at least one quick message.',
+      });
       return;
     }
     if (onSaveQuickMessages) {
       onSaveQuickMessages(messagesList);
     }
-    setIsEditing(false);
-    Alert.alert('Saved', 'Quick messages updated successfully.');
+    setDialogConfig({
+      visible: true,
+      type: 'success',
+      title: 'Quick messages updated',
+      description: 'Quick messages updated successfully',
+    });
   };
 
   return (
@@ -270,6 +295,30 @@ export const QuickMessagesModal: React.FC<QuickMessagesModalProps> = ({
           )}
         </View>
       </View>
+
+      {/* HosynQ Design System Modal Dialog */}
+      <AppDialog
+        visible={dialogConfig.visible}
+        asModal={false}
+        type={dialogConfig.type}
+        title={dialogConfig.title}
+        description={dialogConfig.description}
+        primaryButtonText="Done"
+        onPrimaryPress={() => {
+          const wasSuccess = dialogConfig.type === 'success';
+          setDialogConfig((prev) => ({ ...prev, visible: false }));
+          if (wasSuccess) {
+            setIsEditing(false);
+          }
+        }}
+        onClose={() => {
+          const wasSuccess = dialogConfig.type === 'success';
+          setDialogConfig((prev) => ({ ...prev, visible: false }));
+          if (wasSuccess) {
+            setIsEditing(false);
+          }
+        }}
+      />
     </Modal>
   );
 };
