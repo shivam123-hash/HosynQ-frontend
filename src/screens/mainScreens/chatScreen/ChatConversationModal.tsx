@@ -515,7 +515,11 @@ export const ChatConversationModal: React.FC<ChatConversationModalProps> = ({
                 ) : (
                   /* Text Bubble */
                   <TouchableOpacity
-                    style={styles.outgoingBubble}
+                    style={[
+                      styles.outgoingBubble,
+                      Boolean(item.reactions && item.reactions.length > 0) &&
+                        styles.bubbleWithReactionOutgoing,
+                    ]}
                     onLongPress={() => setSelectedMessageForReactions(item)}
                     activeOpacity={0.85}
                   >
@@ -603,7 +607,11 @@ export const ChatConversationModal: React.FC<ChatConversationModalProps> = ({
                       </TouchableOpacity>
                     ) : (
                       <TouchableOpacity
-                        style={styles.incomingBubble}
+                        style={[
+                          styles.incomingBubble,
+                          Boolean(item.reactions && item.reactions.length > 0) &&
+                            styles.bubbleWithReactionIncoming,
+                        ]}
                         onLongPress={() => setSelectedMessageForReactions(item)}
                         activeOpacity={0.85}
                       >
@@ -1301,9 +1309,11 @@ const styles = StyleSheet.create({
   outgoingBubble: {
     backgroundColor: Colors.primary,
     borderRadius: 20,
-    paddingHorizontal: 18,
-    paddingVertical: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 10,
     maxWidth: '80%',
+    minHeight: 38,
+    justifyContent: 'center',
   },
   outgoingText: {
     color: Colors.white,
@@ -1360,8 +1370,18 @@ const styles = StyleSheet.create({
   incomingBubble: {
     backgroundColor: '#162842',
     borderRadius: 20,
-    paddingHorizontal: 18,
-    paddingVertical: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    minHeight: 38,
+    justifyContent: 'center',
+  },
+  bubbleWithReactionOutgoing: {
+    paddingBottom: 15,
+    paddingRight: 18,
+  },
+  bubbleWithReactionIncoming: {
+    paddingBottom: 15,
+    paddingRight: 18,
   },
   incomingText: {
     color: Colors.white,
@@ -1448,50 +1468,50 @@ const styles = StyleSheet.create({
   },
   reactionsAttachedBadge: {
     position: 'absolute',
-    bottom: -11,
+    bottom: -6,
     flexDirection: 'row',
-    gap: 4,
+    gap: 3,
     zIndex: 10,
   },
   reactionsAttachedRight: {
-    right: 8,
+    right: 4,
   },
   reactionsAttachedLeft: {
-    left: 8,
+    left: 10,
   },
   metaRowWithReactions: {
-    marginTop: 12,
+    marginTop: 8,
   },
   incomingTimeWithReactions: {
-    marginTop: 12,
+    marginTop: 8,
   },
   reactionPill: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: '#1E293B',
-    paddingHorizontal: 7,
-    paddingVertical: 2,
-    borderRadius: 14,
-    borderWidth: 1.5,
-    borderColor: '#334155',
+    paddingHorizontal: 5,
+    paddingVertical: 1.5,
+    borderRadius: 10,
+    borderWidth: 0.8,
+    borderColor: 'rgba(255, 255, 255, 0.18)',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.3,
-    shadowRadius: 2,
-    elevation: 4,
+    shadowOpacity: 0.25,
+    shadowRadius: 1.5,
+    elevation: 3,
   },
   reactionPillActive: {
     borderColor: Colors.primary,
-    backgroundColor: 'rgba(240, 145, 58, 0.25)',
+    backgroundColor: 'rgba(240, 145, 58, 0.22)',
   },
   reactionEmoji: {
-    fontSize: 13,
+    fontSize: 11.5,
   },
   reactionCount: {
-    fontSize: 11,
+    fontSize: 10,
     fontFamily: 'Roboto-Bold',
-    color: '#8A97AB',
-    marginLeft: 3,
+    color: '#CBD5E1',
+    marginLeft: 2.5,
   },
   reactionCountActive: {
     color: Colors.primary,
