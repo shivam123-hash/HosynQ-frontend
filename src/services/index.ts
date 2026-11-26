@@ -16,5 +16,11 @@ export * from './medicineServices';
 export { default as tasksServices } from './tasksServices';
 export * from './tasksServices';
 
+export { default as chatServices } from './chatServices';
+export * from './chatServices';
+
+export { default as chatSocket } from './chatSocket';
+export * from './chatSocket';
+
 export * from './googleAuthService';
 export * from './appleAuthService';
