@@ -535,7 +535,7 @@ export const ChatsScreen: React.FC<ChatsScreenProps> = ({
               <Feather name="plus" size={18} color={Colors.white} />
             </View>
           </TouchableOpacity>
-        ) : remainingAdultsCount > 0 ? (
+        ) : (
           <TouchableOpacity
             style={styles.addAnotherJustUsBtn}
             onPress={handleOpenCreateJustUs}
@@ -544,7 +544,7 @@ export const ChatsScreen: React.FC<ChatsScreenProps> = ({
             <Feather name="plus" size={16} color={Colors.accentPurple} />
             <Text style={styles.addAnotherJustUsText}>Start another Just Us chat</Text>
           </TouchableOpacity>
-        ) : null}
+        )}
 
         {/* Privacy Note */}
         <View style={styles.privacyNoteRow}>

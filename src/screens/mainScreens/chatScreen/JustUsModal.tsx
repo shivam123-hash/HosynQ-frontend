@@ -333,13 +333,13 @@ export const JustUsModal: React.FC<JustUsModalProps> = ({
     setInputText('');
 
     try {
+      console.log('[JustUsModal] Sending ciphertext-only payload for Just Us to thread:', activeThreadId);
       await dispatch(
         sendChatMessage({
           threadId: activeThreadId,
           payload: {
             clientId,
             ciphertext,
-            text,
           },
         })
       ).unwrap();
