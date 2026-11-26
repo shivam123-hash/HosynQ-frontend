@@ -7,17 +7,22 @@ import {
   Modal,
   TouchableWithoutFeedback,
   TextInput,
+  ActivityIndicator,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Feather from '@react-native-vector-icons/feather';
 import Colors from '../../../units/Colors';
+import PulseModalContainer from './PulseModalContainer';
 import { MoodType } from './types';
 
 export interface TodayMoodModalProps {
   visible: boolean;
+  asModal?: boolean;
   currentMood?: MoodType;
+  currentNote?: string | null;
+  saving?: boolean;
   onClose: () => void;
-  onSelectMood: (mood: MoodType, note?: string) => void;
+  onSelectMood: (mood: MoodType, note?: string) => void | Promise<void>;
 }
 
 const MOOD_MINT_GREEN = '#4CC38A';
@@ -62,36 +67,42 @@ const MOODS: {
 
 export const TodayMoodModal: React.FC<TodayMoodModalProps> = ({
   visible,
+  asModal = true,
   currentMood = 'good',
+  currentNote = '',
+  saving = false,
   onClose,
   onSelectMood,
 }) => {
   const insets = useSafeAreaInsets();
   const [selectedMood, setSelectedMood] = useState<MoodType>(currentMood);
   const [showNoteInput, setShowNoteInput] = useState(false);
-  const [note, setNote] = useState('');
+  const [note, setNote] = useState(currentNote || '');
 
   useEffect(() => {
-    if (visible && currentMood) {
-      setSelectedMood(currentMood);
+    if (visible) {
+      if (currentMood) setSelectedMood(currentMood);
+      setNote(currentNote || '');
+      setShowNoteInput(false);
     }
-  }, [visible, currentMood]);
+  }, [visible, currentMood, currentNote]);
 
   const handleSelect = (mood: MoodType) => {
     setSelectedMood(mood);
-    onSelectMood(mood, note);
+    onSelectMood(mood, note.trim() || undefined);
   };
 
   const handleSaveNote = () => {
-    onSelectMood(selectedMood, note);
+    onSelectMood(selectedMood, note.trim());
     setShowNoteInput(false);
   };
 
   return (
-    <Modal
+    <PulseModalContainer
       visible={visible}
+      asModal={asModal}
+      variant="sheet"
       transparent
-      animationType="slide"
       onRequestClose={onClose}
     >
       <TouchableWithoutFeedback onPress={onClose}>
@@ -119,6 +130,7 @@ export const TodayMoodModal: React.FC<TodayMoodModalProps> = ({
                       key={item.id}
                       onPress={() => handleSelect(item.id)}
                       activeOpacity={0.7}
+                      disabled={saving}
                       style={[
                         styles.moodCard,
                         isSelected && styles.moodCardSelected,
@@ -147,18 +159,28 @@ export const TodayMoodModal: React.FC<TodayMoodModalProps> = ({
 
               {/* Confirmation status row */}
               <View style={styles.statusRow}>
-                <Feather
-                  name="check-circle"
-                  size={18}
-                  color={MOOD_MINT_GREEN}
-                  style={styles.statusIcon}
-                />
+                {saving ? (
+                  <ActivityIndicator
+                    size="small"
+                    color={Colors.primary}
+                    style={styles.statusIcon}
+                  />
+                ) : (
+                  <Feather
+                    name="check-circle"
+                    size={18}
+                    color={MOOD_MINT_GREEN}
+                    style={styles.statusIcon}
+                  />
+                )}
                 <Text style={styles.statusText}>
-                  Shared with your family. You can change it any time today.
+                  {saving
+                    ? 'Updating your mood with your family...'
+                    : 'Shared with your family. You can change it any time today.'}
                 </Text>
               </View>
 
-              {/* Add Note Section */}
+              {/* Add / Edit Note Section */}
               {showNoteInput ? (
                 <View style={styles.noteInputContainer}>
                   <TextInput
@@ -167,12 +189,14 @@ export const TodayMoodModal: React.FC<TodayMoodModalProps> = ({
                     placeholder="Add a short note about your day..."
                     placeholderTextColor={Colors.textPlaceholder}
                     style={styles.noteInput}
+                    maxLength={140}
                     autoFocus
                   />
                   <TouchableOpacity
                     onPress={handleSaveNote}
                     activeOpacity={0.7}
                     style={styles.saveNoteBtn}
+                    disabled={saving}
                   >
                     <Text style={styles.saveNoteBtnText}>Done</Text>
                   </TouchableOpacity>
@@ -192,7 +216,7 @@ export const TodayMoodModal: React.FC<TodayMoodModalProps> = ({
                     style={styles.addNoteIcon}
                   />
                   <Text style={styles.addNoteText}>
-                    {note ? `Note: "${note}"` : 'Add a note'}
+                    {note.trim() ? `Note: "${note.trim()}"` : 'Add a note'}
                   </Text>
                 </TouchableOpacity>
               )}
@@ -200,7 +224,7 @@ export const TodayMoodModal: React.FC<TodayMoodModalProps> = ({
           </TouchableWithoutFeedback>
         </View>
       </TouchableWithoutFeedback>
-    </Modal>
+    </PulseModalContainer>
   );
 };
 
@@ -331,4 +355,3 @@ const styles = StyleSheet.create({
 });
 
 export default TodayMoodModal;
-

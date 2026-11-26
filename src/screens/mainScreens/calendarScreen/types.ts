@@ -66,6 +66,7 @@ export interface CalendarEvent {
   repeat: string;
   notes?: string;
   sourceNote?: string;
+  sourcePollId?: string;
   comments: EventComment[];
   myResponse?: 'GOING' | 'NOT_GOING' | null;
   askToConfirm?: boolean;

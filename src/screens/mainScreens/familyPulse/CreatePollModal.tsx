@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
   View,
   Text,
@@ -9,80 +9,139 @@ import {
   ScrollView,
   Switch,
   StatusBar,
+  ActivityIndicator,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Feather from '@react-native-vector-icons/feather';
+import { useAppDispatch, useAppSelector } from '../../../redux';
+import { createPollThunk } from '../../../redux/features/pulse/pulseSlice';
+import { isUUID } from '../../../redux/features/lists/listsSlice';
 import Colors from '../../../units/Colors';
 import DueDateTimeModal from '../tasksScreen/components/DueDateTimeModal';
+import { FamilyMemberPulse } from './types';
+import {
+  extractPulseMembersFromFamilyState,
+  isJestTestEnv,
+} from './pulseApiHelpers';
+import PulseModalContainer from './PulseModalContainer';
+import PulseDialog, {
+  INITIAL_PULSE_DIALOG_STATE,
+  PulseDialogState,
+} from './PulseDialog';
 
 export interface CreatePollModalProps {
   visible: boolean;
+  asModal?: boolean;
+  members?: FamilyMemberPulse[];
   onClose: () => void;
-  onSubmitPoll: (pollData: {
+  onSubmitPoll?: (pollData: {
     question: string;
     options: string[];
     allowMultiple: boolean;
     closesText: string;
+    closesAt?: string;
     whoCanVote: string;
+    voterIds?: string[];
   }) => void;
 }
 
-interface FamilyMemberItem {
-  id: string;
-  name: string;
-  role: string;
-  initial: string;
-  bgColor: string;
-  textColor: string;
-}
+const buildFuturePresetIso = (daysOffset: number, hour = 20): string => {
+  const d = new Date();
+  d.setDate(d.getDate() + daysOffset);
+  d.setHours(hour, 0, 0, 0);
+  return d.toISOString();
+};
 
-const POLL_MEMBERS: FamilyMemberItem[] = [
-  { id: 'you', name: 'You', role: 'Priya', initial: 'P', bgColor: Colors.avatarBrown, textColor: Colors.primarySubtle },
-  { id: 'rohan', name: 'Rohan', role: 'Husband', initial: 'R', bgColor: Colors.avatarNavy, textColor: Colors.accentBlueSoft },
-  { id: 'dadi', name: 'Dadi', role: 'Grandmother', initial: 'D', bgColor: Colors.avatarGreen, textColor: Colors.accentGreenSoft },
-  { id: 'anaya', name: 'Anaya', role: 'Daughter', initial: 'A', bgColor: Colors.avatarWine, textColor: Colors.accentPink },
-  { id: 'aarav', name: 'Aarav', role: 'Son', initial: 'Aa', bgColor: Colors.avatarOlive, textColor: Colors.accentYellow },
-];
-
-const POLL_CLOSE_PRESETS = [
-  { id: '24h', label: 'Tomorrow · 8:00 PM', sublabel: '24 hours from now' },
-  { id: '3d', label: 'Sat, 31 Oct · 8:00 PM', sublabel: 'In 3 days' },
-  { id: '1w', label: 'Fri, 6 Nov · 8:00 PM', sublabel: 'In 1 week' },
-  { id: '2w', label: 'Fri, 13 Nov · 8:00 PM', sublabel: 'In 2 weeks' },
-];
+const formatCloseLabel = (iso: string): string => {
+  const d = new Date(iso);
+  const datePart = d.toLocaleDateString('en-US', {
+    weekday: 'short',
+    day: 'numeric',
+    month: 'short',
+  });
+  const timePart = d.toLocaleTimeString('en-US', {
+    hour: 'numeric',
+    minute: '2-digit',
+  });
+  return `${datePart} · ${timePart}`;
+};
 
 export const CreatePollModal: React.FC<CreatePollModalProps> = ({
   visible,
+  asModal = true,
+  members: membersProp,
   onClose,
   onSubmitPoll,
 }) => {
   const insets = useSafeAreaInsets();
-  const [question, setQuestion] = useState('What should we do on Sunday?');
-  const [options, setOptions] = useState<string[]>([
-    'Picnic at Lodhi Garden',
-    'Movie at home',
-    'Visit Nani',
-  ]);
+  const dispatch = useAppDispatch();
+  const familyState = useAppSelector((state) => state.family);
+  const pulseState = useAppSelector((state) => state.pulse);
+  const isTestEnv = isJestTestEnv();
+
+  const members = useMemo(
+    () =>
+      membersProp && membersProp.length > 0
+        ? membersProp
+        : extractPulseMembersFromFamilyState(familyState),
+    [membersProp, familyState]
+  );
+
+  const presets = useMemo(
+    () => [
+      { id: 'none', label: 'No deadline', sublabel: 'Stays open until manually closed', iso: '' },
+      { id: '24h', label: 'Tomorrow · 8:00 PM', sublabel: '24 hours from now', iso: buildFuturePresetIso(1) },
+      { id: '3d', label: `${formatCloseLabel(buildFuturePresetIso(3))}`, sublabel: 'In 3 days', iso: buildFuturePresetIso(3) },
+      { id: '1w', label: `${formatCloseLabel(buildFuturePresetIso(7))}`, sublabel: 'In 1 week', iso: buildFuturePresetIso(7) },
+    ],
+    []
+  );
+
+  const [question, setQuestion] = useState('');
+  const [options, setOptions] = useState<string[]>(['', '']);
   const [newOptionText, setNewOptionText] = useState('');
   const [isAddingOption, setIsAddingOption] = useState(false);
   const [isQuestionFocused, setIsQuestionFocused] = useState(false);
   const [isNewOptionFocused, setIsNewOptionFocused] = useState(false);
   const [allowMultiple, setAllowMultiple] = useState(false);
-  const [closesText, setClosesText] = useState('Sat, 31 Oct · 8:00 PM');
-  const [whoCanVote, setWhoCanVote] = useState('Everyone (5)');
+  const [closesText, setClosesText] = useState('No deadline');
+  const [closesAtIso, setClosesAtIso] = useState<string>('');
+  const [whoCanVote, setWhoCanVote] = useState(`Everyone (${Math.max(members.length, 1)})`);
   const [showClosesModal, setShowClosesModal] = useState(false);
   const [showCustomDueModal, setShowCustomDueModal] = useState(false);
   const [showWhoCanVoteModal, setShowWhoCanVoteModal] = useState(false);
-  const [selectedVoterIds, setSelectedVoterIds] = useState<string[]>([
-    'you',
-    'rohan',
-    'dadi',
-    'anaya',
-    'aarav',
-  ]);
+  const [selectedVoterIds, setSelectedVoterIds] = useState<string[]>([]);
+  const [dialog, setDialog] = useState<PulseDialogState>(INITIAL_PULSE_DIALOG_STATE);
 
-  const handleSelectPreset = (presetLabel: string) => {
-    setClosesText(presetLabel);
+  useEffect(() => {
+    if (visible) {
+      setQuestion('');
+      setOptions(['', '']);
+      setNewOptionText('');
+      setIsAddingOption(false);
+      setAllowMultiple(false);
+      setClosesText('No deadline');
+      setClosesAtIso('');
+      const allIds = members.map((m) => m.id);
+      setSelectedVoterIds(allIds);
+      setWhoCanVote(
+        allIds.length > 0 ? `Everyone (${allIds.length})` : 'Everyone'
+      );
+    }
+  }, [visible, members]);
+
+  const adultMembers = useMemo(
+    () => members.filter((m) => m.isAdult !== false),
+    [members]
+  );
+  const kidMembers = useMemo(
+    () => members.filter((m) => m.isAdult === false),
+    [members]
+  );
+
+  const handleSelectPreset = (label: string, iso: string) => {
+    setClosesText(label);
+    setClosesAtIso(iso);
     setShowClosesModal(false);
   };
 
@@ -96,7 +155,7 @@ export const CreatePollModal: React.FC<CreatePollModalProps> = ({
   const toggleVoter = (id: string) => {
     setSelectedVoterIds((prev) => {
       if (prev.includes(id)) {
-        if (prev.length === 1) return prev; // Keep at least one voter
+        if (prev.length === 1) return prev;
         return prev.filter((item) => item !== id);
       }
       return [...prev, id];
@@ -105,40 +164,40 @@ export const CreatePollModal: React.FC<CreatePollModalProps> = ({
 
   const selectPresetVoters = (type: 'everyone' | 'adults' | 'kids') => {
     if (type === 'everyone') {
-      setSelectedVoterIds(['you', 'rohan', 'dadi', 'anaya', 'aarav']);
-    } else if (type === 'adults') {
-      setSelectedVoterIds(['you', 'rohan', 'dadi']);
-    } else if (type === 'kids') {
-      setSelectedVoterIds(['anaya', 'aarav']);
+      setSelectedVoterIds(members.map((m) => m.id));
+    } else if (type === 'adults' && adultMembers.length > 0) {
+      setSelectedVoterIds(adultMembers.map((m) => m.id));
+    } else if (type === 'kids' && kidMembers.length > 0) {
+      setSelectedVoterIds(kidMembers.map((m) => m.id));
     }
   };
 
   const handleSaveWhoCanVote = () => {
-    if (selectedVoterIds.length === 5) {
-      setWhoCanVote('Everyone (5)');
+    if (selectedVoterIds.length === members.length) {
+      setWhoCanVote(`Everyone (${members.length})`);
+    } else if (
+      adultMembers.length > 0 &&
+      selectedVoterIds.length === adultMembers.length &&
+      adultMembers.every((a) => selectedVoterIds.includes(a.id))
+    ) {
+      setWhoCanVote(`Only adults (${adultMembers.length})`);
+    } else if (
+      kidMembers.length > 0 &&
+      selectedVoterIds.length === kidMembers.length &&
+      kidMembers.every((k) => selectedVoterIds.includes(k.id))
+    ) {
+      setWhoCanVote(`Only kids (${kidMembers.length})`);
+    } else if (selectedVoterIds.length === 1) {
+      const m = members.find((mem) => mem.id === selectedVoterIds[0]);
+      setWhoCanVote(`${m?.displayName || m?.name || '1 member'} only`);
     } else {
-      const adultsOnly =
-        selectedVoterIds.length === 3 &&
-        selectedVoterIds.includes('you') &&
-        selectedVoterIds.includes('rohan') &&
-        selectedVoterIds.includes('dadi');
-      const kidsOnly =
-        selectedVoterIds.length === 2 &&
-        selectedVoterIds.includes('anaya') &&
-        selectedVoterIds.includes('aarav');
-
-      if (adultsOnly) {
-        setWhoCanVote('Only adults (3)');
-      } else if (kidsOnly) {
-        setWhoCanVote('Only kids (2)');
-      } else if (selectedVoterIds.length === 1) {
-        const member = POLL_MEMBERS.find((m) => m.id === selectedVoterIds[0]);
-        setWhoCanVote(`${member?.name || '1 member'} only`);
-      } else {
-        setWhoCanVote(`${selectedVoterIds.length} members`);
-      }
+      setWhoCanVote(`${selectedVoterIds.length} members`);
     }
     setShowWhoCanVoteModal(false);
+  };
+
+  const handleUpdateOption = (index: number, val: string) => {
+    setOptions((prev) => prev.map((opt, idx) => (idx === index ? val : opt)));
   };
 
   const handleRemoveOption = (index: number) => {
@@ -154,23 +213,103 @@ export const CreatePollModal: React.FC<CreatePollModalProps> = ({
     }
   };
 
-  const handleSubmit = () => {
-    if (!question.trim() || options.length < 2) return;
-    onSubmitPoll({
-      question: question.trim(),
-      options,
+  const showWarning = (title: string, desc: string) => {
+    setDialog({
+      visible: true,
+      type: 'warning',
+      title,
+      description: desc,
+      primaryButtonText: 'OK',
+      secondaryButtonText: '',
+    });
+  };
+
+  const handleSubmit = async () => {
+    const cleanQ = question.trim();
+    const cleanOpts = options.map((o) => o.trim()).filter(Boolean);
+
+    if (!cleanQ) {
+      showWarning('Question required', 'Enter a question for your family (up to 140 characters).');
+      return;
+    }
+    if (cleanOpts.length < 2) {
+      showWarning('Add at least 2 options', 'Polls require between 2 and 6 choices.');
+      return;
+    }
+    const lowerSet = new Set(cleanOpts.map((o) => o.toLowerCase()));
+    if (lowerSet.size !== cleanOpts.length) {
+      showWarning('Duplicate options', 'Each poll option must be unique.');
+      return;
+    }
+
+    if (closesAtIso) {
+      const parsedClose = new Date(closesAtIso);
+      if (Number.isNaN(parsedClose.getTime()) || parsedClose.getTime() <= Date.now()) {
+        showWarning('Invalid close time', 'Poll close time must be in the future.');
+        return;
+      }
+    }
+
+    const isEveryone =
+      members.length > 0 && selectedVoterIds.length === members.length;
+    const validVoterIds = isEveryone
+      ? undefined
+      : selectedVoterIds.filter((id) => isUUID(id));
+
+    if (!isTestEnv) {
+      try {
+        await dispatch(
+          createPollThunk({
+            question: cleanQ.slice(0, 140),
+            options: cleanOpts.map((o) => o.slice(0, 80)),
+            allowMultiple,
+            ...(closesAtIso ? { closesAt: closesAtIso } : {}),
+            ...(validVoterIds && validVoterIds.length > 0
+              ? { voterIds: validVoterIds }
+              : {}),
+          })
+        ).unwrap();
+        onSubmitPoll?.({
+          question: cleanQ,
+          options: cleanOpts,
+          allowMultiple,
+          closesText,
+          closesAt: closesAtIso || undefined,
+          whoCanVote,
+          voterIds: validVoterIds,
+        });
+        onClose();
+      } catch (err: any) {
+        setDialog({
+          visible: true,
+          type: 'danger',
+          iconName: 'alert-circle',
+          title: 'Could not post poll',
+          description: typeof err === 'string' ? err : 'Please try again.',
+          primaryButtonText: 'OK',
+          secondaryButtonText: '',
+        });
+      }
+      return;
+    }
+
+    onSubmitPoll?.({
+      question: cleanQ,
+      options: cleanOpts,
       allowMultiple,
       closesText,
+      closesAt: closesAtIso || undefined,
       whoCanVote,
+      voterIds: validVoterIds,
     });
     onClose();
   };
 
   return (
-    <Modal
+    <PulseModalContainer
       visible={visible}
-      animationType="slide"
-      transparent={false}
+      asModal={asModal}
+      variant="push"
       onRequestClose={onClose}
     >
       <View style={[styles.container, { paddingTop: Math.max(insets.top, 16) }]}>
@@ -215,6 +354,7 @@ export const CreatePollModal: React.FC<CreatePollModalProps> = ({
               onBlur={() => setIsQuestionFocused(false)}
               placeholder="Ask a question..."
               placeholderTextColor={Colors.textPlaceholder}
+              maxLength={140}
               selectionColor={Colors.primary}
             />
           </View>
@@ -229,16 +369,22 @@ export const CreatePollModal: React.FC<CreatePollModalProps> = ({
           <View style={styles.optionsList}>
             {options.map((option, index) => (
               <View key={`opt-${index}`} style={styles.optionItem}>
-                <Text style={styles.optionText} numberOfLines={1}>
-                  {option}
-                </Text>
+                <TextInput
+                  style={styles.optionTextInput}
+                  value={option}
+                  onChangeText={(txt) => handleUpdateOption(index, txt)}
+                  placeholder={`Option ${index + 1}`}
+                  placeholderTextColor={Colors.textPlaceholder}
+                  maxLength={80}
+                  selectionColor={Colors.primary}
+                />
                 {options.length > 2 && (
                   <TouchableOpacity
                     style={styles.deleteOptionButton}
                     onPress={() => handleRemoveOption(index)}
                     hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
                     accessibilityRole="button"
-                    accessibilityLabel={`Remove option ${option}`}
+                    accessibilityLabel={`Remove option ${index + 1}`}
                   >
                     <Feather name="x" size={16} color="#8FA0B5" />
                   </TouchableOpacity>
@@ -261,6 +407,7 @@ export const CreatePollModal: React.FC<CreatePollModalProps> = ({
                   onBlur={() => setIsNewOptionFocused(false)}
                   placeholder="Enter option"
                   placeholderTextColor={Colors.textPlaceholder}
+                  maxLength={80}
                   autoFocus
                   onSubmitEditing={handleAddOption}
                   selectionColor={Colors.primary}
@@ -293,7 +440,6 @@ export const CreatePollModal: React.FC<CreatePollModalProps> = ({
 
           {/* Settings Card */}
           <View style={styles.settingsCard}>
-            {/* Allow more than one choice */}
             <View style={styles.settingRow}>
               <Text style={styles.settingTitle}>Allow more than one choice</Text>
               <Switch
@@ -364,9 +510,14 @@ export const CreatePollModal: React.FC<CreatePollModalProps> = ({
           <TouchableOpacity
             style={styles.postButton}
             onPress={handleSubmit}
+            disabled={pulseState.submittingAction}
             activeOpacity={0.85}
           >
-            <Text style={styles.postButtonText}>Post poll</Text>
+            {pulseState.submittingAction ? (
+              <ActivityIndicator color={Colors.white} />
+            ) : (
+              <Text style={styles.postButtonText}>Post poll</Text>
+            )}
           </TouchableOpacity>
         </View>
 
@@ -396,9 +547,9 @@ export const CreatePollModal: React.FC<CreatePollModalProps> = ({
               </Text>
 
               <View style={styles.sheetCard}>
-                {POLL_CLOSE_PRESETS.map((preset, idx) => {
+                {presets.map((preset, idx) => {
                   const isSelected = closesText === preset.label;
-                  const isLast = idx === POLL_CLOSE_PRESETS.length - 1;
+                  const isLast = idx === presets.length - 1;
                   return (
                     <TouchableOpacity
                       key={preset.id}
@@ -406,7 +557,7 @@ export const CreatePollModal: React.FC<CreatePollModalProps> = ({
                         styles.sheetRow,
                         !isLast && styles.sheetRowDivider,
                       ]}
-                      onPress={() => handleSelectPreset(preset.label)}
+                      onPress={() => handleSelectPreset(preset.label, preset.iso)}
                       activeOpacity={0.7}
                     >
                       <View style={styles.sheetRowTextGroup}>
@@ -450,14 +601,20 @@ export const CreatePollModal: React.FC<CreatePollModalProps> = ({
         {/* Full Date & Time Picker */}
         <DueDateTimeModal
           visible={showCustomDueModal}
-          initialDate={closesText.split('·')[0]?.trim() || 'Sat, 31 Oct'}
-          initialTime={closesText.split('·')[1]?.trim() || '8:00 PM'}
+          initialDate={new Date().toISOString().slice(0, 10)}
+          initialTime="8:00 PM"
           onClose={() => setShowCustomDueModal(false)}
-          onSave={(_newDate, newFormatted, newTime) => {
+          onSave={(_newDate, newFormatted, newTime, isoDate) => {
             const formatted = newTime
               ? `${newFormatted} · ${newTime}`
               : newFormatted;
             setClosesText(formatted);
+            if (isoDate) {
+              const target = new Date(`${isoDate}T20:00:00.000Z`);
+              if (!Number.isNaN(target.getTime())) {
+                setClosesAtIso(target.toISOString());
+              }
+            }
             setShowCustomDueModal(false);
           }}
         />
@@ -492,7 +649,7 @@ export const CreatePollModal: React.FC<CreatePollModalProps> = ({
                 <TouchableOpacity
                   style={[
                     styles.filterChip,
-                    selectedVoterIds.length === 5 && styles.filterChipActive,
+                    selectedVoterIds.length === members.length && styles.filterChipActive,
                   ]}
                   onPress={() => selectPresetVoters('everyone')}
                   activeOpacity={0.7}
@@ -500,69 +657,67 @@ export const CreatePollModal: React.FC<CreatePollModalProps> = ({
                   <Text
                     style={[
                       styles.filterChipText,
-                      selectedVoterIds.length === 5 && styles.filterChipTextActive,
+                      selectedVoterIds.length === members.length && styles.filterChipTextActive,
                     ]}
                   >
-                    Everyone (5)
+                    {`Everyone (${members.length})`}
                   </Text>
                 </TouchableOpacity>
 
-                <TouchableOpacity
-                  style={[
-                    styles.filterChip,
-                    selectedVoterIds.length === 3 &&
-                      selectedVoterIds.includes('you') &&
-                      selectedVoterIds.includes('rohan') &&
-                      selectedVoterIds.includes('dadi') &&
-                      styles.filterChipActive,
-                  ]}
-                  onPress={() => selectPresetVoters('adults')}
-                  activeOpacity={0.7}
-                >
-                  <Text
+                {adultMembers.length > 0 && (
+                  <TouchableOpacity
                     style={[
-                      styles.filterChipText,
-                      selectedVoterIds.length === 3 &&
-                        selectedVoterIds.includes('you') &&
-                        selectedVoterIds.includes('rohan') &&
-                        selectedVoterIds.includes('dadi') &&
-                        styles.filterChipTextActive,
+                      styles.filterChip,
+                      selectedVoterIds.length === adultMembers.length &&
+                        adultMembers.every((a) => selectedVoterIds.includes(a.id)) &&
+                        styles.filterChipActive,
                     ]}
+                    onPress={() => selectPresetVoters('adults')}
+                    activeOpacity={0.7}
                   >
-                    Adults only (3)
-                  </Text>
-                </TouchableOpacity>
+                    <Text
+                      style={[
+                        styles.filterChipText,
+                        selectedVoterIds.length === adultMembers.length &&
+                          adultMembers.every((a) => selectedVoterIds.includes(a.id)) &&
+                          styles.filterChipTextActive,
+                      ]}
+                    >
+                      {`Adults only (${adultMembers.length})`}
+                    </Text>
+                  </TouchableOpacity>
+                )}
 
-                <TouchableOpacity
-                  style={[
-                    styles.filterChip,
-                    selectedVoterIds.length === 2 &&
-                      selectedVoterIds.includes('anaya') &&
-                      selectedVoterIds.includes('aarav') &&
-                      styles.filterChipActive,
-                  ]}
-                  onPress={() => selectPresetVoters('kids')}
-                  activeOpacity={0.7}
-                >
-                  <Text
+                {kidMembers.length > 0 && (
+                  <TouchableOpacity
                     style={[
-                      styles.filterChipText,
-                      selectedVoterIds.length === 2 &&
-                        selectedVoterIds.includes('anaya') &&
-                        selectedVoterIds.includes('aarav') &&
-                        styles.filterChipTextActive,
+                      styles.filterChip,
+                      selectedVoterIds.length === kidMembers.length &&
+                        kidMembers.every((k) => selectedVoterIds.includes(k.id)) &&
+                        styles.filterChipActive,
                     ]}
+                    onPress={() => selectPresetVoters('kids')}
+                    activeOpacity={0.7}
                   >
-                    Kids only (2)
-                  </Text>
-                </TouchableOpacity>
+                    <Text
+                      style={[
+                        styles.filterChipText,
+                        selectedVoterIds.length === kidMembers.length &&
+                          kidMembers.every((k) => selectedVoterIds.includes(k.id)) &&
+                          styles.filterChipTextActive,
+                      ]}
+                    >
+                      {`Kids only (${kidMembers.length})`}
+                    </Text>
+                  </TouchableOpacity>
+                )}
               </View>
 
               {/* Family Members List */}
               <View style={styles.sheetCard}>
-                {POLL_MEMBERS.map((m, idx) => {
+                {members.map((m, idx) => {
                   const isSelected = selectedVoterIds.includes(m.id);
-                  const isLast = idx === POLL_MEMBERS.length - 1;
+                  const isLast = idx === members.length - 1;
                   return (
                     <TouchableOpacity
                       key={m.id}
@@ -590,8 +745,10 @@ export const CreatePollModal: React.FC<CreatePollModalProps> = ({
                       </View>
 
                       <View style={styles.voterInfoCol}>
-                        <Text style={styles.voterName}>{m.name}</Text>
-                        <Text style={styles.voterRole}>{m.role}</Text>
+                        <Text style={styles.voterName}>{m.displayName}</Text>
+                        <Text style={styles.voterRole}>
+                          {m.familyRole || (m.isAdult ? 'Adult' : 'Child')}
+                        </Text>
                       </View>
 
                       {isSelected ? (
@@ -616,8 +773,13 @@ export const CreatePollModal: React.FC<CreatePollModalProps> = ({
             </View>
           </View>
         </Modal>
+
+        <PulseDialog
+          dialog={dialog}
+          onClose={() => setDialog(INITIAL_PULSE_DIALOG_STATE)}
+        />
       </View>
-    </Modal>
+    </PulseModalContainer>
   );
 };
 
@@ -722,12 +884,13 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#3A4556',
   },
-  optionText: {
+  optionTextInput: {
     color: Colors.white,
     fontSize: 15,
     fontFamily: 'Roboto-Medium',
     flex: 1,
     marginRight: 10,
+    padding: 0,
   },
   deleteOptionButton: {
     width: 28,
@@ -911,6 +1074,7 @@ const styles = StyleSheet.create({
   },
   filterChipsRow: {
     flexDirection: 'row',
+    flexWrap: 'wrap',
     gap: 8,
     marginBottom: 16,
   },

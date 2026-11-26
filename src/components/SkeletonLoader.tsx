@@ -24,19 +24,19 @@ export const SkeletonBox: React.FC<SkeletonBoxProps> = ({
   borderRadius = 8,
   style,
 }) => {
-  const pulseAnim = useRef(new Animated.Value(0.4)).current;
+  const pulseAnim = useRef(new Animated.Value(0.35)).current;
 
   useEffect(() => {
     const animation = Animated.loop(
       Animated.sequence([
         Animated.timing(pulseAnim, {
-          toValue: 0.85,
-          duration: 850,
+          toValue: 0.95,
+          duration: 650,
           useNativeDriver: true,
         }),
         Animated.timing(pulseAnim, {
-          toValue: 0.4,
-          duration: 850,
+          toValue: 0.35,
+          duration: 650,
           useNativeDriver: true,
         }),
       ])
@@ -517,6 +517,179 @@ export const TripPackingSkeleton: React.FC = () => {
   );
 };
 
+/** Skeleton for Family Pulse Home (PUL-01) */
+export const PulseHomeSkeleton: React.FC = () => {
+  return (
+    <View style={styles.pulseSectionContainer}>
+      {/* Today's Mood Card Skeleton */}
+      <View style={[styles.tripCardSkeleton, { padding: 18 }]}>
+        <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 16 }}>
+          <SkeletonBox width={100} height={12} borderRadius={4} />
+          <SkeletonBox width={90} height={12} borderRadius={4} />
+        </View>
+        <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
+          {[1, 2, 3, 4].map((idx) => (
+            <View key={idx} style={{ alignItems: 'center' }}>
+              <SkeletonBox width={46} height={46} borderRadius={23} style={{ marginBottom: 8 }} />
+              <SkeletonBox width={42} height={12} borderRadius={4} style={{ marginBottom: 5 }} />
+              <SkeletonBox width={36} height={10} borderRadius={4} />
+            </View>
+          ))}
+        </View>
+      </View>
+
+      {/* Quick Actions Row Skeleton */}
+      <View style={{ flexDirection: 'row', gap: 9, marginBottom: 24 }}>
+        {[1, 2, 3, 4].map((idx) => (
+          <View key={idx} style={[styles.tripCardSkeleton, { flex: 1, alignItems: 'center', marginBottom: 0, paddingVertical: 18 }]}>
+            <SkeletonBox width={22} height={22} borderRadius={11} style={{ marginBottom: 8 }} />
+            <SkeletonBox width="70%" height={12} borderRadius={4} />
+          </View>
+        ))}
+      </View>
+
+      {/* Section Preview Cards Skeleton */}
+      {[1, 2, 3].map((sec) => (
+        <View key={sec} style={{ marginBottom: 14 }}>
+          <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 12 }}>
+            <SkeletonBox width={135} height={19} borderRadius={5} />
+            <SkeletonBox width={46} height={14} borderRadius={4} />
+          </View>
+          <View style={styles.tripCardSkeleton}>
+            <SkeletonBox width="62%" height={15} borderRadius={4} style={{ marginBottom: 10 }} />
+            <SkeletonBox width="92%" height={13} borderRadius={4} style={{ marginBottom: 8 }} />
+            <SkeletonBox width="45%" height={12} borderRadius={4} />
+          </View>
+        </View>
+      ))}
+    </View>
+  );
+};
+
+/** Skeleton for Appreciation Wall (PUL-03) */
+export const AppreciationWallSkeleton: React.FC = () => {
+  return (
+    <View style={styles.pulseSectionContainer}>
+      {[1, 2, 3].map((card) => (
+        <View key={card} style={styles.tripCardSkeleton}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+              <SkeletonBox width={30} height={30} borderRadius={15} />
+              <SkeletonBox width={30} height={30} borderRadius={15} style={{ marginLeft: 10, marginRight: 10 }} />
+              <SkeletonBox width={130} height={14} borderRadius={4} />
+            </View>
+            <SkeletonBox width={54} height={12} borderRadius={4} />
+          </View>
+          <SkeletonBox width="95%" height={14} borderRadius={4} style={{ marginBottom: 6 }} />
+          <SkeletonBox width="70%" height={14} borderRadius={4} style={{ marginBottom: 14 }} />
+          <View style={{ flexDirection: 'row', gap: 8 }}>
+            <SkeletonBox width={68} height={28} borderRadius={14} />
+            <SkeletonBox width={52} height={28} borderRadius={14} />
+            <SkeletonBox width={30} height={28} borderRadius={14} />
+          </View>
+        </View>
+      ))}
+    </View>
+  );
+};
+
+/** Skeleton for Family Polls List (PUL-05) */
+export const FamilyPollsSkeleton: React.FC = () => {
+  return (
+    <View style={styles.pulseSectionContainer}>
+      {[1, 2].map((card) => (
+        <View key={card} style={styles.tripCardSkeleton}>
+          <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+              <SkeletonBox width={28} height={28} borderRadius={14} style={{ marginRight: 8 }} />
+              <SkeletonBox width={120} height={12} borderRadius={4} />
+            </View>
+            <SkeletonBox width={68} height={22} borderRadius={11} />
+          </View>
+          <SkeletonBox width="85%" height={18} borderRadius={5} style={{ marginBottom: 14 }} />
+          {[1, 2, 3].map((opt) => (
+            <View key={opt} style={{ marginBottom: 10 }}>
+              <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 6 }}>
+                <SkeletonBox width="60%" height={13} borderRadius={4} />
+                <SkeletonBox width={34} height={13} borderRadius={4} />
+              </View>
+              <SkeletonBox width="100%" height={6} borderRadius={3} />
+            </View>
+          ))}
+        </View>
+      ))}
+    </View>
+  );
+};
+
+/** Skeleton for Poll Results (PUL-07) */
+export const PollResultsSkeleton: React.FC = () => {
+  return (
+    <View style={styles.pulseSectionContainer}>
+      <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 14 }}>
+        <SkeletonBox width={70} height={24} borderRadius={12} style={{ marginRight: 10 }} />
+        <SkeletonBox width={150} height={13} borderRadius={4} />
+      </View>
+      <SkeletonBox width="88%" height={24} borderRadius={6} style={{ marginBottom: 18 }} />
+      <View style={[styles.tripHeroSkeleton, { marginBottom: 14 }]}>
+        <SkeletonBox width={90} height={12} borderRadius={4} style={{ marginBottom: 12 }} />
+        <SkeletonBox width="65%" height={18} borderRadius={5} style={{ marginBottom: 10 }} />
+        <SkeletonBox width="100%" height={8} borderRadius={4} style={{ marginBottom: 12 }} />
+        <View style={{ flexDirection: 'row' }}>
+          <SkeletonBox width={28} height={28} borderRadius={14} style={{ marginRight: -6 }} />
+          <SkeletonBox width={28} height={28} borderRadius={14} style={{ marginRight: -6 }} />
+          <SkeletonBox width={28} height={28} borderRadius={14} />
+        </View>
+      </View>
+      <View style={styles.tripCardSkeleton}>
+        <SkeletonBox width="55%" height={14} borderRadius={4} style={{ marginBottom: 8 }} />
+        <SkeletonBox width="100%" height={6} borderRadius={3} style={{ marginBottom: 14 }} />
+        <SkeletonBox width="45%" height={14} borderRadius={4} style={{ marginBottom: 8 }} />
+        <SkeletonBox width="100%" height={6} borderRadius={3} />
+      </View>
+    </View>
+  );
+};
+
+/** Skeleton for Milestones Timeline (PUL-08) */
+export const MilestonesSkeleton: React.FC = () => {
+  return (
+    <View style={styles.pulseSectionContainer}>
+      <SkeletonBox width={110} height={12} borderRadius={4} style={{ marginBottom: 12 }} />
+      <View style={[styles.tripCardSkeleton, { padding: 0, overflow: 'hidden' }]}>
+        <SkeletonBox width="100%" height={140} borderRadius={0} />
+        <View style={{ padding: 16 }}>
+          <SkeletonBox width={65} height={12} borderRadius={4} style={{ marginBottom: 8 }} />
+          <SkeletonBox width="78%" height={18} borderRadius={5} style={{ marginBottom: 8 }} />
+          <SkeletonBox width="60%" height={12} borderRadius={4} />
+        </View>
+      </View>
+      {[1, 2].map((row) => (
+        <View key={row} style={styles.tripCardSkeleton}>
+          <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+            <SkeletonBox width={40} height={40} borderRadius={12} style={{ marginRight: 14 }} />
+            <View style={{ flex: 1 }}>
+              <SkeletonBox width="68%" height={15} borderRadius={4} style={{ marginBottom: 6 }} />
+              <SkeletonBox width="48%" height={12} borderRadius={4} />
+            </View>
+          </View>
+        </View>
+      ))}
+    </View>
+  );
+};
+
+/** Skeleton for Milestone Detail / Life Profile Sync (PUL-12) */
+export const MilestoneDetailSkeleton: React.FC = () => {
+  return (
+    <View style={{ gap: 10, marginTop: 12 }}>
+      <SkeletonBox width={140} height={11} borderRadius={4} />
+      <SkeletonBox width="85%" height={14} borderRadius={4} />
+      <SkeletonBox width="65%" height={14} borderRadius={4} />
+    </View>
+  );
+};
+
 export default {
   SkeletonBox,
   ListsSkeleton,
@@ -530,11 +703,17 @@ export default {
   FindCommonDatesSkeleton,
   TripBookingsSkeleton,
   TripPackingSkeleton,
+  PulseHomeSkeleton,
+  AppreciationWallSkeleton,
+  FamilyPollsSkeleton,
+  PollResultsSkeleton,
+  MilestonesSkeleton,
+  MilestoneDetailSkeleton,
 };
 
 const styles = StyleSheet.create({
   boxBase: {
-    backgroundColor: '#1E2D44',
+    backgroundColor: '#263C5B',
   },
   listsContainer: {
     paddingHorizontal: 20,
@@ -811,6 +990,10 @@ const styles = StyleSheet.create({
   tripSectionContainer: {
     paddingHorizontal: 20,
     paddingTop: 12,
+    paddingBottom: 24,
+  },
+  pulseSectionContainer: {
+    paddingTop: 4,
     paddingBottom: 24,
   },
   tripHeroSkeleton: {

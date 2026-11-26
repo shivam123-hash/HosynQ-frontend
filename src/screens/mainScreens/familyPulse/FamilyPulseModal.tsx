@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   View,
   Text,
@@ -6,16 +6,37 @@ import {
   StyleSheet,
   Modal,
   ScrollView,
+  RefreshControl,
   StatusBar,
+  Image,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Feather from '@react-native-vector-icons/feather';
 import Ionicons from '@react-native-vector-icons/ionicons';
+import MaterialIcons from '@react-native-vector-icons/material-icons';
+import { useAppDispatch, useAppSelector } from '../../../redux';
+import { getMyFamilyBasicThunk } from '../../../redux/features/family/familySlice';
+import {
+  fetchPollResultsThunk,
+  fetchPulseHomeThunk,
+  reactToAppreciationThunk,
+  reactToMilestoneThunk,
+  removeAppreciationReactionThunk,
+  removeMilestoneReactionThunk,
+  setSelectedPollLocal,
+  setTodayMoodThunk,
+  voteOnPollThunk,
+} from '../../../redux/features/pulse/pulseSlice';
+import { isUUID } from '../../../redux/features/lists/listsSlice';
+import { PulseHomeResponse } from '../../../services/pulseServices';
+import { PulseHomeSkeleton } from '../../../components/SkeletonLoader';
 import Colors from '../../../units/Colors';
 import {
-  MoodType,
-  FamilyMemberPulse,
   AppreciationItem,
+  FamilyMemberPulse,
+  MilestoneItem,
+  MoodType,
+  PollItem,
 } from './types';
 import { TodayMoodModal } from './TodayMoodModal';
 import { WriteAppreciationModal } from './WriteAppreciationModal';
@@ -26,105 +47,339 @@ import { CreatePollModal } from './CreatePollModal';
 import { PollResultsModal } from './PollResultsModal';
 import { MilestonesModal } from './MilestonesModal';
 import { AddMilestoneModal } from './AddMilestoneModal';
+import { MilestoneDetailModal } from './MilestoneDetailModal';
+import PulseModalContainer from './PulseModalContainer';
+import PulseDialog, {
+  INITIAL_PULSE_DIALOG_STATE,
+  PulseDialogState,
+} from './PulseDialog';
+import {
+  extractPulseMembersFromFamilyState,
+  formatApiMoodLabel,
+  getAvatarPaletteStyle,
+  getPulseInitial,
+  getReactionMeta,
+  isJestTestEnv,
+  mapApiAppreciationToUi,
+  mapApiMilestoneToUi,
+  mapApiMoodToUiType,
+  mapApiPollToUi,
+  MOOD_API_MAP,
+  reactionApiToUiId,
+  scheduleAfterTransition,
+} from './pulseApiHelpers';
 
 export interface FamilyPulseModalProps {
   visible: boolean;
+  asModal?: boolean;
   onClose: () => void;
   isEmpty?: boolean;
+  initialHomeData?: PulseHomeResponse | null;
 }
-
-const DEFAULT_MEMBERS: FamilyMemberPulse[] = [
-  {
-    id: 'you',
-    name: 'You',
-    displayName: 'You',
-    initial: 'P',
-    bgColor: Colors.avatarBrown,
-    textColor: Colors.primarySubtle,
-    mood: { type: 'good', label: 'Good' },
-  },
-  {
-    id: 'rohan',
-    name: 'Rohan',
-    displayName: 'Rohan',
-    initial: 'R',
-    bgColor: Colors.avatarNavy,
-    textColor: Colors.accentBlueSoft,
-    mood: { type: 'tired', label: 'Tired' },
-  },
-  {
-    id: 'dadi',
-    name: 'Dadi',
-    displayName: 'Dadi',
-    initial: 'D',
-    bgColor: Colors.avatarGreen,
-    textColor: Colors.accentGreenSoft,
-    mood: { type: 'great', label: 'Great' },
-  },
-  {
-    id: 'anaya',
-    name: 'Anaya',
-    displayName: 'Anaya',
-    initial: 'A',
-    bgColor: Colors.avatarWine,
-    textColor: Colors.accentPink,
-  },
-  {
-    id: 'aarav',
-    name: 'Aarav',
-    displayName: 'Aarav',
-    initial: 'Aa',
-    bgColor: Colors.avatarOlive,
-    textColor: Colors.accentYellow,
-  },
-];
 
 export const FamilyPulseModal: React.FC<FamilyPulseModalProps> = ({
   visible,
+  asModal = true,
   onClose,
-  isEmpty: initialEmpty = false,
+  isEmpty,
+  initialHomeData,
 }) => {
   const insets = useSafeAreaInsets();
-  const [isEmpty, setIsEmpty] = useState(initialEmpty);
-  const [members, setMembers] = useState<FamilyMemberPulse[]>(DEFAULT_MEMBERS);
+  const dispatch = useAppDispatch();
 
-  // Sub-modal states
+  const pulseState = useAppSelector((state) => state.pulse);
+  const familyState = useAppSelector((state) => state.family);
+
+  const [refreshing, setRefreshing] = useState(false);
+  const [localMoodOverride, setLocalMoodOverride] = useState<{
+    mood: MoodType;
+    note?: string;
+  } | null>(null);
+  const [dialog, setDialog] = useState<PulseDialogState>(INITIAL_PULSE_DIALOG_STATE);
+
+  // Sub-modals visibility
   const [showMoodModal, setShowMoodModal] = useState(false);
-  const [showAppreciationWall, setShowAppreciationWall] = useState(false);
   const [showWriteAppreciation, setShowWriteAppreciation] = useState(false);
-  const [showReactionPack, setShowReactionPack] = useState(false);
-  const [selectedAppreciationItem, setSelectedAppreciationItem] = useState<AppreciationItem | null>(null);
+  const [showAppreciationWall, setShowAppreciationWall] = useState(false);
   const [showPollsModal, setShowPollsModal] = useState(false);
   const [showCreatePoll, setShowCreatePoll] = useState(false);
   const [showPollResults, setShowPollResults] = useState(false);
+  const [selectedPollForResults, setSelectedPollForResults] =
+    useState<PollItem | null>(null);
   const [showMilestonesModal, setShowMilestonesModal] = useState(false);
   const [showAddMilestone, setShowAddMilestone] = useState(false);
+  const [selectedDetailMilestone, setSelectedDetailMilestone] =
+    useState<MilestoneItem | null>(null);
 
-  const handleSelectMood = (mood: MoodType, note?: string) => {
-    setMembers((prev) =>
-      prev.map((m) =>
-        m.id === 'you'
-          ? {
-              ...m,
-              mood: {
-                type: mood,
-                label: mood.charAt(0).toUpperCase() + mood.slice(1),
-                note,
-              },
-            }
-          : m
-      )
+  // Shared ReactionPackModal target (appreciation OR milestone)
+  const [reactionTarget, setReactionTarget] = useState<{
+    kind: 'appreciation' | 'milestone';
+    id: string;
+    title: string;
+    reactions?: AppreciationItem['reactions'];
+  } | null>(null);
+
+  useEffect(() => {
+    if (!visible) {
+      setShowMoodModal(false);
+      setShowWriteAppreciation(false);
+      setShowAppreciationWall(false);
+      setShowPollsModal(false);
+      setShowCreatePoll(false);
+      setShowPollResults(false);
+      setShowMilestonesModal(false);
+      setShowAddMilestone(false);
+      setSelectedDetailMilestone(null);
+      setReactionTarget(null);
+      return;
+    }
+    if (initialHomeData !== undefined || isJestTestEnv()) return;
+    return scheduleAfterTransition(() => {
+      dispatch(getMyFamilyBasicThunk());
+      dispatch(fetchPulseHomeThunk());
+    });
+  }, [visible, initialHomeData, dispatch]);
+
+  const handleRefresh = useCallback(async () => {
+    setRefreshing(true);
+    try {
+      await Promise.all([
+        dispatch(getMyFamilyBasicThunk()),
+        dispatch(fetchPulseHomeThunk()),
+      ]);
+    } finally {
+      setRefreshing(false);
+    }
+  }, [dispatch]);
+
+  const homeData: PulseHomeResponse | null =
+    initialHomeData !== undefined ? initialHomeData : pulseState?.home || null;
+
+  const baseFamilyMembers = useMemo(
+    () => extractPulseMembersFromFamilyState(familyState),
+    [familyState]
+  );
+
+  // Merge mood check-ins from /pulse home with family roster
+  const membersList: FamilyMemberPulse[] = useMemo(() => {
+    const moodMembers = homeData?.moods?.members || [];
+    if (moodMembers.length > 0) {
+      const familyMap = new Map(baseFamilyMembers.map((m) => [m.id, m]));
+      return moodMembers.map((mm, idx) => {
+        const base = familyMap.get(mm.memberId);
+        const fullName = mm.fullName || base?.name || 'Member';
+        const firstName = fullName.split(/\s+/)[0] || fullName;
+        const isYou = Boolean(mm.isMe || mm.isYou || base?.isYou);
+        const palette = base
+          ? { bgColor: base.bgColor, textColor: base.textColor }
+          : getAvatarPaletteStyle(idx, mm.avatarColor);
+        const uiMoodType =
+          isYou && localMoodOverride
+            ? localMoodOverride.mood
+            : mapApiMoodToUiType(mm.mood);
+        const moodNote =
+          isYou && localMoodOverride ? localMoodOverride.note : mm.note;
+
+        return {
+          id: mm.memberId,
+          name: firstName,
+          displayName: isYou ? 'You' : firstName,
+          initial: getPulseInitial(fullName),
+          bgColor: palette.bgColor,
+          textColor: palette.textColor,
+          role: base?.role,
+          familyRole: base?.familyRole,
+          isYou,
+          isAdult: base?.isAdult,
+          hasAccount: base?.hasAccount,
+          mood: uiMoodType
+            ? {
+                type: uiMoodType,
+                apiMood: mm.mood || MOOD_API_MAP[uiMoodType].api,
+                label: MOOD_API_MAP[uiMoodType].label || formatApiMoodLabel(mm.mood),
+                note: moodNote || null,
+              }
+            : undefined,
+        };
+      });
+    }
+
+    return baseFamilyMembers.map((m) => {
+      if (m.isYou && localMoodOverride) {
+        return {
+          ...m,
+          mood: {
+            type: localMoodOverride.mood,
+            label: MOOD_API_MAP[localMoodOverride.mood].label,
+            note: localMoodOverride.note || null,
+          },
+        };
+      }
+      return m;
+    });
+  }, [homeData?.moods?.members, baseFamilyMembers, localMoodOverride]);
+
+  const memberLookup = useMemo(() => {
+    const map = new Map<string, FamilyMemberPulse>();
+    membersList.forEach((m) => map.set(m.id, m));
+    return map;
+  }, [membersList]);
+
+  const myMember = useMemo(
+    () => membersList.find((m) => m.isYou),
+    [membersList]
+  );
+
+  const familyName =
+    homeData?.familyName ||
+    familyState?.basicFamilyData?.family?.name ||
+    (familyState?.basicFamilyData as any)?.name ||
+    familyState?.myFamilyData?.family?.name ||
+    'Family';
+
+  const latestAppreciation: AppreciationItem | null = useMemo(() => {
+    if (!homeData?.latestAppreciation) return null;
+    return mapApiAppreciationToUi(
+      homeData.latestAppreciation,
+      memberLookup,
+      myMember?.id
     );
-    if (isEmpty) {
-      setIsEmpty(false);
+  }, [homeData?.latestAppreciation, memberLookup, myMember?.id]);
+
+  const openPoll: PollItem | null = useMemo(() => {
+    if (!homeData?.openPoll) return null;
+    return mapApiPollToUi(homeData.openPoll, memberLookup, myMember?.id);
+  }, [homeData?.openPoll, memberLookup, myMember?.id]);
+
+  const latestMilestone: MilestoneItem | null = useMemo(() => {
+    if (!homeData?.latestMilestone) return null;
+    return mapApiMilestoneToUi(
+      homeData.latestMilestone,
+      memberLookup,
+      myMember?.id
+    );
+  }, [homeData?.latestMilestone, memberLookup, myMember?.id]);
+
+  const checkedInCount =
+    homeData?.moods?.checkedIn ??
+    membersList.filter((m) => Boolean(m.mood)).length;
+  const totalMembersCount = homeData?.moods?.total ?? membersList.length;
+
+  const myMoodType: MoodType | undefined =
+    localMoodOverride?.mood ||
+    myMember?.mood?.type ||
+    mapApiMoodToUiType(homeData?.moods?.mine);
+
+  const handleSelectMood = async (mood: MoodType, note = '') => {
+    setLocalMoodOverride({ mood, note });
+    if (isJestTestEnv()) return;
+
+    const res = await dispatch(
+      setTodayMoodThunk({
+        mood: MOOD_API_MAP[mood].api,
+        ...(note.trim() ? { note: note.trim() } : { note: '' }),
+      })
+    );
+    if (setTodayMoodThunk.rejected.match(res)) {
+      setDialog({
+        visible: true,
+        type: 'danger',
+        iconName: 'alert-circle',
+        title: 'Mood check-in failed',
+        description: (res.payload as string) || 'Unable to save today mood.',
+        primaryButtonText: 'OK',
+        secondaryButtonText: '',
+      });
     }
   };
 
+  const handleQuickReactionSelect = async (_reactionId: string, apiCode: string) => {
+    if (!reactionTarget || !isUUID(reactionTarget.id)) return;
+    const currentMine = reactionTarget.reactions?.mine?.toUpperCase();
+
+    if (reactionTarget.kind === 'appreciation') {
+      if (currentMine === apiCode.toUpperCase()) {
+        await dispatch(removeAppreciationReactionThunk(reactionTarget.id));
+      } else {
+        await dispatch(
+          reactToAppreciationThunk({ id: reactionTarget.id, reaction: apiCode })
+        );
+      }
+      return;
+    }
+
+    if (currentMine === apiCode.toUpperCase()) {
+      await dispatch(removeMilestoneReactionThunk(reactionTarget.id));
+    } else {
+      await dispatch(
+        reactToMilestoneThunk({ id: reactionTarget.id, reaction: apiCode })
+      );
+    }
+  };
+
+  const handleVoteOpenPollOption = async (optionId: string) => {
+    if (!openPoll || openPoll.status !== 'active' || openPoll.canVote === false) {
+      return;
+    }
+    if (!isUUID(openPoll.id)) return;
+    await dispatch(voteOnPollThunk({ pollId: openPoll.id, optionIds: [optionId] }));
+  };
+
+  const handleOpenPollResults = (poll: PollItem) => {
+    if (homeData?.openPoll && homeData.openPoll.id === poll.id) {
+      dispatch(setSelectedPollLocal(homeData.openPoll));
+    }
+    if (isUUID(poll.id) && !isJestTestEnv()) {
+      dispatch(fetchPollResultsThunk(poll.id));
+    }
+    setSelectedPollForResults(poll);
+    setShowPollResults(true);
+  };
+
+  const renderMoodStatus = (mood?: FamilyMemberPulse['mood']) => {
+    if (!mood) {
+      return <Text style={styles.notYetText}>Not yet</Text>;
+    }
+    const meta = MOOD_API_MAP[mood.type];
+    return (
+      <View style={styles.moodStatusRow}>
+        <Feather
+          name={(meta?.icon as any) || 'smile'}
+          size={12}
+          color={meta?.color || Colors.accentGreenSoft}
+          style={styles.moodStatusIcon}
+        />
+        <Text
+          style={[
+            styles.moodStatusText,
+            { color: meta?.color || Colors.accentGreenSoft },
+          ]}
+        >
+          {mood.label}
+        </Text>
+      </View>
+    );
+  };
+
+  const isLoadingHome =
+    initialHomeData === undefined &&
+    isEmpty !== true &&
+    !isJestTestEnv() &&
+    !refreshing &&
+    (Boolean(pulseState?.loadingHome) || !pulseState?.hasLoadedHome);
+
+  const isEmptyState =
+    isEmpty === true ||
+    (!isLoadingHome &&
+      initialHomeData === undefined &&
+      Boolean(pulseState?.hasLoadedHome) &&
+      (homeData?.isEmpty === true || (!homeData && membersList.length === 0)));
+
   return (
-    <Modal
+    <PulseModalContainer
       visible={visible}
-      animationType="slide"
-      transparent={false}
+      asModal={asModal}
+      variant="push"
       onRequestClose={onClose}
     >
       <View style={[styles.container, { paddingTop: Math.max(insets.top, 16) }]}>
@@ -141,36 +396,60 @@ export const FamilyPulseModal: React.FC<FamilyPulseModalProps> = ({
           >
             <Feather name="chevron-left" size={22} color={Colors.white} />
           </TouchableOpacity>
+
           <View style={styles.headerTitleGroup}>
             <Text style={styles.headerTitle}>Family Pulse</Text>
-            <Text style={styles.headerSubtitle}>The Sharma Family</Text>
+            <Text style={styles.headerSubtitle}>{familyName}</Text>
           </View>
+
           <View style={styles.headerRightSpacer} />
         </View>
 
-        {isEmpty ? (
-          /* Empty State (PUL-11) */
+        {isLoadingHome ? (
+          <ScrollView
+            style={styles.scrollArea}
+            contentContainerStyle={styles.scrollContent}
+            refreshControl={
+              <RefreshControl
+                refreshing={refreshing}
+                onRefresh={handleRefresh}
+                tintColor={Colors.primary}
+              />
+            }
+          >
+            <PulseHomeSkeleton />
+          </ScrollView>
+        ) : isEmptyState ? (
           <View style={styles.emptyContainer}>
-            <View style={styles.emptyContent}>
-              {/* Concentric Circle Waveform */}
-              <View style={styles.waveformOuterRing}>
-                <View style={styles.waveformInnerRing}>
-                  <Feather name="activity" size={32} color={Colors.primary} />
+            <ScrollView
+              contentContainerStyle={styles.emptyScrollContent}
+              refreshControl={
+                <RefreshControl
+                  refreshing={refreshing}
+                  onRefresh={handleRefresh}
+                  tintColor={Colors.primary}
+                />
+              }
+            >
+              <View style={styles.emptyContent}>
+                <View style={styles.waveformOuterRing}>
+                  <View style={styles.waveformInnerRing}>
+                    <Feather name="activity" size={32} color={Colors.primary} />
+                  </View>
                 </View>
+
+                <Text style={styles.emptyTitle}>Nothing in the pulse yet</Text>
+                <Text style={styles.emptySubtitle}>
+                  Share how you're feeling today, appreciate someone in the family,
+                  or start a quick poll.
+                </Text>
               </View>
+            </ScrollView>
 
-              <Text style={styles.emptyTitle}>It’s quiet in here</Text>
-              <Text style={styles.emptySubtitle}>
-                Share how you feel, thank someone or start a poll. Everyone in your
-                family will see it here.
-              </Text>
-            </View>
-
-            {/* Bottom Actions for Empty State */}
             <View
               style={[
                 styles.emptyBottomBar,
-                { paddingBottom: Math.max(insets.bottom, 20) },
+                { paddingBottom: Math.max(insets.bottom + 12, 24) },
               ]}
             >
               <TouchableOpacity
@@ -184,18 +463,20 @@ export const FamilyPulseModal: React.FC<FamilyPulseModalProps> = ({
                   color={Colors.white}
                   style={styles.btnIcon}
                 />
-                <Text style={styles.emptyPrimaryBtnText}>Share today’s mood</Text>
+                <Text style={styles.emptyPrimaryBtnText}>
+                  Check in my mood today
+                </Text>
               </TouchableOpacity>
 
               <TouchableOpacity
                 style={styles.emptySecondaryBtn}
                 onPress={() => setShowWriteAppreciation(true)}
-                activeOpacity={0.7}
+                activeOpacity={0.85}
               >
                 <Feather
                   name="heart"
                   size={18}
-                  color={Colors.primary}
+                  color={Colors.white}
                   style={styles.btnIcon}
                 />
                 <Text style={styles.emptySecondaryBtnText}>
@@ -206,111 +487,81 @@ export const FamilyPulseModal: React.FC<FamilyPulseModalProps> = ({
               <TouchableOpacity
                 style={styles.emptyTertiaryBtn}
                 onPress={() => setShowCreatePoll(true)}
-                activeOpacity={0.7}
+                activeOpacity={0.75}
               >
-                <Text style={styles.emptyTertiaryBtnText}>Create a poll</Text>
+                <Text style={styles.emptyTertiaryBtnText}>Start a poll</Text>
               </TouchableOpacity>
             </View>
           </View>
         ) : (
-          /* Populated State (PUL-01) */
           <ScrollView
             style={styles.scrollArea}
             contentContainerStyle={[
               styles.scrollContent,
-              { paddingBottom: Math.max(insets.bottom, 20) + 24 },
+              { paddingBottom: Math.max(insets.bottom + 24, 40) },
             ]}
             showsVerticalScrollIndicator={false}
+            refreshControl={
+              <RefreshControl
+                refreshing={refreshing}
+                onRefresh={handleRefresh}
+                tintColor={Colors.primary}
+              />
+            }
           >
-            {/* TODAY'S MOOD Card */}
-            <TouchableOpacity
-              style={styles.moodCard}
-              onPress={() => setShowMoodModal(true)}
-              activeOpacity={0.85}
-            >
+            {/* Today's Moods Card */}
+            <View style={styles.moodCard}>
               <View style={styles.moodCardHeader}>
-                <Text style={styles.moodCardHeaderTitle}>TODAY’S MOOD</Text>
-                <Text style={styles.moodCardHeaderCount}>3 of 5 checked in</Text>
+                <Text style={styles.moodCardHeaderTitle}>TODAY'S MOODS</Text>
+                <Text style={styles.moodCardHeaderCount}>
+                  {checkedInCount} of {totalMembersCount} checked in
+                </Text>
               </View>
 
               <View style={styles.membersMoodRow}>
-                {members.map((member) => (
-                  <View key={member.id} style={styles.memberMoodItem}>
-                    <View
-                      style={[
-                        styles.memberAvatarCircle,
-                        { backgroundColor: member.bgColor },
-                        !member.mood && styles.memberAvatarCircleNotCheckedIn,
-                      ]}
+                {membersList.slice(0, 5).map((member) => {
+                  const isNotCheckedIn = !member.mood;
+                  return (
+                    <TouchableOpacity
+                      key={member.id}
+                      style={styles.memberMoodItem}
+                      activeOpacity={member.isYou ? 0.7 : 1}
+                      onPress={() => {
+                        if (member.isYou) setShowMoodModal(true);
+                      }}
                     >
-                      <Text
+                      <View
                         style={[
-                          styles.memberAvatarInitial,
-                          { color: member.textColor || Colors.white },
+                          styles.memberAvatarCircle,
+                          { backgroundColor: member.bgColor },
+                          isNotCheckedIn && styles.memberAvatarCircleNotCheckedIn,
                         ]}
                       >
-                        {member.initial}
-                      </Text>
-                    </View>
-                    <Text style={styles.memberMoodName}>{member.displayName}</Text>
-
-                    {member.mood ? (
-                      <View style={styles.moodStatusRow}>
-                        <Feather
-                          name={
-                            member.mood.type === 'tired'
-                              ? 'minus-circle'
-                              : member.mood.type === 'stressed'
-                              ? 'frown'
-                              : member.mood.type === 'okay'
-                              ? 'meh'
-                              : 'smile'
-                          }
-                          size={12}
-                          color={
-                            member.mood.type === 'tired'
-                              ? Colors.accentBlueSoft
-                              : member.mood.type === 'stressed'
-                              ? Colors.accentRed
-                              : member.mood.type === 'okay'
-                              ? Colors.accentYellow
-                              : '#4CC38A'
-                          }
-                          style={styles.moodStatusIcon}
-                        />
                         <Text
                           style={[
-                            styles.moodStatusText,
-                            {
-                              color:
-                                member.mood.type === 'tired'
-                                  ? Colors.accentBlueSoft
-                                  : member.mood.type === 'stressed'
-                                  ? Colors.accentRed
-                                  : member.mood.type === 'okay'
-                                  ? Colors.accentYellow
-                                  : '#4CC38A',
-                            },
+                            styles.memberAvatarInitial,
+                            { color: member.textColor },
                           ]}
                         >
-                          {member.mood.label}
+                          {member.initial}
                         </Text>
                       </View>
-                    ) : (
-                      <Text style={styles.notYetText}>Not yet</Text>
-                    )}
-                  </View>
-                ))}
+                      <Text style={styles.memberMoodName} numberOfLines={1}>
+                        {member.displayName}
+                      </Text>
+                      {renderMoodStatus(member.mood)}
+                    </TouchableOpacity>
+                  );
+                })}
               </View>
-            </TouchableOpacity>
+            </View>
 
-            {/* Quick Action Buttons Row */}
+            {/* Quick Action Buttons */}
             <View style={styles.actionButtonsRow}>
-              {/* Thank someone */}
               <TouchableOpacity
                 style={styles.actionButton}
                 onPress={() => setShowWriteAppreciation(true)}
-                activeOpacity={0.7}
+                activeOpacity={0.8}
               >
                 <Feather
                   name="heart"
@@ -318,28 +569,46 @@ export const FamilyPulseModal: React.FC<FamilyPulseModalProps> = ({
                   color={Colors.primary}
                   style={styles.actionBtnIcon}
                 />
-                <Text style={styles.actionBtnText}>Thank someone</Text>
+                <Text style={styles.actionBtnText} numberOfLines={1}>
+                  Appreciation
+                </Text>
               </TouchableOpacity>
 
-              {/* New poll */}
+              <TouchableOpacity
+                style={styles.actionButton}
+                onPress={() => setShowMoodModal(true)}
+                activeOpacity={0.8}
+              >
+                <Feather
+                  name="smile"
+                  size={20}
+                  color={Colors.primary}
+                  style={styles.actionBtnIcon}
+                />
+                <Text style={styles.actionBtnText} numberOfLines={1}>
+                  Mood
+                </Text>
+              </TouchableOpacity>
+
               <TouchableOpacity
                 style={styles.actionButton}
                 onPress={() => setShowCreatePoll(true)}
-                activeOpacity={0.7}
+                activeOpacity={0.8}
               >
                 <View style={styles.pollBarsIconContainer}>
                   <View style={[styles.pollBar, styles.pollBarLeft]} />
                   <View style={[styles.pollBar, styles.pollBarCenter]} />
                   <View style={[styles.pollBar, styles.pollBarRight]} />
                 </View>
-                <Text style={styles.actionBtnText}>New poll</Text>
+                <Text style={styles.actionBtnText} numberOfLines={1}>
+                  Poll
+                </Text>
               </TouchableOpacity>
 
-              {/* Milestone */}
               <TouchableOpacity
                 style={styles.actionButton}
                 onPress={() => setShowAddMilestone(true)}
-                activeOpacity={0.7}
+                activeOpacity={0.8}
               >
                 <Ionicons
                   name="trophy-outline"
@@ -347,7 +616,9 @@ export const FamilyPulseModal: React.FC<FamilyPulseModalProps> = ({
                   color={Colors.primary}
                   style={styles.actionBtnIcon}
                 />
-                <Text style={styles.actionBtnText}>Milestone</Text>
+                <Text style={styles.actionBtnText} numberOfLines={1}>
+                  Milestone
+                </Text>
               </TouchableOpacity>
             </View>
 
@@ -364,82 +635,153 @@ export const FamilyPulseModal: React.FC<FamilyPulseModalProps> = ({
               </TouchableOpacity>
             </View>
 
-            {/* Appreciation Preview Card */}
-            <TouchableOpacity
-              style={styles.previewCard}
-              onPress={() => setShowAppreciationWall(true)}
-              activeOpacity={0.85}
-            >
-              <View style={styles.previewCardHeader}>
-                <View style={styles.previewActorsGroup}>
-                  <View
-                    style={[
-                      styles.smallAvatar,
-                      { backgroundColor: Colors.avatarNavy },
-                    ]}
-                  >
-                    <Text
+            {latestAppreciation ? (
+              <View style={styles.previewCard}>
+                <View style={styles.previewCardHeader}>
+                  <View style={styles.previewActorsGroup}>
+                    <View
                       style={[
-                        styles.smallAvatarText,
-                        { color: Colors.accentBlueSoft },
+                        styles.smallAvatar,
+                        { backgroundColor: latestAppreciation.senderColor },
                       ]}
                     >
-                      R
-                    </Text>
-                  </View>
-                  <Feather
-                    name="chevron-right"
-                    size={13}
-                    color={Colors.textSecondary}
-                    style={styles.smallChevron}
-                  />
-                  <View
-                    style={[
-                      styles.smallAvatar,
-                      { backgroundColor: Colors.avatarGreen },
-                    ]}
-                  >
-                    <Text
+                      <Text
+                        style={[
+                          styles.smallAvatarText,
+                          {
+                            color:
+                              latestAppreciation.senderTextColor || Colors.white,
+                          },
+                        ]}
+                      >
+                        {latestAppreciation.senderInitial}
+                      </Text>
+                    </View>
+                    <Feather
+                      name="chevron-right"
+                      size={12}
+                      color={Colors.textSubtle}
+                      style={styles.smallChevron}
+                    />
+                    <View
                       style={[
-                        styles.smallAvatarText,
-                        { color: Colors.accentGreenSoft },
+                        styles.smallAvatar,
+                        { backgroundColor: latestAppreciation.receiverColor },
                       ]}
                     >
-                      D
+                      <Text
+                        style={[
+                          styles.smallAvatarText,
+                          {
+                            color:
+                              latestAppreciation.receiverTextColor || Colors.white,
+                          },
+                        ]}
+                      >
+                        {latestAppreciation.receiverInitial}
+                      </Text>
+                    </View>
+                    <Text style={styles.previewActorTitle} numberOfLines={1}>
+                      {latestAppreciation.senderName} to{' '}
+                      {latestAppreciation.receiverName}
                     </Text>
                   </View>
-                  <Text style={styles.previewActorTitle}>
-                    Rohan thanked Dadi
+                  <Text style={styles.previewTimeText}>
+                    {latestAppreciation.timeText}
                   </Text>
                 </View>
-                <Text style={styles.previewTimeText}>Yesterday</Text>
+
+                <Text style={styles.previewMessage}>
+                  {latestAppreciation.message}
+                </Text>
+
+                <View style={styles.previewReactionsRow}>
+                  {(latestAppreciation.reactions?.counts || [])
+                    .filter((rc) => rc.count > 0)
+                    .map((rc) => {
+                      const isMine =
+                        latestAppreciation.reactions?.mine?.toUpperCase() ===
+                        rc.reaction.toUpperCase();
+                      const meta = getReactionMeta(rc.reaction);
+                      return (
+                        <TouchableOpacity
+                          key={rc.reaction}
+                          style={[
+                            styles.previewReactionPill,
+                            isMine && {
+                              backgroundColor: meta.tintBg,
+                              borderColor: meta.color,
+                            },
+                          ]}
+                          onPress={() =>
+                            setReactionTarget({
+                              kind: 'appreciation',
+                              id: latestAppreciation.id,
+                              title: `Appreciation from ${latestAppreciation.senderName}`,
+                              reactions: latestAppreciation.reactions,
+                            })
+                          }
+                          activeOpacity={0.75}
+                        >
+                          {meta.iconType === 'material' ? (
+                            <MaterialIcons
+                              name={meta.iconName as any}
+                              size={14}
+                              color={meta.color}
+                            />
+                          ) : (
+                            <Feather
+                              name={meta.iconName as any}
+                              size={14}
+                              color={meta.color}
+                            />
+                          )}
+                          <Text
+                            style={[
+                              styles.previewReactionText,
+                              isMine && { color: meta.color, fontFamily: 'Roboto-Bold' },
+                            ]}
+                          >
+                            {isMine ? `${meta.label} · ${rc.count}` : rc.count}
+                          </Text>
+                        </TouchableOpacity>
+                      );
+                    })}
+
+                  <TouchableOpacity
+                    style={styles.previewReactionPill}
+                    onPress={() =>
+                      setReactionTarget({
+                        kind: 'appreciation',
+                        id: latestAppreciation.id,
+                        title: `Appreciation from ${latestAppreciation.senderName}`,
+                        reactions: latestAppreciation.reactions,
+                      })
+                    }
+                    activeOpacity={0.75}
+                    accessibilityRole="button"
+                    accessibilityLabel="React to appreciation"
+                  >
+                    <Feather name="plus" size={14} color={Colors.primary} />
+                    {(!latestAppreciation.reactions?.counts ||
+                      latestAppreciation.reactions.counts.length === 0) && (
+                      <Text style={styles.previewReactionText}>React</Text>
+                    )}
+                  </TouchableOpacity>
+                </View>
               </View>
-
-              <Text style={styles.previewMessage}>
-                Thank you for making kheer for Aarav’s class party. Everyone loved
-                it!
-              </Text>
-
-              <View style={styles.previewReactionsRow}>
-                <TouchableOpacity
-                  style={styles.previewReactionPillActive}
-                  onPress={() => setShowReactionPack(true)}
-                  activeOpacity={0.7}
-                >
-                  <Feather name="heart" size={13} color={Colors.primary} />
-                  <Text style={styles.previewReactionTextActive}>4</Text>
-                </TouchableOpacity>
-
-                <TouchableOpacity
-                  style={styles.previewReactionPill}
-                  onPress={() => setShowReactionPack(true)}
-                  activeOpacity={0.7}
-                >
-                  <Feather name="star" size={13} color={Colors.white} />
-                  <Text style={styles.previewReactionText}>2</Text>
-                </TouchableOpacity>
-              </View>
-            </TouchableOpacity>
+            ) : (
+              <TouchableOpacity
+                style={styles.sectionEmptyCard}
+                onPress={() => setShowWriteAppreciation(true)}
+                activeOpacity={0.8}
+              >
+                <Feather name="heart" size={18} color={Colors.primary} />
+                <Text style={styles.sectionEmptyText}>
+                  No appreciations yet — send the first thank-you note
+                </Text>
+              </TouchableOpacity>
+            )}
 
             {/* Family poll Section */}
             <View style={styles.sectionHeaderRow}>
@@ -447,65 +789,81 @@ export const FamilyPulseModal: React.FC<FamilyPulseModalProps> = ({
               <TouchableOpacity
                 onPress={() => setShowPollsModal(true)}
                 activeOpacity={0.7}
-                accessibilityRole="button"
-                accessibilityLabel="See all polls"
               >
                 <Text style={styles.seeAllText}>See all</Text>
               </TouchableOpacity>
             </View>
 
-            {/* Poll Preview Card */}
-            <TouchableOpacity
-              style={styles.previewCard}
-              onPress={() => setShowPollResults(true)}
-              activeOpacity={0.85}
-            >
-              <Text style={styles.pollPreviewQuestion}>
-                Sunday plan: where shall we go?
-              </Text>
+            {openPoll ? (
+              <TouchableOpacity
+                style={styles.previewCard}
+                onPress={() => handleOpenPollResults(openPoll)}
+                activeOpacity={0.9}
+              >
+                <Text style={styles.pollPreviewQuestion}>
+                  {openPoll.question}
+                </Text>
 
-              <View style={styles.pollPreviewOption}>
-                <View style={styles.pollPreviewLabelRow}>
-                  <View style={styles.optionNameWithCheck}>
-                    <Text style={styles.pollOptionName}>Picnic at Lodhi Garden</Text>
-                    <Feather
-                      name="check-circle"
-                      size={15}
-                      color={Colors.primary}
-                      style={styles.checkIcon}
-                    />
-                  </View>
-                  <Text style={styles.pollOptionPercentActive}>60%</Text>
-                </View>
-                <View style={styles.pollTrack}>
-                  <View style={[styles.pollFill, styles.pollFill60]} />
-                </View>
-              </View>
+                {openPoll.options.slice(0, 3).map((option) => (
+                  <TouchableOpacity
+                    key={option.id}
+                    style={styles.pollPreviewOption}
+                    activeOpacity={0.8}
+                    onPress={() => handleVoteOpenPollOption(option.id)}
+                  >
+                    <View style={styles.pollPreviewLabelRow}>
+                      <View style={styles.optionNameWithCheck}>
+                        <Text style={styles.pollOptionName}>{option.text}</Text>
+                        {option.isUserVoted ? (
+                          <Feather
+                            name="check"
+                            size={15}
+                            color={Colors.primary}
+                            style={styles.checkIcon}
+                          />
+                        ) : null}
+                      </View>
+                      <Text
+                        style={
+                          option.isUserVoted
+                            ? styles.pollOptionPercentActive
+                            : styles.pollOptionPercent
+                        }
+                      >
+                        {option.percentage}%
+                      </Text>
+                    </View>
+                    <View style={styles.pollTrack}>
+                      <View
+                        style={[
+                          styles.pollFill,
+                          option.isUserVoted
+                            ? styles.pollFillActive
+                            : styles.pollFillInactive,
+                          { width: `${Math.max(option.percentage, 3)}%` },
+                        ]}
+                      />
+                    </View>
+                  </TouchableOpacity>
+                ))}
 
-              <View style={styles.pollPreviewOption}>
-                <View style={styles.pollPreviewLabelRow}>
-                  <Text style={styles.pollOptionName}>Movie at home</Text>
-                  <Text style={styles.pollOptionPercent}>20%</Text>
-                </View>
-                <View style={styles.pollTrack}>
-                  <View style={[styles.pollFill, styles.pollFill20]} />
-                </View>
-              </View>
-
-              <View style={styles.pollPreviewOption}>
-                <View style={styles.pollPreviewLabelRow}>
-                  <Text style={styles.pollOptionName}>Visit Nani</Text>
-                  <Text style={styles.pollOptionPercent}>20%</Text>
-                </View>
-                <View style={styles.pollTrack}>
-                  <View style={[styles.pollFill, styles.pollFill20]} />
-                </View>
-              </View>
-
-              <Text style={styles.pollPreviewFooter}>
-                3 of 5 voted · Closes Sat, 8:00 PM
-              </Text>
-            </TouchableOpacity>
+                <Text style={styles.pollPreviewFooter}>
+                  {openPoll.totalVotes} of {openPoll.eligibleCount} voted ·{' '}
+                  {openPoll.closesText}
+                </Text>
+              </TouchableOpacity>
+            ) : (
+              <TouchableOpacity
+                style={styles.sectionEmptyCard}
+                onPress={() => setShowCreatePoll(true)}
+                activeOpacity={0.8}
+              >
+                <Feather name="bar-chart-2" size={18} color={Colors.primary} />
+                <Text style={styles.sectionEmptyText}>
+                  No open polls — create one to decide together
+                </Text>
+              </TouchableOpacity>
+            )}
 
             {/* Milestones Section */}
             <View style={styles.sectionHeaderRow}>
@@ -518,118 +876,191 @@ export const FamilyPulseModal: React.FC<FamilyPulseModalProps> = ({
               </TouchableOpacity>
             </View>
 
-            {/* Milestone Preview Card */}
-            <TouchableOpacity
-              style={styles.previewCard}
-              onPress={() => setShowMilestonesModal(true)}
-              activeOpacity={0.85}
-            >
-              <View style={styles.milestoneCategoryRow}>
-                <Ionicons
-                  name="trophy-outline"
-                  size={14}
-                  color={Colors.primary}
-                  style={styles.awardIcon}
-                />
-                <Text style={styles.milestoneCategoryText}>ANAYA</Text>
-              </View>
-              <Text style={styles.milestoneTitle}>
-                Reached the badminton semi-final
-              </Text>
-              <Text style={styles.milestoneSubtext}>
-                Wed, 28 Oct · Added by Rohan · 6 reactions
-              </Text>
-            </TouchableOpacity>
+            {latestMilestone ? (
+              <TouchableOpacity
+                style={styles.previewCard}
+                onPress={() => setSelectedDetailMilestone(latestMilestone)}
+                activeOpacity={0.85}
+              >
+                {latestMilestone.photos && latestMilestone.photos.length > 0 ? (
+                  <Image
+                    source={{ uri: latestMilestone.photos[0] }}
+                    style={styles.milestonePreviewPhoto}
+                    resizeMode="cover"
+                  />
+                ) : null}
+
+                <View style={styles.milestoneCategoryRow}>
+                  <Ionicons
+                    name="trophy-outline"
+                    size={15}
+                    color={Colors.primary}
+                    style={styles.awardIcon}
+                  />
+                  <Text style={styles.milestoneCategoryText}>
+                    {latestMilestone.categoryTag ||
+                      latestMilestone.personName.toUpperCase()}
+                  </Text>
+                </View>
+
+                <Text style={styles.milestoneTitle}>{latestMilestone.title}</Text>
+
+                <View style={styles.milestoneFooterRow}>
+                  <Text style={styles.milestoneSubtext}>
+                    {latestMilestone.dateText} · {latestMilestone.authorText}
+                  </Text>
+                  <TouchableOpacity
+                    style={[
+                      styles.milestoneReactPill,
+                      Boolean(latestMilestone.reactions?.mine) &&
+                        styles.milestoneReactPillActive,
+                    ]}
+                    onPress={() =>
+                      setReactionTarget({
+                        kind: 'milestone',
+                        id: latestMilestone.id,
+                        title: latestMilestone.title,
+                        reactions: latestMilestone.reactions,
+                      })
+                    }
+                    activeOpacity={0.8}
+                  >
+                    <Feather
+                      name="heart"
+                      size={12}
+                      color={
+                        latestMilestone.reactions?.mine
+                          ? Colors.primary
+                          : Colors.textSecondary
+                      }
+                    />
+                    <Text
+                      style={[
+                        styles.milestoneReactText,
+                        Boolean(latestMilestone.reactions?.mine) &&
+                          styles.milestoneReactTextActive,
+                      ]}
+                    >
+                      {latestMilestone.reactionsCount}
+                    </Text>
+                  </TouchableOpacity>
+                </View>
+              </TouchableOpacity>
+            ) : (
+              <TouchableOpacity
+                style={styles.sectionEmptyCard}
+                onPress={() => setShowAddMilestone(true)}
+                activeOpacity={0.8}
+              >
+                <Ionicons name="trophy-outline" size={18} color={Colors.primary} />
+                <Text style={styles.sectionEmptyText}>
+                  No milestones yet — add a family moment
+                </Text>
+              </TouchableOpacity>
+            )}
           </ScrollView>
         )}
 
-        {/* Sub-Modals */}
-        <TodayMoodModal
-          visible={showMoodModal}
-          onClose={() => setShowMoodModal(false)}
-          onSelectMood={handleSelectMood}
-        />
-
+        {/* Sub-Screens (rendered as animated inline overlays for 60fps transitions) */}
         <AppreciationWallModal
           visible={showAppreciationWall}
+          asModal={false}
+          members={membersList}
           onClose={() => setShowAppreciationWall(false)}
-          onOpenWrite={() => {
-            setShowAppreciationWall(false);
-            setShowWriteAppreciation(true);
-          }}
-          onOpenReactionPack={(item) => {
-            setSelectedAppreciationItem(item);
-            setShowReactionPack(true);
-          }}
-        />
-
-        <WriteAppreciationModal
-          visible={showWriteAppreciation}
-          onClose={() => setShowWriteAppreciation(false)}
-          onPostAppreciation={(_appreciation) => {
-            // Handled
-          }}
-        />
-
-        <ReactionPackModal
-          visible={showReactionPack}
-          targetTitle={
-            selectedAppreciationItem
-              ? `To ${selectedAppreciationItem.senderName}’s thanks for ${selectedAppreciationItem.receiverName}`
-              : 'To Rohan’s thanks for Dadi'
-          }
-          onClose={() => setShowReactionPack(false)}
-          onSelectReaction={(_reactionId) => {
-            setShowReactionPack(false);
-          }}
-          onRemoveReaction={() => {
-            setShowReactionPack(false);
-          }}
+          onOpenWrite={() => setShowWriteAppreciation(true)}
         />
 
         <FamilyPollsModal
           visible={showPollsModal}
+          asModal={false}
           onClose={() => setShowPollsModal(false)}
-          onOpenCreatePoll={() => {
-            setShowPollsModal(false);
-            setShowCreatePoll(true);
-          }}
-          onOpenPollResults={(_poll) => {
-            setShowPollResults(true);
-          }}
+          onOpenCreatePoll={() => setShowCreatePoll(true)}
+          onOpenPollResults={(poll) => handleOpenPollResults(poll)}
         />
 
         <CreatePollModal
           visible={showCreatePoll}
+          asModal={false}
+          members={membersList}
           onClose={() => setShowCreatePoll(false)}
-          onSubmitPoll={(_pollData) => {
-            // Handled
-          }}
         />
 
         <PollResultsModal
           visible={showPollResults}
+          asModal={false}
+          pollId={selectedPollForResults?.id}
+          poll={selectedPollForResults || undefined}
           onClose={() => setShowPollResults(false)}
         />
 
         <MilestonesModal
           visible={showMilestonesModal}
+          asModal={false}
+          members={membersList}
           onClose={() => setShowMilestonesModal(false)}
-          onOpenAddMilestone={() => {
-            setShowMilestonesModal(false);
-            setShowAddMilestone(true);
-          }}
+          onOpenAddMilestone={() => setShowAddMilestone(true)}
+          onSelectMilestone={(ms) => setSelectedDetailMilestone(ms)}
         />
 
         <AddMilestoneModal
           visible={showAddMilestone}
+          asModal={false}
+          members={membersList}
           onClose={() => setShowAddMilestone(false)}
-          onSaveMilestone={(_data) => {
-            // Handled
+        />
+
+        <MilestoneDetailModal
+          visible={Boolean(selectedDetailMilestone)}
+          asModal={false}
+          milestone={selectedDetailMilestone}
+          members={membersList}
+          onClose={() => setSelectedDetailMilestone(null)}
+          onMilestoneDeleted={() => setSelectedDetailMilestone(null)}
+        />
+
+        <TodayMoodModal
+          visible={showMoodModal}
+          asModal={false}
+          currentMood={myMoodType}
+          currentNote={myMember?.mood?.note}
+          saving={pulseState?.submittingMood}
+          onClose={() => setShowMoodModal(false)}
+          onSelectMood={handleSelectMood}
+        />
+
+        <WriteAppreciationModal
+          visible={showWriteAppreciation}
+          asModal={false}
+          members={membersList}
+          familyName={familyName}
+          onClose={() => setShowWriteAppreciation(false)}
+        />
+
+        <ReactionPackModal
+          visible={Boolean(reactionTarget)}
+          asModal={false}
+          targetTitle={reactionTarget?.title}
+          selectedReactionId={reactionApiToUiId(reactionTarget?.reactions?.mine)}
+          reactionsSummary={reactionTarget?.reactions}
+          members={membersList}
+          onClose={() => setReactionTarget(null)}
+          onSelectReaction={handleQuickReactionSelect}
+          onRemoveReaction={async () => {
+            if (!reactionTarget || !isUUID(reactionTarget.id)) return;
+            if (reactionTarget.kind === 'appreciation') {
+              await dispatch(removeAppreciationReactionThunk(reactionTarget.id));
+            } else {
+              await dispatch(removeMilestoneReactionThunk(reactionTarget.id));
+            }
           }}
         />
+
+        <PulseDialog
+          dialog={dialog}
+          onClose={() => setDialog(INITIAL_PULSE_DIALOG_STATE)}
+        />
       </View>
-    </Modal>
+    </PulseModalContainer>
   );
 };
 
@@ -676,8 +1107,11 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'space-between',
   },
+  emptyScrollContent: {
+    flexGrow: 1,
+    justifyContent: 'center',
+  },
   emptyContent: {
-    flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
     paddingHorizontal: 32,
@@ -901,6 +1335,24 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontFamily: 'Roboto-SemiBold',
   },
+  sectionEmptyCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    backgroundColor: Colors.cardBackground,
+    borderRadius: 18,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    paddingHorizontal: 16,
+    paddingVertical: 18,
+    marginBottom: 24,
+  },
+  sectionEmptyText: {
+    flex: 1,
+    color: Colors.textSecondary,
+    fontSize: 13.5,
+    fontFamily: 'Roboto-Medium',
+  },
   previewCard: {
     backgroundColor: Colors.cardBackground,
     borderRadius: 20,
@@ -1037,12 +1489,10 @@ const styles = StyleSheet.create({
     height: 6,
     borderRadius: 3,
   },
-  pollFill60: {
-    width: '60%',
+  pollFillActive: {
     backgroundColor: Colors.primary,
   },
-  pollFill20: {
-    width: '20%',
+  pollFillInactive: {
     backgroundColor: '#273C56',
   },
   pollPreviewFooter: {
@@ -1050,6 +1500,13 @@ const styles = StyleSheet.create({
     fontSize: 13,
     marginTop: 2,
     fontFamily: 'Roboto-Regular',
+  },
+  milestonePreviewPhoto: {
+    width: '100%',
+    height: 132,
+    borderRadius: 14,
+    marginBottom: 12,
+    backgroundColor: '#132238',
   },
   milestoneCategoryRow: {
     flexDirection: 'row',
@@ -1069,11 +1526,41 @@ const styles = StyleSheet.create({
     fontSize: 15,
     fontFamily: 'Roboto-Bold',
     color: Colors.white,
-    marginBottom: 4,
+    marginBottom: 6,
+  },
+  milestoneFooterRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 8,
   },
   milestoneSubtext: {
     fontSize: 13,
     color: Colors.textSecondary,
+    flex: 1,
+  },
+  milestoneReactPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#243A5E',
+  },
+  milestoneReactPillActive: {
+    borderColor: Colors.primary,
+    backgroundColor: 'rgba(240, 145, 58, 0.1)',
+  },
+  milestoneReactText: {
+    fontSize: 12,
+    fontFamily: 'Roboto-Medium',
+    color: Colors.textSecondary,
+  },
+  milestoneReactTextActive: {
+    color: Colors.primary,
+    fontFamily: 'Roboto-Bold',
   },
 });
 

@@ -19,5 +19,8 @@ export * from './tasksServices';
 export { default as tripServices } from './tripServices';
 export * from './tripServices';
 
+export { default as pulseServices } from './pulseServices';
+export * from './pulseServices';
+
 export * from './googleAuthService';
 export * from './appleAuthService';

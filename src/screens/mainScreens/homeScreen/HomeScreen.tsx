@@ -6,6 +6,7 @@ import {
   RefreshControl,
   Alert,
 } from 'react-native';
+import { isJestTestEnv } from '../familyPulse/pulseApiHelpers';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import Colors from '../../../units/Colors';
@@ -919,10 +920,6 @@ const HomeScreen: React.FC<HomeScreenProps> = ({
       <FamilyHubModal
         visible={internalFamilyHubVisible}
         onClose={() => setInternalFamilyHubVisible(false)}
-        onOpenPulse={() => {
-          setInternalFamilyHubVisible(false);
-          setInternalPulseVisible(true);
-        }}
         onOpenVault={() => {
           setInternalFamilyHubVisible(false);
           setInternalVaultVisible(true);

@@ -173,6 +173,21 @@ const API_ROUTES = {
   TRIP_BOOKINGS: (tripId: string) => `trips/${tripId}/bookings`,
   TRIP_BOOKING_BY_ID: (tripId: string, bookingId: string) =>
     `trips/${tripId}/bookings/${bookingId}`,
+
+  // Family Pulse Endpoints (Postman Requests #1-#24)
+  PULSE_HOME: 'pulse',
+  PULSE_MOOD: 'pulse/mood',
+  PULSE_APPRECIATIONS: 'pulse/appreciations',
+  PULSE_APPRECIATION_BY_ID: (id: string) => `pulse/appreciations/${id}`,
+  PULSE_APPRECIATION_REACTION: (id: string) => `pulse/appreciations/${id}/reaction`,
+  PULSE_POLLS: 'pulse/polls',
+  PULSE_POLL_BY_ID: (id: string) => `pulse/polls/${id}`,
+  PULSE_POLL_VOTE: (id: string) => `pulse/polls/${id}/vote`,
+  PULSE_POLL_CLOSE: (id: string) => `pulse/polls/${id}/close`,
+  PULSE_MILESTONES: 'pulse/milestones',
+  PULSE_MILESTONE_BY_ID: (id: string) => `pulse/milestones/${id}`,
+  PULSE_MILESTONE_PHOTOS: (id: string) => `pulse/milestones/${id}/photos`,
+  PULSE_MILESTONE_REACTION: (id: string) => `pulse/milestones/${id}/reaction`,
 };
 
 export default API_ROUTES;

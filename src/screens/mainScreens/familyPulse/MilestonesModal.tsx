@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   View,
   Text,
@@ -6,94 +6,243 @@ import {
   StyleSheet,
   Modal,
   ScrollView,
+  RefreshControl,
+  Image,
+  ActivityIndicator,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Feather from '@react-native-vector-icons/feather';
 import Ionicons from '@react-native-vector-icons/ionicons';
 import MaterialIcons from '@react-native-vector-icons/material-icons';
+import { useAppDispatch, useAppSelector } from '../../../redux';
+import {
+  fetchMilestonesThunk,
+  reactToMilestoneThunk,
+  removeMilestoneReactionThunk,
+} from '../../../redux/features/pulse/pulseSlice';
+import { isUUID } from '../../../redux/features/lists/listsSlice';
+import { MilestonesSkeleton } from '../../../components/SkeletonLoader';
 import Colors from '../../../units/Colors';
-import { MilestoneItem } from './types';
+import { FamilyMemberPulse, MilestoneItem } from './types';
+import PulseModalContainer from './PulseModalContainer';
+import ReactionPackModal from './ReactionPackModal';
+import MilestoneDetailModal from './MilestoneDetailModal';
+import {
+  extractPulseMembersFromFamilyState,
+  isJestTestEnv,
+  mapApiMilestoneToUi,
+  reactionApiToUiId,
+  scheduleAfterTransition,
+} from './pulseApiHelpers';
 
 export interface MilestonesModalProps {
   visible: boolean;
+  asModal?: boolean;
   onClose: () => void;
   onOpenAddMilestone?: () => void;
+  onSelectMilestone?: (milestone: MilestoneItem) => void;
   milestones?: MilestoneItem[];
+  members?: FamilyMemberPulse[];
 }
-
-const DEFAULT_MILESTONES: MilestoneItem[] = [
-  {
-    id: 'mile-1',
-    title: 'Reached the badminton semi-final',
-    personName: 'Anaya',
-    personInitial: 'A',
-    personColor: Colors.avatarWine,
-    dateText: 'Wed, 28 Oct',
-    monthYear: 'OCTOBER 2026',
-    authorText: 'Added by Rohan',
-    reactionsCount: 6,
-    iconType: 'trophy',
-    hasPhoto: true,
-    categoryTag: 'ANAYA',
-  },
-  {
-    id: 'mile-2',
-    title: 'Aarav read his first chapter book',
-    personName: 'Aarav',
-    personInitial: 'Aa',
-    personColor: Colors.avatarOlive,
-    dateText: 'Mon, 12 Oct',
-    monthYear: 'OCTOBER 2026',
-    authorText: 'Added by you',
-    reactionsCount: 3,
-    iconType: 'book',
-  },
-  {
-    id: 'mile-3',
-    title: 'Dadi turned 75',
-    personName: 'Dadi',
-    personInitial: 'D',
-    personColor: Colors.avatarGreen,
-    dateText: 'Tue, 22 Sep',
-    monthYear: 'SEPTEMBER 2026',
-    authorText: 'Family',
-    reactionsCount: 12,
-    iconType: 'cake',
-  },
-];
-
-type FilterCategory = 'All' | 'Anaya' | 'Aarav' | 'Family';
 
 export const MilestonesModal: React.FC<MilestonesModalProps> = ({
   visible,
+  asModal = true,
   onClose,
   onOpenAddMilestone,
-  milestones = DEFAULT_MILESTONES,
+  onSelectMilestone,
+  milestones: milestonesProp,
+  members: membersProp,
 }) => {
   const insets = useSafeAreaInsets();
-  const [selectedFilter, setSelectedFilter] = useState<FilterCategory>('All');
+  const dispatch = useAppDispatch();
 
-  const filteredMilestones = milestones.filter((item) => {
-    if (selectedFilter === 'All') return true;
-    return item.personName.toLowerCase() === selectedFilter.toLowerCase();
-  });
+  const pulseState = useAppSelector((state) => state.pulse);
+  const familyState = useAppSelector((state) => state.family);
 
-  // Group by monthYear
-  const groupedMilestones = filteredMilestones.reduce<{
-    [month: string]: MilestoneItem[];
-  }>((acc, item) => {
-    if (!acc[item.monthYear]) {
-      acc[item.monthYear] = [];
+  const [activeFilter, setActiveFilter] = useState<string>('all');
+  const [refreshing, setRefreshing] = useState(false);
+  const [selectedDetailMilestone, setSelectedDetailMilestone] =
+    useState<MilestoneItem | null>(null);
+  const [reactionTargetMilestone, setReactionTargetMilestone] =
+    useState<MilestoneItem | null>(null);
+
+  const membersList = useMemo(() => {
+    if (membersProp && membersProp.length > 0) return membersProp;
+    return extractPulseMembersFromFamilyState(familyState);
+  }, [membersProp, familyState]);
+
+  const memberLookup = useMemo(() => {
+    const map = new Map<string, FamilyMemberPulse>();
+    membersList.forEach((m) => map.set(m.id, m));
+    return map;
+  }, [membersList]);
+
+  const myMemberId = useMemo(
+    () => membersList.find((m) => m.isYou)?.id || null,
+    [membersList]
+  );
+
+  const filterChips = useMemo(() => {
+    const chips: Array<{ id: string; label: string }> = [
+      { id: 'all', label: 'All' },
+    ];
+    membersList.forEach((m) => {
+      chips.push({ id: m.id, label: m.name });
+    });
+    chips.push({ id: 'family', label: 'Family' });
+    return chips;
+  }, [membersList]);
+
+  const buildFilterParams = useCallback(
+    (filterId: string, before?: string) => {
+      if (filterId === 'family') {
+        return { family: true, limit: 50, ...(before ? { before } : {}) };
+      }
+      if (filterId !== 'all') {
+        return { memberId: filterId, limit: 50, ...(before ? { before } : {}) };
+      }
+      return { limit: 50, ...(before ? { before } : {}) };
+    },
+    []
+  );
+
+  useEffect(() => {
+    if (!visible) return;
+    if (milestonesProp !== undefined || isJestTestEnv()) return;
+    return scheduleAfterTransition(() => {
+      dispatch(fetchMilestonesThunk(buildFilterParams(activeFilter)));
+    });
+  }, [visible, activeFilter, milestonesProp, dispatch, buildFilterParams]);
+
+  const handleRefresh = useCallback(async () => {
+    setRefreshing(true);
+    try {
+      await dispatch(fetchMilestonesThunk(buildFilterParams(activeFilter))).unwrap();
+    } catch {
+      // handled gracefully
+    } finally {
+      setRefreshing(false);
     }
-    acc[item.monthYear].push(item);
-    return acc;
-  }, {});
+  }, [activeFilter, buildFilterParams, dispatch]);
+
+  const handleLoadMore = () => {
+    if (!pulseState?.milestonesNextCursor || pulseState?.loadingMilestones) return;
+    dispatch(
+      fetchMilestonesThunk(
+        buildFilterParams(activeFilter, pulseState.milestonesNextCursor)
+      )
+    );
+  };
+
+  const sourceList: MilestoneItem[] = useMemo(() => {
+    if (milestonesProp !== undefined) {
+      return milestonesProp;
+    }
+    return (pulseState?.milestones || []).map((ms) =>
+      mapApiMilestoneToUi(ms, memberLookup, myMemberId)
+    );
+  }, [milestonesProp, pulseState?.milestones, memberLookup, myMemberId]);
+
+  const filteredMilestones = useMemo(() => {
+    if (activeFilter === 'all') return sourceList;
+    if (activeFilter === 'family') {
+      return sourceList.filter(
+        (m) => m.isFamily || m.personName.toLowerCase() === 'family'
+      );
+    }
+    const targetMember = memberLookup.get(activeFilter);
+    return sourceList.filter(
+      (m) =>
+        m.memberId === activeFilter ||
+        (targetMember &&
+          m.personName.toLowerCase() === targetMember.name.toLowerCase())
+    );
+  }, [sourceList, activeFilter, memberLookup]);
+
+  // Group chronologically by monthYear
+  const groupedSections = useMemo(() => {
+    const sections: { monthYear: string; items: MilestoneItem[] }[] = [];
+    filteredMilestones.forEach((item) => {
+      const existing = sections.find((s) => s.monthYear === item.monthYear);
+      if (existing) {
+        existing.items.push(item);
+      } else {
+        sections.push({ monthYear: item.monthYear, items: [item] });
+      }
+    });
+    return sections;
+  }, [filteredMilestones]);
+
+  const handleOpenMilestone = (item: MilestoneItem) => {
+    if (onSelectMilestone) {
+      onSelectMilestone(item);
+      return;
+    }
+    setSelectedDetailMilestone(item);
+  };
+
+  const handleSelectReaction = async (_reactionId: string, apiCode: string) => {
+    if (!reactionTargetMilestone || !isUUID(reactionTargetMilestone.id)) return;
+    const currentMine = reactionTargetMilestone.reactions?.mine?.toUpperCase();
+    if (currentMine === apiCode.toUpperCase()) {
+      await dispatch(removeMilestoneReactionThunk(reactionTargetMilestone.id));
+    } else {
+      await dispatch(
+        reactToMilestoneThunk({ id: reactionTargetMilestone.id, reaction: apiCode })
+      );
+    }
+  };
+
+  const renderCategoryIcon = (iconType: MilestoneItem['iconType']) => {
+    if (iconType === 'book') {
+      return <Feather name="book-open" size={18} color="#3A8EF0" />;
+    }
+    if (iconType === 'cake') {
+      return <MaterialIcons name="cake" size={19} color={Colors.primary} />;
+    }
+    return <Ionicons name="trophy-outline" size={18} color={Colors.primary} />;
+  };
+
+  const renderReactionPill = (item: MilestoneItem) => {
+    const hasReacted = Boolean(item.reactions?.mine);
+    return (
+      <TouchableOpacity
+        style={[styles.reactionBadge, hasReacted && styles.reactionBadgeActive]}
+        onPress={() => setReactionTargetMilestone(item)}
+        hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
+        activeOpacity={0.8}
+        accessibilityRole="button"
+        accessibilityLabel={`React to ${item.title}`}
+      >
+        <Feather
+          name="heart"
+          size={12}
+          color={hasReacted ? Colors.primary : '#8A97AB'}
+        />
+        <Text
+          style={[
+            styles.reactionBadgeText,
+            hasReacted && styles.reactionBadgeTextActive,
+          ]}
+        >
+          {item.reactionsCount}
+        </Text>
+      </TouchableOpacity>
+    );
+  };
+
+  const isLoading =
+    milestonesProp === undefined &&
+    !isJestTestEnv() &&
+    !refreshing &&
+    (Boolean(pulseState?.loadingMilestones) || !pulseState?.hasLoadedMilestones);
 
   return (
-    <Modal
+    <PulseModalContainer
       visible={visible}
-      animationType="slide"
-      transparent={false}
+      asModal={asModal}
+      variant="push"
       onRequestClose={onClose}
     >
       <View style={[styles.container, { paddingTop: Math.max(insets.top, 16) }]}>
@@ -106,145 +255,181 @@ export const MilestonesModal: React.FC<MilestonesModalProps> = ({
             accessibilityRole="button"
             accessibilityLabel="Back"
           >
-            <Feather name="chevron-left" size={24} color={Colors.white} />
+            <Feather name="chevron-left" size={22} color={Colors.white} />
           </TouchableOpacity>
           <Text style={styles.headerTitle}>Milestones</Text>
           <View style={styles.headerRightSpacer} />
         </View>
 
         {/* Filter Chips */}
-        <View style={styles.filterRow}>
-          {(['All', 'Anaya', 'Aarav', 'Family'] as FilterCategory[]).map(
-            (filter) => {
-              const isActive = selectedFilter === filter;
-              return (
-                <TouchableOpacity
-                  key={filter}
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          style={styles.filterScroll}
+          contentContainerStyle={styles.filterRow}
+        >
+          {filterChips.map((chip) => {
+            const isActive = activeFilter === chip.id;
+            return (
+              <TouchableOpacity
+                key={chip.id}
+                style={[
+                  styles.filterChip,
+                  isActive ? styles.filterChipActive : styles.filterChipInactive,
+                ]}
+                onPress={() => setActiveFilter(chip.id)}
+                activeOpacity={0.75}
+                accessibilityRole="button"
+                accessibilityState={{ selected: isActive }}
+                accessibilityLabel={chip.label}
+              >
+                <Text
                   style={[
-                    styles.filterChip,
-                    isActive ? styles.filterChipActive : styles.filterChipInactive,
+                    styles.filterChipText,
+                    isActive
+                      ? styles.filterChipTextActive
+                      : styles.filterChipTextInactive,
                   ]}
-                  onPress={() => setSelectedFilter(filter)}
-                  activeOpacity={0.7}
                 >
-                  <Text
-                    style={[
-                      styles.filterChipText,
-                      isActive
-                        ? styles.filterChipTextActive
-                        : styles.filterChipTextInactive,
-                    ]}
-                  >
-                    {filter}
-                  </Text>
-                </TouchableOpacity>
-              );
-            }
-          )}
-        </View>
+                  {chip.label}
+                </Text>
+              </TouchableOpacity>
+            );
+          })}
+        </ScrollView>
 
         <ScrollView
           style={styles.scrollArea}
           contentContainerStyle={[
             styles.scrollContent,
-            { paddingBottom: insets.bottom + 90 },
+            { paddingBottom: Math.max(insets.bottom + 90, 108) },
           ]}
           showsVerticalScrollIndicator={false}
+          refreshControl={
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={handleRefresh}
+              tintColor={Colors.primary}
+            />
+          }
         >
-          {Object.entries(groupedMilestones).map(([month, items]) => (
-            <View key={month} style={styles.monthSection}>
-              <Text style={styles.monthHeader}>{month}</Text>
+          {isLoading ? (
+            <MilestonesSkeleton />
+          ) : groupedSections.length === 0 ? (
+            <View style={styles.emptyCard}>
+              <View style={styles.emptyIconCircle}>
+                <Ionicons name="trophy-outline" size={24} color={Colors.primary} />
+              </View>
+              <Text style={styles.emptyTitle}>No milestones yet</Text>
+              <Text style={styles.emptySubtitle}>
+                Save your family's big moments, firsts, and proud achievements here.
+              </Text>
+            </View>
+          ) : (
+            groupedSections.map((section) => (
+              <View key={section.monthYear} style={styles.monthSection}>
+                <Text style={styles.monthHeader}>{section.monthYear}</Text>
 
-              <View style={styles.itemsList}>
-                {items.map((item) => {
-                  if (item.hasPhoto) {
-                    // Featured Card with photo graphic
-                    return (
-                      <View key={item.id} style={styles.featuredCard}>
-                        {/* Court Graphic Area */}
-                        <View style={styles.featuredPhotoContainer}>
-                          <View style={styles.courtNetVertical} />
-                          <View style={styles.courtNetHorizontal} />
-                          <View style={styles.shuttlecockBall} />
-                        </View>
-
-                        {/* Details */}
-                        <View style={styles.featuredBody}>
-                          <View style={styles.categoryRow}>
-                            <Ionicons
-                              name="trophy-outline"
-                              size={15}
-                              color={Colors.primary}
-                              style={styles.awardIcon}
+                <View style={styles.itemsList}>
+                  {section.items.map((item) => {
+                    const photoUri = item.photos?.[0];
+                    if (photoUri || item.hasPhoto) {
+                      return (
+                        <TouchableOpacity
+                          key={item.id}
+                          style={styles.featuredCard}
+                          activeOpacity={0.85}
+                          onPress={() => handleOpenMilestone(item)}
+                          accessibilityRole="button"
+                          accessibilityLabel={item.title}
+                        >
+                          {photoUri ? (
+                            <Image
+                              source={{ uri: photoUri }}
+                              style={styles.featuredPhotoImage}
+                              resizeMode="cover"
                             />
-                            <Text style={styles.categoryTagText}>
-                              {item.categoryTag || item.personName.toUpperCase()}
-                            </Text>
-                          </View>
+                          ) : null}
 
-                          <Text style={styles.featuredTitle}>{item.title}</Text>
-                          <Text style={styles.featuredSubtext}>
-                            {item.dateText} · {item.authorText} ·{' '}
-                            {item.reactionsCount} reactions
+                          <View style={styles.featuredBody}>
+                            <View style={styles.categoryRow}>
+                              <MaterialIcons
+                                name="emoji-events"
+                                size={15}
+                                color={Colors.primary}
+                                style={styles.awardIcon}
+                              />
+                              <Text style={styles.categoryTagText}>
+                                {item.categoryTag || item.personName.toUpperCase()}
+                              </Text>
+                            </View>
+
+                            <Text style={styles.featuredTitle}>{item.title}</Text>
+
+                            <View style={styles.footerMetaRow}>
+                              <Text style={styles.featuredSubtext}>
+                                {`${item.dateText} · ${item.authorText}`}
+                              </Text>
+                              {renderReactionPill(item)}
+                            </View>
+                          </View>
+                        </TouchableOpacity>
+                      );
+                    }
+
+                    const isBlueIcon = item.iconType === 'book';
+                    return (
+                      <TouchableOpacity
+                        key={item.id}
+                        style={styles.standardRow}
+                        activeOpacity={0.85}
+                        onPress={() => handleOpenMilestone(item)}
+                        accessibilityRole="button"
+                        accessibilityLabel={item.title}
+                      >
+                        <View
+                          style={[
+                            styles.iconBox,
+                            isBlueIcon ? styles.iconBoxBlue : styles.iconBoxOrange,
+                          ]}
+                        >
+                          {renderCategoryIcon(item.iconType)}
+                        </View>
+                        <View style={styles.standardRowTextGroup}>
+                          <Text style={styles.standardTitle}>{item.title}</Text>
+                          <Text style={styles.standardSubtitle}>
+                            {`${item.dateText} · ${item.authorText}`}
                           </Text>
                         </View>
-                      </View>
+                        <View style={styles.rowRightMeta}>
+                          {renderReactionPill(item)}
+                          <Feather name="chevron-right" size={18} color="#6D7D94" />
+                        </View>
+                      </TouchableOpacity>
                     );
-                  }
-
-                  // Standard Row Item
-                  return (
-                    <TouchableOpacity
-                      key={item.id}
-                      style={styles.standardRow}
-                      activeOpacity={0.7}
-                    >
-                      <View
-                        style={[
-                          styles.iconBox,
-                          item.iconType === 'cake'
-                            ? styles.iconBoxOrange
-                            : styles.iconBoxBlue,
-                        ]}
-                      >
-                        {item.iconType === 'cake' ? (
-                          <MaterialIcons
-                            name="cake"
-                            size={20}
-                            color={Colors.primary}
-                          />
-                        ) : (
-                          <Feather
-                            name="book-open"
-                            size={18}
-                            color={Colors.white}
-                          />
-                        )}
-                      </View>
-
-                      <View style={styles.standardRowTextGroup}>
-                        <Text style={styles.standardTitle} numberOfLines={1}>
-                          {item.title}
-                        </Text>
-                        <Text style={styles.standardSubtitle}>
-                          {item.dateText} · {item.authorText}
-                        </Text>
-                      </View>
-
-                      <Feather
-                        name="chevron-right"
-                        size={20}
-                        color={Colors.textSecondary}
-                      />
-                    </TouchableOpacity>
-                  );
-                })}
+                  })}
+                </View>
               </View>
-            </View>
-          ))}
+            ))
+          )}
+
+          {milestonesProp === undefined && pulseState?.milestonesNextCursor ? (
+            <TouchableOpacity
+              style={styles.loadMoreBtn}
+              onPress={handleLoadMore}
+              disabled={pulseState?.loadingMilestones}
+              activeOpacity={0.8}
+            >
+              {pulseState?.loadingMilestones ? (
+                <ActivityIndicator size="small" color={Colors.primary} />
+              ) : (
+                <Text style={styles.loadMoreText}>Load earlier milestones</Text>
+              )}
+            </TouchableOpacity>
+          ) : null}
         </ScrollView>
 
-        {/* Bottom CTA Button */}
+        {/* Sticky Bottom CTA */}
         <View
           style={[
             styles.bottomBar,
@@ -265,8 +450,38 @@ export const MilestonesModal: React.FC<MilestonesModalProps> = ({
             <Text style={styles.addMilestoneBtnText}>Add milestone</Text>
           </TouchableOpacity>
         </View>
+
+        {/* Built-in Detail & Reaction Modals when used standalone */}
+        <MilestoneDetailModal
+          visible={Boolean(selectedDetailMilestone)}
+          asModal={false}
+          milestone={selectedDetailMilestone}
+          members={membersList}
+          onClose={() => setSelectedDetailMilestone(null)}
+          onMilestoneDeleted={() => setSelectedDetailMilestone(null)}
+        />
+
+        <ReactionPackModal
+          visible={Boolean(reactionTargetMilestone)}
+          asModal={false}
+          targetTitle={reactionTargetMilestone?.title}
+          selectedReactionId={reactionApiToUiId(
+            reactionTargetMilestone?.reactions?.mine
+          )}
+          reactionsSummary={reactionTargetMilestone?.reactions}
+          members={membersList}
+          onClose={() => setReactionTargetMilestone(null)}
+          onSelectReaction={handleSelectReaction}
+          onRemoveReaction={async () => {
+            if (reactionTargetMilestone && isUUID(reactionTargetMilestone.id)) {
+              await dispatch(
+                removeMilestoneReactionThunk(reactionTargetMilestone.id)
+              );
+            }
+          }}
+        />
       </View>
-    </Modal>
+    </PulseModalContainer>
   );
 };
 
@@ -304,6 +519,9 @@ const styles = StyleSheet.create({
   headerRightSpacer: {
     width: 44,
     height: 44,
+  },
+  filterScroll: {
+    flexGrow: 0,
   },
   filterRow: {
     flexDirection: 'row',
@@ -346,6 +564,37 @@ const styles = StyleSheet.create({
   scrollContent: {
     paddingHorizontal: 20,
   },
+  emptyCard: {
+    backgroundColor: Colors.cardBackground,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: '#1F3352',
+    padding: 28,
+    alignItems: 'center',
+    marginTop: 12,
+  },
+  emptyIconCircle: {
+    width: 52,
+    height: 52,
+    borderRadius: 26,
+    backgroundColor: 'rgba(240, 145, 58, 0.14)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 12,
+  },
+  emptyTitle: {
+    fontSize: 17,
+    fontFamily: 'Roboto-Bold',
+    color: Colors.white,
+    marginBottom: 6,
+  },
+  emptySubtitle: {
+    fontSize: 13.5,
+    fontFamily: 'Roboto-Medium',
+    color: '#8A97AB',
+    textAlign: 'center',
+    lineHeight: 20,
+  },
   monthSection: {
     marginBottom: 20,
   },
@@ -366,42 +615,15 @@ const styles = StyleSheet.create({
     borderColor: '#1F3352',
     overflow: 'hidden',
   },
-  featuredPhotoContainer: {
-    height: 140,
-    backgroundColor: '#164035',
-    position: 'relative',
-    margin: 12,
+  featuredPhotoImage: {
+    height: 156,
+    marginHorizontal: 12,
+    marginTop: 12,
     borderRadius: 16,
-    overflow: 'hidden',
-  },
-  courtNetVertical: {
-    position: 'absolute',
-    left: '50%',
-    top: 0,
-    bottom: '50%',
-    width: 2,
-    backgroundColor: 'rgba(255, 255, 255, 0.45)',
-  },
-  courtNetHorizontal: {
-    position: 'absolute',
-    top: '50%',
-    left: 0,
-    right: 0,
-    height: 2,
-    backgroundColor: 'rgba(255, 255, 255, 0.45)',
-  },
-  shuttlecockBall: {
-    position: 'absolute',
-    top: '26%',
-    left: '68%',
-    width: 16,
-    height: 16,
-    borderRadius: 8,
-    backgroundColor: Colors.white,
+    backgroundColor: '#132238',
   },
   featuredBody: {
-    paddingHorizontal: 16,
-    paddingBottom: 16,
+    padding: 16,
   },
   categoryRow: {
     flexDirection: 'row',
@@ -421,13 +643,20 @@ const styles = StyleSheet.create({
     fontSize: 17,
     fontFamily: 'Roboto-Bold',
     color: Colors.white,
-    marginBottom: 6,
+    marginBottom: 8,
     letterSpacing: -0.2,
+  },
+  footerMetaRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 8,
   },
   featuredSubtext: {
     fontSize: 13,
     color: '#8A97AB',
     fontFamily: 'Roboto-Medium',
+    flex: 1,
   },
   standardRow: {
     flexDirection: 'row',
@@ -471,6 +700,49 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: '#8A97AB',
     fontFamily: 'Roboto-Medium',
+  },
+  rowRightMeta: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  reactionBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingHorizontal: 9,
+    paddingVertical: 4,
+    borderRadius: 12,
+    backgroundColor: '#15253E',
+    borderWidth: 1,
+    borderColor: '#253957',
+  },
+  reactionBadgeActive: {
+    borderColor: Colors.primary,
+    backgroundColor: 'rgba(240, 145, 58, 0.14)',
+  },
+  reactionBadgeText: {
+    fontSize: 12,
+    fontFamily: 'Roboto-Medium',
+    color: '#8A97AB',
+  },
+  reactionBadgeTextActive: {
+    color: Colors.primary,
+    fontFamily: 'Roboto-Bold',
+  },
+  loadMoreBtn: {
+    marginTop: 8,
+    height: 44,
+    borderRadius: 22,
+    borderWidth: 1,
+    borderColor: '#293B59',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  loadMoreText: {
+    fontSize: 13.5,
+    fontFamily: 'Roboto-SemiBold',
+    color: Colors.primary,
   },
   bottomBar: {
     position: 'absolute',
