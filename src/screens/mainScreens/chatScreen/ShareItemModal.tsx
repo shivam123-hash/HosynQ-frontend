@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import {
   View,
   Text,
@@ -8,21 +8,23 @@ import {
   TextInput,
   ScrollView,
   TouchableWithoutFeedback,
+  ActivityIndicator,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Feather from '@react-native-vector-icons/feather';
 import Colors from '../../../units/Colors';
+import chatServices from '../../../services/chatServices';
 import { SelectableShareItem, SharedItemData } from './types';
 
 export interface ShareItemModalProps {
   visible: boolean;
   onClose: () => void;
-  onShareItem: (item: SharedItemData) => void;
+  onShareItem: (item: SelectableShareItem | SharedItemData) => void;
 }
 
 type TabType = 'tasks' | 'events' | 'lists';
 
-const ITEMS_BY_TAB: Record<TabType, SelectableShareItem[]> = {
+const DEFAULT_ITEMS_BY_TAB: Record<TabType, SelectableShareItem[]> = {
   events: [
     {
       id: 'ev-1',
@@ -118,42 +120,148 @@ export const ShareItemModal: React.FC<ShareItemModalProps> = ({
   onShareItem,
 }) => {
   const insets = useSafeAreaInsets();
-  const [activeTab, setActiveTab] = useState<TabType>('events');
+  const [activeTab, setActiveTab] = useState<TabType>('tasks');
   const [searchQuery, setSearchQuery] = useState('');
-  const [selectedItemId, setSelectedItemId] = useState<string>('ev-1');
+  const [selectedItemId, setSelectedItemId] = useState<string>('');
+  const [loading, setLoading] = useState(false);
 
-  const items = ITEMS_BY_TAB[activeTab].filter((item) =>
-    item.title.toLowerCase().includes(searchQuery.toLowerCase())
+  const [itemsByTab, setItemsByTab] = useState<Record<TabType, SelectableShareItem[]>>(
+    DEFAULT_ITEMS_BY_TAB
   );
 
-  const selectedItem = ITEMS_BY_TAB[activeTab].find(
-    (item) => item.id === selectedItemId
-  );
+  // Fetch real shareable items from Backend
+  const loadShareableItems = useCallback(async () => {
+    setLoading(true);
+    try {
+      const [tasksRes, eventsRes, listsRes] = await Promise.allSettled([
+        chatServices.getTasksForShare(),
+        chatServices.getEventsForShare(),
+        chatServices.getListsForShare(),
+      ]);
+
+      const newItemsByTab: Record<TabType, SelectableShareItem[]> = {
+        tasks: [],
+        events: [],
+        lists: [],
+      };
+
+      // 1. Process Tasks
+      if (tasksRes.status === 'fulfilled' && tasksRes.value?.tasks?.length > 0) {
+        newItemsByTab.tasks = tasksRes.value.tasks.map((t: any) => {
+          const assigneesStr =
+            t.assignees && t.assignees.length > 0
+              ? t.assignees.map((a: any) => a.fullName || a.member?.fullName || 'Member').join(', ')
+              : 'Unassigned';
+          const dueStr = t.dueOn ? `Due ${t.dueOn}` : 'No due date';
+          return {
+            id: t.id,
+            type: 'task',
+            title: t.title,
+            subtitle: `Assigned to ${assigneesStr} · ${dueStr}`,
+            iconName: 'check-square',
+            iconColor: t.overdue ? Colors.dangerRed : Colors.primary,
+            iconBgColor: 'transparent',
+          };
+        });
+      } else {
+        newItemsByTab.tasks = DEFAULT_ITEMS_BY_TAB.tasks;
+      }
+
+      // 2. Process Events
+      if (eventsRes.status === 'fulfilled' && eventsRes.value?.events?.length > 0) {
+        newItemsByTab.events = eventsRes.value.events.map((e: any) => {
+          const timeStr = e.startTime || (e.allDay ? 'All day' : '');
+          const locStr = e.location ? ` · ${e.location}` : '';
+          return {
+            id: e.id,
+            type: 'event',
+            title: e.title,
+            subtitle: `${e.startsOn || 'Upcoming'} · ${timeStr}${locStr}`,
+            iconName: 'calendar',
+            iconColor: '#3A8EF0',
+            iconBgColor: 'transparent',
+          };
+        });
+      } else {
+        newItemsByTab.events = DEFAULT_ITEMS_BY_TAB.events;
+      }
+
+      // 3. Process Lists
+      if (listsRes.status === 'fulfilled' && listsRes.value?.lists?.length > 0) {
+        newItemsByTab.lists = listsRes.value.lists.map((l: any) => {
+          const done = l.doneCount ?? (l.items?.filter((i: any) => i.doneAt)?.length || 0);
+          const total = l.totalCount ?? (l.items?.length || 0);
+          return {
+            id: l.id,
+            type: 'list',
+            title: l.name || l.title || 'Family List',
+            subtitle: total > 0 ? `${done} of ${total} done` : 'Empty list',
+            iconName: 'list',
+            iconColor: Colors.accentTeal,
+            iconBgColor: 'transparent',
+          };
+        });
+      } else {
+        newItemsByTab.lists = DEFAULT_ITEMS_BY_TAB.lists;
+      }
+
+      setItemsByTab(newItemsByTab);
+
+      // Pre-select first item of active tab if none selected
+      const currentTabItems = newItemsByTab[activeTab];
+      if (currentTabItems.length > 0) {
+        setSelectedItemId(currentTabItems[0].id);
+      }
+    } catch {
+      setItemsByTab(DEFAULT_ITEMS_BY_TAB);
+    } finally {
+      setLoading(false);
+    }
+  }, [activeTab]);
+
+  useEffect(() => {
+    if (visible) {
+      loadShareableItems();
+    }
+  }, [visible, loadShareableItems]);
+
+  // Tab switch handler
+  const handleTabChange = (tab: TabType) => {
+    setActiveTab(tab);
+    setSearchQuery('');
+    const tabItems = itemsByTab[tab] || [];
+    if (tabItems.length > 0) {
+      setSelectedItemId(tabItems[0].id);
+    } else {
+      setSelectedItemId('');
+    }
+  };
+
+  const currentTabItems = itemsByTab[activeTab] || [];
+  const filteredItems = useMemo(() => {
+    if (!searchQuery.trim()) return currentTabItems;
+    const query = searchQuery.toLowerCase();
+    return currentTabItems.filter(
+      (item) =>
+        item.title.toLowerCase().includes(query) ||
+        item.subtitle.toLowerCase().includes(query)
+    );
+  }, [currentTabItems, searchQuery]);
+
+  const selectedItem = useMemo(() => {
+    return currentTabItems.find((item) => item.id === selectedItemId);
+  }, [currentTabItems, selectedItemId]);
 
   const handleShare = () => {
     if (!selectedItem) return;
-    const sharePayload: SharedItemData = {
-      type: selectedItem.type,
-      title: selectedItem.title,
-      subtitle: selectedItem.subtitle,
-      actionLabel:
-        selectedItem.type === 'event'
-          ? 'Add to my calendar'
-          : selectedItem.type === 'task'
-          ? 'Mark done'
-          : 'Open list',
-      isOverdue: selectedItem.id === 'tk-1',
-      progress:
-        selectedItem.type === 'list' ? { current: 6, total: 14 } : undefined,
-    };
-    onShareItem(sharePayload);
+    onShareItem(selectedItem);
     onClose();
   };
 
   const getButtonText = () => {
     const singleNoun =
       activeTab === 'events' ? 'event' : activeTab === 'tasks' ? 'task' : 'list';
-    return `Share 1 ${singleNoun}`;
+    return selectedItem ? `Share 1 ${singleNoun}` : `Select a ${singleNoun}`;
   };
 
   return (
@@ -186,18 +294,13 @@ export const ShareItemModal: React.FC<ShareItemModalProps> = ({
                     styles.tabButton,
                     activeTab === 'tasks' && styles.tabButtonActive,
                   ]}
-                  onPress={() => {
-                    setActiveTab('tasks');
-                    setSelectedItemId('tk-1');
-                  }}
+                  onPress={() => handleTabChange('tasks')}
                   activeOpacity={0.7}
                 >
                   <Feather
                     name="check-square"
                     size={16}
-                    color={
-                      activeTab === 'tasks' ? '#171612' : '#C8D1DC'
-                    }
+                    color={activeTab === 'tasks' ? '#171612' : '#C8D1DC'}
                     style={styles.tabIcon}
                   />
                   <Text
@@ -216,18 +319,13 @@ export const ShareItemModal: React.FC<ShareItemModalProps> = ({
                     styles.tabButton,
                     activeTab === 'events' && styles.tabButtonActive,
                   ]}
-                  onPress={() => {
-                    setActiveTab('events');
-                    setSelectedItemId('ev-1');
-                  }}
+                  onPress={() => handleTabChange('events')}
                   activeOpacity={0.7}
                 >
                   <Feather
                     name="calendar"
                     size={16}
-                    color={
-                      activeTab === 'events' ? '#171612' : '#C8D1DC'
-                    }
+                    color={activeTab === 'events' ? '#171612' : '#C8D1DC'}
                     style={styles.tabIcon}
                   />
                   <Text
@@ -246,18 +344,13 @@ export const ShareItemModal: React.FC<ShareItemModalProps> = ({
                     styles.tabButton,
                     activeTab === 'lists' && styles.tabButtonActive,
                   ]}
-                  onPress={() => {
-                    setActiveTab('lists');
-                    setSelectedItemId('ls-1');
-                  }}
+                  onPress={() => handleTabChange('lists')}
                   activeOpacity={0.7}
                 >
                   <Feather
                     name="list"
                     size={16}
-                    color={
-                      activeTab === 'lists' ? '#171612' : '#C8D1DC'
-                    }
+                    color={activeTab === 'lists' ? '#171612' : '#C8D1DC'}
                     style={styles.tabIcon}
                   />
                   <Text
@@ -286,6 +379,11 @@ export const ShareItemModal: React.FC<ShareItemModalProps> = ({
                   placeholder={`Search ${activeTab}`}
                   placeholderTextColor="#8A97AB"
                 />
+                {searchQuery.length > 0 && (
+                  <TouchableOpacity onPress={() => setSearchQuery('')} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+                    <Feather name="x" size={16} color="#8A97AB" />
+                  </TouchableOpacity>
+                )}
               </View>
 
               {/* Items Card List */}
@@ -294,58 +392,73 @@ export const ShareItemModal: React.FC<ShareItemModalProps> = ({
                 contentContainerStyle={styles.listContainer}
                 showsVerticalScrollIndicator={false}
               >
-                {items.map((item, index) => {
-                  const isSelected = selectedItemId === item.id;
-                  return (
-                    <TouchableOpacity
-                      key={item.id}
-                      style={[
-                        styles.itemRow,
-                        index > 0 && styles.itemRowDivider,
-                      ]}
-                      onPress={() => setSelectedItemId(item.id)}
-                      activeOpacity={0.7}
-                    >
-                      {/* Checkbox */}
-                      <View
+                {loading ? (
+                  <View style={styles.loadingBox}>
+                    <ActivityIndicator size="small" color={Colors.primary} />
+                    <Text style={styles.loadingText}>Loading {activeTab}...</Text>
+                  </View>
+                ) : filteredItems.length === 0 ? (
+                  <View style={styles.emptyBox}>
+                    <Text style={styles.emptyText}>No {activeTab} found</Text>
+                  </View>
+                ) : (
+                  filteredItems.map((item, index) => {
+                    const isSelected = selectedItemId === item.id;
+                    return (
+                      <TouchableOpacity
+                        key={item.id}
                         style={[
-                          styles.checkbox,
-                          isSelected && styles.checkboxSelected,
+                          styles.itemRow,
+                          index > 0 && styles.itemRowDivider,
                         ]}
+                        onPress={() => setSelectedItemId(item.id)}
+                        activeOpacity={0.7}
                       >
-                        {isSelected && (
-                          <Feather name="check" size={14} color="#171612" />
-                        )}
-                      </View>
+                        {/* Checkbox */}
+                        <View
+                          style={[
+                            styles.checkbox,
+                            isSelected && styles.checkboxSelected,
+                          ]}
+                        >
+                          {isSelected && (
+                            <Feather name="check" size={14} color="#171612" />
+                          )}
+                        </View>
 
-                      {/* Icon */}
-                      <View
-                        style={[
-                          styles.itemIconBox,
-                          { borderColor: item.iconColor },
-                        ]}
-                      >
-                        <Feather
-                          name={item.iconName as any}
-                          size={20}
-                          color={item.iconColor}
-                        />
-                      </View>
+                        {/* Icon */}
+                        <View
+                          style={[
+                            styles.itemIconBox,
+                            { borderColor: item.iconColor },
+                          ]}
+                        >
+                          <Feather
+                            name={item.iconName as any}
+                            size={20}
+                            color={item.iconColor}
+                          />
+                        </View>
 
-                      {/* Text details */}
-                      <View style={styles.itemTextGroup}>
-                        <Text style={styles.itemTitle}>{item.title}</Text>
-                        <Text style={styles.itemSubtitle}>{item.subtitle}</Text>
-                      </View>
-                    </TouchableOpacity>
-                  );
-                })}
+                        {/* Text details */}
+                        <View style={styles.itemTextGroup}>
+                          <Text style={styles.itemTitle}>{item.title}</Text>
+                          <Text style={styles.itemSubtitle}>{item.subtitle}</Text>
+                        </View>
+                      </TouchableOpacity>
+                    );
+                  })
+                )}
               </ScrollView>
 
               {/* Bottom Share Button */}
               <TouchableOpacity
-                style={styles.shareCTAButton}
+                style={[
+                  styles.shareCTAButton,
+                  !selectedItem && styles.shareCTAButtonDisabled,
+                ]}
                 onPress={handleShare}
+                disabled={!selectedItem}
                 activeOpacity={0.85}
               >
                 <Text style={styles.shareCTAButtonText}>{getButtonText()}</Text>
@@ -456,6 +569,27 @@ const styles = StyleSheet.create({
     borderColor: '#1F3249',
     overflow: 'hidden',
   },
+  loadingBox: {
+    paddingVertical: 32,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  loadingText: {
+    color: '#8A97AB',
+    fontSize: 13,
+    fontFamily: 'Roboto-Medium',
+    marginTop: 8,
+  },
+  emptyBox: {
+    paddingVertical: 32,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  emptyText: {
+    color: '#8A97AB',
+    fontSize: 14,
+    fontFamily: 'Roboto-Medium',
+  },
   itemRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -510,6 +644,9 @@ const styles = StyleSheet.create({
     borderRadius: 27,
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  shareCTAButtonDisabled: {
+    backgroundColor: '#3A4A62',
   },
   shareCTAButtonText: {
     color: Colors.white,
