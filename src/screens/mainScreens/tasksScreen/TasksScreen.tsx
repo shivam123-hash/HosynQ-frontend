@@ -158,6 +158,8 @@ export interface TasksScreenProps {
   initialTaskId?: string | null;
   initialListId?: string | null;
   onClearInitialIds?: () => void;
+  returnToChat?: boolean;
+  onReturnToChat?: () => void;
   forceEmpty?: boolean;
   onProfilePress?: () => void;
   onExplorePress?: () => void;
@@ -178,6 +180,8 @@ const TasksScreen: React.FC<TasksScreenProps> = ({
   initialTaskId,
   initialListId,
   onClearInitialIds,
+  returnToChat,
+  onReturnToChat,
   forceEmpty = false,
   showBottomNavBar = true,
   initialTasks,
@@ -357,6 +361,11 @@ const TasksScreen: React.FC<TasksScreenProps> = ({
     forceEmpty ? [] : initialLists !== undefined ? initialLists : []
   );
   const [selectedList, setSelectedList] = useState<ListGroup | null>(null);
+
+  const returnToChatRef = useRef(returnToChat);
+  useEffect(() => {
+    returnToChatRef.current = returnToChat;
+  }, [returnToChat]);
 
   // Handle deep navigation to a specific task
   useEffect(() => {
@@ -1204,6 +1213,9 @@ const TasksScreen: React.FC<TasksScreenProps> = ({
         onClose={() => {
           setSelectedTask(null);
           dispatch(clearSelectedTask());
+          if (returnToChatRef.current) {
+            onReturnToChat?.();
+          }
         }}
         onToggleComplete={(task) => {
           if (task.isCompleted) {
@@ -1212,9 +1224,18 @@ const TasksScreen: React.FC<TasksScreenProps> = ({
             handleCompleteTask(task);
           }
           setSelectedTask(null);
+          if (returnToChatRef.current) {
+            onReturnToChat?.();
+          }
         }}
         onReassign={handleReassignTask}
-        onDelete={handleDeleteTask}
+        onDelete={(taskId) => {
+          handleDeleteTask(taskId);
+          setSelectedTask(null);
+          if (returnToChatRef.current) {
+            onReturnToChat?.();
+          }
+        }}
         onUpdateTask={(updatedTask) => {
           setTasks((prev) =>
             prev.map((t) => (t.id === updatedTask.id ? updatedTask : t))
@@ -1243,7 +1264,12 @@ const TasksScreen: React.FC<TasksScreenProps> = ({
       <ListDetailModal
         visible={Boolean(selectedList)}
         list={selectedList}
-        onClose={() => setSelectedList(null)}
+        onClose={() => {
+          setSelectedList(null);
+          if (returnToChatRef.current) {
+            onReturnToChat?.();
+          }
+        }}
         onUpdateList={handleUpdateList}
         onDeleteList={handleDeleteList}
       />

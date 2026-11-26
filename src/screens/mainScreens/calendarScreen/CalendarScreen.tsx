@@ -77,6 +77,8 @@ export interface CalendarScreenProps {
   initialDate?: string;
   initialEventId?: string | null;
   onClearInitialEvent?: () => void;
+  returnToChat?: boolean;
+  onReturnToChat?: () => void;
   onProfilePress?: () => void;
   onNotificationsPress?: () => void;
   onExplorePress?: () => void;
@@ -92,6 +94,8 @@ export const CalendarScreen: React.FC<CalendarScreenProps> = ({
   initialDate,
   initialEventId,
   onClearInitialEvent,
+  returnToChat,
+  onReturnToChat,
   onProfilePress,
   onNotificationsPress,
   onExplorePress,
@@ -434,6 +438,10 @@ export const CalendarScreen: React.FC<CalendarScreenProps> = ({
 
   // Modals state
   const [selectedEventForDetail, setSelectedEventForDetail] = useState<CalendarEvent | null>(null);
+  const returnToChatRef = useRef(returnToChat);
+  useEffect(() => {
+    returnToChatRef.current = returnToChat;
+  }, [returnToChat]);
   const [selectedEventForComments, setSelectedEventForComments] = useState<CalendarEvent | null>(null);
   const [selectedEventForCancel, setSelectedEventForCancel] = useState<CalendarEvent | null>(null);
   const [createModalVisible, setCreateModalVisible] = useState(false);
@@ -1138,7 +1146,12 @@ export const CalendarScreen: React.FC<CalendarScreenProps> = ({
         }
         event={selectedEventForDetail}
         members={familyMembersList}
-        onClose={() => setSelectedEventForDetail(null)}
+        onClose={() => {
+          setSelectedEventForDetail(null);
+          if (returnToChatRef.current) {
+            onReturnToChat?.();
+          }
+        }}
         onEditEvent={(evt) => {
           handleSaveEvent(evt);
         }}

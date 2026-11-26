@@ -32,6 +32,8 @@ export interface ChatsScreenProps {
   onCompassPress?: () => void;
   onOpenVault?: () => void;
   onNavigateToItem?: (type: 'TASK' | 'EVENT' | 'LIST', itemId: string, meta?: any) => void;
+  autoOpenFamilyChat?: boolean;
+  onFamilyChatOpened?: () => void;
 }
 
 // Helpers
@@ -112,6 +114,8 @@ export const ChatsScreen: React.FC<ChatsScreenProps> = ({
   onCompassPress,
   onOpenVault,
   onNavigateToItem,
+  autoOpenFamilyChat,
+  onFamilyChatOpened,
 }) => {
   const insets = useSafeAreaInsets();
   const dispatch = useAppDispatch();
@@ -315,6 +319,14 @@ export const ChatsScreen: React.FC<ChatsScreenProps> = ({
     },
     [dispatch, chatState.threads.familyChat]
   );
+
+  // Auto-reopen Family Chat when returning from a shared item (Task, Event, List)
+  useEffect(() => {
+    if (autoOpenFamilyChat) {
+      handleOpenFamilyChat();
+      onFamilyChatOpened?.();
+    }
+  }, [autoOpenFamilyChat, handleOpenFamilyChat, onFamilyChatOpened]);
 
   // Open Just Us modal
   const handleOpenJustUs = useCallback(
