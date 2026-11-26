@@ -20,6 +20,8 @@ import AppOptionsMenu from '../common/AppOptionsMenu';
 export interface JustUsModalProps {
   visible: boolean;
   onClose: () => void;
+  threadId?: string;
+  partner?: any;
   isAvailable?: boolean;
   onInvitePartner?: () => void;
   onHideJustUs?: () => void;

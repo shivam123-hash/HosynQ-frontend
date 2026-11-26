@@ -24,6 +24,7 @@ import AppOptionsMenu from '../common/AppOptionsMenu';
 export interface ChatConversationModalProps {
   visible: boolean;
   onClose: () => void;
+  threadId?: string;
   title?: string;
   memberCountText?: string;
   isEmpty?: boolean;
