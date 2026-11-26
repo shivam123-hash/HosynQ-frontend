@@ -190,6 +190,18 @@ export const JustUsModal: React.FC<JustUsModalProps> = ({
       (familyState.basicFamilyData as any)?.family?.myMemberId ||
       currentUser?.id;
 
+    const existingPartnerIds = new Set(
+      chatState.threads.justUs
+        .map((t) => t.partner?.memberId || (t as any)?.partnerMemberId || (t as any)?.targetMemberId || (t as any)?.memberId)
+        .filter(Boolean)
+        .map(String)
+    );
+    const existingPartnerNames = new Set(
+      chatState.threads.justUs
+        .map((t) => t.partner?.fullName)
+        .filter(Boolean)
+    );
+
     return rawList
       .filter((m: any) => {
         if (m.isYou) return false;
@@ -202,7 +214,9 @@ export const JustUsModal: React.FC<JustUsModalProps> = ({
       .map((m: any, idx: number) => {
         const targetId = String(m.memberId || m.id || m.userId || m._id || `m-${idx}`);
         const fullName = m.fullName || m.name || `Family Member`;
-        const role = m.familyRole || m.role || (m.relationship ? m.relationship : 'Adult Member');
+        const hasExisting = existingPartnerIds.has(targetId) || existingPartnerNames.has(fullName);
+        const baseRole = m.familyRole || m.role || (m.relationship ? m.relationship : 'Adult Member');
+        const role = hasExisting ? `${baseRole} · Existing Chat` : baseRole;
         const avatarColor = m.avatarColor || m.color || (idx % 2 === 0 ? Colors.avatarNavy : Colors.avatarBrown);
         return {
           id: targetId,
@@ -210,9 +224,10 @@ export const JustUsModal: React.FC<JustUsModalProps> = ({
           fullName,
           role,
           avatarColor,
+          hasExisting,
         };
       });
-  }, [familyState, currentUser]);
+  }, [familyState, currentUser, chatState.threads.justUs]);
 
   // Partner resolution
   const partner: ApiChatPartner | null = useMemo(() => {
@@ -341,9 +356,42 @@ export const JustUsModal: React.FC<JustUsModalProps> = ({
   const handleStartJustUs = useCallback(
     async (memberId: string) => {
       if (!memberId || startingMemberId) return;
+      console.log('[JustUsModal] handleStartJustUs called for memberId:', memberId);
+
+      // Check if thread already exists in local Redux state for this member
+      const existingThread = chatState.threads.justUs.find((t) => {
+        const p = t.partner;
+        const targetAdult = eligibleAdults.find((a: any) => a.id === memberId);
+        return (
+          p?.memberId === memberId ||
+          (t as any)?.partnerMemberId === memberId ||
+          (t as any)?.targetMemberId === memberId ||
+          (t as any)?.memberId === memberId ||
+          (targetAdult?.fullName && p?.fullName === targetAdult.fullName)
+        );
+      });
+
+      if (existingThread?.id) {
+        console.log('[JustUsModal] Thread already exists in state, switching to it:', existingThread.id);
+        setCreatedThreadId(existingThread.id);
+        const foundAdult = eligibleAdults.find((a: any) => a.id === memberId);
+        if (foundAdult) {
+          setSelectedPartner({
+            memberId: foundAdult.id,
+            fullName: foundAdult.fullName,
+            avatarColor: foundAdult.avatarColor,
+          });
+        }
+        dispatch(setActiveThreadId(existingThread.id));
+        dispatch(fetchChatMessages({ threadId: existingThread.id }));
+        return;
+      }
+
       try {
         setStartingMemberId(memberId);
+        console.log('[JustUsModal] Calling startJustUsChat thunk with memberId:', memberId);
         const thread = await dispatch(startJustUsChat(memberId)).unwrap();
+        console.log('[JustUsModal] startJustUsChat returned thread:', thread);
         const tid = (thread as any)?.id || (thread as any)?.threadId || (thread as any)?._id;
         if (tid) {
           setCreatedThreadId(tid);
@@ -359,15 +407,17 @@ export const JustUsModal: React.FC<JustUsModalProps> = ({
           dispatch(fetchChatMessages({ threadId: tid }));
           dispatch(fetchChatThreads());
         } else {
-          Alert.alert('Notice', 'Unable to start chat. Invalid thread response.');
+          Alert.alert('Notice', 'Unable to start chat. Invalid thread response from server.');
         }
       } catch (err: any) {
-        Alert.alert('Notice', typeof err === 'string' ? err : err?.message || 'Failed to start Just Us.');
+        console.error('[JustUsModal] Failed to start Just Us:', err);
+        const displayErr = typeof err === 'string' ? err : err?.message || JSON.stringify(err);
+        Alert.alert('Notice', displayErr);
       } finally {
         setStartingMemberId(null);
       }
     },
-    [dispatch, startingMemberId, eligibleAdults]
+    [dispatch, startingMemberId, eligibleAdults, chatState.threads.justUs]
   );
 
   // Determine if Just Us is active or unavailable

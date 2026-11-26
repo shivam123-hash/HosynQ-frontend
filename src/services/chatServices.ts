@@ -185,11 +185,25 @@ const chatServices = {
     threadId: string,
     payload: SendChatMessagePayload
   ): Promise<SendChatMessageResponse> => {
-    const response = await apiClient.post<SendChatMessageResponse>(
-      API_ROUTES.CHAT_SEND_MESSAGE(threadId),
-      payload
-    );
-    return response.data;
+    try {
+      console.log('[chatServices.sendMessage] POST', API_ROUTES.CHAT_SEND_MESSAGE(threadId), 'payload:', payload);
+      const response = await apiClient.post<SendChatMessageResponse>(
+        API_ROUTES.CHAT_SEND_MESSAGE(threadId),
+        payload
+      );
+      console.log('[chatServices.sendMessage] SUCCESS:', response.status, response.data);
+      return response.data;
+    } catch (err: any) {
+      console.error(
+        '[chatServices.sendMessage] ERROR status:',
+        err?.response?.status,
+        'data:',
+        JSON.stringify(err?.response?.data),
+        'message:',
+        err?.message
+      );
+      throw err;
+    }
   },
 
   // 4. Send a photo (POST /chat/threads/:id/photos)
@@ -296,15 +310,25 @@ const chatServices = {
 
   // 12. Start Just Us chat with adult (POST /chat/just-us)
   startJustUs: async (memberId: string): Promise<StartJustUsResponse> => {
-    const response = await apiClient.post<StartJustUsResponse>(
-      API_ROUTES.CHAT_JUST_US,
-      {
-        memberId,
-        targetMemberId: memberId,
-        partnerId: memberId,
-      }
-    );
-    return response.data;
+    try {
+      console.log('[chatServices.startJustUs] POST', API_ROUTES.CHAT_JUST_US, 'with memberId:', memberId);
+      const response = await apiClient.post<StartJustUsResponse>(
+        API_ROUTES.CHAT_JUST_US,
+        { memberId }
+      );
+      console.log('[chatServices.startJustUs] SUCCESS status:', response.status, 'data:', response.data);
+      return response.data;
+    } catch (error: any) {
+      console.error(
+        '[chatServices.startJustUs] ERROR response status:',
+        error?.response?.status,
+        'data:',
+        JSON.stringify(error?.response?.data),
+        'message:',
+        error?.message
+      );
+      throw error;
+    }
   },
 
   // 13. Save my public key for Just Us (PUT /chat/key)

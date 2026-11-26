@@ -302,13 +302,28 @@ export const startJustUsChat = createAsyncThunk<
   { rejectValue: string }
 >('chat/startJustUs', async (memberId, { rejectWithValue }) => {
   try {
+    console.log('[chatSlice.startJustUsChat] Starting with memberId:', memberId);
     const res: any = await chatServices.startJustUs(memberId);
+    console.log('[chatSlice.startJustUsChat] Successful response:', res);
     const thread = res?.thread || res?.data?.thread || res?.data || res;
     return thread;
   } catch (err: any) {
-    return rejectWithValue(
-      err?.response?.data?.message || err?.message || 'Failed to start Just Us chat'
+    const errorData = err?.response?.data;
+    const errorStatus = err?.response?.status;
+    const errorMsg =
+      errorData?.message ||
+      errorData?.error ||
+      err?.message ||
+      'Failed to start Just Us chat';
+    console.error(
+      '[chatSlice.startJustUsChat] REJECTED - Status:',
+      errorStatus,
+      'Data:',
+      errorData,
+      'Error message:',
+      errorMsg
     );
+    return rejectWithValue(typeof errorMsg === 'string' ? errorMsg : JSON.stringify(errorMsg));
   }
 });
 

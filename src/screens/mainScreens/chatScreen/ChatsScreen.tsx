@@ -343,6 +343,44 @@ export const ChatsScreen: React.FC<ChatsScreenProps> = ({
     setShowJustUs(true);
   }, [dispatch]);
 
+  // Count how many adult members don't have a Just Us chat yet
+  const remainingAdultsCount = useMemo(() => {
+    const rawList: any[] =
+      familyState?.family?.members ||
+      familyState?.myFamilyData?.family?.members ||
+      (familyState?.basicFamilyData as any)?.members ||
+      (familyState?.basicFamilyData as any)?.family?.members ||
+      [];
+    const myId =
+      familyState?.myMemberId ||
+      (familyState?.basicFamilyData as any)?.myMemberId ||
+      (familyState?.basicFamilyData as any)?.family?.myMemberId;
+
+    const existingPartnerIds = new Set(
+      chatState.threads.justUs
+        .map((t) => t.partner?.memberId || (t as any)?.partnerMemberId || (t as any)?.targetMemberId || (t as any)?.memberId)
+        .filter(Boolean)
+        .map(String)
+    );
+    const existingPartnerNames = new Set(
+      chatState.threads.justUs
+        .map((t) => t.partner?.fullName)
+        .filter(Boolean)
+    );
+
+    const remaining = rawList.filter((m: any) => {
+      if (m.isYou) return false;
+      const mId = String(m.memberId || m.id || m.userId || m._id || '');
+      if (myId && mId === String(myId)) return false;
+      const role = String(m.role || m.familyRole || '').toUpperCase();
+      if (role === 'CHILD' || role === 'DEPENDENT_CHILD_PROFILE') return false;
+      const fullName = m.fullName || m.name;
+      return !existingPartnerIds.has(mId) && !existingPartnerNames.has(fullName);
+    });
+
+    return remaining.length;
+  }, [familyState, chatState.threads.justUs]);
+
   // Partner name for Just Us note
   const justUsPartnerName = useMemo(() => {
     const firstJu = chatState.threads.justUs?.[0];
@@ -497,7 +535,7 @@ export const ChatsScreen: React.FC<ChatsScreenProps> = ({
               <Feather name="plus" size={18} color={Colors.white} />
             </View>
           </TouchableOpacity>
-        ) : (
+        ) : remainingAdultsCount > 0 ? (
           <TouchableOpacity
             style={styles.addAnotherJustUsBtn}
             onPress={handleOpenCreateJustUs}
@@ -506,7 +544,7 @@ export const ChatsScreen: React.FC<ChatsScreenProps> = ({
             <Feather name="plus" size={16} color={Colors.accentPurple} />
             <Text style={styles.addAnotherJustUsText}>Start another Just Us chat</Text>
           </TouchableOpacity>
-        )}
+        ) : null}
 
         {/* Privacy Note */}
         <View style={styles.privacyNoteRow}>
