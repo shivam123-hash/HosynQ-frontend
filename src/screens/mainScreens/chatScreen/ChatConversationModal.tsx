@@ -35,7 +35,27 @@ import {
   addOptimisticPendingMessage,
 } from '../../../redux/features/chat/chatSlice';
 import { initChatSocketBridge } from '../../../redux/features/chat/chatSocketBridge';
-import { completeTask } from '../../../redux/features/tasks/tasksSlice';
+import {
+  fetchTaskDetail,
+  completeTask,
+  reopenTask,
+  deleteTask,
+  clearSelectedTask,
+} from '../../../redux/features/tasks/tasksSlice';
+import { TaskDetailModal } from '../tasksScreen/components';
+import { TaskItem } from '../tasksScreen/types';
+import { isUUID } from '../tasksScreen/taskApiHelpers';
+import { ListDetailModal } from '../tasksScreen/components';
+import { ListGroup } from '../tasksScreen/types';
+import { mapApiListSummaryToUiList } from '../tasksScreen/listApiHelpers';
+import { deleteList } from '../../../redux/features/lists/listsSlice';
+import { EventDetailModal } from '../calendarScreen/components';
+import { CalendarEvent } from '../calendarScreen/types';
+import {
+  fetchEventDetail,
+  cancelCalendarEvent,
+} from '../../../redux/features/calendar/calendarSlice';
+import { mapApiEventToUiEvent } from '../calendarScreen/calendarApiHelpers';
 import chatServices, {
   ApiChatMessage,
   ApiChatReactionGroup,
@@ -122,6 +142,14 @@ export const ChatConversationModal: React.FC<ChatConversationModalProps> = ({
   const chatState = useAppSelector((state) => state.chat);
   const familyState = useAppSelector((state) => state.family);
   const currentUser = useAppSelector((state) => state.baseProfile.user);
+  const apiSelectedTask = useAppSelector((state) => state.tasks?.selectedTask);
+  const listsState = useAppSelector((state) => state.lists);
+  const calendarState = useAppSelector((state) => state.calendar);
+
+  // Direct-to-Direct detail modals states (Zero flicker / stay inside chat)
+  const [selectedTaskForDetail, setSelectedTaskForDetail] = useState<TaskItem | null>(null);
+  const [selectedListForDetail, setSelectedListForDetail] = useState<ListGroup | null>(null);
+  const [selectedEventForDetail, setSelectedEventForDetail] = useState<CalendarEvent | null>(null);
 
   // Active thread ID resolution: Always resolve real backend UUID (never stay stuck on placeholder 'family')
   const activeThreadId = useMemo(() => {
@@ -319,25 +347,87 @@ export const ChatConversationModal: React.FC<ChatConversationModalProps> = ({
     [activeThreadId, dispatch]
   );
 
-  // Interactive Card Action Handlers - Direct deep-navigation to screen & item focus
+  // Interactive Card Action Handlers - Direct-to-Direct modal on top of chat (Zero-flicker)
   const handleCardAction = useCallback(
     async (msg: ApiChatMessage) => {
       const item = msg.item;
       const card = msg.card;
       if (!item) return;
 
-      onClose();
-      if (onNavigateToItem) {
-        if (item.type === 'TASK') {
-          onNavigateToItem('TASK', item.id);
-        } else if (item.type === 'EVENT') {
-          onNavigateToItem('EVENT', item.id, { date: card?.event?.startsOn });
-        } else if (item.type === 'LIST') {
-          onNavigateToItem('LIST', item.id);
+      if (item.type === 'TASK') {
+        const taskData: TaskItem = {
+          id: item.id,
+          title: card?.task?.title || 'Task',
+          dueDate: card?.task?.dueOn || '',
+          dueType: card?.task?.overdue ? 'overdue' : 'today',
+          isCompleted: Boolean(card?.task?.done),
+          assignee: card?.task?.assignees?.[0]?.fullName || 'Unassigned',
+          assigneeInitial: (card?.task?.assignees?.[0]?.fullName || 'U').charAt(0).toUpperCase(),
+          assigneeAvatarBg: Colors.avatarBrown,
+          assigneeAvatarColor: Colors.white,
+          category: 'household',
+          priority: 'medium',
+          repeat: 'Doesn’t repeat',
+          reminders: 'None',
+          viewers: 'Everyone in family',
+          notes: '',
+        };
+        setSelectedTaskForDetail(taskData);
+        if (isUUID(item.id)) {
+          dispatch(fetchTaskDetail({ taskId: item.id, today: new Date().toISOString().slice(0, 10) }));
+        }
+      } else if (item.type === 'LIST') {
+        const found = listsState?.lists?.find((l: any) => l.id === item.id);
+        const listData: ListGroup = found
+          ? mapApiListSummaryToUiList(found)
+          : {
+              id: item.id,
+              title: card?.list?.name || 'Family List',
+              type: 'custom',
+              typeLabel: 'Custom',
+              items: [],
+              sharedWith: ['Family'],
+              isSharedWithAll: true,
+              completedCount: card?.list?.doneCount || 0,
+              itemCount: card?.list?.totalCount || 0,
+            };
+        setSelectedListForDetail(listData);
+      } else if (item.type === 'EVENT') {
+        const found = calendarState?.feed?.events?.find((e: any) => e.id === item.id);
+        const eventData: CalendarEvent = found
+          ? mapApiEventToUiEvent(found)
+          : {
+              id: item.id,
+              title: card?.event?.title || 'Event',
+              date: card?.event?.startsOn || new Date().toISOString().slice(0, 10),
+              startTime: card?.event?.startTime || '',
+              endTime: '',
+              formattedDate: card?.event?.startsOn || '',
+              formattedTime: card?.event?.startTime || '',
+              isAllDay: !card?.event?.startTime,
+              category: 'other',
+              categoryColor: '#3A8EF0',
+              location: card?.event?.location || '',
+              goingMemberIds: [],
+              goingMembers: [],
+              reminders: 'None',
+              repeat: 'Never',
+              comments: [],
+            };
+        setSelectedEventForDetail(eventData);
+        if (isUUID(item.id)) {
+          dispatch(fetchEventDetail({ id: item.id, on: card?.event?.startsOn || new Date().toISOString().slice(0, 10) }))
+            .unwrap()
+            .then((fullEvent) => {
+              if (fullEvent) {
+                setSelectedEventForDetail(mapApiEventToUiEvent(fullEvent));
+              }
+            })
+            .catch(() => {});
         }
       }
     },
-    [onClose, onNavigateToItem]
+    [dispatch, listsState?.lists, calendarState?.feed?.events]
   );
 
   // Reactions Handler
@@ -1091,6 +1181,96 @@ export const ChatConversationModal: React.FC<ChatConversationModalProps> = ({
             subtitle="Take a photo or choose from gallery to share in chat"
             onSelectImage={handleSelectPhoto}
             onClose={() => setShowImagePicker(false)}
+          />
+
+          {/* Direct-to-Direct Task Detail Modal (Zero-flicker on top of chat) */}
+          <TaskDetailModal
+            visible={Boolean(selectedTaskForDetail)}
+            task={selectedTaskForDetail}
+            liveTaskDetail={apiSelectedTask?.id === selectedTaskForDetail?.id ? apiSelectedTask : null}
+            onClose={() => {
+              setSelectedTaskForDetail(null);
+              dispatch(clearSelectedTask());
+              if (activeThreadId) {
+                dispatch(fetchChatMessages({ threadId: activeThreadId }));
+              }
+            }}
+            onToggleComplete={async (t) => {
+              try {
+                if (t.isCompleted) {
+                  await dispatch(reopenTask(t.id)).unwrap();
+                } else {
+                  await dispatch(completeTask({ taskId: t.id, today: new Date().toISOString().slice(0, 10) })).unwrap();
+                }
+                if (activeThreadId) {
+                  dispatch(fetchChatMessages({ threadId: activeThreadId }));
+                }
+              } catch (e) {
+                console.warn('[ChatConversationModal] Error toggling task:', e);
+              }
+              setSelectedTaskForDetail(null);
+            }}
+            onDelete={async (t) => {
+              try {
+                await dispatch(deleteTask(t.id)).unwrap();
+                if (activeThreadId) {
+                  dispatch(fetchChatMessages({ threadId: activeThreadId }));
+                }
+              } catch (e) {
+                console.warn('[ChatConversationModal] Error deleting task:', e);
+              }
+              setSelectedTaskForDetail(null);
+            }}
+            onUpdateTask={(updated) => setSelectedTaskForDetail(updated)}
+          />
+
+          {/* Direct-to-Direct List Detail Modal (Zero-flicker on top of chat) */}
+          <ListDetailModal
+            visible={Boolean(selectedListForDetail)}
+            list={selectedListForDetail}
+            onClose={() => {
+              setSelectedListForDetail(null);
+              if (activeThreadId) {
+                dispatch(fetchChatMessages({ threadId: activeThreadId }));
+              }
+            }}
+            onUpdateList={(updated) => setSelectedListForDetail(updated)}
+            onDeleteList={async (listId) => {
+              if (isUUID(listId)) {
+                dispatch(deleteList(listId));
+              }
+              setSelectedListForDetail(null);
+              if (activeThreadId) {
+                dispatch(fetchChatMessages({ threadId: activeThreadId }));
+              }
+            }}
+          />
+
+          {/* Direct-to-Direct Event Detail Modal (Zero-flicker on top of chat) */}
+          <EventDetailModal
+            visible={Boolean(selectedEventForDetail)}
+            event={selectedEventForDetail}
+            onClose={() => {
+              setSelectedEventForDetail(null);
+              if (activeThreadId) {
+                dispatch(fetchChatMessages({ threadId: activeThreadId }));
+              }
+            }}
+            onEditEvent={(evt) => {
+              setSelectedEventForDetail(evt);
+            }}
+            onOpenComments={() => {}}
+            onCancelEvent={async (evt) => {
+              try {
+                await dispatch(cancelCalendarEvent({ id: evt.id, payload: { scope: 'THIS_ONE' } })).unwrap();
+                if (activeThreadId) {
+                  dispatch(fetchChatMessages({ threadId: activeThreadId }));
+                }
+              } catch (e) {
+                console.warn('[ChatConversationModal] Error cancelling event:', e);
+              }
+              setSelectedEventForDetail(null);
+            }}
           />
         </View>
       </KeyboardAvoidingView>

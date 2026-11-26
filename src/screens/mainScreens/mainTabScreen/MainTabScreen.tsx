@@ -135,49 +135,16 @@ const MainTabScreen: React.FC<MainTabScreenProps> = ({
   const handleAvatarPress = () => setSideMenuVisible(true);
   const handleOpenCompass = () => setCompassVisible(true);
 
-  // Deep-navigation from Chat shared cards (Task, Event, List)
-  const [pendingItemNavigation, setPendingItemNavigation] = useState<{
-    type: 'TASK' | 'EVENT' | 'LIST';
-    id: string;
-    date?: string;
-    returnToChat?: boolean;
-  } | null>(null);
-
-  const [autoOpenFamilyChat, setAutoOpenFamilyChat] = useState(false);
-
   const handleNavigateToItem = useCallback(
     (type: 'TASK' | 'EVENT' | 'LIST', itemId: string, meta?: any) => {
-      if (type === 'TASK') {
+      if (type === 'TASK' || type === 'LIST') {
         setActiveTab('tasks');
-        setPendingItemNavigation({ type: 'TASK', id: itemId, returnToChat: true });
-      } else if (type === 'LIST') {
-        setActiveTab('tasks');
-        setPendingItemNavigation({ type: 'LIST', id: itemId, returnToChat: true });
       } else if (type === 'EVENT') {
         setActiveTab('calendar');
-        setPendingItemNavigation({ type: 'EVENT', id: itemId, date: meta?.date, returnToChat: true });
       }
     },
     []
   );
-
-  const handleReturnToChat = useCallback(() => {
-    setActiveTab('chat');
-    setAutoOpenFamilyChat(true);
-    setPendingItemNavigation(null);
-  }, []);
-
-  // Hardware back press on Android when viewing item navigated from chat
-  useEffect(() => {
-    if (pendingItemNavigation?.returnToChat) {
-      const onBackPress = () => {
-        handleReturnToChat();
-        return true;
-      };
-      const sub = BackHandler.addEventListener('hardwareBackPress', onBackPress);
-      return () => sub.remove();
-    }
-  }, [pendingItemNavigation?.returnToChat, handleReturnToChat]);
 
   return (
     <View style={styles.container}>
@@ -213,12 +180,6 @@ const MainTabScreen: React.FC<MainTabScreenProps> = ({
             onTabChange={setActiveTab}
             onOpenCalendar={() => setActiveTab('calendar')}
             onOpenChat={() => setActiveTab('chat')}
-            initialMainTab={pendingItemNavigation?.type === 'LIST' ? 'lists' : 'tasks'}
-            initialTaskId={pendingItemNavigation?.type === 'TASK' ? pendingItemNavigation.id : undefined}
-            initialListId={pendingItemNavigation?.type === 'LIST' ? pendingItemNavigation.id : undefined}
-            returnToChat={Boolean(pendingItemNavigation?.returnToChat)}
-            onReturnToChat={handleReturnToChat}
-            onClearInitialIds={() => {}}
           />
         )}
 
@@ -229,11 +190,6 @@ const MainTabScreen: React.FC<MainTabScreenProps> = ({
             onExplorePress={handleOpenMenu}
             onCompassPress={handleOpenCompass}
             onOpenChat={() => setActiveTab('chat')}
-            initialDate={pendingItemNavigation?.type === 'EVENT' ? pendingItemNavigation.date : undefined}
-            initialEventId={pendingItemNavigation?.type === 'EVENT' ? pendingItemNavigation.id : undefined}
-            returnToChat={Boolean(pendingItemNavigation?.returnToChat)}
-            onReturnToChat={handleReturnToChat}
-            onClearInitialEvent={() => {}}
           />
         )}
 
@@ -245,8 +201,6 @@ const MainTabScreen: React.FC<MainTabScreenProps> = ({
             onCompassPress={handleOpenCompass}
             onOpenVault={() => setVaultModalVisible(true)}
             onNavigateToItem={handleNavigateToItem}
-            autoOpenFamilyChat={autoOpenFamilyChat}
-            onFamilyChatOpened={() => setAutoOpenFamilyChat(false)}
           />
         )}
       </View>
