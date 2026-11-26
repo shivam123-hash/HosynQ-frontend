@@ -10,6 +10,7 @@ import tasksReducer from './features/tasks/tasksSlice';
 import listsReducer from './features/lists/listsSlice';
 import calendarReducer from './features/calendar/calendarSlice';
 import notificationsReducer from './features/notifications/notificationsSlice';
+import tripsReducer from './features/trips/tripsSlice';
 import { setStore } from './storeRegistry';
 
 export const store = configureStore({
@@ -24,6 +25,7 @@ export const store = configureStore({
     lists: listsReducer,
     calendar: calendarReducer,
     notifications: notificationsReducer,
+    trips: tripsReducer,
   },
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware({

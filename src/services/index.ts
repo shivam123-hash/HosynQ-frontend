@@ -16,5 +16,8 @@ export * from './medicineServices';
 export { default as tasksServices } from './tasksServices';
 export * from './tasksServices';
 
+export { default as tripServices } from './tripServices';
+export * from './tripServices';
+
 export * from './googleAuthService';
 export * from './appleAuthService';

@@ -10,7 +10,7 @@ import Feather from '@react-native-vector-icons/feather';
 import Ionicons from '@react-native-vector-icons/ionicons';
 import { ListGroup, ListType } from '../types';
 import { LIST_TYPE_CONFIG } from '../constants';
-import { TripData } from './tripPlanner';
+import { TripData, formatCompactBannerDates } from './tripPlanner';
 import CommonBtn from '../../../../components/CommonBtn';
 
 import { Colors, Fonts, Typography } from '../../../../units';
@@ -34,31 +34,73 @@ const renderTypeIcon = (type: ListType, color: string) => {
 
 export interface ListsOverviewSectionProps {
   lists: ListGroup[];
-  tripData?: TripData;
+  tripData?: TripData | null;
+  totalTripsCount?: number;
   onSelectList: (list: ListGroup) => void;
   onCreateNewList: (prefillType?: ListType) => void;
   onOpenVacationPlanner?: () => void;
+  onPlanNewTrip?: () => void;
+  onOpenTripsList?: () => void;
 }
 
 const ListsOverviewSection: React.FC<ListsOverviewSectionProps> = ({
   lists,
   tripData,
+  totalTripsCount = 0,
   onSelectList,
   onCreateNewList,
   onOpenVacationPlanner,
+  onPlanNewTrip,
+  onOpenTripsList,
 }) => {
+  const hasActiveTrip = Boolean(
+    tripData && (tripData.id || tripData.destination || tripData.name)
+  );
   let completedSteps = 0;
   if (tripData?.step1Done) completedSteps += 1;
   if (tripData?.step2Done) completedSteps += 1;
-  const destinationCity = tripData?.destination?.split(',')[0].trim() || 'Jaipur';
-  const rawDates = tripData?.datesText || 'Fri 13 – Mon 16 Nov';
-  const shortDates = rawDates
-    .replace(/^[A-Za-z]{3}\s*/, '')
-    .replace(/\s+[A-Za-z]{3}\s+/, ' ')
-    .replace(/\s*–\s*/, '–');
-  const tripSubtitle = completedSteps === 0
-    ? 'Start with Step 1: Find common dates'
-    : `${completedSteps} of 4 steps done`;
+  const hasBookingsArray = Boolean(tripData?.bookings && tripData.bookings.length > 0);
+  const bookingsStepDone = hasBookingsArray
+    ? tripData!.bookings.every((b) => b.isBooked)
+    : (tripData?.bookingsTotalCount ?? 0) > 0 &&
+      tripData?.bookingsDoneCount === tripData?.bookingsTotalCount;
+  if (bookingsStepDone) {
+    completedSteps += 1;
+  }
+  const totalPacking =
+    tripData?.packingItems && tripData.packingItems.length > 0
+      ? tripData.packingItems.length
+      : tripData?.packingTotalItems ?? 0;
+  const packedItems =
+    tripData?.packingItems && tripData.packingItems.length > 0
+      ? tripData.packingItems.filter((p) => p.isPacked).length
+      : tripData?.packingPackedItems ?? 0;
+  if (totalPacking > 0 && packedItems === totalPacking) {
+    completedSteps += 1;
+  }
+
+  const destinationCity =
+    tripData?.destination?.split(',')[0].trim() || tripData?.name || '';
+  const compactDates = tripData?.startsOn
+    ? formatCompactBannerDates(tripData.startsOn, tripData.endsOn)
+    : tripData?.datesText && tripData.datesText !== 'Pick dates'
+    ? tripData.datesText
+        .replace(/^[A-Za-z]{3}\s*/, '')
+        .replace(/\s+[A-Za-z]{3}\s+/, ' ')
+        .replace(/\s*–\s*/, '–')
+    : '';
+  const bannerTitle = hasActiveTrip
+    ? compactDates
+      ? `${destinationCity} · ${compactDates}`
+      : destinationCity || 'Upcoming trip'
+    : 'No upcoming trips';
+  const tripSubtitle = hasActiveTrip
+    ? completedSteps === 0
+      ? 'Start with Step 1: Find common dates'
+      : `${completedSteps} of 4 steps done`
+    : totalTripsCount > 0
+    ? 'Tap to view past trips or plan a new one'
+    : 'Tap Plan new trip below to start planning';
 
   // Empty State matching LST-02
   if (lists.length === 0) {
@@ -151,22 +193,48 @@ const ListsOverviewSection: React.FC<ListsOverviewSectionProps> = ({
       {/* Featured Banner Card: Vacation Planner (LST-01) */}
       <TouchableOpacity
         style={styles.vacationBanner}
-        onPress={onOpenVacationPlanner}
+        onPress={hasActiveTrip ? onOpenVacationPlanner : onOpenTripsList || onPlanNewTrip}
         activeOpacity={0.8}
         accessibilityRole="button"
-        accessibilityLabel="Vacation Planner: Jaipur, 13-16 Nov"
+        accessibilityLabel={`Vacation Planner: ${bannerTitle}`}
       >
         <View style={styles.airplaneCircle}>
           <Ionicons name="airplane-outline" size={24} color={Colors.background} />
         </View>
 
         <View style={styles.vacationTextCol}>
-          <Text style={styles.vacationEyebrow}>VACATION PLANNER</Text>
-          <Text style={styles.vacationTitle}>{`${destinationCity} · ${shortDates}`}</Text>
+          <View style={styles.eyebrowRow}>
+            <Text style={styles.vacationEyebrow}>VACATION PLANNER</Text>
+            {totalTripsCount > 0 && onOpenTripsList && (
+              <TouchableOpacity
+                onPress={onOpenTripsList}
+                hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                accessibilityRole="button"
+                accessibilityLabel="All trips"
+              >
+                <Text style={styles.allTripsLink}>{`All trips (${totalTripsCount})`}</Text>
+              </TouchableOpacity>
+            )}
+          </View>
+          <Text style={styles.vacationTitle} numberOfLines={1}>{bannerTitle}</Text>
           <Text style={styles.vacationSubtitle}>{tripSubtitle}</Text>
         </View>
 
         <Feather name="chevron-right" size={20} color={Colors.accentTealMint} />
+      </TouchableOpacity>
+
+      {/* Dashed "Plan new trip" Button (left-aligned below Vacation Planner) */}
+      <TouchableOpacity
+        style={styles.planNewTripBtn}
+        onPress={onPlanNewTrip || onOpenVacationPlanner}
+        activeOpacity={0.7}
+        accessibilityRole="button"
+        accessibilityLabel="Plan new trip"
+      >
+        <View style={styles.planNewTripIconCircle}>
+          <Feather name="plus" size={24} color={Colors.primary} />
+        </View>
+        <Text style={styles.planNewTripText}>Plan new trip</Text>
       </TouchableOpacity>
 
       {/* 2-Column Grid of Lists (LST-01) */}
@@ -278,7 +346,36 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     flexDirection: 'row',
     alignItems: 'center',
+    marginBottom: 12,
+  },
+  planNewTripBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: Colors.transparent,
+    borderWidth: 1.5,
+    borderStyle: 'dashed',
+    borderColor: Colors.primary,
+    borderRadius: 24,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    minHeight: 88,
     marginBottom: 20,
+  },
+  planNewTripIconCircle: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    borderWidth: 1.5,
+    borderColor: Colors.primary,
+    backgroundColor: Colors.transparent,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 14,
+  },
+  planNewTripText: {
+    fontSize: Typography.size.subtitle,
+    fontFamily: Fonts.bold,
+    color: Colors.primary,
   },
   airplaneCircle: {
     width: 48,
@@ -292,12 +389,23 @@ const styles = StyleSheet.create({
   vacationTextCol: {
     flex: 1,
   },
+  eyebrowRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 4,
+    paddingRight: 8,
+  },
   vacationEyebrow: {
     fontSize: Typography.size.captionSmall,
     fontFamily: Fonts.bold,
     color: Colors.accentTealMint,
     letterSpacing: 1.2,
-    marginBottom: 4,
+  },
+  allTripsLink: {
+    fontSize: Typography.size.captionSmall,
+    fontFamily: Fonts.semiBold,
+    color: Colors.primary,
   },
   vacationTitle: {
     fontSize: Typography.size.subtitle,

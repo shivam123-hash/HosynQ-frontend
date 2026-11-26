@@ -32,6 +32,11 @@ import {
   updateList,
   deleteList,
 } from '../../../redux/features/lists/listsSlice';
+import {
+  fetchTripsThunk,
+  fetchTripDetailThunk,
+  clearSelectedTrip,
+} from '../../../redux/features/trips/tripsSlice';
 import { getMyFamilyBasicThunk } from '../../../redux/features/family/familySlice';
 import { CreateTaskPayload, TaskItemData } from '../../../services/tasksServices';
 import { mapApiListSummaryToUiList } from './listApiHelpers';
@@ -53,10 +58,14 @@ import {
   NewListModal,
   ListDetailModal,
   TripPlannerModal,
+  TripsListModal,
   TripScreenName,
   TripData,
-  INITIAL_TRIP_DATA,
+  createEmptyTripData,
+  extractTripMembersFromFamilyState,
+  mapApiTripToUiTrip,
 } from './components';
+import { mapApiListDetailToPackingItems } from './components/tripPlanner/tripApiHelpers';
 import { TasksSkeleton, ListsSkeleton } from '../../../components/SkeletonLoader';
 import { CATEGORY_META, PRIORITY_META } from './constants';
 import { TEST_TASKS } from '../../../__test_fixtures__/tasksFixtures';
@@ -167,6 +176,7 @@ export interface TasksScreenProps {
   initialTasks?: TaskItem[];
   initialLists?: ListGroup[];
   initialFamilyMembers?: FamilyMemberOption[];
+  initialTripData?: TripData | null;
 }
 
 const TasksScreen: React.FC<TasksScreenProps> = ({
@@ -177,6 +187,7 @@ const TasksScreen: React.FC<TasksScreenProps> = ({
   initialTasks,
   initialLists,
   initialFamilyMembers,
+  initialTripData,
   onProfilePress,
   onExplorePress,
   onNotificationsPress,
@@ -195,6 +206,14 @@ const TasksScreen: React.FC<TasksScreenProps> = ({
     summary: apiSummary,
   } = useAppSelector((state) => state.tasks);
   const { lists: apiLists, loading: listsLoading } = useAppSelector((state) => state.lists);
+  const familyState = useAppSelector((state) => state.family);
+  const {
+    upcomingTrips,
+    selectedTrip,
+    packingList: tripPackingList,
+    counts: tripCounts,
+    loadingList: tripsLoading,
+  } = useAppSelector((state) => state.trips);
 
   const familyMembers = useAppSelector(
     (state) =>
@@ -348,10 +367,21 @@ const TasksScreen: React.FC<TasksScreenProps> = ({
   const [newListPrefillType, setNewListPrefillType] =
     useState<ListType>('grocery');
 
-  // Trip planner state (TRP-01 to TRP-05 orchestrated in single container)
-  const [tripData, setTripData] = useState<TripData>(INITIAL_TRIP_DATA);
+  // Trip planner state (TRP-01 to TRP-05 orchestrated in single container + live Trips API)
+  const tripMembers = useMemo(
+    () => extractTripMembersFromFamilyState(familyState),
+    [familyState]
+  );
+  const [tripData, setTripData] = useState<TripData | null>(
+    forceEmpty ? null : initialTripData !== undefined ? initialTripData : null
+  );
+  const [activeTripDraft, setActiveTripDraft] = useState<TripData>(
+    initialTripData || createEmptyTripData(tripMembers)
+  );
   const [tripPlannerVisible, setTripPlannerVisible] = useState(false);
-  const [tripInitialScreen, setTripInitialScreen] = useState<TripScreenName>('dates');
+  const [tripsListVisible, setTripsListVisible] = useState(false);
+  const [tripInitialScreen, setTripInitialScreen] = useState<TripScreenName>('overview');
+  const fetchedOverviewTripIdRef = useRef<string | null>(null);
 
   // Task cache by status using useRef to avoid re-rendering and flickering on tab toggles
   const tasksCacheRef = useRef<{
@@ -415,25 +445,92 @@ const TasksScreen: React.FC<TasksScreenProps> = ({
     dispatch(fetchLists());
   }, [dispatch]);
 
-  // Initial load: fetch family, lists, and both task statuses (pending + done)
+  const loadTrips = useCallback(() => {
+    dispatch(fetchTripsThunk({ tab: 'UPCOMING', page: 1, limit: 20 }));
+  }, [dispatch]);
+
+  // Initial load: fetch family, lists, trips, and both task statuses (pending + done)
   useEffect(() => {
     dispatch(getMyFamilyBasicThunk());
     loadLists();
+    loadTrips();
     fetchTasksByStatus('PENDING');
     fetchTasksByStatus('DONE');
-  }, [dispatch, loadLists, fetchTasksByStatus]);
+  }, [dispatch, loadLists, loadTrips, fetchTasksByStatus]);
 
   // Pull to refresh handler: pulls fresh data without flickers
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
-    await Promise.all([
+    const refreshCalls: Array<Promise<any> | void> = [
       dispatch(getMyFamilyBasicThunk()),
       loadLists(),
+      loadTrips(),
       fetchTasksByStatus('PENDING', true),
       fetchTasksByStatus('DONE', true),
-    ]);
+    ];
+    const topTripId = upcomingTrips?.[0]?.id;
+    if (topTripId && isUUID(topTripId)) {
+      fetchedOverviewTripIdRef.current = topTripId;
+      refreshCalls.push(dispatch(fetchTripDetailThunk(topTripId)));
+    }
+    await Promise.all(refreshCalls);
     setRefreshing(false);
-  }, [dispatch, loadLists, fetchTasksByStatus]);
+  }, [dispatch, loadLists, loadTrips, fetchTasksByStatus, upcomingTrips]);
+
+  useEffect(() => {
+    if (initialTripData !== undefined) {
+      setTripData(initialTripData);
+      return;
+    }
+    if (!forceEmpty && upcomingTrips && upcomingTrips.length > 0) {
+      const topTrip = upcomingTrips[0];
+      if (!isTestEnv && topTrip.id && isUUID(topTrip.id) && fetchedOverviewTripIdRef.current !== topTrip.id) {
+        fetchedOverviewTripIdRef.current = topTrip.id;
+        dispatch(fetchTripDetailThunk(topTrip.id));
+      }
+
+      const detailOrSummary =
+        selectedTrip?.id === topTrip.id ? selectedTrip : topTrip;
+      const resolvedListId =
+        (detailOrSummary as any)?.packingList?.id ||
+        detailOrSummary?.packingListId ||
+        topTrip.packingListId;
+      const packingItems =
+        tripPackingList &&
+        resolvedListId &&
+        tripPackingList.id === resolvedListId
+          ? mapApiListDetailToPackingItems(tripPackingList)
+          : [];
+      const mappedNext = mapApiTripToUiTrip(
+        detailOrSummary,
+        tripMembers,
+        packingItems
+      );
+
+      if ((mappedNext.packingTotalItems ?? 0) === 0 && resolvedListId && apiLists) {
+        const matchedSummaryList = apiLists.find((l) => l.id === resolvedListId);
+        if (matchedSummaryList?.counts) {
+          mappedNext.packingTotalItems = matchedSummaryList.counts.total ?? 0;
+          mappedNext.packingPackedItems = matchedSummaryList.counts.done ?? 0;
+        }
+      }
+
+      setTripData(mappedNext);
+    } else if (!forceEmpty && upcomingTrips && upcomingTrips.length === 0) {
+      fetchedOverviewTripIdRef.current = null;
+      setTripData(null);
+    }
+  }, [
+    upcomingTrips,
+    selectedTrip,
+    tripPackingList,
+    apiLists,
+    tripMembers,
+    initialTripData,
+    forceEmpty,
+    isTestEnv,
+    dispatch,
+  ]);
 
   useEffect(() => {
     if (apiLists) {
@@ -925,21 +1022,40 @@ const TasksScreen: React.FC<TasksScreenProps> = ({
         />
 
         {mainTab === 'lists' ? (
-          listsLoading && lists.length === 0 && !forceEmpty ? (
+          ((listsLoading && lists.length === 0) ||
+            (tripsLoading && upcomingTrips.length === 0 && !tripData)) &&
+          !forceEmpty ? (
             <ListsSkeleton />
           ) : (
             <ListsOverviewSection
               lists={lists}
               tripData={tripData}
+              totalTripsCount={(tripCounts?.upcoming || 0) + (tripCounts?.past || 0)}
               onSelectList={(list) => setSelectedList(list)}
               onCreateNewList={(prefillType) => {
                 setNewListPrefillType(prefillType || 'grocery');
                 setNewListModalVisible(true);
               }}
               onOpenVacationPlanner={() => {
-                setTripInitialScreen(!tripData.step1Done ? 'dates' : 'overview');
+                if (tripData) {
+                  setActiveTripDraft(tripData);
+                  if (tripData.id && isUUID(tripData.id)) {
+                    dispatch(fetchTripDetailThunk(tripData.id));
+                  }
+                } else {
+                  dispatch(clearSelectedTrip());
+                  setActiveTripDraft(createEmptyTripData(tripMembers));
+                }
+                setTripInitialScreen('overview');
                 setTripPlannerVisible(true);
               }}
+              onPlanNewTrip={() => {
+                dispatch(clearSelectedTrip());
+                setActiveTripDraft(createEmptyTripData(tripMembers));
+                setTripInitialScreen('overview');
+                setTripPlannerVisible(true);
+              }}
+              onOpenTripsList={() => setTripsListVisible(true)}
             />
           )
         ) : tasksLoading && tasks.length === 0 && !forceEmpty ? (
@@ -1150,10 +1266,45 @@ const TasksScreen: React.FC<TasksScreenProps> = ({
       {/* Vacation Planner Modal (TRP-01 to TRP-05 orchestrated in single container) */}
       <TripPlannerModal
         visible={tripPlannerVisible}
-        tripData={tripData}
+        tripData={activeTripDraft}
         initialScreen={tripInitialScreen}
-        onClose={() => setTripPlannerVisible(false)}
-        onUpdateTripData={(updated) => setTripData(updated)}
+        onClose={() => {
+          setTripPlannerVisible(false);
+          loadTrips();
+          loadLists();
+          if (!isTestEnv && activeTripDraft.id && isUUID(activeTripDraft.id)) {
+            dispatch(fetchTripDetailThunk(activeTripDraft.id));
+          }
+        }}
+        onUpdateTripData={(updated) => {
+          setActiveTripDraft(updated);
+          if (updated.id) {
+            setTripData(updated);
+          }
+        }}
+      />
+
+      {/* All Trips List Modal (API #1 Upcoming / Past Tabs) */}
+      <TripsListModal
+        visible={tripsListVisible}
+        onClose={() => setTripsListVisible(false)}
+        onSelectTrip={(summary) => {
+          const mapped = mapApiTripToUiTrip(summary, tripMembers);
+          setActiveTripDraft(mapped);
+          setTripsListVisible(false);
+          setTripInitialScreen('overview');
+          setTripPlannerVisible(true);
+          if (summary.id && isUUID(summary.id)) {
+            dispatch(fetchTripDetailThunk(summary.id));
+          }
+        }}
+        onPlanNewTrip={() => {
+          setTripsListVisible(false);
+          dispatch(clearSelectedTrip());
+          setActiveTripDraft(createEmptyTripData(tripMembers));
+          setTripInitialScreen('overview');
+          setTripPlannerVisible(true);
+        }}
       />
     </SafeAreaView>
   );

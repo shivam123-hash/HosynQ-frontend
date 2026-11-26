@@ -1,7 +1,8 @@
 import axios, { AxiosError, InternalAxiosRequestConfig } from 'axios';
+import { Platform } from 'react-native';
 import { tokenService } from '../units/TokenServices';
 import { getStore } from '../redux/storeRegistry';
-import API_ROUTES, { API_BASE_URL } from '../redux/endPoints/endPoints';
+import API_ROUTES, { API_BASE_URL, DEV_MACHINE_IP } from '../redux/endPoints/endPoints';
 
 const apiClient = axios.create({
   baseURL: API_BASE_URL,
@@ -84,8 +85,9 @@ apiClient.interceptors.response.use(
         }
 
         // Call refresh endpoint with raw axios to bypass interceptors
+        const activeBaseUrl = apiClient.defaults.baseURL || API_BASE_URL;
         const refreshResponse = await axios.post(
-          `${API_BASE_URL}/${API_ROUTES.AUTH_REFRESH}`,
+          `${activeBaseUrl}/${API_ROUTES.AUTH_REFRESH}`,
           { refreshToken },
           {
             headers: {
@@ -141,6 +143,41 @@ apiClient.interceptors.response.use(
         }
 
         return Promise.reject(refreshErr);
+      }
+    }
+
+    // Android physical device / emulator network fallback:
+    // If primary LAN host fails with a connection error (no response), try localhost (adb reverse) or 10.0.2.2 (emulator).
+    const isJest = Boolean((globalThis as any)?.process?.env?.JEST_WORKER_ID);
+    if (
+      !isJest &&
+      Platform.OS === 'android' &&
+      !error.response &&
+      originalRequest &&
+      !originalRequest._androidHostRetried
+    ) {
+      originalRequest._androidHostRetried = true;
+      const currentBase = String(originalRequest.baseURL || apiClient.defaults.baseURL || API_BASE_URL);
+      const candidates = [
+        `http://${DEV_MACHINE_IP}:5000/api/v1`,
+        'http://localhost:5000/api/v1',
+        'http://10.0.2.2:5000/api/v1',
+      ].filter((url) => url !== currentBase);
+
+      for (const fallbackBase of candidates) {
+        try {
+          const retryRes = await apiClient({
+            ...originalRequest,
+            baseURL: fallbackBase,
+          });
+          apiClient.defaults.baseURL = fallbackBase;
+          return retryRes;
+        } catch (retryErr: any) {
+          if (retryErr?.response) {
+            apiClient.defaults.baseURL = fallbackBase;
+            return Promise.reject(retryErr);
+          }
+        }
       }
     }
 

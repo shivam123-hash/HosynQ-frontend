@@ -3,8 +3,8 @@
   "version": "0.0.1",
   "private": true,
   "scripts": {
-    "android": "adb reverse tcp:5000 tcp:5000 && react-native run-android",
-    "reverse": "adb reverse tcp:5000 tcp:5000 && adb reverse tcp:8081 tcp:8081",
+    "android": "for s in $(adb devices | awk 'NR>1 && $2==\"device\" {print $1}'); do adb -s $s reverse tcp:5000 tcp:5000 >/dev/null 2>&1 || true; done; react-native run-android",
+    "reverse": "for s in $(adb devices | awk 'NR>1 && $2==\"device\" {print $1}'); do adb -s $s reverse tcp:5000 tcp:5000 && adb -s $s reverse tcp:8081 tcp:8081; done",
     "ios": "react-native run-ios",
     "lint": "eslint .",
     "postinstall": "patch-package",

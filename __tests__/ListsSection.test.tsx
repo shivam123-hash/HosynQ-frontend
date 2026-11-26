@@ -12,6 +12,7 @@ import {
   ListOptionsModal,
 } from '../src/screens/mainScreens/tasksScreen/components';
 import { TEST_LISTS } from '../src/__test_fixtures__/tasksFixtures';
+import { INITIAL_TRIP_DATA } from '../src/__test_fixtures__/tripFixtures';
 
 const mockMetrics = {
   insets: { top: 44, left: 0, right: 0, bottom: 34 },
@@ -23,6 +24,7 @@ const renderWithProvider = async (component: React.ReactElement<any>) => {
   if (component.type === TasksScreen) {
     elementToRender = React.cloneElement(component, {
       initialLists: TEST_LISTS,
+      initialTripData: INITIAL_TRIP_DATA,
       ...component.props,
     });
   }
@@ -57,6 +59,61 @@ describe('Lists Section', () => {
     expect(texts).toContain('Jaipur trip packing');
     expect(texts).toContain('School supplies · Term 2');
     expect(texts).toContain("Nani's birthday party");
+  });
+
+  it('renders dashed "Plan new trip" button below Vacation Planner and navigates through Trip plan steps', async () => {
+    const renderer = await renderWithProvider(
+      <TasksScreen initialMainTab="lists" />
+    );
+
+    const getTexts = () =>
+      renderer.root
+        .findAllByType(Text)
+        .map((n) => n.props.children)
+        .flat();
+    const tapByLabel = async (label: string) => {
+      const btn = renderer.root
+        .findAllByType(TouchableOpacity)
+        .find((t) => t.props.accessibilityLabel === label);
+      expect(btn).toBeTruthy();
+      await ReactTestRenderer.act(() => {
+        btn?.props.onPress();
+      });
+    };
+
+    expect(getTexts()).toContain('VACATION PLANNER');
+    expect(getTexts()).toContain('Plan new trip');
+
+    // 1. Tap "Plan new trip" -> Trip plan screen
+    await tapByLabel('Plan new trip');
+    expect(getTexts()).toContain('Trip plan');
+
+    // 2. Tap "Find common dates" -> Find common dates screen -> Back
+    await tapByLabel('Find common dates');
+    expect(getTexts()).toContain('Find common dates');
+    expect(getTexts()).toContain('Trip length');
+    await tapByLabel('Back');
+    expect(getTexts()).toContain('Trip plan');
+
+    // 3. Tap "Destination and trip event" -> Trip details screen -> Back
+    await tapByLabel('Destination and trip event');
+    expect(getTexts()).toContain('Trip details');
+    await tapByLabel('Back');
+    expect(getTexts()).toContain('Trip plan');
+
+    // 4. Tap "Bookings and reminders" -> Bookings screen -> Back
+    await tapByLabel('Bookings and reminders');
+    expect(getTexts()).toContain('Bookings');
+    await tapByLabel('Back');
+    expect(getTexts()).toContain('Trip plan');
+
+    // 5. Tap "Packing list" -> Packing screen
+    await tapByLabel('Packing list');
+    expect(
+      renderer.root
+        .findAllByType(TouchableOpacity)
+        .some((t) => t.props.accessibilityLabel === 'Packing options')
+    ).toBe(true);
   });
 
   it('renders empty lists state with suggestion pills when forceEmpty={true}', async () => {

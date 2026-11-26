@@ -4,6 +4,7 @@ export interface TripMember {
   initial: string;
   color: string;
   selected?: boolean;
+  isYou?: boolean;
 }
 
 export interface TripAvailabilityDay {
@@ -18,13 +19,24 @@ export interface MemberAvailability {
   days: TripAvailabilityDay[];
 }
 
+export type UiBookingType =
+  | 'train'
+  | 'flight'
+  | 'bus'
+  | 'cab'
+  | 'hotel'
+  | 'other'
+  | 'document';
+
 export interface BookingItem {
   id: string;
   title: string;
   subtitle: string;
   reminder?: string;
+  remindOn?: string | null;
+  status?: 'PENDING' | 'DONE' | 'NOT_NEEDED';
   isBooked: boolean;
-  type: 'train' | 'hotel' | 'cab' | 'flight' | 'other';
+  type: UiBookingType;
 }
 
 export interface DocumentItem {
@@ -41,6 +53,7 @@ export interface TripPackingItem {
   subtitle?: string;
   category: 'shared' | 'kids' | 'personal';
   assignedTo: string;
+  assignedMemberId?: string | null;
   assignedInitial: string;
   assignedBg: string;
   isPacked: boolean;
@@ -48,17 +61,30 @@ export interface TripPackingItem {
 
 export interface TripData {
   id: string;
+  name?: string;
   destination: string;
+  startsOn?: string | null;
+  endsOn?: string | null;
+  days?: number | null;
+  daysLeft?: number | null;
   datesText: string;
   durationText: string;
   leaveDate: string;
   returnDate: string;
   members: TripMember[];
   addToCalendar: boolean;
+  eventId?: string | null;
+  hasPackingList?: boolean;
+  packingListId?: string | null;
+  packingListName?: string | null;
+  packingTotalItems?: number;
+  packingPackedItems?: number;
   step1Done?: boolean;
   step2Done?: boolean;
+  bookingsTotalCount?: number;
+  bookingsDoneCount?: number;
   bookings: BookingItem[];
   documents: DocumentItem[];
   packingItems: TripPackingItem[];
+  cancelledAt?: string | null;
 }
-
