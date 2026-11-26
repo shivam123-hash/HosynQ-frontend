@@ -690,6 +690,89 @@ export const MilestoneDetailSkeleton: React.FC = () => {
   );
 };
 
+/** Skeleton for Family Vault Dashboard (VLT-01) */
+export const VaultHomeSkeleton: React.FC = () => {
+  return (
+    <View style={styles.pulseSectionContainer}>
+      <View style={[styles.tripCardSkeleton, { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }]}>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, flex: 1 }}>
+          <SkeletonBox width={20} height={20} borderRadius={10} />
+          <SkeletonBox width="68%" height={14} borderRadius={4} />
+        </View>
+        <SkeletonBox width={36} height={14} borderRadius={4} />
+      </View>
+
+      <View style={styles.listGrid}>
+        {[1, 2, 3, 4, 5, 6].map((idx) => (
+          <View key={idx} style={styles.listCardSkeleton}>
+            <SkeletonBox width={40} height={40} borderRadius={12} style={{ marginBottom: 14 }} />
+            <SkeletonBox width="82%" height={15} borderRadius={4} style={{ marginBottom: 6 }} />
+            <SkeletonBox width="55%" height={12} borderRadius={4} />
+          </View>
+        ))}
+      </View>
+
+      <SkeletonBox width={120} height={12} borderRadius={4} style={{ marginTop: 8, marginBottom: 12 }} />
+      <View style={styles.tripGroupSkeleton}>
+        {[1, 2].map((row) => (
+          <View key={row} style={styles.tripRowSkeleton}>
+            <SkeletonBox width={40} height={40} borderRadius={12} style={{ marginRight: 14 }} />
+            <View style={{ flex: 1 }}>
+              <SkeletonBox width="65%" height={14} borderRadius={4} style={{ marginBottom: 6 }} />
+              <SkeletonBox width="45%" height={11} borderRadius={4} />
+            </View>
+          </View>
+        ))}
+      </View>
+    </View>
+  );
+};
+
+/** Skeleton for Family Vault Category Lists (VLT-02 to VLT-06) */
+export const VaultListSkeleton: React.FC = () => {
+  return (
+    <View style={styles.pulseSectionContainer}>
+      {[1, 2, 3].map((card) => (
+        <View key={card} style={styles.tripCardSkeleton}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
+            <SkeletonBox width={80} height={12} borderRadius={4} />
+            <SkeletonBox width={96} height={20} borderRadius={10} />
+          </View>
+          <SkeletonBox width="76%" height={16} borderRadius={5} style={{ marginBottom: 8 }} />
+          <SkeletonBox width="58%" height={13} borderRadius={4} style={{ marginBottom: 6 }} />
+          <SkeletonBox width="44%" height={12} borderRadius={4} />
+        </View>
+      ))}
+    </View>
+  );
+};
+
+/** Skeleton for Vault Item Detail (VLT-07) */
+export const VaultDetailSkeleton: React.FC = () => {
+  return (
+    <View style={styles.pulseSectionContainer}>
+      <View style={[styles.tripCardSkeleton, { flexDirection: 'row', alignItems: 'center', marginBottom: 16 }]}>
+        <SkeletonBox width={48} height={60} borderRadius={8} style={{ marginRight: 14 }} />
+        <View style={{ flex: 1 }}>
+          <SkeletonBox width="75%" height={15} borderRadius={4} style={{ marginBottom: 6 }} />
+          <SkeletonBox width="48%" height={12} borderRadius={4} />
+        </View>
+      </View>
+      <View style={styles.tripGroupSkeleton}>
+        {[1, 2, 3, 4, 5].map((row) => (
+          <View key={row} style={styles.tripRowSkeleton}>
+            <SkeletonBox width={22} height={22} borderRadius={6} style={{ marginRight: 14 }} />
+            <View style={{ flex: 1 }}>
+              <SkeletonBox width="35%" height={11} borderRadius={4} style={{ marginBottom: 6 }} />
+              <SkeletonBox width="65%" height={14} borderRadius={4} />
+            </View>
+          </View>
+        ))}
+      </View>
+    </View>
+  );
+};
+
 export default {
   SkeletonBox,
   ListsSkeleton,
@@ -709,6 +792,9 @@ export default {
   PollResultsSkeleton,
   MilestonesSkeleton,
   MilestoneDetailSkeleton,
+  VaultHomeSkeleton,
+  VaultListSkeleton,
+  VaultDetailSkeleton,
 };
 
 const styles = StyleSheet.create({

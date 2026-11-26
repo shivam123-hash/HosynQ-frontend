@@ -12,6 +12,7 @@ import calendarReducer from './features/calendar/calendarSlice';
 import notificationsReducer from './features/notifications/notificationsSlice';
 import tripsReducer from './features/trips/tripsSlice';
 import pulseReducer from './features/pulse/pulseSlice';
+import vaultReducer from './features/vault/vaultSlice';
 import { setStore } from './storeRegistry';
 
 export const store = configureStore({
@@ -28,6 +29,7 @@ export const store = configureStore({
     notifications: notificationsReducer,
     trips: tripsReducer,
     pulse: pulseReducer,
+    vault: vaultReducer,
   },
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware({

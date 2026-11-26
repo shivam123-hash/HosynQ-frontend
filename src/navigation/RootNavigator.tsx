@@ -36,6 +36,7 @@ import {
   WarrantiesBillsScreen,
   HomeAssetsScreen,
   ImportantContactsScreen,
+  ScansUploadsScreen,
   VaultItemDetailScreen,
 } from '../screens/mainScreens/familyVault';
 import {
@@ -509,17 +510,19 @@ const RootNavigator: React.FC<RootNavigatorProps> = ({
                 props.navigation.navigate('Home');
               }
             }}
-            onViewAlert={() => props.navigation.navigate('VaultItemDetail')}
+            onViewAlert={(item) =>
+              item && props.navigation.navigate('VaultItemDetail', { item })
+            }
             onNavigateToCategory={(cat) => {
               if (cat === 'documents') props.navigation.navigate('VaultDocuments');
               else if (cat === 'insurance') props.navigation.navigate('VaultInsurance');
               else if (cat === 'warranties') props.navigation.navigate('VaultWarranties');
               else if (cat === 'assets') props.navigation.navigate('VaultHomeAssets');
               else if (cat === 'contacts') props.navigation.navigate('VaultImportantContacts');
+              else if (cat === 'scans') props.navigation.navigate('VaultScans');
               else props.navigation.navigate('VaultDocuments');
             }}
             onSelectItem={(item) => props.navigation.navigate('VaultItemDetail', { item })}
-            onAddToVault={() => props.navigation.navigate('VaultDocuments')}
           />
         )}
       </Stack.Screen>
@@ -527,8 +530,7 @@ const RootNavigator: React.FC<RootNavigatorProps> = ({
         {(props) => (
           <DocumentsRenewalsScreen
             onBack={() => props.navigation.goBack()}
-            onRenew={(item) => props.navigation.navigate('VaultItemDetail', { item })}
-            onSelectDocument={(item) => props.navigation.navigate('VaultItemDetail', { item })}
+            onSelectDoc={(item) => props.navigation.navigate('VaultItemDetail', { item })}
           />
         )}
       </Stack.Screen>
@@ -537,7 +539,6 @@ const RootNavigator: React.FC<RootNavigatorProps> = ({
           <InsuranceVaultScreen
             onBack={() => props.navigation.goBack()}
             onSelectPolicy={(item) => props.navigation.navigate('VaultItemDetail', { item })}
-            onRenewPolicy={(item) => props.navigation.navigate('VaultItemDetail', { item })}
           />
         )}
       </Stack.Screen>
@@ -545,8 +546,7 @@ const RootNavigator: React.FC<RootNavigatorProps> = ({
         {(props) => (
           <WarrantiesBillsScreen
             onBack={() => props.navigation.goBack()}
-            onSelectBill={(item) => props.navigation.navigate('VaultItemDetail', { item })}
-            onSelectWarranty={(item) => props.navigation.navigate('VaultItemDetail', { item })}
+            onSelectItem={(item) => props.navigation.navigate('VaultItemDetail', { item })}
           />
         )}
       </Stack.Screen>
@@ -566,11 +566,20 @@ const RootNavigator: React.FC<RootNavigatorProps> = ({
           />
         )}
       </Stack.Screen>
+      <Stack.Screen name="VaultScans">
+        {(props) => (
+          <ScansUploadsScreen
+            onBack={() => props.navigation.goBack()}
+            onSelectScan={(item) => props.navigation.navigate('VaultItemDetail', { item })}
+          />
+        )}
+      </Stack.Screen>
       <Stack.Screen name="VaultItemDetail">
         {(props) => (
           <VaultItemDetailScreen
             {...props}
             onBack={() => props.navigation.goBack()}
+            onSelectItem={(item) => props.navigation.push('VaultItemDetail', { item })}
           />
         )}
       </Stack.Screen>

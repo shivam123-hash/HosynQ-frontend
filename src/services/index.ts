@@ -22,5 +22,8 @@ export * from './tripServices';
 export { default as pulseServices } from './pulseServices';
 export * from './pulseServices';
 
+export { default as vaultServices } from './vaultServices';
+export * from './vaultServices';
+
 export * from './googleAuthService';
 export * from './appleAuthService';

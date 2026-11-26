@@ -7,8 +7,11 @@ import {
   WarrantiesBillsScreen,
   HomeAssetsScreen,
   ImportantContactsScreen,
+  ScansUploadsScreen,
   VaultItemDetailScreen,
+  AddEditVaultItemModal,
 } from '../familyVault';
+import { VaultCategory, VaultItemApi } from '../../../services/vaultServices';
 
 export type VaultScreenType =
   | 'vault'
@@ -17,6 +20,7 @@ export type VaultScreenType =
   | 'warranties'
   | 'assets'
   | 'contacts'
+  | 'scans'
   | 'detail';
 
 export interface FamilyVaultModalProps {
@@ -32,19 +36,53 @@ export const FamilyVaultModal: React.FC<FamilyVaultModalProps> = ({
   onSelectFile,
   initialScreen = 'vault',
 }) => {
-  const [currentScreen, setCurrentScreen] = useState<VaultScreenType>(initialScreen);
+  const [currentScreen, setCurrentScreen] =
+    useState<VaultScreenType>(initialScreen);
   const [history, setHistory] = useState<VaultScreenType[]>([initialScreen]);
+  const [selectedItem, setSelectedItem] = useState<VaultItemApi | null>(null);
+
+  const [addModalVisible, setAddModalVisible] = useState(false);
+  const [addInitialCategory, setAddInitialCategory] =
+    useState<VaultCategory>('INSURANCE');
+  const [addInitialKind, setAddInitialKind] = useState<string | undefined>(
+    undefined
+  );
+  const [editItem, setEditItem] = useState<VaultItemApi | null>(null);
+  const [renewMode, setRenewMode] = useState(false);
 
   useEffect(() => {
     if (visible) {
       setCurrentScreen(initialScreen);
       setHistory([initialScreen]);
+      setSelectedItem(null);
+      setAddModalVisible(false);
     }
   }, [visible, initialScreen]);
 
   const navigateTo = (screen: VaultScreenType) => {
     setHistory((prev) => [...prev, screen]);
     setCurrentScreen(screen);
+  };
+
+  const openDetail = (item?: VaultItemApi | null) => {
+    if (item) {
+      setSelectedItem(item);
+      onSelectFile?.(item.title);
+    }
+    navigateTo('detail');
+  };
+
+  const openAddModal = (
+    category: VaultCategory,
+    kind?: string,
+    itemToEdit: VaultItemApi | null = null,
+    isRenew = false
+  ) => {
+    setAddInitialCategory(category);
+    setAddInitialKind(kind);
+    setEditItem(itemToEdit);
+    setRenewMode(isRenew);
+    setAddModalVisible(true);
   };
 
   const handleBack = () => {
@@ -69,78 +107,92 @@ export const FamilyVaultModal: React.FC<FamilyVaultModalProps> = ({
         {currentScreen === 'vault' && (
           <FamilyVaultScreen
             onBack={onClose}
-            onViewAlert={() => navigateTo('detail')}
+            onViewAlert={(item) => {
+              if (item) openDetail(item);
+            }}
             onNavigateToCategory={(cat) => {
-              if (cat === 'documents') navigateTo('documents');
-              else if (cat === 'insurance') navigateTo('insurance');
-              else if (cat === 'warranties') navigateTo('warranties');
-              else if (cat === 'assets') navigateTo('assets');
-              else if (cat === 'contacts') navigateTo('contacts');
-              else navigateTo('documents');
+              navigateTo(cat);
             }}
-            onSelectItem={(item) => {
-              onSelectFile?.(item.title);
-              navigateTo('detail');
-            }}
-            onAddToVault={() => navigateTo('documents')}
+            onSelectItem={(item) => openDetail(item)}
+            onAddToVault={() => openAddModal('INSURANCE', 'MOTOR')}
           />
         )}
 
         {currentScreen === 'documents' && (
           <DocumentsRenewalsScreen
             onBack={handleBack}
-            onRenew={() => navigateTo('detail')}
-            onSelectDocument={(doc) => {
-              onSelectFile?.(doc.title);
-              navigateTo('detail');
-            }}
-            onAddDocument={() => {}}
+            onSelectDoc={(doc) => openDetail(doc)}
+            onAddDocument={() => openAddModal('IDENTITY', 'PASSPORT')}
           />
         )}
 
         {currentScreen === 'insurance' && (
           <InsuranceVaultScreen
             onBack={handleBack}
-            onSelectPolicy={() => navigateTo('detail')}
-            onRenewPolicy={() => navigateTo('detail')}
-            onAddPolicy={() => {}}
-            onAddHomeInsurance={() => {}}
+            onSelectPolicy={(policy) => openDetail(policy)}
+            onRenewPolicy={(policy) =>
+              openAddModal('INSURANCE', policy.kind || 'MOTOR', policy, true)
+            }
+            onAddPolicy={(kind) => openAddModal('INSURANCE', kind || 'MOTOR')}
           />
         )}
 
         {currentScreen === 'warranties' && (
           <WarrantiesBillsScreen
             onBack={handleBack}
-            onSelectBill={() => navigateTo('detail')}
-            onSelectWarranty={() => navigateTo('detail')}
-            onAddBillOrWarranty={() => {}}
+            onSelectItem={(item) => openDetail(item)}
+            onAddItem={(cat) => openAddModal(cat || 'UTILITIES')}
           />
         )}
 
         {currentScreen === 'assets' && (
           <HomeAssetsScreen
             onBack={handleBack}
-            onSelectAsset={() => navigateTo('detail')}
-            onAddAsset={() => {}}
+            onSelectAsset={(asset) => openDetail(asset)}
+            onAddAsset={() => openAddModal('ASSET', 'VEHICLE')}
           />
         )}
 
         {currentScreen === 'contacts' && (
           <ImportantContactsScreen
             onBack={handleBack}
-            onAddContact={() => {}}
-            onCallContact={() => {}}
-            onSelectContact={() => {}}
+            onSelectContact={(contact) => openDetail(contact)}
+            onAddContact={() => openAddModal('CONTACTS', 'DOCTOR')}
+          />
+        )}
+
+        {currentScreen === 'scans' && (
+          <ScansUploadsScreen
+            onBack={handleBack}
+            onSelectScan={(item) => openDetail(item)}
+            onScanNew={() => openAddModal('IDENTITY', 'PASSPORT')}
           />
         )}
 
         {currentScreen === 'detail' && (
           <VaultItemDetailScreen
+            item={selectedItem}
             onBack={handleBack}
-            onShare={() => {}}
-            onRenewNow={() => {}}
+            onSelectItem={(linked) => openDetail(linked)}
+            onDeleted={() => {
+              setSelectedItem(null);
+            }}
           />
         )}
+
+        <AddEditVaultItemModal
+          visible={addModalVisible}
+          initialCategory={addInitialCategory}
+          initialKind={addInitialKind}
+          itemToEdit={editItem}
+          renewMode={renewMode}
+          onClose={() => setAddModalVisible(false)}
+          onSaved={(savedItem) => {
+            if (currentScreen === 'detail') {
+              setSelectedItem(savedItem);
+            }
+          }}
+        />
       </View>
     </Modal>
   );

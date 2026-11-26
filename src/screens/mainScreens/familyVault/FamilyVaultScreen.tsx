@@ -1,236 +1,572 @@
-import React from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   View,
   Text,
   TouchableOpacity,
   StyleSheet,
   ScrollView,
-  StatusBar,
+  RefreshControl,
+  TextInput,
+  ActivityIndicator,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Feather from '@react-native-vector-icons/feather';
+import { useAppDispatch, useAppSelector } from '../../../redux';
+import { getMyFamilyBasicThunk } from '../../../redux/features/family/familySlice';
 import {
-  IdCardIcon,
-  UmbrellaIcon,
-  ReceiptIcon,
-  SofaIcon,
-  ContactCardIcon,
-} from './VaultIcons';
+  fetchVaultHomeThunk,
+  fetchVaultItemsThunk,
+} from '../../../redux/features/vault/vaultSlice';
+import {
+  VaultHomeResponse,
+  VaultItemApi,
+} from '../../../services/vaultServices';
+import { VaultHomeSkeleton } from '../../../components/SkeletonLoader';
+import AddEditVaultItemModal from './AddEditVaultItemModal';
+import {
+  extractVaultMembersFromFamilyState,
+  formatCategoryDisplayName,
+  formatDaysRemainingBadge,
+  formatVaultShortDate,
+  getDaysRemaining,
+  isJestTestEnv,
+  scheduleVaultAfterTransition,
+} from './vaultApiHelpers';
 
 export interface FamilyVaultScreenProps {
-  onBack?: () => void;
-  onSearch?: () => void;
-  onViewAlert?: () => void;
-  onNavigateToCategory?: (category: string) => void;
-  onSelectItem?: (item: any) => void;
+  onBack: () => void;
+  onViewAlert?: (item?: VaultItemApi) => void;
+  onNavigateToCategory?: (
+    category:
+      | 'documents'
+      | 'insurance'
+      | 'warranties'
+      | 'assets'
+      | 'contacts'
+      | 'scans'
+  ) => void;
+  onSelectItem?: (item: VaultItemApi) => void;
   onAddToVault?: () => void;
+  onSearch?: () => void;
+  homeOverride?: VaultHomeResponse;
 }
+
+const getCategoryVisual = (category?: string): { icon: string; color: string } => {
+  switch (String(category || '').toUpperCase()) {
+    case 'INSURANCE':
+      return { icon: 'shield', color: '#5B9BF1' };
+    case 'UTILITIES':
+    case 'WARRANTY':
+      return { icon: 'zap', color: '#6FD9A6' };
+    case 'ASSET':
+    case 'PROPERTY':
+      return { icon: 'truck', color: '#F0923A' };
+    case 'IDENTITY':
+    case 'LEGAL':
+      return { icon: 'file-text', color: '#5B9BF1' };
+    case 'CONTACTS':
+      return { icon: 'phone', color: '#E56B9F' };
+    case 'FINANCE':
+      return { icon: 'credit-card', color: '#F0CA45' };
+    default:
+      return { icon: 'folder', color: '#8A97AB' };
+  }
+};
 
 export const FamilyVaultScreen: React.FC<FamilyVaultScreenProps> = ({
   onBack,
-  onSearch,
   onViewAlert,
   onNavigateToCategory,
   onSelectItem,
   onAddToVault,
+  onSearch,
+  homeOverride,
 }) => {
   const insets = useSafeAreaInsets();
+  const dispatch = useAppDispatch();
+  const vaultState = useAppSelector((state) => state.vault);
+  const familyState = useAppSelector((state) => state.family);
+
+  const [refreshing, setRefreshing] = useState(false);
+  const [searchOpen, setSearchOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [addModalVisible, setAddModalVisible] = useState(false);
+  const searchTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const members = useMemo(
+    () => extractVaultMembersFromFamilyState(familyState),
+    [familyState]
+  );
+
+  useEffect(() => {
+    if (homeOverride || (isJestTestEnv() && vaultState.hasLoadedHome)) return;
+    const cancel = scheduleVaultAfterTransition(() => {
+      dispatch(fetchVaultHomeThunk(30));
+      if (members.length === 0 && !isJestTestEnv()) {
+        dispatch(getMyFamilyBasicThunk());
+      }
+    });
+    return cancel;
+  }, [dispatch, homeOverride, members.length, vaultState.hasLoadedHome]);
+
+  useEffect(() => {
+    if (!searchOpen) return;
+    if (searchTimeoutRef.current) {
+      clearTimeout(searchTimeoutRef.current);
+    }
+    const trimmed = searchQuery.trim();
+    if (!trimmed) {
+      return;
+    }
+    searchTimeoutRef.current = setTimeout(() => {
+      dispatch(fetchVaultItemsThunk({ q: trimmed }));
+    }, 280);
+    return () => {
+      if (searchTimeoutRef.current) {
+        clearTimeout(searchTimeoutRef.current);
+      }
+    };
+  }, [dispatch, searchOpen, searchQuery]);
+
+  const handleRefresh = useCallback(async () => {
+    setRefreshing(true);
+    try {
+      await dispatch(fetchVaultHomeThunk(30));
+      if (searchOpen && searchQuery.trim()) {
+        await dispatch(fetchVaultItemsThunk({ q: searchQuery.trim() }));
+      }
+    } finally {
+      setRefreshing(false);
+    }
+  }, [dispatch, searchOpen, searchQuery]);
+
+  const home = homeOverride || vaultState.home;
+  const isInitialLoading =
+    !homeOverride &&
+    !home &&
+    (!vaultState.hasLoadedHome || vaultState.loadingHome);
+
+  const categoryCountMap = useMemo(() => {
+    const map: Record<string, number> = {};
+    (home?.categories || []).forEach((c) => {
+      map[String(c.category).toUpperCase()] = Number(c.count || 0);
+    });
+    return map;
+  }, [home?.categories]);
+
+  const urgentItem = useMemo(() => {
+    if (!home) return null;
+    if (home.overdue && home.overdue.length > 0) return home.overdue[0];
+    if (home.upcoming && home.upcoming.length > 0) return home.upcoming[0];
+    return null;
+  }, [home]);
+
+  const urgentBannerText = useMemo(() => {
+    if (!urgentItem) return '';
+    const days = getDaysRemaining(urgentItem);
+    const badge = formatDaysRemainingBadge(days, urgentItem.dueLabel);
+    if (badge) {
+      return `${urgentItem.title} · ${badge.text}`;
+    }
+    return urgentItem.dueOn
+      ? `${urgentItem.title} · Due ${formatVaultShortDate(urgentItem.dueOn)}`
+      : urgentItem.title;
+  }, [urgentItem]);
+
+  const docCount =
+    (home?.lifeProfileDocuments?.length || 0) + (categoryCountMap.IDENTITY || 0);
+  const docExpiringCount = useMemo(() => {
+    const lpExpiring = (home?.lifeProfileDocuments || []).filter(
+      (d) => d.isExpired || (typeof d.daysRemaining === 'number' && d.daysRemaining <= 90)
+    ).length;
+    const identityExpiring = [
+      ...(home?.overdue || []),
+      ...(home?.upcoming || []),
+    ].filter((i) => String(i.category).toUpperCase() === 'IDENTITY').length;
+    return lpExpiring + identityExpiring;
+  }, [home]);
+
+  const insuranceCount = categoryCountMap.INSURANCE || 0;
+  const utilitiesCount = categoryCountMap.UTILITIES || 0;
+  const warrantiesCount = categoryCountMap.WARRANTY || 0;
+  const assetsCount =
+    (categoryCountMap.ASSET || 0) + (categoryCountMap.PROPERTY || 0);
+  const contactsCount = categoryCountMap.CONTACTS || 0;
+  const uploadedFilesCount = useMemo(() => {
+    const recentFiles = (home?.recent || []).filter((i) => i.hasFile).length;
+    const lpFiles = (home?.lifeProfileDocuments || []).filter((d) => d.hasFile).length;
+    return recentFiles + lpFiles;
+  }, [home]);
+
+  const categoryCards = useMemo(
+    () => [
+      {
+        key: 'documents' as const,
+        icon: 'file-text',
+        color: '#5B9BF1',
+        title: 'Documents &\nrenewals',
+        subtitle:
+          docCount === 0
+            ? 'No documents yet'
+            : docExpiringCount > 0
+            ? `${docCount} doc${docCount === 1 ? '' : 's'} · ${docExpiringCount} renewing`
+            : `${docCount} doc${docCount === 1 ? '' : 's'} saved`,
+        row1: true,
+      },
+      {
+        key: 'insurance' as const,
+        icon: 'shield',
+        color: '#F0923A',
+        title: 'Insurance',
+        subtitle:
+          insuranceCount === 0
+            ? 'No policies yet'
+            : `${insuranceCount} active ${insuranceCount === 1 ? 'policy' : 'policies'}`,
+        row1: true,
+      },
+      {
+        key: 'warranties' as const,
+        icon: 'zap',
+        color: '#6FD9A6',
+        title: 'Warranties & bills',
+        subtitle:
+          utilitiesCount + warrantiesCount === 0
+            ? 'No bills or warranties'
+            : `${utilitiesCount} bill${utilitiesCount === 1 ? '' : 's'} · ${warrantiesCount} warrant${
+                warrantiesCount === 1 ? 'y' : 'ies'
+              }`,
+      },
+      {
+        key: 'assets' as const,
+        icon: 'home',
+        color: '#E56B9F',
+        title: 'Home assets',
+        subtitle:
+          assetsCount === 0
+            ? 'No assets added'
+            : `${assetsCount} asset${assetsCount === 1 ? '' : 's'} tracked`,
+      },
+      {
+        key: 'contacts' as const,
+        icon: 'phone',
+        color: '#F0CA45',
+        title: 'Important contacts',
+        subtitle:
+          contactsCount === 0
+            ? 'Doctors & emergency'
+            : `${contactsCount} saved contact${contactsCount === 1 ? '' : 's'}`,
+      },
+      {
+        key: 'scans' as const,
+        icon: 'upload',
+        color: '#8A97AB',
+        title: 'Scans and uploads',
+        subtitle:
+          uploadedFilesCount > 0
+            ? `${uploadedFilesCount} file${uploadedFilesCount === 1 ? '' : 's'} attached`
+            : 'Documents & photos',
+      },
+    ],
+    [
+      assetsCount,
+      contactsCount,
+      docCount,
+      docExpiringCount,
+      insuranceCount,
+      uploadedFilesCount,
+      utilitiesCount,
+      warrantiesCount,
+    ]
+  );
+
+  const recentItems = home?.recent || [];
+  const searchResults = searchQuery.trim() ? vaultState.items : [];
+
+  const handleSearchToggle = () => {
+    if (onSearch) {
+      onSearch();
+    }
+    setSearchOpen((prev) => {
+      if (prev) {
+        setSearchQuery('');
+      }
+      return !prev;
+    });
+  };
+
+  const handleAddPress = () => {
+    if (onAddToVault) {
+      onAddToVault();
+      return;
+    }
+    setAddModalVisible(true);
+  };
 
   return (
-    <View style={[styles.container, { paddingTop: insets.top + 8 }]}>
-      <StatusBar barStyle="light-content" />
-
-      {/* Header */}
+    <View style={[styles.container, { paddingTop: insets.top }]}>
       <View style={styles.header}>
         <TouchableOpacity
-          onPress={onBack}
-          activeOpacity={0.7}
           style={styles.circleBtn}
+          onPress={onBack}
+          activeOpacity={0.75}
           accessibilityRole="button"
           accessibilityLabel="Back"
         >
           <Feather name="chevron-left" size={22} color="#FFFFFF" />
         </TouchableOpacity>
-
         <Text style={styles.headerTitle}>Family Vault</Text>
-
         <TouchableOpacity
-          onPress={onSearch}
-          activeOpacity={0.7}
-          style={styles.circleBtn}
+          style={[styles.circleBtn, searchOpen && styles.circleBtnActive]}
+          onPress={handleSearchToggle}
+          activeOpacity={0.75}
           accessibilityRole="button"
-          accessibilityLabel="Search"
+          accessibilityLabel="Search vault"
         >
-          <Feather name="search" size={20} color="#FFFFFF" />
+          <Feather name={searchOpen ? 'x' : 'search'} size={18} color="#FFFFFF" />
         </TouchableOpacity>
       </View>
 
-      <ScrollView
-        style={{ flex: 1 }}
-        contentContainerStyle={[
-          styles.content,
-          { paddingBottom: Math.max(insets.bottom, 16) + 110 },
-        ]}
-        showsVerticalScrollIndicator={false}
-      >
-        {/* Alert Banner */}
-        <TouchableOpacity
-          style={styles.alertBanner}
-          onPress={onViewAlert}
-          activeOpacity={0.8}
-          accessibilityRole="button"
-          accessibilityLabel="Car insurance renews in 19 days"
+      {isInitialLoading ? (
+        <VaultHomeSkeleton />
+      ) : (
+        <ScrollView
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={[
+            styles.content,
+            { paddingBottom: 100 + insets.bottom },
+          ]}
+          refreshControl={
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={handleRefresh}
+              tintColor="#F0923A"
+              colors={['#F0923A']}
+            />
+          }
         >
-          <Feather name="alert-circle" size={19} color="#F7C08E" />
-          <Text style={styles.alertText}>Car insurance renews in 19 days</Text>
-          <Text style={styles.alertAction}>View</Text>
-        </TouchableOpacity>
+          {searchOpen && (
+            <View style={styles.searchWrap}>
+              <View style={styles.searchBar}>
+                <Feather
+                  name="search"
+                  size={17}
+                  color="#8A97AB"
+                  style={styles.searchIcon}
+                />
+                <TextInput
+                  style={styles.searchInput}
+                  placeholder="Search policies, docs, assets, contacts..."
+                  placeholderTextColor="#7A89A0"
+                  value={searchQuery}
+                  onChangeText={setSearchQuery}
+                  autoFocus
+                  returnKeyType="search"
+                />
+                {searchQuery.length > 0 && (
+                  <TouchableOpacity
+                    onPress={() => setSearchQuery('')}
+                    accessibilityRole="button"
+                    accessibilityLabel="Clear search"
+                  >
+                    <Feather name="x-circle" size={16} color="#8A97AB" />
+                  </TouchableOpacity>
+                )}
+              </View>
 
-        {/* 2-Column Grid of 6 Categories */}
-        <View style={styles.grid}>
-          {/* Card 1: Documents and renewals */}
-          <TouchableOpacity
-            style={[styles.gridCard, styles.row1Card]}
-            onPress={() => onNavigateToCategory?.('documents')}
-            activeOpacity={0.75}
-            accessibilityRole="button"
-            accessibilityLabel="Documents and renewals"
-          >
-            <View style={[styles.iconBox, { borderColor: '#5B9BF1' }]}>
-              <IdCardIcon size={20} color="#5B9BF1" />
+              {searchQuery.trim().length > 0 && (
+                <View style={styles.searchResultsCard}>
+                  {vaultState.loadingItems ? (
+                    <View style={styles.searchStateRow}>
+                      <ActivityIndicator size="small" color="#F0923A" />
+                      <Text style={styles.searchStateText}>Searching vault...</Text>
+                    </View>
+                  ) : searchResults.length === 0 ? (
+                    <View style={styles.searchStateRow}>
+                      <Feather name="inbox" size={16} color="#8A97AB" />
+                      <Text style={styles.searchStateText}>
+                        No matching items for "{searchQuery.trim()}"
+                      </Text>
+                    </View>
+                  ) : (
+                    searchResults.map((item, idx) => {
+                      const vis = getCategoryVisual(item.category);
+                      return (
+                        <React.Fragment key={item.id}>
+                          {idx > 0 && <View style={styles.divider} />}
+                          <TouchableOpacity
+                            style={styles.recentRow}
+                            activeOpacity={0.75}
+                            onPress={() => onSelectItem?.(item)}
+                          >
+                            <View style={[styles.iconBox, { borderColor: vis.color, marginBottom: 0 }]}>
+                              <Feather name={vis.icon as any} size={18} color={vis.color} />
+                            </View>
+                            <View style={styles.recentInfo}>
+                              <Text style={styles.recentTitle} numberOfLines={1}>
+                                {item.title}
+                              </Text>
+                              <Text style={styles.recentSubtitle} numberOfLines={1}>
+                                {[
+                                  formatCategoryDisplayName(item.category),
+                                  item.provider,
+                                  item.dueOn ? `Due ${formatVaultShortDate(item.dueOn)}` : null,
+                                ]
+                                  .filter(Boolean)
+                                  .join(' · ')}
+                              </Text>
+                            </View>
+                            <Feather name="chevron-right" size={18} color="#8A97AB" />
+                          </TouchableOpacity>
+                        </React.Fragment>
+                      );
+                    })
+                  )}
+                </View>
+              )}
             </View>
-            <Text style={styles.cardTitle}>Documents and renewals</Text>
-            <Text style={styles.cardSubtitle}>8 items · 1 due soon</Text>
-          </TouchableOpacity>
+          )}
 
-          {/* Card 2: Insurance */}
-          <TouchableOpacity
-            style={[styles.gridCard, styles.row1Card]}
-            onPress={() => onNavigateToCategory?.('insurance')}
-            activeOpacity={0.75}
-            accessibilityRole="button"
-            accessibilityLabel="Insurance"
-          >
-            <View style={[styles.iconBox, { borderColor: '#A884F0' }]}>
-              <UmbrellaIcon size={20} color="#A884F0" />
+          {urgentItem && (
+            <View style={styles.alertBanner}>
+              <Feather name="alert-triangle" size={18} color="#F7C08E" />
+              <Text style={styles.alertText} numberOfLines={1}>
+                {urgentBannerText}
+              </Text>
+              <TouchableOpacity
+                onPress={() =>
+                  onViewAlert
+                    ? onViewAlert(urgentItem)
+                    : onSelectItem?.(urgentItem)
+                }
+                activeOpacity={0.75}
+                hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                accessibilityRole="button"
+                accessibilityLabel="View"
+              >
+                <Text style={styles.alertAction}>View</Text>
+              </TouchableOpacity>
             </View>
-            <Text style={styles.cardTitle}>Insurance</Text>
-            <Text style={styles.cardSubtitle}>4 policies</Text>
-          </TouchableOpacity>
+          )}
 
-          {/* Card 3: Warranties and bills */}
-          <TouchableOpacity
-            style={styles.gridCard}
-            onPress={() => onNavigateToCategory?.('warranties')}
-            activeOpacity={0.75}
-            accessibilityRole="button"
-            accessibilityLabel="Warranties and bills"
-          >
-            <View style={[styles.iconBox, { borderColor: '#F06A6A' }]}>
-              <ReceiptIcon size={18} color="#F06A6A" />
-            </View>
-            <Text style={styles.cardTitle}>Warranties and bills</Text>
-            <Text style={styles.cardSubtitle}>6 items · 1 due</Text>
-          </TouchableOpacity>
+          <View style={styles.grid}>
+            {categoryCards.map((cat) => (
+              <TouchableOpacity
+                key={cat.key}
+                style={[styles.gridCard, cat.row1 && styles.row1Card]}
+                activeOpacity={0.78}
+                onPress={() => onNavigateToCategory?.(cat.key)}
+                accessibilityRole="button"
+                accessibilityLabel={cat.title.replace('\n', ' ')}
+              >
+                <View style={[styles.iconBox, { borderColor: cat.color }]}>
+                  <Feather name={cat.icon as any} size={20} color={cat.color} />
+                </View>
+                <Text style={styles.cardTitle}>{cat.title}</Text>
+                <Text style={styles.cardSubtitle}>{cat.subtitle}</Text>
+              </TouchableOpacity>
+            ))}
+          </View>
 
-          {/* Card 4: Home assets */}
-          <TouchableOpacity
-            style={styles.gridCard}
-            onPress={() => onNavigateToCategory?.('assets')}
-            activeOpacity={0.75}
-            accessibilityRole="button"
-            accessibilityLabel="Home assets"
-          >
-            <View style={[styles.iconBox, { borderColor: '#F0923A' }]}>
-              <SofaIcon size={20} color="#F0923A" />
+          <Text style={styles.sectionHeading}>RECENTLY ADDED</Text>
+          {recentItems.length === 0 ? (
+            <View style={styles.emptyCard}>
+              <Feather name="lock" size={22} color="#5B9BF1" />
+              <Text style={styles.emptyTitle}>Your Family Vault is ready</Text>
+              <Text style={styles.emptySubtitle}>
+                Store insurance policies, household bills, home assets, documents, and emergency contacts securely.
+              </Text>
+              <TouchableOpacity
+                style={styles.emptyBtn}
+                onPress={handleAddPress}
+                activeOpacity={0.8}
+              >
+                <Text style={styles.emptyBtnText}>Add first item</Text>
+              </TouchableOpacity>
             </View>
-            <Text style={styles.cardTitle}>Home assets</Text>
-            <Text style={styles.cardSubtitle}>4 items</Text>
-          </TouchableOpacity>
+          ) : (
+            <View style={styles.recentCard}>
+              {recentItems.map((item, idx) => {
+                const vis = getCategoryVisual(item.category);
+                const sub = [
+                  item.provider || formatCategoryDisplayName(item.category),
+                  item.dueOn
+                    ? `Due ${formatVaultShortDate(item.dueOn)}`
+                    : item.createdAt
+                    ? formatVaultShortDate(item.createdAt)
+                    : null,
+                ]
+                  .filter(Boolean)
+                  .join(' · ');
 
-          {/* Card 5: Important contacts */}
-          <TouchableOpacity
-            style={styles.gridCard}
-            onPress={() => onNavigateToCategory?.('contacts')}
-            activeOpacity={0.75}
-            accessibilityRole="button"
-            accessibilityLabel="Important contacts"
-          >
-            <View style={[styles.iconBox, { borderColor: '#4CC38A' }]}>
-              <ContactCardIcon size={20} color="#4CC38A" />
+                return (
+                  <React.Fragment key={item.id}>
+                    {idx > 0 && <View style={styles.divider} />}
+                    <TouchableOpacity
+                      style={styles.recentRow}
+                      activeOpacity={0.75}
+                      onPress={() => onSelectItem?.(item)}
+                      accessibilityRole="button"
+                    >
+                      <View
+                        style={[
+                          styles.iconBox,
+                          { borderColor: vis.color, marginBottom: 0 },
+                        ]}
+                      >
+                        <Feather
+                          name={vis.icon as any}
+                          size={20}
+                          color={vis.color}
+                        />
+                      </View>
+                      <View style={styles.recentInfo}>
+                        <Text style={styles.recentTitle} numberOfLines={1}>
+                          {item.title}
+                        </Text>
+                        <Text style={styles.recentSubtitle} numberOfLines={1}>
+                          {sub}
+                        </Text>
+                      </View>
+                      <Feather name="chevron-right" size={18} color="#8A97AB" />
+                    </TouchableOpacity>
+                  </React.Fragment>
+                );
+              })}
             </View>
-            <Text style={styles.cardTitle}>Important contacts</Text>
-            <Text style={styles.cardSubtitle}>12 people</Text>
-          </TouchableOpacity>
+          )}
+        </ScrollView>
+      )}
 
-          {/* Card 6: Scans and uploads */}
-          <TouchableOpacity
-            style={styles.gridCard}
-            onPress={() => onNavigateToCategory?.('scans')}
-            activeOpacity={0.75}
-            accessibilityRole="button"
-            accessibilityLabel="Scans and uploads"
-          >
-            <View style={[styles.iconBox, { borderColor: '#3DC4C4' }]}>
-              <Feather name="image" size={20} color="#3DC4C4" />
-            </View>
-            <Text style={styles.cardTitle}>Scans and uploads</Text>
-            <Text style={styles.cardSubtitle}>24 files</Text>
-          </TouchableOpacity>
-        </View>
-
-        {/* RECENTLY ADDED */}
-        <Text style={styles.sectionHeading}>RECENTLY ADDED</Text>
-        <View style={styles.recentCard}>
-          {/* Item 1: St. Mary's circular */}
-          <TouchableOpacity
-            style={styles.recentRow}
-            onPress={() => onSelectItem?.({ title: 'St. Mary’s circular' })}
-            activeOpacity={0.7}
-          >
-            <View style={[styles.iconBox, { borderColor: '#3DC4C4' }]}>
-              <Feather name="file-text" size={18} color="#3DC4C4" />
-            </View>
-            <View style={styles.recentInfo}>
-              <Text style={styles.recentTitle}>St. Mary’s circular</Text>
-              <Text style={styles.recentSubtitle}>Scans · 28 Oct · Priya</Text>
-            </View>
-            <Feather name="chevron-right" size={18} color="#5D6C83" />
-          </TouchableOpacity>
-
-          <View style={styles.divider} />
-
-          {/* Item 2: Electricity bill · October */}
-          <TouchableOpacity
-            style={styles.recentRow}
-            onPress={() => onSelectItem?.({ title: 'Electricity bill · October' })}
-            activeOpacity={0.7}
-          >
-            <View style={[styles.iconBox, { borderColor: '#F06A6A' }]}>
-              <ReceiptIcon size={18} color="#F06A6A" />
-            </View>
-            <View style={styles.recentInfo}>
-              <Text style={styles.recentTitle}>Electricity bill · October</Text>
-              <Text style={styles.recentSubtitle}>Bills · 27 Oct · Rohan</Text>
-            </View>
-            <Feather name="chevron-right" size={18} color="#5D6C83" />
-          </TouchableOpacity>
-        </View>
-      </ScrollView>
-
-      {/* Floating / Pinned Bottom Action Button */}
-      <View style={[styles.bottomBar, { paddingBottom: Math.max(insets.bottom, 16) + 6 }]}>
+      <View
+        style={[
+          styles.bottomBar,
+          { paddingBottom: Math.max(insets.bottom, 16) },
+        ]}
+      >
         <TouchableOpacity
           style={styles.addButton}
-          onPress={onAddToVault}
-          activeOpacity={0.8}
+          onPress={handleAddPress}
+          activeOpacity={0.85}
           accessibilityRole="button"
           accessibilityLabel="Add to Vault"
         >
-          <Feather name="plus" size={20} color="#FFFFFF" style={{ marginRight: 6 }} />
+          <Feather
+            name="plus"
+            size={20}
+            color="#FFFFFF"
+            style={{ marginRight: 6 }}
+          />
           <Text style={styles.addButtonText}>Add to Vault</Text>
         </TouchableOpacity>
       </View>
+
+      <AddEditVaultItemModal
+        visible={addModalVisible}
+        onClose={() => setAddModalVisible(false)}
+        onSaved={() => {
+          dispatch(fetchVaultHomeThunk(30));
+        }}
+      />
     </View>
   );
 };
@@ -257,6 +593,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
+  circleBtnActive: {
+    backgroundColor: '#122440',
+    borderColor: '#F0923A',
+  },
   headerTitle: {
     fontSize: 20,
     fontFamily: 'Roboto-Bold',
@@ -266,6 +606,48 @@ const styles = StyleSheet.create({
   content: {
     paddingHorizontal: 20,
     paddingTop: 8,
+  },
+  searchWrap: {
+    marginBottom: 16,
+  },
+  searchBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    height: 46,
+    borderRadius: 23,
+    backgroundColor: '#122440',
+    borderWidth: 1,
+    borderColor: '#3A4555',
+    paddingHorizontal: 14,
+  },
+  searchIcon: {
+    marginRight: 8,
+  },
+  searchInput: {
+    flex: 1,
+    fontSize: 14.5,
+    color: '#FFFFFF',
+    paddingVertical: 0,
+  },
+  searchResultsCard: {
+    marginTop: 10,
+    backgroundColor: '#122440',
+    borderRadius: 18,
+    borderWidth: 1,
+    borderColor: '#1F3352',
+    overflow: 'hidden',
+  },
+  searchStateRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 16,
+    paddingHorizontal: 16,
+    gap: 8,
+  },
+  searchStateText: {
+    fontSize: 13.5,
+    color: '#8A97AB',
   },
   alertBanner: {
     flexDirection: 'row',
@@ -371,6 +753,40 @@ const styles = StyleSheet.create({
   divider: {
     height: 1,
     backgroundColor: '#1F3352',
+  },
+  emptyCard: {
+    backgroundColor: '#122440',
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: '#1F3352',
+    padding: 22,
+    alignItems: 'center',
+  },
+  emptyTitle: {
+    fontSize: 15.5,
+    fontFamily: 'Roboto-SemiBold',
+    color: '#FFFFFF',
+    marginTop: 10,
+    marginBottom: 6,
+  },
+  emptySubtitle: {
+    fontSize: 13,
+    color: '#8A97AB',
+    textAlign: 'center',
+    lineHeight: 18,
+    marginBottom: 14,
+  },
+  emptyBtn: {
+    paddingHorizontal: 18,
+    paddingVertical: 9,
+    borderRadius: 18,
+    borderWidth: 1,
+    borderColor: '#F0923A',
+  },
+  emptyBtnText: {
+    fontSize: 13.5,
+    fontFamily: 'Roboto-SemiBold',
+    color: '#F0923A',
   },
   bottomBar: {
     position: 'absolute',

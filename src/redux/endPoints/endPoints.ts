@@ -188,6 +188,12 @@ const API_ROUTES = {
   PULSE_MILESTONE_BY_ID: (id: string) => `pulse/milestones/${id}`,
   PULSE_MILESTONE_PHOTOS: (id: string) => `pulse/milestones/${id}/photos`,
   PULSE_MILESTONE_REACTION: (id: string) => `pulse/milestones/${id}/reaction`,
+
+  // Family Vault Endpoints (Postman Requests #1-#9)
+  VAULT_HOME: 'vault',
+  VAULT_LIFE_PROFILE_DOCS: 'vault/life-profile-documents',
+  VAULT_ITEMS: 'vault/items',
+  VAULT_ITEM_BY_ID: (id: string) => `vault/items/${id}`,
 };
 
 export default API_ROUTES;
