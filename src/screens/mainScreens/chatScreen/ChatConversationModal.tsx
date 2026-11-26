@@ -1054,12 +1054,6 @@ export const ChatConversationModal: React.FC<ChatConversationModalProps> = ({
             onClose={() => setSelectedMessageForReactions(null)}
             onSelectReaction={handleSelectReaction}
             onSelectQuickReply={(reply) => handleSendMessage(reply)}
-            onTurnIntoTask={(task) => {
-              Alert.alert('Task Created', `"${task}" created.`);
-            }}
-            onTurnIntoReminder={(reminder) => {
-              Alert.alert('Reminder Created', `"${reminder}" created.`);
-            }}
             onReply={(msg) => {
               setReplyingTo(msg);
             }}

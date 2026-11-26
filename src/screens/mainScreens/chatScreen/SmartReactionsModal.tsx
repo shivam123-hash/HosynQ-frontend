@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -12,7 +12,6 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Feather from '@react-native-vector-icons/feather';
 import Colors from '../../../units/Colors';
-import { ChatMessage } from './types';
 
 export interface SmartReactionsModalProps {
   visible: boolean;
@@ -20,12 +19,20 @@ export interface SmartReactionsModalProps {
   onClose: () => void;
   onSelectReaction: (emoji: string) => void;
   onSelectQuickReply: (replyText: string) => void;
-  onTurnIntoTask: (taskTitle: string) => void;
-  onTurnIntoReminder: (reminderTitle: string) => void;
+  onTurnIntoTask?: (taskTitle: string) => void;
+  onTurnIntoReminder?: (reminderTitle: string) => void;
   onReply: (message: any) => void;
 }
 
-const EMOJIS = ['❤️', '👍', '😊', '✅', '+'];
+const QUICK_EMOJIS = ['❤️', '👍', '😊', '✅'];
+
+const EXTENDED_EMOJIS = [
+  '❤️', '👍', '😊', '✅', '😂', '🔥',
+  '🎉', '🙏', '👏', '💯', '🤔', '😍',
+  '🥰', '🤣', '😭', '😮', '😢', '😡',
+  '🤩', '🥳', '🙌', '🤝', '💪', '✨',
+  '💔', '🚀', '⚡', '☕', '🎂', '🍕',
+];
 
 const DEFAULT_QUICK_REPLIES = [
   'I’ll get you at 7:30',
@@ -39,12 +46,17 @@ export const SmartReactionsModal: React.FC<SmartReactionsModalProps> = ({
   onClose,
   onSelectReaction,
   onSelectQuickReply,
-  onTurnIntoTask,
-  onTurnIntoReminder,
   onReply,
 }) => {
   const insets = useSafeAreaInsets();
   const [selectedEmoji, setSelectedEmoji] = useState('👍');
+  const [showMoreEmojis, setShowMoreEmojis] = useState(false);
+
+  useEffect(() => {
+    if (!visible) {
+      setShowMoreEmojis(false);
+    }
+  }, [visible]);
 
   const handleCopy = () => {
     if (message?.text) {
@@ -75,7 +87,7 @@ export const SmartReactionsModal: React.FC<SmartReactionsModalProps> = ({
         <View style={styles.overlay}>
           {/* Floating Emoji Bar */}
           <View style={styles.floatingEmojiBar}>
-            {EMOJIS.map((emoji) => {
+            {QUICK_EMOJIS.map((emoji) => {
               const isSelected = selectedEmoji === emoji;
               return (
                 <TouchableOpacity
@@ -91,6 +103,22 @@ export const SmartReactionsModal: React.FC<SmartReactionsModalProps> = ({
                 </TouchableOpacity>
               );
             })}
+
+            {/* Plus button to show / hide extended emojis */}
+            <TouchableOpacity
+              style={[
+                styles.emojiBtn,
+                showMoreEmojis && styles.emojiBtnSelected,
+              ]}
+              onPress={() => setShowMoreEmojis((prev) => !prev)}
+              activeOpacity={0.7}
+            >
+              <Feather
+                name={showMoreEmojis ? 'chevron-down' : 'plus'}
+                size={20}
+                color={showMoreEmojis ? Colors.primary : Colors.white}
+              />
+            </TouchableOpacity>
           </View>
 
           {/* Bottom Sheet */}
@@ -107,7 +135,34 @@ export const SmartReactionsModal: React.FC<SmartReactionsModalProps> = ({
               <Text style={styles.sheetTitle}>Smart reactions</Text>
 
               <ScrollView showsVerticalScrollIndicator={false}>
-                {/* Section 1: QUICK REPLIES */}
+                {/* Extended Emojis Grid (When + button is clicked) */}
+                {showMoreEmojis && (
+                  <View style={styles.moreEmojisContainer}>
+                    <View style={styles.moreEmojisHeaderRow}>
+                      <Text style={styles.sectionHeaderUpper}>ALL REACTIONS</Text>
+                      <TouchableOpacity
+                        onPress={() => setShowMoreEmojis(false)}
+                        hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                      >
+                        <Feather name="x" size={16} color={Colors.textSecondary} />
+                      </TouchableOpacity>
+                    </View>
+                    <View style={styles.moreEmojisGrid}>
+                      {EXTENDED_EMOJIS.map((emoji) => (
+                        <TouchableOpacity
+                          key={emoji}
+                          style={styles.moreEmojiBtn}
+                          onPress={() => handleReactionPress(emoji)}
+                          activeOpacity={0.7}
+                        >
+                          <Text style={styles.moreEmojiText}>{emoji}</Text>
+                        </TouchableOpacity>
+                      ))}
+                    </View>
+                  </View>
+                )}
+
+                {/* Section: QUICK REPLIES */}
                 <Text style={styles.sectionHeaderUpper}>QUICK REPLIES</Text>
                 <View style={styles.quickRepliesWrap}>
                   {DEFAULT_QUICK_REPLIES.map((reply) => (
@@ -121,85 +176,6 @@ export const SmartReactionsModal: React.FC<SmartReactionsModalProps> = ({
                     </TouchableOpacity>
                   ))}
                 </View>
-
-                {/* Section 2: TURN INTO */}
-                <View style={styles.turnIntoHeaderRow}>
-                  <Feather
-                    name="star"
-                    size={14}
-                    color={Colors.primary}
-                    style={styles.starIcon}
-                  />
-                  <Text style={styles.turnIntoLabel}>TURN INTO</Text>
-                </View>
-
-                <View style={styles.turnIntoCard}>
-                  {/* Task Row */}
-                  <TouchableOpacity
-                    style={styles.turnIntoRow}
-                    onPress={() => {
-                      onTurnIntoTask('Pick up Anaya at 7:30 PM');
-                      onClose();
-                    }}
-                    activeOpacity={0.7}
-                  >
-                    <View style={styles.taskIconBox}>
-                      <Feather
-                        name="check-square"
-                        size={18}
-                        color={Colors.primary}
-                      />
-                    </View>
-                    <View style={styles.turnIntoTextGroup}>
-                      <Text style={styles.turnIntoTitle}>
-                        Task: Pick up Anaya at 7:30 PM
-                      </Text>
-                      <Text style={styles.turnIntoSubtitle}>
-                        Assign to Rohan · Lodhi Sports Complex
-                      </Text>
-                    </View>
-                    <Feather
-                      name="chevron-right"
-                      size={18}
-                      color={Colors.textSecondary}
-                    />
-                  </TouchableOpacity>
-
-                  <View style={styles.divider} />
-
-                  {/* Reminder Row */}
-                  <TouchableOpacity
-                    style={styles.turnIntoRow}
-                    onPress={() => {
-                      onTurnIntoReminder('Leave office at 7:05 PM');
-                      onClose();
-                    }}
-                    activeOpacity={0.7}
-                  >
-                    <View style={styles.reminderIconBox}>
-                      <Feather
-                        name="bell"
-                        size={18}
-                        color={Colors.accentPurple}
-                      />
-                    </View>
-                    <View style={styles.turnIntoTextGroup}>
-                      <Text style={styles.turnIntoTitle}>
-                        Reminder: Leave office at 7:05 PM
-                      </Text>
-                      <Text style={styles.turnIntoSubtitle}>For Rohan</Text>
-                    </View>
-                    <Feather
-                      name="chevron-right"
-                      size={18}
-                      color={Colors.textSecondary}
-                    />
-                  </TouchableOpacity>
-                </View>
-
-                <Text style={styles.footnoteText}>
-                  Nothing is added until you confirm.
-                </Text>
 
                 {/* Bottom Action Buttons (Reply / Copy) */}
                 <View style={styles.actionsRow}>
@@ -267,6 +243,7 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     alignItems: 'center',
     justifyContent: 'center',
+    backgroundColor: Colors.surfaceSubtle,
   },
   emojiBtnSelected: {
     backgroundColor: 'rgba(240, 145, 58, 0.2)',
@@ -303,6 +280,37 @@ const styles = StyleSheet.create({
     letterSpacing: -0.3,
     marginBottom: 16,
   },
+  moreEmojisContainer: {
+    backgroundColor: Colors.cardElevated,
+    borderRadius: 20,
+    padding: 16,
+    marginBottom: 20,
+    borderWidth: 1,
+    borderColor: Colors.border,
+  },
+  moreEmojisHeaderRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 12,
+  },
+  moreEmojisGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 10,
+    justifyContent: 'space-between',
+  },
+  moreEmojiBtn: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: Colors.surfaceSubtle,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  moreEmojiText: {
+    fontSize: 22,
+  },
   sectionHeaderUpper: {
     fontSize: 12,
     fontFamily: 'Roboto-Bold',
@@ -314,7 +322,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: 8,
-    marginBottom: 20,
+    marginBottom: 24,
   },
   replyChip: {
     paddingHorizontal: 16,
@@ -328,74 +336,6 @@ const styles = StyleSheet.create({
     color: Colors.white,
     fontSize: 14,
     fontFamily: 'Roboto-Medium',
-  },
-  turnIntoHeaderRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 10,
-  },
-  starIcon: {
-    marginRight: 6,
-  },
-  turnIntoLabel: {
-    fontSize: 12,
-    fontFamily: 'Roboto-Bold',
-    color: Colors.primary,
-    letterSpacing: 0.8,
-  },
-  turnIntoCard: {
-    backgroundColor: Colors.cardElevated,
-    borderRadius: 20,
-    borderWidth: 1,
-    borderColor: Colors.border,
-    marginBottom: 14,
-  },
-  turnIntoRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: 14,
-  },
-  taskIconBox: {
-    width: 40,
-    height: 40,
-    borderRadius: 12,
-    backgroundColor: 'rgba(240, 145, 58, 0.15)',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginRight: 12,
-  },
-  reminderIconBox: {
-    width: 40,
-    height: 40,
-    borderRadius: 12,
-    backgroundColor: 'rgba(157, 101, 229, 0.15)',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginRight: 12,
-  },
-  turnIntoTextGroup: {
-    flex: 1,
-    marginRight: 8,
-  },
-  turnIntoTitle: {
-    fontSize: 14,
-    fontFamily: 'Roboto-Bold',
-    color: Colors.white,
-    marginBottom: 2,
-  },
-  turnIntoSubtitle: {
-    fontSize: 12,
-    color: Colors.textSecondary,
-  },
-  divider: {
-    height: 1,
-    backgroundColor: Colors.borderSubtle,
-  },
-  footnoteText: {
-    fontSize: 13,
-    color: Colors.textSecondary,
-    textAlign: 'center',
-    marginBottom: 18,
   },
   actionsRow: {
     flexDirection: 'row',
