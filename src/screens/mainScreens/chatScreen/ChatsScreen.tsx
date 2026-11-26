@@ -204,7 +204,7 @@ export const ChatsScreen: React.FC<ChatsScreenProps> = ({
       });
     }
 
-    // 2. Just Us (Adults)
+    // 2. Just Us (Adults) - Only include actual created Just Us threads
     const justUsList = chatState.threads.justUs;
     if (Array.isArray(justUsList) && justUsList.length > 0) {
       justUsList.forEach((ju) => {
@@ -221,18 +221,6 @@ export const ChatsScreen: React.FC<ChatsScreenProps> = ({
           avatarColor: 'rgba(157, 101, 229, 0.2)',
           partner: ju.partner,
         });
-      });
-    } else {
-      items.push({
-        id: 'just_us',
-        kind: 'JUST_US',
-        title: 'Just Us',
-        subtitle: 'Tap to start private chat with partner',
-        timeText: '',
-        unreadCount: 0,
-        isPrivate: true,
-        iconType: 'lock',
-        avatarColor: 'rgba(157, 101, 229, 0.2)',
       });
     }
 
@@ -331,7 +319,7 @@ export const ChatsScreen: React.FC<ChatsScreenProps> = ({
     }
   }, [autoOpenFamilyChat, handleOpenFamilyChat, onFamilyChatOpened]);
 
-  // Open Just Us modal
+  // Open Just Us modal with an existing thread
   const handleOpenJustUs = useCallback(
     (threadItem: ChatThreadItem) => {
       const id = threadItem.id && threadItem.id !== 'just_us' ? threadItem.id : undefined;
@@ -346,6 +334,14 @@ export const ChatsScreen: React.FC<ChatsScreenProps> = ({
     },
     [dispatch]
   );
+
+  // Open Just Us in creation mode (Partner selector)
+  const handleOpenCreateJustUs = useCallback(() => {
+    setSelectedThreadId(undefined);
+    setSelectedJustUsPartner(null);
+    dispatch(setActiveThreadId(null));
+    setShowJustUs(true);
+  }, [dispatch]);
 
   // Partner name for Just Us note
   const justUsPartnerName = useMemo(() => {
@@ -480,6 +476,37 @@ export const ChatsScreen: React.FC<ChatsScreenProps> = ({
             })
           )}
         </View>
+
+        {/* Just Us Section - If no Just Us threads created yet, show Create Just Us card/button */}
+        {chatState.threads.justUs.length === 0 ? (
+          <TouchableOpacity
+            style={styles.createJustUsCard}
+            onPress={handleOpenCreateJustUs}
+            activeOpacity={0.75}
+          >
+            <View style={styles.createJustUsIconBox}>
+              <Feather name="lock" size={20} color={Colors.accentPurple} />
+            </View>
+            <View style={styles.createJustUsTextBox}>
+              <Text style={styles.createJustUsTitle}>Create Just Us Chat</Text>
+              <Text style={styles.createJustUsSubtitle}>
+                Start a private 1-to-1 encrypted chat with an adult member
+              </Text>
+            </View>
+            <View style={styles.createJustUsActionBtn}>
+              <Feather name="plus" size={18} color={Colors.white} />
+            </View>
+          </TouchableOpacity>
+        ) : (
+          <TouchableOpacity
+            style={styles.addAnotherJustUsBtn}
+            onPress={handleOpenCreateJustUs}
+            activeOpacity={0.7}
+          >
+            <Feather name="plus" size={16} color={Colors.accentPurple} />
+            <Text style={styles.addAnotherJustUsText}>Start another Just Us chat</Text>
+          </TouchableOpacity>
+        )}
 
         {/* Privacy Note */}
         <View style={styles.privacyNoteRow}>
@@ -715,6 +742,67 @@ const styles = StyleSheet.create({
     height: 1,
     backgroundColor: 'rgba(255, 255, 255, 0.06)',
     marginLeft: 78,
+  },
+  createJustUsCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#131F33',
+    borderRadius: 20,
+    padding: 16,
+    marginTop: 14,
+    borderWidth: 1.5,
+    borderColor: 'rgba(157, 101, 229, 0.35)',
+  },
+  createJustUsIconBox: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: 'rgba(157, 101, 229, 0.15)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 14,
+  },
+  createJustUsTextBox: {
+    flex: 1,
+  },
+  createJustUsTitle: {
+    fontSize: 16,
+    fontFamily: 'Roboto-Bold',
+    color: Colors.white,
+    marginBottom: 3,
+  },
+  createJustUsSubtitle: {
+    fontSize: 12,
+    fontFamily: 'Roboto-Regular',
+    color: '#8A97AB',
+    lineHeight: 16,
+  },
+  createJustUsActionBtn: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: Colors.accentPurple,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginLeft: 10,
+  },
+  addAnotherJustUsBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    marginTop: 12,
+    backgroundColor: 'rgba(157, 101, 229, 0.08)',
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: 'rgba(157, 101, 229, 0.25)',
+    gap: 8,
+  },
+  addAnotherJustUsText: {
+    fontSize: 13,
+    fontFamily: 'Roboto-Medium',
+    color: Colors.accentPurple,
   },
   privacyNoteRow: {
     flexDirection: 'row',

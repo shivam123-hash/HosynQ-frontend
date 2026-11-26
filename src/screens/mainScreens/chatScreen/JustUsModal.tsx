@@ -142,21 +142,21 @@ export const JustUsModal: React.FC<JustUsModalProps> = ({
   const familyState = useAppSelector((state) => state.family);
   const currentUser = useAppSelector((state) => state.baseProfile.user);
 
-  // Active Just Us Thread ID resolution
-  const activeThreadId = useMemo(() => {
-    if (threadId && threadId !== 'just_us') return threadId;
-    if (chatState.threads.justUs.length > 0) {
-      return chatState.threads.justUs[0].id;
-    }
-    return '';
-  }, [threadId, chatState.threads.justUs]);
-
   // Component state
+  const [createdThreadId, setCreatedThreadId] = useState<string | null>(null);
+  const [selectedPartner, setSelectedPartner] = useState<ApiChatPartner | null>(null);
   const [inputText, setInputText] = useState('');
   const [isAvailable, setIsAvailable] = useState(initialAvailable);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [startingMemberId, setStartingMemberId] = useState<string | null>(null);
   const flatListRef = useRef<FlatList>(null);
+
+  // Active Just Us Thread ID resolution
+  const activeThreadId = useMemo(() => {
+    if (createdThreadId) return createdThreadId;
+    if (threadId && threadId !== 'just_us') return threadId;
+    return '';
+  }, [createdThreadId, threadId]);
 
   // Eligible adult members to start Just Us with (if no thread exists yet)
   const eligibleAdults = useMemo(() => {
@@ -216,9 +216,12 @@ export const JustUsModal: React.FC<JustUsModalProps> = ({
 
   // Partner resolution
   const partner: ApiChatPartner | null = useMemo(() => {
+    if (selectedPartner) return selectedPartner;
     if (propPartner) return propPartner;
-    const targetThread = chatState.threads.justUs.find((t) => t.id === activeThreadId);
-    if (targetThread?.partner) return targetThread.partner;
+    if (activeThreadId) {
+      const targetThread = chatState.threads.justUs.find((t) => t.id === activeThreadId);
+      if (targetThread?.partner) return targetThread.partner;
+    }
     if (chatState.threads.justUs.length > 0 && chatState.threads.justUs[0].partner) {
       return chatState.threads.justUs[0].partner;
     }
@@ -230,7 +233,7 @@ export const JustUsModal: React.FC<JustUsModalProps> = ({
       };
     }
     return null;
-  }, [propPartner, chatState.threads.justUs, activeThreadId, eligibleAdults]);
+  }, [selectedPartner, propPartner, chatState.threads.justUs, activeThreadId, eligibleAdults]);
 
   const partnerName = partner?.fullName || 'Partner';
   const partnerInitial = partnerName.charAt(0).toUpperCase();
@@ -267,6 +270,8 @@ export const JustUsModal: React.FC<JustUsModalProps> = ({
     if (!visible) {
       setIsMenuOpen(false);
       setInputText('');
+      setCreatedThreadId(null);
+      setSelectedPartner(null);
     }
   }, [visible]);
 
@@ -278,7 +283,7 @@ export const JustUsModal: React.FC<JustUsModalProps> = ({
   }, [pagination, activeThreadId, dispatch]);
 
   // Send Encrypted Message
-  const handleSendMessage = useCallback(() => {
+  const handleSendMessage = useCallback(async () => {
     const text = inputText.trim();
     if (!text || !activeThreadId || activeThreadId === 'just_us') return;
 
@@ -310,18 +315,26 @@ export const JustUsModal: React.FC<JustUsModalProps> = ({
       })
     );
 
-    dispatch(
-      sendChatMessage({
-        threadId: activeThreadId,
-        payload: {
-          clientId,
-          ciphertext,
-          text,
-        },
-      })
-    );
-
     setInputText('');
+
+    try {
+      await dispatch(
+        sendChatMessage({
+          threadId: activeThreadId,
+          payload: {
+            clientId,
+            ciphertext,
+            text,
+          },
+        })
+      ).unwrap();
+    } catch (err: any) {
+      console.error('[JustUsModal] Failed to send encrypted message:', err);
+      Alert.alert(
+        'Notice',
+        typeof err === 'string' ? err : err?.message || 'Failed to send message to server.'
+      );
+    }
   }, [inputText, activeThreadId, currentUser, dispatch]);
 
   // Start Just Us with an adult family member
@@ -331,10 +344,22 @@ export const JustUsModal: React.FC<JustUsModalProps> = ({
       try {
         setStartingMemberId(memberId);
         const thread = await dispatch(startJustUsChat(memberId)).unwrap();
-        if (thread?.id) {
-          dispatch(setActiveThreadId(thread.id));
-          dispatch(fetchChatMessages({ threadId: thread.id }));
+        const tid = (thread as any)?.id || (thread as any)?.threadId || (thread as any)?._id;
+        if (tid) {
+          setCreatedThreadId(tid);
+          const foundAdult = eligibleAdults.find((a: any) => a.id === memberId);
+          if (foundAdult) {
+            setSelectedPartner({
+              memberId: foundAdult.id,
+              fullName: foundAdult.fullName,
+              avatarColor: foundAdult.avatarColor,
+            });
+          }
+          dispatch(setActiveThreadId(tid));
+          dispatch(fetchChatMessages({ threadId: tid }));
           dispatch(fetchChatThreads());
+        } else {
+          Alert.alert('Notice', 'Unable to start chat. Invalid thread response.');
         }
       } catch (err: any) {
         Alert.alert('Notice', typeof err === 'string' ? err : err?.message || 'Failed to start Just Us.');
@@ -342,7 +367,7 @@ export const JustUsModal: React.FC<JustUsModalProps> = ({
         setStartingMemberId(null);
       }
     },
-    [dispatch, startingMemberId]
+    [dispatch, startingMemberId, eligibleAdults]
   );
 
   // Determine if Just Us is active or unavailable

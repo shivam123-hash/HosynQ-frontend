@@ -152,8 +152,9 @@ export const sendChatMessage = createAsyncThunk<
   { rejectValue: string }
 >('chat/sendMessage', async ({ threadId, payload }, { rejectWithValue }) => {
   try {
-    const res = await chatServices.sendMessage(threadId, payload);
-    return { threadId, message: res.message, clientId: payload.clientId };
+    const res: any = await chatServices.sendMessage(threadId, payload);
+    const message = res?.message || res?.data?.message || res?.data || res;
+    return { threadId, message, clientId: payload.clientId };
   } catch (err: any) {
     return rejectWithValue(
       err?.response?.data?.message || err?.message || 'Failed to send message'
@@ -301,8 +302,9 @@ export const startJustUsChat = createAsyncThunk<
   { rejectValue: string }
 >('chat/startJustUs', async (memberId, { rejectWithValue }) => {
   try {
-    const res = await chatServices.startJustUs(memberId);
-    return res.thread;
+    const res: any = await chatServices.startJustUs(memberId);
+    const thread = res?.thread || res?.data?.thread || res?.data || res;
+    return thread;
   } catch (err: any) {
     return rejectWithValue(
       err?.response?.data?.message || err?.message || 'Failed to start Just Us chat'
@@ -739,9 +741,13 @@ export const chatSlice = createSlice({
     // 11. Start Just Us
     builder.addCase(startJustUsChat.fulfilled, (state, action) => {
       const thread = action.payload;
-      const existing = state.threads.justUs.find((t) => t.id === thread.id);
-      if (!existing) {
-        state.threads.justUs.unshift(thread);
+      if (thread && thread.id) {
+        const existingIdx = state.threads.justUs.findIndex((t) => t.id === thread.id);
+        if (existingIdx === -1) {
+          state.threads.justUs.unshift(thread);
+        } else {
+          state.threads.justUs[existingIdx] = { ...state.threads.justUs[existingIdx], ...thread };
+        }
       }
     });
   },

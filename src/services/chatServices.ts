@@ -298,7 +298,11 @@ const chatServices = {
   startJustUs: async (memberId: string): Promise<StartJustUsResponse> => {
     const response = await apiClient.post<StartJustUsResponse>(
       API_ROUTES.CHAT_JUST_US,
-      { memberId }
+      {
+        memberId,
+        targetMemberId: memberId,
+        partnerId: memberId,
+      }
     );
     return response.data;
   },
