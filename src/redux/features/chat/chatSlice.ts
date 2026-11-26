@@ -195,13 +195,13 @@ export const markChatThreadRead = createAsyncThunk<
 
 /** 7. React to Message (PUT /chat/messages/:id/reaction) */
 export const reactToChatMessage = createAsyncThunk<
-  { messageId: string; threadId: string; reactions: ApiChatReactionGroup[] },
+  { messageId: string; threadId: string; reactions: ApiChatReactionGroup[]; emoji: string },
   { messageId: string; threadId: string; emoji: string },
   { rejectValue: string }
 >('chat/react', async ({ messageId, threadId, emoji }, { rejectWithValue }) => {
   try {
     const res = await chatServices.reactToMessage(messageId, emoji);
-    return { messageId, threadId, reactions: res.reactions };
+    return { messageId, threadId, reactions: res.reactions, emoji };
   } catch (err: any) {
     return rejectWithValue(
       err?.response?.data?.message || err?.message || 'Failed to react to message'
@@ -459,14 +459,20 @@ export const chatSlice = createSlice({
         threadId: string;
         messageId: string;
         reactions: ApiChatReactionGroup[];
+        myMemberId?: string;
       }>
     ) {
-      const { threadId, messageId, reactions } = action.payload;
+      const { threadId, messageId, reactions, myMemberId } = action.payload;
       const messages = state.messagesByThread[threadId];
       if (messages) {
         const target = messages.find((m) => m.id === messageId);
         if (target) {
           target.reactions = reactions;
+          if (myMemberId && Array.isArray(reactions)) {
+            const myGroup = reactions.find((r) => r.memberIds?.includes(myMemberId));
+            target.myReaction = myGroup ? myGroup.emoji : null;
+          }
+          state.messagesByThread[threadId] = [...messages];
         }
       }
     },
@@ -621,13 +627,63 @@ export const chatSlice = createSlice({
       }
     });
 
-    // 7. Reactions
-    builder.addCase(reactToChatMessage.fulfilled, (state, action) => {
-      const { threadId, messageId, reactions } = action.payload;
+    // 7. Reactions (optimistic and fulfilled handlers with myReaction sync)
+    builder.addCase(reactToChatMessage.pending, (state, action) => {
+      const { threadId, messageId, emoji } = action.meta.arg;
       const messages = state.messagesByThread[threadId];
       if (messages) {
         const target = messages.find((m) => m.id === messageId);
-        if (target) target.reactions = reactions;
+        if (target) {
+          target.myReaction = emoji;
+          const existing = target.reactions?.find((r) => r.emoji === emoji);
+          if (existing) {
+            existing.count += 1;
+          } else {
+            target.reactions = [...(target.reactions || []), { emoji, count: 1, memberIds: [] }];
+          }
+          state.messagesByThread[threadId] = [...messages];
+        }
+      }
+    });
+    builder.addCase(reactToChatMessage.fulfilled, (state, action) => {
+      const { threadId, messageId, reactions, emoji } = action.payload;
+      const messages = state.messagesByThread[threadId];
+      if (messages) {
+        const target = messages.find((m) => m.id === messageId);
+        if (target) {
+          target.reactions = reactions;
+          target.myReaction = emoji;
+          state.messagesByThread[threadId] = [...messages];
+        }
+      }
+    });
+    builder.addCase(reactToChatMessage.rejected, (state, action) => {
+      const { threadId, messageId } = action.meta.arg;
+      const messages = state.messagesByThread[threadId];
+      if (messages) {
+        const target = messages.find((m) => m.id === messageId);
+        if (target) {
+          target.myReaction = null;
+          state.messagesByThread[threadId] = [...messages];
+        }
+      }
+    });
+
+    builder.addCase(removeChatReaction.pending, (state, action) => {
+      const { threadId, messageId } = action.meta.arg;
+      const messages = state.messagesByThread[threadId];
+      if (messages) {
+        const target = messages.find((m) => m.id === messageId);
+        if (target) {
+          const prevEmoji = target.myReaction;
+          target.myReaction = null;
+          if (prevEmoji && target.reactions) {
+            target.reactions = target.reactions
+              .map((r) => (r.emoji === prevEmoji ? { ...r, count: r.count - 1 } : r))
+              .filter((r) => r.count > 0);
+          }
+          state.messagesByThread[threadId] = [...messages];
+        }
       }
     });
     builder.addCase(removeChatReaction.fulfilled, (state, action) => {
@@ -635,7 +691,11 @@ export const chatSlice = createSlice({
       const messages = state.messagesByThread[threadId];
       if (messages) {
         const target = messages.find((m) => m.id === messageId);
-        if (target) target.reactions = reactions;
+        if (target) {
+          target.reactions = reactions;
+          target.myReaction = null;
+          state.messagesByThread[threadId] = [...messages];
+        }
       }
     });
 

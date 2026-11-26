@@ -75,7 +75,20 @@ export const initChatSocketBridge = (accessToken?: string) => {
   chatSocket.onReaction((data) => {
     const currentStore = getStore();
     if (currentStore) {
-      currentStore.dispatch(socketReactionReceived(data));
+      const state = currentStore.getState() as any;
+      const myMemberId =
+        state.family?.myMemberId ||
+        state.family?.myFamilyData?.family?.myMemberId ||
+        state.family?.family?.myMemberId ||
+        state.baseProfile?.user?.memberId ||
+        state.baseProfile?.user?.myMemberId;
+
+      currentStore.dispatch(
+        socketReactionReceived({
+          ...data,
+          myMemberId,
+        })
+      );
     }
   });
 
