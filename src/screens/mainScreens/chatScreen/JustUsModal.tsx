@@ -26,11 +26,14 @@ import {
   setActiveThreadId,
   addOptimisticPendingMessage,
   fetchChatThreads,
+  reactToChatMessage,
+  removeChatReaction,
 } from '../../../redux/features/chat/chatSlice';
 import { getMyFamilyBasicThunk, getMyFamilyThunk } from '../../../redux/features/family/familySlice';
 import { extractFamilyMembersFromState } from '../calendarScreen/calendarApiHelpers';
 import { ApiChatMessage, ApiChatPartner, ApiChatSender } from '../../../services/chatServices';
 import AppOptionsMenu from '../common/AppOptionsMenu';
+import { SmartReactionsModal } from './SmartReactionsModal';
 
 export interface JustUsModalProps {
   visible: boolean;
@@ -145,6 +148,7 @@ export const JustUsModal: React.FC<JustUsModalProps> = ({
   // Component state
   const [createdThreadId, setCreatedThreadId] = useState<string | null>(null);
   const [selectedPartner, setSelectedPartner] = useState<ApiChatPartner | null>(null);
+  const [selectedMessageForReactions, setSelectedMessageForReactions] = useState<ApiChatMessage | null>(null);
   const [inputText, setInputText] = useState('');
   const [isAvailable, setIsAvailable] = useState(initialAvailable);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -287,6 +291,7 @@ export const JustUsModal: React.FC<JustUsModalProps> = ({
       setInputText('');
       setCreatedThreadId(null);
       setSelectedPartner(null);
+      setSelectedMessageForReactions(null);
     }
   }, [visible]);
 
@@ -425,6 +430,74 @@ export const JustUsModal: React.FC<JustUsModalProps> = ({
   const showPartnerSelector = !hasJustUsThread && (eligibleAdults.length > 0 || Boolean(chatState.threads.canStartJustUs));
   const showUnavailable = !isAvailable || (!hasJustUsThread && !showPartnerSelector);
 
+  // Select emoji reaction from long-press picker modal
+  const handleSelectReaction = useCallback(
+    (emoji: string) => {
+      if (!selectedMessageForReactions || !activeThreadId) return;
+      const msg = selectedMessageForReactions;
+      if (msg.myReaction === emoji) {
+        dispatch(removeChatReaction({ threadId: activeThreadId, messageId: msg.id }));
+      } else {
+        dispatch(reactToChatMessage({ threadId: activeThreadId, messageId: msg.id, emoji }));
+      }
+      setSelectedMessageForReactions(null);
+    },
+    [selectedMessageForReactions, activeThreadId, dispatch]
+  );
+
+  // Toggle reaction chip underneath message bubble
+  const handleToggleReactionChip = useCallback(
+    (msg: ApiChatMessage, emoji: string) => {
+      if (!activeThreadId) return;
+      if (msg.myReaction === emoji) {
+        dispatch(removeChatReaction({ threadId: activeThreadId, messageId: msg.id }));
+      } else {
+        dispatch(reactToChatMessage({ threadId: activeThreadId, messageId: msg.id, emoji }));
+      }
+    },
+    [activeThreadId, dispatch]
+  );
+
+  // Render Reactions Row attached to bubble corner
+  const renderReactionsRow = (msg: ApiChatMessage, isMine: boolean) => {
+    if (!msg.reactions || msg.reactions.length === 0) return null;
+    return (
+      <View
+        style={[
+          styles.reactionsAttachedBadge,
+          isMine ? styles.reactionsAttachedRight : styles.reactionsAttachedLeft,
+        ]}
+      >
+        {msg.reactions.map((r) => {
+          const isUserReacted = msg.myReaction === r.emoji;
+          return (
+            <TouchableOpacity
+              key={r.emoji}
+              style={[
+                styles.reactionPill,
+                isUserReacted && styles.reactionPillActive,
+              ]}
+              onPress={() => handleToggleReactionChip(msg, r.emoji)}
+              activeOpacity={0.7}
+            >
+              <Text style={styles.reactionEmoji}>{r.emoji}</Text>
+              {r.count > 1 && (
+                <Text
+                  style={[
+                    styles.reactionCount,
+                    isUserReacted && styles.reactionCountActive,
+                  ]}
+                >
+                  {r.count}
+                </Text>
+              )}
+            </TouchableOpacity>
+          );
+        })}
+      </View>
+    );
+  };
+
   // Render Single Message Item (inverted)
   const renderMessageItem = useCallback(
     ({ item, index }: { item: ApiChatMessage; index: number }) => {
@@ -454,10 +527,27 @@ export const JustUsModal: React.FC<JustUsModalProps> = ({
           {isMine ? (
             /* Outgoing Message (Right) */
             <View style={styles.outgoingMessageContainer}>
-              <View style={styles.outgoingBubble}>
-                <Text style={styles.outgoingText}>{displayText}</Text>
+              <View style={styles.bubbleWrapper}>
+                <TouchableOpacity
+                  style={[
+                    styles.outgoingBubble,
+                    Boolean(item.reactions && item.reactions.length > 0) &&
+                      styles.bubbleWithReactionOutgoing,
+                  ]}
+                  onLongPress={() => setSelectedMessageForReactions(item)}
+                  activeOpacity={0.85}
+                >
+                  <Text style={styles.outgoingText}>{displayText}</Text>
+                </TouchableOpacity>
+                {renderReactionsRow(item, true)}
               </View>
-              <View style={styles.outgoingMetaRow}>
+              <View
+                style={[
+                  styles.outgoingMetaRow,
+                  Boolean(item.reactions && item.reactions.length > 0) &&
+                    styles.metaRowWithReactions,
+                ]}
+              >
                 <Text style={styles.metaTimeText}>{timeStr}</Text>
                 <Feather
                   name={item.seenBy && item.seenBy.length > 0 ? 'check-circle' : 'check'}
@@ -474,10 +564,29 @@ export const JustUsModal: React.FC<JustUsModalProps> = ({
                   <Text style={styles.avatarInitial}>{senderInitial}</Text>
                 </View>
                 <View style={styles.incomingContentGroup}>
-                  <View style={styles.incomingBubble}>
-                    <Text style={styles.incomingText}>{displayText}</Text>
+                  <View style={styles.bubbleWrapper}>
+                    <TouchableOpacity
+                      style={[
+                        styles.incomingBubble,
+                        Boolean(item.reactions && item.reactions.length > 0) &&
+                          styles.bubbleWithReactionIncoming,
+                      ]}
+                      onLongPress={() => setSelectedMessageForReactions(item)}
+                      activeOpacity={0.85}
+                    >
+                      <Text style={styles.incomingText}>{displayText}</Text>
+                    </TouchableOpacity>
+                    {renderReactionsRow(item, false)}
                   </View>
-                  <Text style={styles.incomingTimeText}>{timeStr}</Text>
+                  <Text
+                    style={[
+                      styles.incomingTimeText,
+                      Boolean(item.reactions && item.reactions.length > 0) &&
+                        styles.incomingTimeWithReactions,
+                    ]}
+                  >
+                    {timeStr}
+                  </Text>
                 </View>
               </View>
             </View>
@@ -804,6 +913,16 @@ export const JustUsModal: React.FC<JustUsModalProps> = ({
             </View>
           )}
         </View>
+
+        {/* Emoji Reactions Modal */}
+        <SmartReactionsModal
+          visible={!!selectedMessageForReactions}
+          message={selectedMessageForReactions || undefined}
+          onClose={() => setSelectedMessageForReactions(null)}
+          onSelectReaction={handleSelectReaction}
+          onSelectQuickReply={(reply) => setInputText(reply)}
+          onReply={() => setSelectedMessageForReactions(null)}
+        />
       </KeyboardAvoidingView>
     </Modal>
   );
@@ -1074,6 +1193,66 @@ const styles = StyleSheet.create({
   },
   outgoingMessageContainer: {
     alignItems: 'flex-end',
+  },
+  bubbleWrapper: {
+    position: 'relative',
+    maxWidth: '82%',
+  },
+  bubbleWithReactionOutgoing: {
+    marginBottom: 8,
+  },
+  bubbleWithReactionIncoming: {
+    marginBottom: 8,
+  },
+  reactionsAttachedBadge: {
+    position: 'absolute',
+    bottom: -6,
+    flexDirection: 'row',
+    gap: 3,
+    zIndex: 10,
+  },
+  reactionsAttachedRight: {
+    right: 4,
+  },
+  reactionsAttachedLeft: {
+    left: 10,
+  },
+  metaRowWithReactions: {
+    marginTop: 8,
+  },
+  incomingTimeWithReactions: {
+    marginTop: 8,
+  },
+  reactionPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#1E293B',
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 10,
+    borderWidth: 0.8,
+    borderColor: 'rgba(255, 255, 255, 0.18)',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.25,
+    shadowRadius: 1.5,
+    elevation: 3,
+  },
+  reactionPillActive: {
+    borderColor: Colors.accentPurple,
+    backgroundColor: 'rgba(157, 101, 229, 0.22)',
+  },
+  reactionEmoji: {
+    fontSize: 12,
+  },
+  reactionCount: {
+    fontSize: 11,
+    fontFamily: 'Roboto-Bold',
+    color: '#8A97AB',
+    marginLeft: 3,
+  },
+  reactionCountActive: {
+    color: Colors.accentPurple,
   },
   outgoingBubble: {
     backgroundColor: '#8E44AD',
