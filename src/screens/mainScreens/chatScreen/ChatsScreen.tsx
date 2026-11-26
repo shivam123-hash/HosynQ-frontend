@@ -20,6 +20,7 @@ import {
   setActiveThreadId,
   searchChatMessages,
 } from '../../../redux/features/chat/chatSlice';
+import { getMyFamilyBasicThunk, getMyFamilyThunk } from '../../../redux/features/family/familySlice';
 import { initChatSocketBridge } from '../../../redux/features/chat/chatSocketBridge';
 import { ChatConversationModal } from './ChatConversationModal';
 import { JustUsModal } from './JustUsModal';
@@ -131,11 +132,13 @@ export const ChatsScreen: React.FC<ChatsScreenProps> = ({
   const [selectedThreadId, setSelectedThreadId] = useState<string | undefined>(undefined);
   const [selectedJustUsPartner, setSelectedJustUsPartner] = useState<any>(null);
 
-  // Initialize Socket.IO bridge and fetch initial chat threads
+  // Initialize Socket.IO bridge, chat threads, and ensure family data is loaded
   useEffect(() => {
     initChatSocketBridge();
     dispatch(fetchChatThreads());
     dispatch(fetchSharedSummary());
+    dispatch(getMyFamilyBasicThunk());
+    dispatch(getMyFamilyThunk());
   }, [dispatch]);
 
   // Pull to refresh handler
@@ -331,10 +334,14 @@ export const ChatsScreen: React.FC<ChatsScreenProps> = ({
   // Open Just Us modal
   const handleOpenJustUs = useCallback(
     (threadItem: ChatThreadItem) => {
-      const id = threadItem.id || 'just_us';
+      const id = threadItem.id && threadItem.id !== 'just_us' ? threadItem.id : undefined;
       setSelectedThreadId(id);
       setSelectedJustUsPartner(threadItem.partner || null);
-      dispatch(setActiveThreadId(id));
+      if (id) {
+        dispatch(setActiveThreadId(id));
+      } else {
+        dispatch(setActiveThreadId(null));
+      }
       setShowJustUs(true);
     },
     [dispatch]
@@ -571,6 +578,8 @@ export const ChatsScreen: React.FC<ChatsScreenProps> = ({
         onClose={() => {
           setShowJustUs(false);
           dispatch(setActiveThreadId(null));
+          setSelectedThreadId(undefined);
+          setSelectedJustUsPartner(null);
         }}
         threadId={selectedThreadId}
         partner={selectedJustUsPartner}

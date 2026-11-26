@@ -25,7 +25,10 @@ import {
   startJustUsChat,
   setActiveThreadId,
   addOptimisticPendingMessage,
+  fetchChatThreads,
 } from '../../../redux/features/chat/chatSlice';
+import { getMyFamilyBasicThunk, getMyFamilyThunk } from '../../../redux/features/family/familySlice';
+import { extractFamilyMembersFromState } from '../calendarScreen/calendarApiHelpers';
 import { ApiChatMessage, ApiChatPartner, ApiChatSender } from '../../../services/chatServices';
 import AppOptionsMenu from '../common/AppOptionsMenu';
 
@@ -141,12 +144,75 @@ export const JustUsModal: React.FC<JustUsModalProps> = ({
 
   // Active Just Us Thread ID resolution
   const activeThreadId = useMemo(() => {
-    if (threadId) return threadId;
+    if (threadId && threadId !== 'just_us') return threadId;
     if (chatState.threads.justUs.length > 0) {
       return chatState.threads.justUs[0].id;
     }
     return '';
   }, [threadId, chatState.threads.justUs]);
+
+  // Component state
+  const [inputText, setInputText] = useState('');
+  const [isAvailable, setIsAvailable] = useState(initialAvailable);
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [startingMemberId, setStartingMemberId] = useState<string | null>(null);
+  const flatListRef = useRef<FlatList>(null);
+
+  // Eligible adult members to start Just Us with (if no thread exists yet)
+  const eligibleAdults = useMemo(() => {
+    const candidates = [
+      familyState.family?.members,
+      familyState.myFamilyData?.family?.members,
+      familyState.basicFamilyData?.members,
+      (familyState.basicFamilyData as any)?.family?.members,
+      (familyState as any)?.familyMembers,
+      (familyState.family as any)?.data?.members,
+    ];
+
+    let rawList: any[] = [];
+    for (const c of candidates) {
+      if (Array.isArray(c) && c.length > 0) {
+        rawList = c;
+        break;
+      }
+    }
+
+    if (rawList.length === 0) {
+      const extracted = extractFamilyMembersFromState(familyState);
+      if (Array.isArray(extracted) && extracted.length > 0) {
+        rawList = extracted;
+      }
+    }
+
+    const myId =
+      familyState.myMemberId ||
+      (familyState.basicFamilyData as any)?.myMemberId ||
+      (familyState.basicFamilyData as any)?.family?.myMemberId ||
+      currentUser?.id;
+
+    return rawList
+      .filter((m: any) => {
+        if (m.isYou) return false;
+        const mId = String(m.memberId || m.id || m.userId || m._id || '');
+        if (myId && mId === String(myId)) return false;
+        const role = String(m.role || m.familyRole || '').toUpperCase();
+        if (role === 'CHILD' || role === 'DEPENDENT_CHILD_PROFILE') return false;
+        return true;
+      })
+      .map((m: any, idx: number) => {
+        const targetId = String(m.memberId || m.id || m.userId || m._id || `m-${idx}`);
+        const fullName = m.fullName || m.name || `Family Member`;
+        const role = m.familyRole || m.role || (m.relationship ? m.relationship : 'Adult Member');
+        const avatarColor = m.avatarColor || m.color || (idx % 2 === 0 ? Colors.avatarNavy : Colors.avatarBrown);
+        return {
+          id: targetId,
+          memberId: targetId,
+          fullName,
+          role,
+          avatarColor,
+        };
+      });
+  }, [familyState, currentUser]);
 
   // Partner resolution
   const partner: ApiChatPartner | null = useMemo(() => {
@@ -156,8 +222,15 @@ export const JustUsModal: React.FC<JustUsModalProps> = ({
     if (chatState.threads.justUs.length > 0 && chatState.threads.justUs[0].partner) {
       return chatState.threads.justUs[0].partner;
     }
+    if (eligibleAdults.length === 1) {
+      return {
+        memberId: eligibleAdults[0].id,
+        fullName: eligibleAdults[0].fullName,
+        avatarColor: eligibleAdults[0].avatarColor,
+      };
+    }
     return null;
-  }, [propPartner, chatState.threads.justUs, activeThreadId]);
+  }, [propPartner, chatState.threads.justUs, activeThreadId, eligibleAdults]);
 
   const partnerName = partner?.fullName || 'Partner';
   const partnerInitial = partnerName.charAt(0).toUpperCase();
@@ -168,15 +241,17 @@ export const JustUsModal: React.FC<JustUsModalProps> = ({
   const messagesLoading = chatState.messagesLoadingByThread[activeThreadId] || false;
   const pagination = chatState.paginationByThread[activeThreadId];
 
-  // Component state
-  const [inputText, setInputText] = useState('');
-  const [isAvailable, setIsAvailable] = useState(initialAvailable);
-  const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const flatListRef = useRef<FlatList>(null);
+  // Lifecycle: Ensure family data is loaded if eligibleAdults is empty
+  useEffect(() => {
+    if (visible && eligibleAdults.length === 0) {
+      dispatch(getMyFamilyBasicThunk());
+      dispatch(getMyFamilyThunk());
+    }
+  }, [visible, eligibleAdults.length, dispatch]);
 
   // Lifecycle: When opening modal, fetch messages and mark read
   useEffect(() => {
-    if (visible && activeThreadId) {
+    if (visible && activeThreadId && activeThreadId !== 'just_us') {
       dispatch(setActiveThreadId(activeThreadId));
       dispatch(fetchChatMessages({ threadId: activeThreadId }));
       dispatch(markChatThreadRead(activeThreadId));
@@ -197,7 +272,7 @@ export const JustUsModal: React.FC<JustUsModalProps> = ({
 
   // Load older messages
   const handleLoadMore = useCallback(() => {
-    if (pagination?.hasMore && !pagination?.loadingMore && activeThreadId) {
+    if (pagination?.hasMore && !pagination?.loadingMore && activeThreadId && activeThreadId !== 'just_us') {
       dispatch(fetchMoreChatMessages({ threadId: activeThreadId }));
     }
   }, [pagination, activeThreadId, dispatch]);
@@ -205,7 +280,7 @@ export const JustUsModal: React.FC<JustUsModalProps> = ({
   // Send Encrypted Message
   const handleSendMessage = useCallback(() => {
     const text = inputText.trim();
-    if (!text || !activeThreadId) return;
+    if (!text || !activeThreadId || activeThreadId === 'just_us') return;
 
     const clientId = generateUUID();
     const ciphertext = safeBase64Encode(text);
@@ -252,39 +327,28 @@ export const JustUsModal: React.FC<JustUsModalProps> = ({
   // Start Just Us with an adult family member
   const handleStartJustUs = useCallback(
     async (memberId: string) => {
+      if (!memberId || startingMemberId) return;
       try {
-        await dispatch(startJustUsChat(memberId)).unwrap();
-        Alert.alert('Just Us Started', 'Private chat is now active.');
+        setStartingMemberId(memberId);
+        const thread = await dispatch(startJustUsChat(memberId)).unwrap();
+        if (thread?.id) {
+          dispatch(setActiveThreadId(thread.id));
+          dispatch(fetchChatMessages({ threadId: thread.id }));
+          dispatch(fetchChatThreads());
+        }
       } catch (err: any) {
-        Alert.alert('Notice', err || 'Failed to start Just Us.');
+        Alert.alert('Notice', typeof err === 'string' ? err : err?.message || 'Failed to start Just Us.');
+      } finally {
+        setStartingMemberId(null);
       }
     },
-    [dispatch]
+    [dispatch, startingMemberId]
   );
 
-  // Eligible adult members to start Just Us with (if no thread exists yet)
-  const eligibleAdults = useMemo(() => {
-    const members: any[] =
-      familyState.family?.members ||
-      familyState.myFamilyData?.family?.members ||
-      (familyState.basicFamilyData as any)?.members ||
-      (familyState as any)?.familyMembers ||
-      [];
-    const myId = familyState.myMemberId || currentUser?.id;
-    return members.filter(
-      (m: any) =>
-        m.id !== myId &&
-        m.userId !== myId &&
-        m.memberId !== myId &&
-        m.role !== 'CHILD' &&
-        m.familyRole !== 'Child'
-    );
-  }, [familyState, currentUser]);
-
   // Determine if Just Us is active or unavailable
-  const hasJustUsThread = Boolean(activeThreadId);
-  const showUnavailable = !isAvailable || (!hasJustUsThread && !chatState.threads.canStartJustUs && eligibleAdults.length === 0);
-  const showPartnerSelector = !hasJustUsThread && (chatState.threads.canStartJustUs || eligibleAdults.length > 0);
+  const hasJustUsThread = Boolean(activeThreadId && activeThreadId !== 'just_us');
+  const showPartnerSelector = !hasJustUsThread && (eligibleAdults.length > 0 || Boolean(chatState.threads.canStartJustUs));
+  const showUnavailable = !isAvailable || (!hasJustUsThread && !showPartnerSelector);
 
   // Render Single Message Item (inverted)
   const renderMessageItem = useCallback(
@@ -385,8 +449,10 @@ export const JustUsModal: React.FC<JustUsModalProps> = ({
                 />
                 <Text style={styles.headerTitle}>Just Us</Text>
               </View>
-              {hasJustUsThread && (
+              {hasJustUsThread ? (
                 <Text style={styles.headerSubtitle}>You and {partnerName} · Private</Text>
+              ) : (
+                <Text style={styles.headerSubtitle}>Private · Adult Only</Text>
               )}
             </View>
 
@@ -506,34 +572,48 @@ export const JustUsModal: React.FC<JustUsModalProps> = ({
               </View>
 
               <Text style={styles.selectorHeading}>Select your partner</Text>
-              {eligibleAdults.map((adult: any) => (
-                <TouchableOpacity
-                  key={adult.id}
-                  style={styles.adultCard}
-                  onPress={() => handleStartJustUs(adult.id)}
-                  activeOpacity={0.7}
-                >
-                  <View
-                    style={[
-                      styles.avatarCircle,
-                      { backgroundColor: adult.avatarColor || Colors.avatarNavy },
-                    ]}
-                  >
-                    <Text style={styles.avatarInitial}>
-                      {(adult.fullName || adult.name || 'A').charAt(0).toUpperCase()}
-                    </Text>
-                  </View>
-                  <View style={styles.adultInfo}>
-                    <Text style={styles.adultName}>
-                      {adult.fullName || adult.name}
-                    </Text>
-                    <Text style={styles.adultRole}>
-                      {adult.familyRole || adult.role || 'Adult Member'}
-                    </Text>
-                  </View>
-                  <Feather name="chevron-right" size={20} color={Colors.textSecondary} />
-                </TouchableOpacity>
-              ))}
+              {eligibleAdults.length === 0 ? (
+                <View style={styles.emptyAdultsBox}>
+                  <Feather name="users" size={32} color={Colors.textSecondary} />
+                  <Text style={styles.emptyAdultsTitle}>No other adult members</Text>
+                  <Text style={styles.emptyAdultsSubtitle}>
+                    Invite your partner to the family first to start a private Just Us chat.
+                  </Text>
+                </View>
+              ) : (
+                eligibleAdults.map((adult: any) => {
+                  const isStarting = startingMemberId === adult.id;
+                  return (
+                    <TouchableOpacity
+                      key={adult.id}
+                      style={styles.adultCard}
+                      onPress={() => handleStartJustUs(adult.id)}
+                      disabled={Boolean(startingMemberId)}
+                      activeOpacity={0.7}
+                    >
+                      <View
+                        style={[
+                          styles.avatarCircle,
+                          { backgroundColor: adult.avatarColor || Colors.avatarNavy },
+                        ]}
+                      >
+                        <Text style={styles.avatarInitial}>
+                          {(adult.fullName || 'A').charAt(0).toUpperCase()}
+                        </Text>
+                      </View>
+                      <View style={styles.adultInfo}>
+                        <Text style={styles.adultName}>{adult.fullName}</Text>
+                        <Text style={styles.adultRole}>{adult.role}</Text>
+                      </View>
+                      {isStarting ? (
+                        <ActivityIndicator size="small" color={Colors.accentPurple} />
+                      ) : (
+                        <Feather name="chevron-right" size={20} color={Colors.textSecondary} />
+                      )}
+                    </TouchableOpacity>
+                  );
+                })
+              )}
             </View>
           ) : (
             /* Populated Private Chat View (CHT-10) */
@@ -831,6 +911,25 @@ const styles = StyleSheet.create({
   adultRole: {
     fontSize: 12,
     color: Colors.textSecondary,
+  },
+  emptyAdultsBox: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 40,
+    paddingHorizontal: 20,
+  },
+  emptyAdultsTitle: {
+    fontSize: 16,
+    fontFamily: 'Roboto-Bold',
+    color: Colors.white,
+    marginTop: 12,
+    marginBottom: 6,
+  },
+  emptyAdultsSubtitle: {
+    fontSize: 13,
+    color: Colors.textSecondary,
+    textAlign: 'center',
+    lineHeight: 18,
   },
   chatArea: {
     flex: 1,
