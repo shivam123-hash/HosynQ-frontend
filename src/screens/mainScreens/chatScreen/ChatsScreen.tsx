@@ -213,12 +213,12 @@ export const ChatsScreen: React.FC<ChatsScreenProps> = ({
           partner: ju.partner,
         });
       });
-    } else if (chatState.threads.canStartJustUs) {
+    } else {
       items.push({
         id: 'just_us',
         kind: 'JUST_US',
         title: 'Just Us',
-        subtitle: 'Private encrypted chat with your partner',
+        subtitle: 'Tap to start private chat with partner',
         timeText: '',
         unreadCount: 0,
         isPrivate: true,

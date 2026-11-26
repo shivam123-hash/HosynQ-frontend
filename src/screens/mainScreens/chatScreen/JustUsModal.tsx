@@ -263,20 +263,20 @@ export const JustUsModal: React.FC<JustUsModalProps> = ({
 
   // Eligible adult members to start Just Us with (if no thread exists yet)
   const eligibleAdults = useMemo(() => {
-    const members =
+    const members: any[] =
+      familyState.family?.members ||
+      familyState.myFamilyData?.family?.members ||
+      (familyState.basicFamilyData as any)?.members ||
       (familyState as any)?.familyMembers ||
-      (familyState as any)?.members ||
       [];
+    const myId = familyState.myMemberId || currentUser?.id;
     return members.filter(
       (m: any) =>
-        m.id !== currentUser?.id &&
-        (m.role === 'ORGANISER' ||
-          m.role === 'ADULT_MEMBER' ||
-          m.role === 'PARENT' ||
-          m.role === 'ADULT' ||
-          m.familyRole === 'Parent' ||
-          m.familyRole === 'Spouse' ||
-          m.familyRole === 'Adult')
+        m.id !== myId &&
+        m.userId !== myId &&
+        m.memberId !== myId &&
+        m.role !== 'CHILD' &&
+        m.familyRole !== 'Child'
     );
   }, [familyState, currentUser]);
 
