@@ -13,6 +13,7 @@ import {
   Image,
   ActivityIndicator,
   Share,
+  StatusBar,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Feather from '@react-native-vector-icons/feather';
@@ -29,6 +30,7 @@ import {
   saveChatPhotoToVault,
   addEventToMyCalendar,
   fetchQuickMessages,
+  updateQuickMessages,
   setActiveThreadId,
   addOptimisticPendingMessage,
 } from '../../../redux/features/chat/chatSlice';
@@ -479,49 +481,60 @@ export const ChatConversationModal: React.FC<ChatConversationModalProps> = ({
                 </View>
               )}
 
-              {/* Shared Item Card */}
-              {item.kind === 'ITEM' && item.card ? (
-                renderSharedCard(item, true)
-              ) : item.kind === 'PHOTO' && item.photoUrl ? (
-                /* Photo Message */
-                <TouchableOpacity
-                  style={styles.imageAttachmentBox}
-                  onPress={() =>
-                    setActivePhotoViewer({
-                      url: item.photoUrl!,
-                      caption: item.text || undefined,
-                      senderName: 'You',
-                      timestamp: timeStr,
-                      messageId: item.id,
-                    })
-                  }
-                  onLongPress={() => setSelectedMessageForReactions(item)}
-                  activeOpacity={0.85}
-                >
-                  <Image
-                    source={{ uri: item.photoUrl }}
-                    style={styles.chatImage}
-                    resizeMode="cover"
-                  />
-                  {item.text ? (
-                    <View style={styles.imageCaptionBar}>
-                      <Text style={styles.imageCaptionText}>{item.text}</Text>
-                    </View>
-                  ) : null}
-                </TouchableOpacity>
-              ) : (
-                /* Text Bubble */
-                <TouchableOpacity
-                  style={styles.outgoingBubble}
-                  onLongPress={() => setSelectedMessageForReactions(item)}
-                  activeOpacity={0.85}
-                >
-                  <Text style={styles.outgoingText}>{item.text}</Text>
-                </TouchableOpacity>
-              )}
+              {/* Message Bubble Wrapper with Corner-Attached Reactions */}
+              <View style={styles.outgoingBubbleWrapper}>
+                {item.kind === 'ITEM' && item.card ? (
+                  renderSharedCard(item, true)
+                ) : item.kind === 'PHOTO' && item.photoUrl ? (
+                  /* Photo Message */
+                  <TouchableOpacity
+                    style={styles.imageAttachmentBox}
+                    onPress={() =>
+                      setActivePhotoViewer({
+                        url: item.photoUrl!,
+                        caption: item.text || undefined,
+                        senderName: 'You',
+                        timestamp: timeStr,
+                        messageId: item.id,
+                      })
+                    }
+                    onLongPress={() => setSelectedMessageForReactions(item)}
+                    activeOpacity={0.85}
+                  >
+                    <Image
+                      source={{ uri: item.photoUrl }}
+                      style={styles.chatImage}
+                      resizeMode="cover"
+                    />
+                    {item.text ? (
+                      <View style={styles.imageCaptionBar}>
+                        <Text style={styles.imageCaptionText}>{item.text}</Text>
+                      </View>
+                    ) : null}
+                  </TouchableOpacity>
+                ) : (
+                  /* Text Bubble */
+                  <TouchableOpacity
+                    style={styles.outgoingBubble}
+                    onLongPress={() => setSelectedMessageForReactions(item)}
+                    activeOpacity={0.85}
+                  >
+                    <Text style={styles.outgoingText}>{item.text}</Text>
+                  </TouchableOpacity>
+                )}
 
-              {/* Meta Status */}
-              <View style={styles.outgoingMetaRow}>
+                {/* Attached Reactions Badge at Bottom Right Corner */}
+                {renderReactionsRow(item, true)}
+              </View>
+
+              {/* Meta Status (Time & Read Checkmarks) */}
+              <View
+                style={[
+                  styles.outgoingMetaRow,
+                  Boolean(item.reactions && item.reactions.length > 0) &&
+                    styles.metaRowWithReactions,
+                ]}
+              >
                 <Text style={styles.metaTimeText}>{timeStr}</Text>
                 <Feather
                   name={item.seenBy && item.seenBy.length > 0 ? 'check-circle' : 'check'}
@@ -530,9 +543,6 @@ export const ChatConversationModal: React.FC<ChatConversationModalProps> = ({
                   style={styles.checkIcon}
                 />
               </View>
-
-              {/* Reactions Row */}
-              {renderReactionsRow(item, true)}
             </View>
           ) : (
             /* Incoming Message (Left-aligned) */
@@ -561,48 +571,59 @@ export const ChatConversationModal: React.FC<ChatConversationModalProps> = ({
                     </View>
                   )}
 
-                  {item.kind === 'ITEM' && item.card ? (
-                    renderSharedCard(item, false)
-                  ) : item.kind === 'PHOTO' && item.photoUrl ? (
-                    <TouchableOpacity
-                      style={styles.imageAttachmentBox}
-                      onPress={() =>
-                        setActivePhotoViewer({
-                          url: item.photoUrl!,
-                          caption: item.text || undefined,
-                          senderName,
-                          timestamp: timeStr,
-                          messageId: item.id,
-                        })
-                      }
-                      onLongPress={() => setSelectedMessageForReactions(item)}
-                      activeOpacity={0.85}
-                    >
-                      <Image
-                        source={{ uri: item.photoUrl }}
-                        style={styles.chatImage}
-                        resizeMode="cover"
-                      />
-                      {item.text ? (
-                        <View style={styles.imageCaptionBar}>
-                          <Text style={styles.imageCaptionText}>{item.text}</Text>
-                        </View>
-                      ) : null}
-                    </TouchableOpacity>
-                  ) : (
-                    <TouchableOpacity
-                      style={styles.incomingBubble}
-                      onLongPress={() => setSelectedMessageForReactions(item)}
-                      activeOpacity={0.85}
-                    >
-                      <Text style={styles.incomingText}>{item.text}</Text>
-                    </TouchableOpacity>
-                  )}
+                  {/* Message Bubble Wrapper with Corner-Attached Reactions */}
+                  <View style={styles.incomingBubbleWrapper}>
+                    {item.kind === 'ITEM' && item.card ? (
+                      renderSharedCard(item, false)
+                    ) : item.kind === 'PHOTO' && item.photoUrl ? (
+                      <TouchableOpacity
+                        style={styles.imageAttachmentBox}
+                        onPress={() =>
+                          setActivePhotoViewer({
+                            url: item.photoUrl!,
+                            caption: item.text || undefined,
+                            senderName,
+                            timestamp: timeStr,
+                            messageId: item.id,
+                          })
+                        }
+                        onLongPress={() => setSelectedMessageForReactions(item)}
+                        activeOpacity={0.85}
+                      >
+                        <Image
+                          source={{ uri: item.photoUrl }}
+                          style={styles.chatImage}
+                          resizeMode="cover"
+                        />
+                        {item.text ? (
+                          <View style={styles.imageCaptionBar}>
+                            <Text style={styles.imageCaptionText}>{item.text}</Text>
+                          </View>
+                        ) : null}
+                      </TouchableOpacity>
+                    ) : (
+                      <TouchableOpacity
+                        style={styles.incomingBubble}
+                        onLongPress={() => setSelectedMessageForReactions(item)}
+                        activeOpacity={0.85}
+                      >
+                        <Text style={styles.incomingText}>{item.text}</Text>
+                      </TouchableOpacity>
+                    )}
 
-                  <Text style={styles.incomingTimeText}>{timeStr}</Text>
+                    {/* Attached Reactions Badge at Bottom Left Corner */}
+                    {renderReactionsRow(item, false)}
+                  </View>
 
-                  {/* Reactions Row */}
-                  {renderReactionsRow(item, false)}
+                  <Text
+                    style={[
+                      styles.incomingTimeText,
+                      Boolean(item.reactions && item.reactions.length > 0) &&
+                        styles.incomingTimeWithReactions,
+                    ]}
+                  >
+                    {timeStr}
+                  </Text>
                 </View>
               </View>
             </View>
@@ -613,14 +634,14 @@ export const ChatConversationModal: React.FC<ChatConversationModalProps> = ({
     [messages, myLastReadAt, handleCardAction]
   );
 
-  // Render Reactions Row under a bubble
+  // Render Reactions Row attached to a bubble's corner
   const renderReactionsRow = (msg: ApiChatMessage, isMine: boolean) => {
     if (!msg.reactions || msg.reactions.length === 0) return null;
     return (
       <View
         style={[
-          styles.reactionsContainer,
-          isMine ? styles.reactionsRight : styles.reactionsLeft,
+          styles.reactionsAttachedBadge,
+          isMine ? styles.reactionsAttachedRight : styles.reactionsAttachedLeft,
         ]}
       >
         {msg.reactions.map((r) => {
@@ -796,10 +817,12 @@ export const ChatConversationModal: React.FC<ChatConversationModalProps> = ({
       animationType="slide"
       transparent={false}
       onRequestClose={onClose}
+      statusBarTranslucent={true}
     >
       <KeyboardAvoidingView
         style={styles.keyboardContainer}
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        keyboardVerticalOffset={Platform.OS === 'android' ? (StatusBar.currentHeight || 0) : 0}
       >
         <View style={[styles.container, { paddingTop: Math.max(insets.top, 16) }]}>
           {/* Header */}
@@ -1046,6 +1069,9 @@ export const ChatConversationModal: React.FC<ChatConversationModalProps> = ({
             onClose={() => setShowQuickMessages(false)}
             customMessages={quickMessagesList}
             onSelectQuickMessage={(text) => handleSendMessage(text)}
+            onSaveQuickMessages={(newMsgs) => {
+              dispatch(updateQuickMessages(newMsgs));
+            }}
           />
 
           <SmartReactionsModal
@@ -1412,20 +1438,51 @@ const styles = StyleSheet.create({
   reactionsRight: {
     alignSelf: 'flex-end',
   },
+  outgoingBubbleWrapper: {
+    position: 'relative',
+    alignSelf: 'flex-end',
+  },
+  incomingBubbleWrapper: {
+    position: 'relative',
+    alignSelf: 'flex-start',
+  },
+  reactionsAttachedBadge: {
+    position: 'absolute',
+    bottom: -11,
+    flexDirection: 'row',
+    gap: 4,
+    zIndex: 10,
+  },
+  reactionsAttachedRight: {
+    right: 8,
+  },
+  reactionsAttachedLeft: {
+    left: 8,
+  },
+  metaRowWithReactions: {
+    marginTop: 12,
+  },
+  incomingTimeWithReactions: {
+    marginTop: 12,
+  },
   reactionPill: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#1B2C46',
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: 'transparent',
-    gap: 4,
+    backgroundColor: '#1E293B',
+    paddingHorizontal: 7,
+    paddingVertical: 2,
+    borderRadius: 14,
+    borderWidth: 1.5,
+    borderColor: '#334155',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.3,
+    shadowRadius: 2,
+    elevation: 4,
   },
   reactionPillActive: {
     borderColor: Colors.primary,
-    backgroundColor: 'rgba(240, 145, 58, 0.2)',
+    backgroundColor: 'rgba(240, 145, 58, 0.25)',
   },
   reactionEmoji: {
     fontSize: 13,
@@ -1434,6 +1491,7 @@ const styles = StyleSheet.create({
     fontSize: 11,
     fontFamily: 'Roboto-Bold',
     color: '#8A97AB',
+    marginLeft: 3,
   },
   reactionCountActive: {
     color: Colors.primary,
