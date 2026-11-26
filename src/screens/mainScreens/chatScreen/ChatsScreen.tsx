@@ -16,7 +16,6 @@ import AppTopBar from '../../../components/AppTopBar';
 import { useAppDispatch, useAppSelector } from '../../../redux';
 import {
   fetchChatThreads,
-  fetchSharedSummary,
   setActiveThreadId,
   searchChatMessages,
 } from '../../../redux/features/chat/chatSlice';
@@ -24,7 +23,7 @@ import { getMyFamilyBasicThunk, getMyFamilyThunk } from '../../../redux/features
 import { initChatSocketBridge } from '../../../redux/features/chat/chatSocketBridge';
 import { ChatConversationModal } from './ChatConversationModal';
 import { JustUsModal } from './JustUsModal';
-import { ChatThreadItem, SharedSummaryItem } from './types';
+import { ChatThreadItem } from './types';
 
 export interface ChatsScreenProps {
   onProfilePress?: () => void;
@@ -87,27 +86,6 @@ const formatThreadSubtitle = (
   return 'Say hello';
 };
 
-const DEFAULT_SHARED_ITEMS: SharedSummaryItem[] = [
-  {
-    id: 'sh-1',
-    type: 'list',
-    title: 'Diwali shopping',
-    subtitle: 'List · 6 of 14 done · Shared by Dadi',
-    iconName: 'list',
-    iconBgColor: 'rgba(46, 196, 182, 0.15)',
-    iconColor: Colors.accentTeal,
-  },
-  {
-    id: 'sh-2',
-    type: 'event',
-    title: 'Aarav’s PTM',
-    subtitle: 'Event · Fri, 6 Nov · Shared by you',
-    iconName: 'calendar',
-    iconBgColor: 'rgba(58, 142, 240, 0.15)',
-    iconColor: Colors.accentBlue,
-  },
-];
-
 export const ChatsScreen: React.FC<ChatsScreenProps> = ({
   onProfilePress,
   onNotificationsPress,
@@ -136,7 +114,6 @@ export const ChatsScreen: React.FC<ChatsScreenProps> = ({
   useEffect(() => {
     initChatSocketBridge();
     dispatch(fetchChatThreads());
-    dispatch(fetchSharedSummary());
     dispatch(getMyFamilyBasicThunk());
     dispatch(getMyFamilyThunk());
   }, [dispatch]);
@@ -145,10 +122,7 @@ export const ChatsScreen: React.FC<ChatsScreenProps> = ({
   const handleRefresh = useCallback(async () => {
     setRefreshing(true);
     try {
-      await Promise.all([
-        dispatch(fetchChatThreads()).unwrap().catch(() => {}),
-        dispatch(fetchSharedSummary()).unwrap().catch(() => {}),
-      ]);
+      await dispatch(fetchChatThreads()).unwrap().catch(() => {});
     } finally {
       setRefreshing(false);
     }
@@ -237,65 +211,6 @@ export const ChatsScreen: React.FC<ChatsScreenProps> = ({
         t.subtitle.toLowerCase().includes(q)
     );
   }, [threadsList, searchQuery]);
-
-  // Map Shared items from Redux sharedSummary
-  const sharedItems: SharedSummaryItem[] = useMemo(() => {
-    const summary = chatState.sharedSummary;
-    if (!summary) return DEFAULT_SHARED_ITEMS;
-
-    const list: SharedSummaryItem[] = [];
-
-    if (Array.isArray(summary.lists) && summary.lists.length > 0) {
-      const l = summary.lists[0];
-      list.push({
-        id: `sh-l-${l.id || 0}`,
-        type: 'list',
-        title: l.title || l.name || 'Shared list',
-        subtitle: `List · ${l.doneCount || 0} of ${l.totalCount || l.itemsCount || 0} done`,
-        iconName: 'list',
-        iconBgColor: 'rgba(46, 196, 182, 0.15)',
-        iconColor: Colors.accentTeal,
-      });
-    }
-
-    if (Array.isArray(summary.events) && summary.events.length > 0) {
-      const e = summary.events[0];
-      list.push({
-        id: `sh-e-${e.id || 0}`,
-        type: 'event',
-        title: e.title || 'Shared event',
-        subtitle: `Event · ${e.date || 'Upcoming'}`,
-        iconName: 'calendar',
-        iconBgColor: 'rgba(58, 142, 240, 0.15)',
-        iconColor: Colors.accentBlue,
-      });
-    }
-
-    if (Array.isArray(summary.tasks) && summary.tasks.length > 0) {
-      const t = summary.tasks[0];
-      list.push({
-        id: `sh-t-${t.id || 0}`,
-        type: 'task',
-        title: t.title || 'Shared task',
-        subtitle: `Task · Due ${t.dueDate || 'Soon'}`,
-        iconName: 'check-square',
-        iconBgColor: 'rgba(16, 185, 129, 0.15)',
-        iconColor: '#10B981',
-      });
-    }
-
-    return list.length > 0 ? list : DEFAULT_SHARED_ITEMS;
-  }, [chatState.sharedSummary]);
-
-  const filteredShared = useMemo(() => {
-    if (!searchQuery.trim()) return sharedItems;
-    const q = searchQuery.toLowerCase().trim();
-    return sharedItems.filter(
-      (s) =>
-        s.title.toLowerCase().includes(q) ||
-        s.subtitle.toLowerCase().includes(q)
-    );
-  }, [sharedItems, searchQuery]);
 
   // Open Family Chat modal
   const handleOpenFamilyChat = useCallback(
@@ -559,64 +474,6 @@ export const ChatsScreen: React.FC<ChatsScreenProps> = ({
             and it never shows in Pulse.
           </Text>
         </View>
-
-        {/* Section Header: Shared in Family chat */}
-        <View style={styles.sectionHeaderRow}>
-          <Text style={styles.sectionTitle}>Shared in Family chat</Text>
-          <TouchableOpacity
-            activeOpacity={0.7}
-            onPress={() => handleOpenFamilyChat()}
-          >
-            <Text style={styles.seeAllText}>See all</Text>
-          </TouchableOpacity>
-        </View>
-
-        {/* Shared Items Card */}
-        <View style={styles.sharedItemsCard}>
-          {filteredShared.map((item, index) => (
-            <View key={item.id}>
-              {index > 0 && <View style={styles.divider} />}
-              <TouchableOpacity
-                style={styles.sharedItemRow}
-                onPress={() => {
-                  const type = item.type === 'task' ? 'TASK' : item.type === 'event' ? 'EVENT' : 'LIST';
-                  if (onNavigateToItem) {
-                    onNavigateToItem(type, item.id);
-                  } else {
-                    handleOpenFamilyChat();
-                  }
-                }}
-                activeOpacity={0.7}
-              >
-                {/* Icon */}
-                <View
-                  style={[
-                    styles.sharedIconBox,
-                    { backgroundColor: item.iconBgColor },
-                  ]}
-                >
-                  <Feather
-                    name={item.iconName as any}
-                    size={20}
-                    color={item.iconColor}
-                  />
-                </View>
-
-                {/* Text details */}
-                <View style={styles.sharedTextGroup}>
-                  <Text style={styles.sharedItemTitle}>{item.title}</Text>
-                  <Text style={styles.sharedItemSubtitle}>{item.subtitle}</Text>
-                </View>
-
-                <Feather
-                  name="chevron-right"
-                  size={18}
-                  color={Colors.textSecondary}
-                />
-              </TouchableOpacity>
-            </View>
-          ))}
-        </View>
       </ScrollView>
 
       {/* Family Chat Modal (CHT-02, CHT-04, CHT-08, CHT-09) */}
@@ -859,56 +716,6 @@ const styles = StyleSheet.create({
     fontFamily: 'Roboto-Regular',
     color: '#8A97AB',
     lineHeight: 18,
-  },
-  sectionHeaderRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: 14,
-  },
-  sectionTitle: {
-    fontSize: 14,
-    fontFamily: 'Roboto-Bold',
-    color: '#8A97AB',
-    letterSpacing: 0.5,
-  },
-  seeAllText: {
-    fontSize: 14,
-    fontFamily: 'Roboto-Medium',
-    color: Colors.primary,
-  },
-  sharedItemsCard: {
-    backgroundColor: '#131F33',
-    borderRadius: 16,
-    overflow: 'hidden',
-  },
-  sharedItemRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: 16,
-  },
-  sharedIconBox: {
-    width: 40,
-    height: 40,
-    borderRadius: 10,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginRight: 14,
-  },
-  sharedTextGroup: {
-    flex: 1,
-    justifyContent: 'center',
-  },
-  sharedItemTitle: {
-    fontSize: 15,
-    fontFamily: 'Roboto-Medium',
-    color: Colors.white,
-    marginBottom: 2,
-  },
-  sharedItemSubtitle: {
-    fontSize: 13,
-    fontFamily: 'Roboto-Regular',
-    color: '#8A97AB',
   },
 });
 
