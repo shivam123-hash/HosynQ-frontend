@@ -6,14 +6,12 @@ import {
   TextInput,
   StyleSheet,
   Modal,
-  TouchableWithoutFeedback,
   ScrollView,
   Alert,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Feather from '@react-native-vector-icons/feather';
 import Colors from '../../../units/Colors';
-import { QuickMessageItem } from './types';
 
 export interface QuickMessagesModalProps {
   visible: boolean;
@@ -100,170 +98,178 @@ export const QuickMessagesModal: React.FC<QuickMessagesModalProps> = ({
       transparent={true}
       onRequestClose={onClose}
     >
-      <TouchableWithoutFeedback onPress={onClose}>
-        <View style={styles.overlay}>
-          <TouchableWithoutFeedback>
-            <View
-              style={[
-                styles.sheetContainer,
-                { paddingBottom: Math.max(insets.bottom, 20) },
-              ]}
-            >
-              {/* Drag Handle */}
-              <View style={styles.handleBar} />
+      <View style={styles.overlay}>
+        {/* Clean backdrop touch to dismiss (Does NOT wrap the sheet so gestures are never swallowed) */}
+        <TouchableOpacity
+          style={StyleSheet.absoluteFill}
+          activeOpacity={1}
+          onPress={onClose}
+        />
 
-              {/* Header Row */}
-              <View style={styles.headerRow}>
-                <View style={styles.headerTitleCol}>
-                  <Text style={styles.sheetTitle}>
-                    {isEditing ? 'Edit quick messages' : 'Quick messages'}
-                  </Text>
-                  <Text style={styles.sheetSubtitle}>
-                    {isEditing
-                      ? 'Add, edit or delete your quick messages.'
-                      : 'Tap one to send it to Family chat.'}
-                  </Text>
+        {/* Sheet Container */}
+        <View
+          style={[
+            styles.sheetContainer,
+            { paddingBottom: Math.max(insets.bottom, 20) },
+          ]}
+        >
+          {/* Drag Handle */}
+          <View style={styles.handleBar} />
+
+          {/* Header Row */}
+          <View style={styles.headerRow}>
+            <View style={styles.headerTitleCol}>
+              <Text style={styles.sheetTitle}>
+                {isEditing ? 'Edit quick messages' : 'Quick messages'}
+              </Text>
+              <Text style={styles.sheetSubtitle}>
+                {isEditing
+                  ? 'Add, edit or delete your quick messages.'
+                  : 'Tap one to send it to Family chat.'}
+              </Text>
+            </View>
+
+            {isEditing && (
+              <TouchableOpacity
+                style={styles.doneHeaderBtn}
+                onPress={handleSave}
+                activeOpacity={0.7}
+              >
+                <Text style={styles.doneHeaderBtnText}>Save</Text>
+              </TouchableOpacity>
+            )}
+          </View>
+
+          {/* Edit Mode: Add New Message Bar */}
+          {isEditing && (
+            <View style={styles.addInputRow}>
+              <TextInput
+                style={styles.addInput}
+                value={newText}
+                onChangeText={setNewText}
+                placeholder="Type new quick message..."
+                placeholderTextColor={Colors.textSecondary}
+                onSubmitEditing={handleAddMessage}
+              />
+              <TouchableOpacity
+                style={[
+                  styles.addBtn,
+                  !newText.trim() && styles.addBtnDisabled,
+                ]}
+                onPress={handleAddMessage}
+                disabled={!newText.trim()}
+                activeOpacity={0.7}
+              >
+                <Feather name="plus" size={18} color={Colors.white} />
+              </TouchableOpacity>
+            </View>
+          )}
+
+          {/* Messages Container ScrollView (with nestedScrollEnabled and reliable gesture handling) */}
+          <ScrollView
+            style={styles.scrollArea}
+            contentContainerStyle={styles.cardContainer}
+            nestedScrollEnabled={true}
+            keyboardShouldPersistTaps="handled"
+            showsVerticalScrollIndicator={true}
+            bounces={true}
+            alwaysBounceVertical={false}
+          >
+            {messagesList.map((msg, index) => (
+              <View
+                key={`qm-${index}-${msg}`}
+                style={[
+                  styles.rowItem,
+                  index > 0 && styles.rowDivider,
+                ]}
+              >
+                {/* Left Icon */}
+                <View style={styles.iconBox}>
+                  <Feather
+                    name={isEditing ? 'message-circle' : 'send'}
+                    size={16}
+                    color={Colors.primary}
+                  />
                 </View>
 
-                {isEditing && (
+                {/* Text Title */}
+                <TouchableOpacity
+                  style={styles.textGroup}
+                  onPress={() => {
+                    if (!isEditing) handleSelect(msg);
+                  }}
+                  activeOpacity={isEditing ? 1 : 0.7}
+                >
+                  <Text style={styles.itemTitle}>{msg}</Text>
+                </TouchableOpacity>
+
+                {/* Right Action: Delete icon in edit mode, or send icon in selection mode */}
+                {isEditing ? (
                   <TouchableOpacity
-                    style={styles.doneHeaderBtn}
-                    onPress={handleSave}
+                    style={styles.deleteBtn}
+                    onPress={() => handleDeleteMessage(index)}
+                    activeOpacity={0.7}
+                    hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                  >
+                    <Feather name="trash-2" size={16} color="#EF4444" />
+                  </TouchableOpacity>
+                ) : (
+                  <TouchableOpacity
+                    onPress={() => handleSelect(msg)}
                     activeOpacity={0.7}
                   >
-                    <Text style={styles.doneHeaderBtnText}>Save</Text>
+                    <Feather
+                      name="send"
+                      size={16}
+                      color={Colors.primary}
+                      style={styles.sendIcon}
+                    />
                   </TouchableOpacity>
                 )}
               </View>
+            ))}
+          </ScrollView>
 
-              {/* Edit Mode: Add New Message Bar */}
-              {isEditing && (
-                <View style={styles.addInputRow}>
-                  <TextInput
-                    style={styles.addInput}
-                    value={newText}
-                    onChangeText={setNewText}
-                    placeholder="Type new quick message..."
-                    placeholderTextColor={Colors.textSecondary}
-                    onSubmitEditing={handleAddMessage}
-                  />
-                  <TouchableOpacity
-                    style={[
-                      styles.addBtn,
-                      !newText.trim() && styles.addBtnDisabled,
-                    ]}
-                    onPress={handleAddMessage}
-                    disabled={!newText.trim()}
-                    activeOpacity={0.7}
-                  >
-                    <Feather name="plus" size={18} color={Colors.white} />
-                  </TouchableOpacity>
-                </View>
-              )}
-
-              {/* Messages Container Card */}
-              <ScrollView
-                style={styles.scrollArea}
-                contentContainerStyle={styles.cardContainer}
-                showsVerticalScrollIndicator={false}
+          {/* Bottom Actions */}
+          {isEditing ? (
+            <View style={styles.editActionsRow}>
+              <TouchableOpacity
+                style={styles.cancelBtn}
+                onPress={() => {
+                  setIsEditing(false);
+                  setNewText('');
+                }}
+                activeOpacity={0.7}
               >
-                {messagesList.map((msg, index) => (
-                  <View
-                    key={`qm-${index}-${msg}`}
-                    style={[
-                      styles.rowItem,
-                      index > 0 && styles.rowDivider,
-                    ]}
-                  >
-                    {/* Left Icon */}
-                    <View style={styles.iconBox}>
-                      <Feather
-                        name={isEditing ? 'message-circle' : 'send'}
-                        size={16}
-                        color={Colors.primary}
-                      />
-                    </View>
+                <Text style={styles.cancelBtnText}>Cancel</Text>
+              </TouchableOpacity>
 
-                    {/* Text Title */}
-                    <TouchableOpacity
-                      style={styles.textGroup}
-                      onPress={() => {
-                        if (!isEditing) handleSelect(msg);
-                      }}
-                      activeOpacity={isEditing ? 1 : 0.7}
-                    >
-                      <Text style={styles.itemTitle}>{msg}</Text>
-                    </TouchableOpacity>
-
-                    {/* Right Action: Delete icon in edit mode, or send icon in selection mode */}
-                    {isEditing ? (
-                      <TouchableOpacity
-                        style={styles.deleteBtn}
-                        onPress={() => handleDeleteMessage(index)}
-                        activeOpacity={0.7}
-                        hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-                      >
-                        <Feather name="trash-2" size={16} color="#EF4444" />
-                      </TouchableOpacity>
-                    ) : (
-                      <TouchableOpacity
-                        onPress={() => handleSelect(msg)}
-                        activeOpacity={0.7}
-                      >
-                        <Feather
-                          name="send"
-                          size={16}
-                          color={Colors.primary}
-                          style={styles.sendIcon}
-                        />
-                      </TouchableOpacity>
-                    )}
-                  </View>
-                ))}
-              </ScrollView>
-
-              {/* Bottom Actions */}
-              {isEditing ? (
-                <View style={styles.editActionsRow}>
-                  <TouchableOpacity
-                    style={styles.cancelBtn}
-                    onPress={() => {
-                      setIsEditing(false);
-                      setNewText('');
-                    }}
-                    activeOpacity={0.7}
-                  >
-                    <Text style={styles.cancelBtnText}>Cancel</Text>
-                  </TouchableOpacity>
-
-                  <TouchableOpacity
-                    style={styles.saveBtn}
-                    onPress={handleSave}
-                    activeOpacity={0.7}
-                  >
-                    <Feather name="check" size={16} color={Colors.white} style={{ marginRight: 6 }} />
-                    <Text style={styles.saveBtnText}>Save</Text>
-                  </TouchableOpacity>
-                </View>
-              ) : (
-                <TouchableOpacity
-                  style={styles.editButton}
-                  onPress={() => setIsEditing(true)}
-                  activeOpacity={0.7}
-                >
-                  <Feather
-                    name="edit-2"
-                    size={16}
-                    color={Colors.primary}
-                    style={styles.editIcon}
-                  />
-                  <Text style={styles.editText}>Edit quick messages</Text>
-                </TouchableOpacity>
-              )}
+              <TouchableOpacity
+                style={styles.saveBtn}
+                onPress={handleSave}
+                activeOpacity={0.7}
+              >
+                <Feather name="check" size={16} color={Colors.white} style={{ marginRight: 6 }} />
+                <Text style={styles.saveBtnText}>Save</Text>
+              </TouchableOpacity>
             </View>
-          </TouchableWithoutFeedback>
+          ) : (
+            <TouchableOpacity
+              style={styles.editButton}
+              onPress={() => setIsEditing(true)}
+              activeOpacity={0.7}
+            >
+              <Feather
+                name="edit-2"
+                size={16}
+                color={Colors.primary}
+                style={styles.editIcon}
+              />
+              <Text style={styles.editText}>Edit quick messages</Text>
+            </TouchableOpacity>
+          )}
         </View>
-      </TouchableWithoutFeedback>
+      </View>
     </Modal>
   );
 };
@@ -355,7 +361,7 @@ const styles = StyleSheet.create({
     opacity: 0.5,
   },
   scrollArea: {
-    maxHeight: 360,
+    maxHeight: 320,
     marginBottom: 16,
   },
   cardContainer: {
