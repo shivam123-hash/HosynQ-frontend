@@ -230,13 +230,13 @@ export const ChatConversationModal: React.FC<ChatConversationModalProps> = ({
         isMine: true,
         replyTo: replyingTo
           ? {
-              id: replyingTo.id,
-              kind: replyingTo.kind,
-              sender: replyingTo.sender,
-              text: replyingTo.text,
-              photoUrl: replyingTo.photoUrl,
-              createdAt: replyingTo.createdAt,
-            }
+            id: replyingTo.id,
+            kind: replyingTo.kind,
+            sender: replyingTo.sender,
+            text: replyingTo.text,
+            photoUrl: replyingTo.photoUrl,
+            createdAt: replyingTo.createdAt,
+          }
           : null,
       };
 
@@ -518,7 +518,7 @@ export const ChatConversationModal: React.FC<ChatConversationModalProps> = ({
                     style={[
                       styles.outgoingBubble,
                       Boolean(item.reactions && item.reactions.length > 0) &&
-                        styles.bubbleWithReactionOutgoing,
+                      styles.bubbleWithReactionOutgoing,
                     ]}
                     onLongPress={() => setSelectedMessageForReactions(item)}
                     activeOpacity={0.85}
@@ -527,7 +527,6 @@ export const ChatConversationModal: React.FC<ChatConversationModalProps> = ({
                   </TouchableOpacity>
                 )}
 
-                {/* Attached Reactions Badge at Bottom Right Corner */}
                 {renderReactionsRow(item, true)}
               </View>
 
@@ -536,7 +535,7 @@ export const ChatConversationModal: React.FC<ChatConversationModalProps> = ({
                 style={[
                   styles.outgoingMetaRow,
                   Boolean(item.reactions && item.reactions.length > 0) &&
-                    styles.metaRowWithReactions,
+                  styles.metaRowWithReactions,
                 ]}
               >
                 <Text style={styles.metaTimeText}>{timeStr}</Text>
@@ -610,7 +609,7 @@ export const ChatConversationModal: React.FC<ChatConversationModalProps> = ({
                         style={[
                           styles.incomingBubble,
                           Boolean(item.reactions && item.reactions.length > 0) &&
-                            styles.bubbleWithReactionIncoming,
+                          styles.bubbleWithReactionIncoming,
                         ]}
                         onLongPress={() => setSelectedMessageForReactions(item)}
                         activeOpacity={0.85}
@@ -627,7 +626,7 @@ export const ChatConversationModal: React.FC<ChatConversationModalProps> = ({
                     style={[
                       styles.incomingTimeText,
                       Boolean(item.reactions && item.reactions.length > 0) &&
-                        styles.incomingTimeWithReactions,
+                      styles.incomingTimeWithReactions,
                     ]}
                   >
                     {timeStr}
@@ -1310,7 +1309,7 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.primary,
     borderRadius: 20,
     paddingHorizontal: 16,
-    paddingVertical: 10,
+    paddingVertical: 8,
     maxWidth: '80%',
     minHeight: 38,
     justifyContent: 'center',
@@ -1490,7 +1489,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     backgroundColor: '#1E293B',
     paddingHorizontal: 5,
-    paddingVertical: 1.5,
+    // paddingVertical: 1.5,
     borderRadius: 10,
     borderWidth: 0.8,
     borderColor: 'rgba(255, 255, 255, 0.18)',

@@ -331,49 +331,79 @@ const chatServices = {
     return response.data;
   },
 
-  // 16. Get Tasks list for share picker (GET /tasks?status=PENDING&q=...)
+  // 16. Get Tasks list for share picker (GET /tasks?status=PENDING&limit=50)
   getTasksForShare: async (search?: string): Promise<{ success: boolean; tasks: any[] }> => {
-    const params: Record<string, string> = { status: 'PENDING' };
-    if (search?.trim()) {
-      params.q = search.trim();
+    try {
+      const params: Record<string, string> = { status: 'PENDING', limit: '50' };
+      if (search?.trim()) {
+        params.q = search.trim();
+      }
+      const response = await apiClient.get<any>(
+        API_ROUTES.TASKS,
+        { params }
+      );
+      const data = response.data;
+      const tasks = data?.tasks || data?.data?.tasks || (Array.isArray(data) ? data : []);
+      return { success: true, tasks };
+    } catch (error) {
+      console.warn('[chatServices.getTasksForShare] Error fetching tasks:', error);
+      return { success: false, tasks: [] };
     }
-    const response = await apiClient.get<{ success: boolean; tasks: any[] }>(
-      API_ROUTES.TASKS,
-      { params }
-    );
-    return response.data;
   },
 
-  // 17. Get Events list for share picker (GET /calendar?from=...&to=...&show=EVENTS)
+  // 17. Get Events list for share picker (GET /calendar?from=...&to=...)
   getEventsForShare: async (
     fromDate?: string,
     toDate?: string
   ): Promise<{ success: boolean; events: any[] }> => {
-    const today = new Date();
-    const from = fromDate || today.toISOString().slice(0, 10);
-    const futureDate = new Date(today);
-    futureDate.setDate(today.getDate() + 60);
-    const to = toDate || futureDate.toISOString().slice(0, 10);
+    try {
+      const today = new Date();
+      const todayStr = today.toISOString().slice(0, 10);
+      const pastDate = new Date(today);
+      pastDate.setDate(today.getDate() - 14);
+      const futureDate = new Date(today);
+      futureDate.setDate(today.getDate() + 90);
 
-    const response = await apiClient.get<{ success: boolean; events: any[] }>(
-      API_ROUTES.CALENDAR_FEED,
-      {
-        params: {
-          from,
-          to,
-          show: ['EVENTS'],
-        },
-      }
-    );
-    return response.data;
+      const from = fromDate || pastDate.toISOString().slice(0, 10);
+      const to = toDate || futureDate.toISOString().slice(0, 10);
+
+      const response = await apiClient.get<any>(
+        API_ROUTES.CALENDAR_FEED,
+        {
+          params: {
+            from,
+            to,
+            today: todayStr,
+          },
+        }
+      );
+      const data = response.data;
+      const events = data?.events || data?.data?.events || (Array.isArray(data) ? data : []);
+      return { success: true, events };
+    } catch (error) {
+      console.warn('[chatServices.getEventsForShare] Error fetching events:', error);
+      return { success: false, events: [] };
+    }
   },
 
-  // 18. Get Lists for share picker (GET /lists)
+  // 18. Get Lists for share picker (GET /lists?archived=false)
   getListsForShare: async (): Promise<{ success: boolean; lists: any[] }> => {
-    const response = await apiClient.get<{ success: boolean; lists: any[] }>(
-      API_ROUTES.LISTS
-    );
-    return response.data;
+    try {
+      const response = await apiClient.get<any>(
+        API_ROUTES.LISTS,
+        {
+          params: {
+            archived: false,
+          },
+        }
+      );
+      const data = response.data;
+      const lists = data?.lists || data?.data?.lists || (Array.isArray(data) ? data : []);
+      return { success: true, lists };
+    } catch (error) {
+      console.warn('[chatServices.getListsForShare] Error fetching lists:', error);
+      return { success: false, lists: [] };
+    }
   },
 };
 
