@@ -11,7 +11,17 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Feather from '@react-native-vector-icons/feather';
-import { useAppSelector } from '../../../../redux';
+import { useAppDispatch, useAppSelector } from '../../../../redux';
+import {
+  fetchPollResultsThunk,
+  fetchPollsThunk,
+  setSelectedPollLocal,
+} from '../../../../redux/features/pulse/pulseSlice';
+import { isUUID } from '../../../../redux/features/lists/listsSlice';
+import { PulsePollApiItem } from '../../../../services/pulseServices';
+import PollResultsModal from '../../familyPulse/PollResultsModal';
+import FamilyPollsModal from '../../familyPulse/FamilyPollsModal';
+import { isJestTestEnv } from '../../familyPulse/pulseApiHelpers';
 import { CalendarEvent, EventComment, CalendarFamilyMember } from '../types';
 import {
   extractFamilyMembersFromState,
@@ -57,6 +67,10 @@ export const EventDetailModal: React.FC<EventDetailModalProps> = ({
   const [showComments, setShowComments] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [showAttendeesModal, setShowAttendeesModal] = useState(false);
+  const [showPollResults, setShowPollResults] = useState(false);
+  const [showFamilyPolls, setShowFamilyPolls] = useState(false);
+  const [resolvedPollId, setResolvedPollId] = useState<string | null>(null);
+  const [resolvingPoll, setResolvingPoll] = useState(false);
 
   useEffect(() => {
     if (eventProp) {
@@ -71,6 +85,10 @@ export const EventDetailModal: React.FC<EventDetailModalProps> = ({
       setShowComments(false);
       setShowEditModal(false);
       setShowAttendeesModal(false);
+      setShowPollResults(false);
+      setShowFamilyPolls(false);
+      setResolvedPollId(null);
+      setResolvingPoll(false);
     }
   }, [visible]);
 
@@ -79,7 +97,9 @@ export const EventDetailModal: React.FC<EventDetailModalProps> = ({
       showCancelModal ||
       showEditModal ||
       showComments ||
-      showAttendeesModal
+      showAttendeesModal ||
+      showPollResults ||
+      showFamilyPolls
     ) {
       setIsMenuOpen(false);
     }
@@ -88,11 +108,15 @@ export const EventDetailModal: React.FC<EventDetailModalProps> = ({
     showEditModal,
     showComments,
     showAttendeesModal,
+    showPollResults,
+    showFamilyPolls,
   ]);
 
   const event = cachedEvent || eventProp;
+  const dispatch = useAppDispatch();
 
   const familyState = useAppSelector((state) => state.family);
+  const pulseState = useAppSelector((state) => state.pulse);
   const authUser = useAppSelector((state) => state.auth?.user);
   const emailAuthUser = useAppSelector((state) => state.emailAuth?.user);
   const baseProfile = useAppSelector((state) => state.baseProfile);
@@ -632,26 +656,137 @@ export const EventDetailModal: React.FC<EventDetailModalProps> = ({
             </View>
           </View>
 
-          {/* Scanned WhatsApp/Circular Source Card (CAL-06) */}
-          {Boolean(event.sourceNote) && (
-            <View style={styles.sourceCard}>
-              <Feather
-                name="maximize"
-                size={18}
-                color="#F0913A"
-                style={styles.sourceIcon}
-              />
-              <Text style={styles.sourceText}>{event.sourceNote}</Text>
-              <TouchableOpacity
-                onPress={() => {
-                  Alert.alert('Scanned Circular', event.sourceNote);
-                }}
-                activeOpacity={0.7}
-              >
-                <Text style={styles.sourceViewLink}>View</Text>
-              </TouchableOpacity>
-            </View>
-          )}
+          {/* Source Card: Family Poll or Scanned WhatsApp/Circular (CAL-06) */}
+          {Boolean(event.sourceNote) &&
+            (() => {
+              const isFamilyPoll = Boolean(
+                event.sourceNote?.toLowerCase().includes('family poll') ||
+                  event.notes?.toLowerCase().trim().startsWith('from the family poll:')
+              );
+
+              const findMatchingPoll = (
+                candidates: PulsePollApiItem[]
+              ): PulsePollApiItem | undefined => {
+                if (event.sourcePollId) {
+                  const byId = candidates.find((p) => p.id === event.sourcePollId);
+                  if (byId) return byId;
+                }
+                const questionMatch = event.notes?.match(
+                  /From the family poll:\s*(.+)/i
+                )?.[1];
+                if (questionMatch) {
+                  const needle = questionMatch.trim().toLowerCase();
+                  const byQuestion = candidates.find(
+                    (p) => p.question?.trim().toLowerCase() === needle
+                  );
+                  if (byQuestion) return byQuestion;
+                }
+                const titleNeedle = event.title?.trim().toLowerCase();
+                if (titleNeedle) {
+                  return candidates.find((p) =>
+                    p.options?.some(
+                      (o) => o.label?.trim().toLowerCase() === titleNeedle
+                    )
+                  );
+                }
+                return undefined;
+              };
+
+              const handleOpenFamilyPoll = async () => {
+                const cachedPool: PulsePollApiItem[] = [
+                  ...(pulseState?.activePolls || []),
+                  ...(pulseState?.closedPolls || []),
+                  ...(pulseState?.home?.openPoll ? [pulseState.home.openPoll] : []),
+                  ...(pulseState?.selectedPoll ? [pulseState.selectedPoll] : []),
+                ];
+                const immediateMatch = findMatchingPoll(cachedPool);
+                if (immediateMatch) {
+                  setResolvedPollId(immediateMatch.id);
+                  dispatch(setSelectedPollLocal(immediateMatch));
+                  setShowPollResults(true);
+                  if (!isJestTestEnv() && isUUID(immediateMatch.id)) {
+                    dispatch(fetchPollResultsThunk(immediateMatch.id));
+                  }
+                  return;
+                }
+
+                if (isJestTestEnv()) {
+                  setShowFamilyPolls(true);
+                  return;
+                }
+
+                setResolvingPoll(true);
+                setResolvedPollId(event.sourcePollId || null);
+                setShowPollResults(true);
+                try {
+                  const [activeRes, closedRes] = await Promise.all([
+                    dispatch(fetchPollsThunk({ status: 'ACTIVE', limit: 50 })).unwrap(),
+                    dispatch(fetchPollsThunk({ status: 'CLOSED', limit: 50 })).unwrap(),
+                  ]);
+                  const allFetched = [
+                    ...(activeRes?.data?.polls || []),
+                    ...(closedRes?.data?.polls || []),
+                  ];
+                  const resolved = findMatchingPoll(allFetched);
+                  if (resolved) {
+                    setResolvedPollId(resolved.id);
+                    dispatch(setSelectedPollLocal(resolved));
+                    if (isUUID(resolved.id)) {
+                      await dispatch(fetchPollResultsThunk(resolved.id)).unwrap();
+                    }
+                  } else {
+                    setShowPollResults(false);
+                    setShowFamilyPolls(true);
+                  }
+                } catch {
+                  setShowPollResults(false);
+                  setShowFamilyPolls(true);
+                } finally {
+                  setResolvingPoll(false);
+                }
+              };
+
+              if (isFamilyPoll) {
+                return (
+                  <TouchableOpacity
+                    style={styles.sourceCard}
+                    onPress={handleOpenFamilyPoll}
+                    activeOpacity={0.75}
+                    accessibilityRole="button"
+                    accessibilityLabel="View family poll"
+                  >
+                    <Feather
+                      name="bar-chart-2"
+                      size={18}
+                      color="#F0913A"
+                      style={styles.sourceIcon}
+                    />
+                    <Text style={styles.sourceText}>{event.sourceNote}</Text>
+                    <Text style={styles.sourceViewLink}>View</Text>
+                  </TouchableOpacity>
+                );
+              }
+
+              return (
+                <View style={styles.sourceCard}>
+                  <Feather
+                    name="maximize"
+                    size={18}
+                    color="#F0913A"
+                    style={styles.sourceIcon}
+                  />
+                  <Text style={styles.sourceText}>{event.sourceNote}</Text>
+                  <TouchableOpacity
+                    onPress={() => {
+                      Alert.alert('Scanned Circular', event.sourceNote);
+                    }}
+                    activeOpacity={0.7}
+                  >
+                    <Text style={styles.sourceViewLink}>View</Text>
+                  </TouchableOpacity>
+                </View>
+              );
+            })()}
 
           {/* RSVP Attendance Card (CAL-06) - shown to everyone who is invited */}
           {canShowRsvpCard && (
@@ -893,6 +1028,34 @@ export const EventDetailModal: React.FC<EventDetailModalProps> = ({
             asModal={false}
           />
         )}
+
+        {/* Linked Family Poll Results Overlay */}
+        <PollResultsModal
+          visible={showPollResults}
+          asModal={false}
+          pollId={resolvedPollId}
+          externalLoading={resolvingPoll}
+          onClose={() => {
+            setShowPollResults(false);
+            setResolvingPoll(false);
+          }}
+          onBrowseAllPolls={() => {
+            setShowPollResults(false);
+            setShowFamilyPolls(true);
+          }}
+        />
+
+        {/* Fallback Family Polls Overlay if poll question/ID changed */}
+        <FamilyPollsModal
+          visible={showFamilyPolls}
+          asModal={false}
+          onClose={() => setShowFamilyPolls(false)}
+          onOpenPollResults={(pickedPoll) => {
+            setShowFamilyPolls(false);
+            setResolvedPollId(pickedPoll.id);
+            setShowPollResults(true);
+          }}
+        />
       </View>
     </Modal>
   );

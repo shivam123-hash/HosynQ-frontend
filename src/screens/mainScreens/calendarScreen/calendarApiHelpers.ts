@@ -501,6 +501,8 @@ export const mapApiEventToUiEvent = (e: any): CalendarEvent => {
     repeat: formatDisplayRepeat(e.repeat || e.repeatFreq),
     notes: e.notes || '',
     sourceNote: e.sourceLabel || e.sourceNote,
+    sourcePollId:
+      e.pollId || (e.sourceType === 'PULSE_POLL' ? e.sourceId : undefined),
     comments: (e.comments?.latest || []).map((c: any) => ({
       id: c.id,
       authorId: c.author?.memberId || '',

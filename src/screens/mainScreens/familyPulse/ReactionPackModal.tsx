@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -11,52 +11,110 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Feather from '@react-native-vector-icons/feather';
 import MaterialIcons from '@react-native-vector-icons/material-icons';
 import Colors from '../../../units/Colors';
+import { PulseReactionsSummary } from '../../../services/pulseServices';
+import { FamilyMemberPulse } from './types';
+import PulseModalContainer from './PulseModalContainer';
+import {
+  PULSE_REACTIONS,
+  reactionApiToUiId,
+  reactionUiIdToApi,
+} from './pulseApiHelpers';
 
 export interface ReactionPackModalProps {
   visible: boolean;
+  asModal?: boolean;
   targetTitle?: string;
-  selectedReactionId?: string;
+  selectedReactionId?: string | null;
+  reactionsSummary?: PulseReactionsSummary | null;
+  members?: FamilyMemberPulse[];
   onClose: () => void;
-  onSelectReaction: (reactionId: string) => void;
+  onSelectReaction: (reactionId: string, apiCode: string) => void;
   onRemoveReaction?: () => void;
 }
 
-const REACTIONS: {
-  id: string;
-  label: string;
-  iconType: 'feather' | 'material';
-  iconName: string;
-}[] = [
-  { id: 'love', label: 'Love it', iconType: 'feather', iconName: 'heart' },
-  { id: 'proud', label: 'So proud', iconType: 'feather', iconName: 'star' },
-  { id: 'welldone', label: 'Well done', iconType: 'feather', iconName: 'thumbs-up' },
-  { id: 'haha', label: 'Haha', iconType: 'feather', iconName: 'smile' },
-  { id: 'treat', label: 'Treat time', iconType: 'feather', iconName: 'gift' },
-  { id: 'shabash', label: 'Shabash!', iconType: 'material', iconName: 'auto-awesome' },
-];
-
 export const ReactionPackModal: React.FC<ReactionPackModalProps> = ({
   visible,
-  targetTitle = 'To Rohan’s thanks for Dadi',
-  selectedReactionId = 'proud',
+  asModal = true,
+  targetTitle = 'React to this post',
+  selectedReactionId,
+  reactionsSummary,
+  members = [],
   onClose,
   onSelectReaction,
   onRemoveReaction,
 }) => {
   const insets = useSafeAreaInsets();
-  const [selected, setSelected] = useState<string>(selectedReactionId);
+  const resolvedInitial =
+    reactionApiToUiId(reactionsSummary?.mine || selectedReactionId || '') || '';
+  const [selected, setSelected] = useState<string>(resolvedInitial);
 
-  const handlePick = (id: string) => {
+  useEffect(() => {
+    if (visible) {
+      setSelected(
+        reactionApiToUiId(reactionsSummary?.mine || selectedReactionId || '') || ''
+      );
+    }
+  }, [visible, reactionsSummary?.mine, selectedReactionId]);
+
+  const handlePick = (id: string, apiCode: string) => {
     setSelected(id);
-    onSelectReaction(id);
+    onSelectReaction(id, apiCode);
     onClose();
   };
 
+  const countByCode = new Map<string, number>();
+  (reactionsSummary?.counts || []).forEach((c) => {
+    if (c.reaction) {
+      countByCode.set(c.reaction.toUpperCase(), c.count || 0);
+    }
+  });
+
+  const reactorIds = reactionsSummary?.memberIds || [];
+  const totalReactions = reactionsSummary?.total ?? reactorIds.length;
+  const memberLookup = new Map(members.map((m) => [m.id, m]));
+  const myMember = members.find((m) => m.isYou);
+
+  const visibleReactors =
+    reactorIds.length > 0
+      ? reactorIds.slice(0, 3).map((mId, idx) => {
+          const m = memberLookup.get(mId);
+          return {
+            id: mId || `r-${idx}`,
+            initial: m?.initial || 'M',
+            bgColor: m?.bgColor || Colors.avatarNavy,
+            name: m?.displayName || m?.name || 'Member',
+          };
+        })
+      : reactionsSummary?.mine && totalReactions > 0
+      ? [
+          {
+            id: myMember?.id || 'you',
+            initial: myMember?.initial || 'Y',
+            bgColor: myMember?.bgColor || Colors.avatarBrown,
+            name: 'You',
+          },
+        ]
+      : [];
+
+  const reactorNames = visibleReactors.map((r) => r.name);
+  const extraCount = Math.max(0, totalReactions - reactorNames.length);
+  const reactorsCaption =
+    totalReactions === 0
+      ? 'No reactions yet — be the first!'
+      : reactorNames.length > 0 && extraCount > 0
+      ? `${reactorNames.join(', ')} and ${extraCount} more reacted`
+      : reactorNames.length > 0
+      ? `${reactorNames.join(', ')} reacted`
+      : `${totalReactions} family reaction${totalReactions === 1 ? '' : 's'}`;
+
+  const hasMine = Boolean(selected);
+
   return (
-    <Modal
+    <PulseModalContainer
       visible={visible}
+      asModal={asModal}
+      variant="sheet"
       transparent
-      animationType="slide"
       onRequestClose={onClose}
     >
       <TouchableWithoutFeedback onPress={onClose}>
@@ -71,50 +129,82 @@ export const ReactionPackModal: React.FC<ReactionPackModalProps> = ({
               <View style={styles.dragHandle} />
 
               <Text style={styles.title}>React</Text>
-              <Text style={styles.subtitle}>{targetTitle}</Text>
+              <Text style={styles.subtitle} numberOfLines={2}>
+                {targetTitle}
+              </Text>
 
               <Text style={styles.sectionKicker}>FAMILY PACK</Text>
 
               {/* 2x3 Grid */}
               <View style={styles.grid}>
-                {REACTIONS.map((item) => {
-                  const isPicked = selected === item.id;
+                {PULSE_REACTIONS.map((item) => {
+                  const isPicked =
+                    selected === item.id ||
+                    (Boolean(selected) && reactionUiIdToApi(selected) === item.apiCode);
+                  const countForItem = countByCode.get(item.apiCode) || 0;
+
                   return (
                     <TouchableOpacity
                       key={item.id}
-                      onPress={() => handlePick(item.id)}
-                      activeOpacity={0.7}
+                      onPress={() => handlePick(item.id, item.apiCode)}
+                      activeOpacity={0.75}
                       style={[
                         styles.reactionCard,
-                        isPicked && styles.reactionCardSelected,
+                        isPicked && {
+                          borderWidth: 1.5,
+                          borderColor: item.color,
+                          backgroundColor: item.tintBg,
+                        },
                       ]}
                       accessibilityRole="button"
                       accessibilityLabel={item.label}
+                      accessibilityState={{ selected: isPicked }}
                     >
+                      {isPicked && (
+                        <View
+                          style={[
+                            styles.selectedCheckDot,
+                            { backgroundColor: item.color },
+                          ]}
+                        >
+                          <Feather name="check" size={10} color={Colors.background} />
+                        </View>
+                      )}
+
+                      {countForItem > 0 && (
+                        <View style={styles.cardCountBadge}>
+                          <Text style={styles.cardCountText}>{countForItem}</Text>
+                        </View>
+                      )}
+
                       <View
                         style={[
                           styles.iconCircle,
-                          isPicked && styles.iconCircleSelected,
+                          {
+                            backgroundColor: isPicked
+                              ? item.tintBg
+                              : 'rgba(255, 255, 255, 0.06)',
+                          },
                         ]}
                       >
                         {item.iconType === 'material' ? (
                           <MaterialIcons
                             name={item.iconName as any}
                             size={22}
-                            color={isPicked ? Colors.primary : Colors.white}
+                            color={item.color}
                           />
                         ) : (
                           <Feather
                             name={item.iconName as any}
                             size={22}
-                            color={isPicked ? Colors.primary : Colors.white}
+                            color={item.color}
                           />
                         )}
                       </View>
                       <Text
                         style={[
                           styles.reactionLabel,
-                          isPicked && styles.reactionLabelSelected,
+                          isPicked && { color: item.color, fontFamily: 'Roboto-Bold' },
                         ]}
                       >
                         {item.label}
@@ -126,57 +216,54 @@ export const ReactionPackModal: React.FC<ReactionPackModalProps> = ({
 
               {/* Reactors Row */}
               <View style={styles.reactorsRow}>
-                <View style={styles.avatarCluster}>
-                  <View
-                    style={[
-                      styles.avatarDot,
-                      { backgroundColor: Colors.avatarBrown },
-                    ]}
-                  >
-                    <Text style={styles.avatarDotText}>P</Text>
+                {visibleReactors.length > 0 && (
+                  <View style={styles.avatarCluster}>
+                    {visibleReactors.map((r, idx) => (
+                      <View
+                        key={r.id}
+                        style={[
+                          styles.avatarDot,
+                          idx > 0 && styles.avatarOverlap,
+                          { backgroundColor: r.bgColor },
+                        ]}
+                      >
+                        <Text style={styles.avatarDotText}>{r.initial}</Text>
+                      </View>
+                    ))}
                   </View>
-                  <View
-                    style={[
-                      styles.avatarDot,
-                      styles.avatarOverlap,
-                      { backgroundColor: Colors.avatarWine },
-                    ]}
-                  >
-                    <Text style={styles.avatarDotText}>A</Text>
-                  </View>
-                  <View
-                    style={[
-                      styles.avatarDot,
-                      styles.avatarOverlap,
-                      { backgroundColor: Colors.avatarOlive },
-                    ]}
-                  >
-                    <Text style={styles.avatarDotText}>Aa</Text>
-                  </View>
-                </View>
-                <Text style={styles.reactorsText}>
-                  You, Anaya and 3 more reacted
-                </Text>
+                )}
+                <Text style={styles.reactorsText}>{reactorsCaption}</Text>
               </View>
 
               {/* Remove reaction link */}
               <TouchableOpacity
                 onPress={() => {
+                  if (!hasMine) return;
+                  setSelected('');
                   onRemoveReaction?.();
                   onClose();
                 }}
+                disabled={!hasMine}
                 activeOpacity={0.7}
-                style={styles.removeBtn}
+                style={[styles.removeBtn, !hasMine && styles.removeBtnDisabled]}
                 accessibilityRole="button"
                 accessibilityLabel="Remove my reaction"
+                accessibilityState={{ disabled: !hasMine }}
               >
-                <Text style={styles.removeBtnText}>Remove my reaction</Text>
+                <Text
+                  style={[
+                    styles.removeBtnText,
+                    hasMine && styles.removeBtnTextActive,
+                  ]}
+                >
+                  Remove my reaction
+                </Text>
               </TouchableOpacity>
             </View>
           </TouchableWithoutFeedback>
         </View>
       </TouchableWithoutFeedback>
-    </Modal>
+    </PulseModalContainer>
   );
 };
 
@@ -234,45 +321,61 @@ const styles = StyleSheet.create({
   },
   reactionCard: {
     width: '31%',
-    backgroundColor: Colors.cardBackground,
+    backgroundColor: '#101F36',
     borderRadius: 20,
-    paddingVertical: 18,
+    paddingVertical: 16,
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 1,
     borderColor: Colors.border,
+    position: 'relative',
   },
-  reactionCardSelected: {
-    borderWidth: 1.5,
-    borderColor: Colors.primary,
+  selectedCheckDot: {
+    position: 'absolute',
+    top: 8,
+    left: 8,
+    width: 18,
+    height: 18,
+    borderRadius: 9,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  cardCountBadge: {
+    position: 'absolute',
+    top: 8,
+    right: 8,
+    minWidth: 20,
+    height: 18,
+    borderRadius: 9,
+    paddingHorizontal: 5,
+    backgroundColor: '#1B2E4B',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  cardCountText: {
+    fontSize: 10.5,
+    fontFamily: 'Roboto-Bold',
+    color: Colors.textLightMuted,
   },
   iconCircle: {
     width: 44,
     height: 44,
     borderRadius: 22,
-    backgroundColor: '#0E1F38',
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 8,
-  },
-  iconCircleSelected: {
-    backgroundColor: '#0E1F38',
+    marginBottom: 9,
   },
   reactionLabel: {
     fontSize: 13,
     fontFamily: 'Roboto-SemiBold',
-    color: '#CAD4DF',
-  },
-  reactionLabelSelected: {
     color: Colors.white,
-    fontFamily: 'Roboto-Bold',
+    textAlign: 'center',
   },
   reactorsRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'flex-start',
-    marginBottom: 24,
-    paddingLeft: 4,
+    justifyContent: 'center',
+    marginBottom: 18,
   },
   avatarCluster: {
     flexDirection: 'row',
@@ -280,38 +383,42 @@ const styles = StyleSheet.create({
     marginRight: 10,
   },
   avatarDot: {
-    width: 20,
-    height: 20,
-    borderRadius: 10,
+    width: 26,
+    height: 26,
+    borderRadius: 13,
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 1.5,
     borderColor: Colors.cardBackground,
   },
   avatarOverlap: {
-    marginLeft: -6,
+    marginLeft: -8,
   },
   avatarDotText: {
-    fontSize: 9,
+    fontSize: 11,
     fontFamily: 'Roboto-Bold',
     color: Colors.white,
   },
   reactorsText: {
-    fontSize: 13,
+    fontSize: 13.5,
     color: '#8A97AB',
-    fontFamily: 'Roboto-Medium',
   },
   removeBtn: {
     alignItems: 'center',
     justifyContent: 'center',
     paddingVertical: 10,
   },
+  removeBtnDisabled: {
+    opacity: 0.4,
+  },
   removeBtnText: {
-    fontSize: 14,
+    fontSize: 14.5,
     fontFamily: 'Roboto-SemiBold',
     color: '#8A97AB',
+  },
+  removeBtnTextActive: {
+    color: Colors.dangerCoral,
   },
 });
 
 export default ReactionPackModal;
-

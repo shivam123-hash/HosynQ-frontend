@@ -16,6 +16,14 @@ export * from './medicineServices';
 export { default as tasksServices } from './tasksServices';
 export * from './tasksServices';
 
+export { default as tripServices } from './tripServices';
+export * from './tripServices';
+
+export { default as pulseServices } from './pulseServices';
+export * from './pulseServices';
+
+export { default as vaultServices } from './vaultServices';
+export * from './vaultServices';
 export { default as chatServices } from './chatServices';
 export * from './chatServices';
 

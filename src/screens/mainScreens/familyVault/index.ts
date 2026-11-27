@@ -6,3 +6,7 @@ export * from './WarrantiesBillsScreen';
 export * from './HomeAssetsScreen';
 export * from './ImportantContactsScreen';
 export * from './VaultItemDetailScreen';
+export * from './ScansUploadsScreen';
+export * from './AddEditVaultItemModal';
+export * from './VaultDialog';
+export * from './vaultApiHelpers';

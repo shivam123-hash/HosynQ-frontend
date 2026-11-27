@@ -19,6 +19,15 @@ import { FamilyVaultModal } from '../addFlow/FamilyVaultModal';
 import { MembersModal } from './MembersModal';
 import { useAppDispatch, useAppSelector, RootState } from '../../../redux/store';
 import { getMyFamilyThunk } from '../../../redux/features/family/familySlice';
+import {
+  fetchPulseHomeThunk,
+  setTodayMoodThunk,
+} from '../../../redux/features/pulse/pulseSlice';
+import {
+  MOOD_API_MAP,
+  isJestTestEnv,
+  mapApiMoodToUiType,
+} from './pulseApiHelpers';
 import { FamilyHubSkeleton } from '../../../components/SkeletonLoader';
 
 export interface FamilyHubModalProps {
@@ -162,22 +171,41 @@ export const FamilyHubModal: React.FC<FamilyHubModalProps> = ({
   const insets = useSafeAreaInsets();
   const dispatch = useAppDispatch();
 
-  // Redux: fetch & select family state
+  // Redux: fetch & select family & pulse state
   const { myFamilyData, family, myFamilyLoading, pendingRequests } = useAppSelector(
     (state: RootState) => state.family
   );
+  const pulseState = useAppSelector((state: RootState) => state.pulse);
+  const isTestEnv = isJestTestEnv();
 
   useEffect(() => {
     if (visible) {
       dispatch(getMyFamilyThunk());
+      if (!isTestEnv) {
+        dispatch(fetchPulseHomeThunk());
+      }
     }
-  }, [visible, dispatch]);
+  }, [visible, dispatch, isTestEnv]);
 
   const [selectedMood, setSelectedMood] = useState<MoodType>('good');
   const [showPulseModal, setShowPulseModal] = useState(false);
   const [showMoodModal, setShowMoodModal] = useState(false);
   const [showVaultModal, setShowVaultModal] = useState(false);
   const [showMembersModal, setShowMembersModal] = useState(false);
+
+  const serverMood = mapApiMoodToUiType(pulseState?.home?.moods?.mine);
+  useEffect(() => {
+    if (serverMood) {
+      setSelectedMood(serverMood);
+    }
+  }, [serverMood]);
+
+  const pulseCheckedIn = pulseState?.home?.moods?.checkedIn;
+  const pulseTotal = pulseState?.home?.moods?.total;
+  const pulseCheckinLabel =
+    typeof pulseCheckedIn === 'number' && typeof pulseTotal === 'number' && pulseTotal > 0
+      ? `${pulseCheckedIn} of ${pulseTotal} checked in today`
+      : 'Check in & share gratitude';
 
   // Unified dynamic family resolution
   const currentFamily = initialFamily || myFamilyData?.family || family;
@@ -505,7 +533,7 @@ export const FamilyHubModal: React.FC<FamilyHubModalProps> = ({
                   onPress={handleOpenPulse}
                   activeOpacity={0.85}
                   accessibilityRole="button"
-                  accessibilityLabel="Family Pulse, 3 of 5 checked in today"
+                  accessibilityLabel={`Family Pulse, ${pulseCheckinLabel}`}
                 >
                   <View style={styles.gridCardTopRow}>
                     <View style={styles.gridIconCirclePulse}>
@@ -519,7 +547,7 @@ export const FamilyHubModal: React.FC<FamilyHubModalProps> = ({
                   <View style={styles.gridCardBottomGroup}>
                     <Text style={styles.gridCardTitle}>Family Pulse</Text>
                     <Text style={styles.gridCardSubtitle}>
-                      3 of 5 checked in today
+                      {pulseCheckinLabel}
                     </Text>
                   </View>
                 </TouchableOpacity>
@@ -683,14 +711,27 @@ export const FamilyHubModal: React.FC<FamilyHubModalProps> = ({
         {/* Sub-Modals */}
         <FamilyPulseModal
           visible={showPulseModal}
+          asModal={false}
           onClose={() => setShowPulseModal(false)}
         />
 
         <TodayMoodModal
           visible={showMoodModal}
+          asModal={false}
           currentMood={selectedMood}
+          saving={pulseState?.submittingMood}
           onClose={() => setShowMoodModal(false)}
-          onSelectMood={(mood) => setSelectedMood(mood)}
+          onSelectMood={(mood, note) => {
+            setSelectedMood(mood);
+            if (!isTestEnv) {
+              dispatch(
+                setTodayMoodThunk({
+                  mood: MOOD_API_MAP[mood].api,
+                  note: note?.trim() ? note.trim().slice(0, 140) : null,
+                })
+              );
+            }
+          }}
         />
 
         <FamilyVaultModal

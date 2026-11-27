@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import {
   View,
   Text,
@@ -6,120 +6,260 @@ import {
   StyleSheet,
   Modal,
   ScrollView,
+  RefreshControl,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Feather from '@react-native-vector-icons/feather';
+import { useAppDispatch, useAppSelector } from '../../../redux';
+import {
+  deletePollThunk,
+  fetchPollsThunk,
+  setSelectedPollLocal,
+  voteOnPollThunk,
+} from '../../../redux/features/pulse/pulseSlice';
+import { isUUID } from '../../../redux/features/lists/listsSlice';
+import { FamilyPollsSkeleton } from '../../../components/SkeletonLoader';
 import Colors from '../../../units/Colors';
 import { PollItem } from './types';
+import {
+  extractPulseMembersFromFamilyState,
+  isJestTestEnv,
+  mapApiPollToUi,
+  scheduleAfterTransition,
+} from './pulseApiHelpers';
+import PulseModalContainer from './PulseModalContainer';
+import PulseDialog, {
+  INITIAL_PULSE_DIALOG_STATE,
+  PulseDialogState,
+} from './PulseDialog';
 
 export interface FamilyPollsModalProps {
   visible: boolean;
+  polls?: PollItem[];
+  asModal?: boolean;
   onClose: () => void;
   onOpenCreatePoll?: () => void;
   onOpenPollResults?: (poll: PollItem) => void;
 }
 
-const DEFAULT_POLLS: PollItem[] = [
-  {
-    id: 'poll-1',
-    question: 'Sunday plan: where shall we go?',
-    authorName: 'you',
-    authorInitial: 'P',
-    authorColor: Colors.avatarBrown,
-    timeText: 'Today',
-    status: 'active',
-    hasUserVoted: true,
-    totalVotes: 3,
-    closesText: 'Closes Sat, 8:00 PM',
-    options: [
-      {
-        id: 'opt-1-1',
-        text: 'Picnic at Lodhi Garden',
-        votes: 3,
-        percentage: 60,
-        isUserVoted: true,
-      },
-      {
-        id: 'opt-1-2',
-        text: 'Movie at home',
-        votes: 1,
-        percentage: 20,
-      },
-      {
-        id: 'opt-1-3',
-        text: 'Visit Nani',
-        votes: 1,
-        percentage: 20,
-      },
-    ],
-  },
-  {
-    id: 'poll-2',
-    question: 'Diwali dinner: what’s the main dish?',
-    authorName: 'Dadi',
-    authorInitial: 'D',
-    authorColor: Colors.avatarGreen,
-    timeText: 'Yesterday',
-    status: 'active',
-    hasUserVoted: false,
-    totalVotes: 1,
-    closesText: 'Closes Sun, 1 Nov',
-    options: [
-      { id: 'opt-2-1', text: 'Paneer butter masala', votes: 1, percentage: 100 },
-      { id: 'opt-2-2', text: 'Veg biryani', votes: 0, percentage: 0 },
-      { id: 'opt-2-3', text: 'Chole bhature', votes: 0, percentage: 0 },
-    ],
-  },
-];
-
 export const FamilyPollsModal: React.FC<FamilyPollsModalProps> = ({
   visible,
+  polls: pollsProp,
+  asModal = true,
   onClose,
   onOpenCreatePoll,
   onOpenPollResults,
 }) => {
   const insets = useSafeAreaInsets();
+  const dispatch = useAppDispatch();
+  const pulseState = useAppSelector((state) => state.pulse);
+  const familyState = useAppSelector((state) => state.family);
+  const isTestEnv = isJestTestEnv();
+
   const [activeTab, setActiveTab] = useState<'active' | 'closed'>('active');
-  const [polls, setPolls] = useState<PollItem[]>(DEFAULT_POLLS);
-  const [selectedOptions, setSelectedOptions] = useState<{ [pollId: string]: string }>({});
+  const [localTestPolls, setLocalTestPolls] = useState<PollItem[]>(pollsProp || []);
+  const [selectedOptions, setSelectedOptions] = useState<{ [pollId: string]: string[] }>({});
+  const [refreshing, setRefreshing] = useState(false);
+  const [dialog, setDialog] = useState<PulseDialogState>(INITIAL_PULSE_DIALOG_STATE);
 
-  const handleSelectRadio = (pollId: string, optionId: string) => {
-    setSelectedOptions((prev) => ({ ...prev, [pollId]: optionId }));
-    // Simulate user voting
-    setPolls((prev) =>
-      prev.map((p) => {
-        if (p.id !== pollId) return p;
-        return {
-          ...p,
-          hasUserVoted: true,
-          totalVotes: p.totalVotes + 1,
-          options: p.options.map((opt) =>
-            opt.id === optionId
-              ? {
-                  ...opt,
-                  votes: opt.votes + 1,
-                  isUserVoted: true,
-                  percentage: Math.round(((opt.votes + 1) / (p.totalVotes + 1)) * 100),
-                }
-              : {
-                  ...opt,
-                  percentage: Math.round((opt.votes / (p.totalVotes + 1)) * 100),
-                }
-          ),
-        };
-      })
+  useEffect(() => {
+    if (pollsProp) {
+      setLocalTestPolls(pollsProp);
+    }
+  }, [pollsProp]);
+
+  const members = useMemo(
+    () => extractPulseMembersFromFamilyState(familyState),
+    [familyState]
+  );
+  const myMemberId = useMemo(() => {
+    const me = members.find((m) => m.isYou);
+    return (
+      me?.id ||
+      familyState?.basicFamilyData?.family?.myMemberId ||
+      familyState?.myFamilyData?.family?.myMemberId ||
+      null
     );
-  };
-
-  const filteredPolls = polls.filter((p) =>
-    activeTab === 'active' ? p.status === 'active' : p.status === 'closed'
+  }, [members, familyState]);
+  const memberLookup = useMemo(
+    () => new Map(members.map((m) => [m.id, m])),
+    [members]
   );
 
+  const loadPolls = useCallback(
+    async (tab: 'active' | 'closed', before?: string) => {
+      if (pollsProp || isTestEnv) return;
+      try {
+        await dispatch(
+          fetchPollsThunk({
+            status: tab === 'closed' ? 'CLOSED' : 'ACTIVE',
+            limit: 30,
+            before,
+          })
+        ).unwrap();
+      } catch {
+        // Error surfaced in slice
+      }
+    },
+    [dispatch, pollsProp, isTestEnv]
+  );
+
+  useEffect(() => {
+    if (visible && !pollsProp && !isTestEnv) {
+      return scheduleAfterTransition(() => {
+        loadPolls(activeTab);
+      });
+    }
+  }, [visible, activeTab, pollsProp, isTestEnv, loadPolls]);
+
+  const handleRefresh = useCallback(async () => {
+    setRefreshing(true);
+    await loadPolls(activeTab);
+    setRefreshing(false);
+  }, [activeTab, loadPolls]);
+
+  const rawList =
+    activeTab === 'closed' ? pulseState.closedPolls : pulseState.activePolls;
+  const apiPolls = useMemo(
+    () => (rawList || []).map((p) => mapApiPollToUi(p, memberLookup, myMemberId)),
+    [rawList, memberLookup, myMemberId]
+  );
+
+  const displayPolls = pollsProp
+    ? localTestPolls.filter((p) => p.status === activeTab)
+    : apiPolls;
+
+  const activeCount = pollsProp
+    ? localTestPolls.filter((p) => p.status === 'active').length
+    : pulseState.pollCounts.active || pulseState.activePolls.length;
+  const closedCount = pollsProp
+    ? localTestPolls.filter((p) => p.status === 'closed').length
+    : pulseState.pollCounts.closed || pulseState.closedPolls.length;
+
+  const submitVote = async (poll: PollItem, optionIds: string[]) => {
+    if (pollsProp || isTestEnv || !isUUID(poll.id)) {
+      const picked = optionIds[0];
+      setLocalTestPolls((prev) =>
+        prev.map((p) => {
+          if (p.id !== poll.id) return p;
+          const nextTotal = p.totalVotes + (p.hasUserVoted ? 0 : 1);
+          return {
+            ...p,
+            hasUserVoted: true,
+            totalVotes: nextTotal,
+            options: p.options.map((opt) =>
+              opt.id === picked
+                ? {
+                    ...opt,
+                    votes: opt.votes + 1,
+                    isUserVoted: true,
+                    percentage: Math.round(((opt.votes + 1) / Math.max(nextTotal, 1)) * 100),
+                  }
+                : {
+                    ...opt,
+                    percentage: Math.round((opt.votes / Math.max(nextTotal, 1)) * 100),
+                  }
+            ),
+          };
+        })
+      );
+      return;
+    }
+
+    try {
+      await dispatch(
+        voteOnPollThunk({ pollId: poll.id, optionIds })
+      ).unwrap();
+    } catch (err: any) {
+      setDialog({
+        visible: true,
+        type: 'danger',
+        iconName: 'alert-circle',
+        title: 'Vote not recorded',
+        description: typeof err === 'string' ? err : 'Please try again.',
+        primaryButtonText: 'OK',
+        secondaryButtonText: '',
+      });
+    }
+  };
+
+  const handleSelectOption = (poll: PollItem, optionId: string) => {
+    if (!poll.canVote && poll.status === 'closed') return;
+    if (poll.allowMultiple) {
+      setSelectedOptions((prev) => {
+        const curr = prev[poll.id] || [];
+        const next = curr.includes(optionId)
+          ? curr.filter((x) => x !== optionId)
+          : [...curr, optionId];
+        return { ...prev, [poll.id]: next };
+      });
+      return;
+    }
+    setSelectedOptions((prev) => ({ ...prev, [poll.id]: [optionId] }));
+    submitVote(poll, [optionId]);
+  };
+
+  const handleDeletePoll = (poll: PollItem) => {
+    setDialog({
+      visible: true,
+      type: 'danger',
+      title: 'Delete poll?',
+      description: `Remove “${poll.question}” for the family?`,
+      primaryButtonText: 'Delete',
+      secondaryButtonText: 'Cancel',
+      onConfirm: async () => {
+        if (pollsProp || isTestEnv || !isUUID(poll.id)) {
+          setLocalTestPolls((prev) => prev.filter((p) => p.id !== poll.id));
+          setDialog(INITIAL_PULSE_DIALOG_STATE);
+          return;
+        }
+        setDialog((prev) => ({ ...prev, loading: true }));
+        try {
+          await dispatch(deletePollThunk(poll.id)).unwrap();
+          setDialog(INITIAL_PULSE_DIALOG_STATE);
+        } catch (err: any) {
+          setDialog({
+            visible: true,
+            type: 'danger',
+            iconName: 'alert-circle',
+            title: 'Delete failed',
+            description: typeof err === 'string' ? err : 'Please try again.',
+            primaryButtonText: 'OK',
+            secondaryButtonText: '',
+          });
+        }
+      },
+    });
+  };
+
+  const openPollDetail = (poll: PollItem) => {
+    const rawMatch = rawList.find((r) => r.id === poll.id) || null;
+    if (rawMatch) {
+      dispatch(setSelectedPollLocal(rawMatch));
+    }
+    onOpenPollResults?.(poll);
+  };
+
+  const nextCursor =
+    activeTab === 'closed'
+      ? pulseState.closedPollsNextCursor
+      : pulseState.activePollsNextCursor;
+
+  const hasLoadedActiveTab =
+    activeTab === 'closed'
+      ? pulseState.hasLoadedClosedPolls
+      : pulseState.hasLoadedActivePolls;
+  const showSkeleton =
+    !pollsProp &&
+    !isTestEnv &&
+    !refreshing &&
+    (pulseState.loadingPolls || !hasLoadedActiveTab);
+
   return (
-    <Modal
+    <PulseModalContainer
       visible={visible}
-      animationType="slide"
-      transparent={false}
+      asModal={asModal}
+      variant="push"
       onRequestClose={onClose}
     >
       <View style={[styles.container, { paddingTop: Math.max(insets.top, 16) }]}>
@@ -138,7 +278,7 @@ export const FamilyPollsModal: React.FC<FamilyPollsModalProps> = ({
           <View style={styles.headerRightSpacer} />
         </View>
 
-        {/* Tabs: Active · 2 / Closed */}
+        {/* Tabs */}
         <View style={styles.tabContainer}>
           <TouchableOpacity
             style={[
@@ -154,7 +294,7 @@ export const FamilyPollsModal: React.FC<FamilyPollsModalProps> = ({
                 activeTab === 'active' && styles.tabTextActive,
               ]}
             >
-              Active · 2
+              {activeCount > 0 ? `Active · ${activeCount}` : 'Active'}
             </Text>
           </TouchableOpacity>
 
@@ -172,7 +312,7 @@ export const FamilyPollsModal: React.FC<FamilyPollsModalProps> = ({
                 activeTab === 'closed' && styles.tabTextActive,
               ]}
             >
-              Closed
+              {closedCount > 0 ? `Closed · ${closedCount}` : 'Closed'}
             </Text>
           </TouchableOpacity>
         </View>
@@ -184,18 +324,161 @@ export const FamilyPollsModal: React.FC<FamilyPollsModalProps> = ({
             { paddingBottom: insets.bottom + 90 },
           ]}
           showsVerticalScrollIndicator={false}
+          refreshControl={
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={handleRefresh}
+              tintColor={Colors.primary}
+              colors={[Colors.primary]}
+            />
+          }
         >
-          {filteredPolls.map((poll) => {
-            if (poll.hasUserVoted) {
-              // Voted Poll Card
+          {showSkeleton ? (
+            <FamilyPollsSkeleton />
+          ) : displayPolls.length === 0 ? (
+            <View style={styles.emptyCard}>
+              <Feather
+                name="bar-chart-2"
+                size={28}
+                color={Colors.primary}
+                style={{ marginBottom: 10 }}
+              />
+              <Text style={styles.emptyTitle}>
+                {activeTab === 'active' ? 'No active polls' : 'No closed polls'}
+              </Text>
+              <Text style={styles.emptySubtitle}>
+                {activeTab === 'active'
+                  ? 'Ask your family a question to decide weekend plans together.'
+                  : 'Completed polls and their winning choices will appear here.'}
+              </Text>
+            </View>
+          ) : (
+            displayPolls.map((poll) => {
+              const voterDots = poll.options
+                .flatMap((o) => o.voterInitials || [])
+                .slice(0, 3);
+              const eligibleTotal =
+                poll.eligibleCount || Math.max(members.length, 1);
+
+              if (poll.hasUserVoted || poll.status === 'closed' || poll.canVote === false) {
+                return (
+                  <TouchableOpacity
+                    key={poll.id}
+                    style={styles.card}
+                    onPress={() => openPollDetail(poll)}
+                    activeOpacity={0.85}
+                  >
+                    <View style={styles.cardTopRow}>
+                      <View style={styles.authorGroup}>
+                        <View
+                          style={[
+                            styles.authorAvatar,
+                            { backgroundColor: poll.authorColor },
+                          ]}
+                        >
+                          <Text style={styles.authorAvatarText}>
+                            {poll.authorInitial}
+                          </Text>
+                        </View>
+                        <Text style={styles.authorText}>
+                          Asked by {poll.authorName} · {poll.timeText}
+                        </Text>
+                      </View>
+
+                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                        {poll.hasUserVoted && (
+                          <View style={styles.votedBadge}>
+                            <Text style={styles.votedBadgeText}>You voted</Text>
+                          </View>
+                        )}
+                        {poll.canManage && (
+                          <TouchableOpacity
+                            onPress={() => handleDeletePoll(poll)}
+                            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                            accessibilityRole="button"
+                            accessibilityLabel={`Delete poll ${poll.question}`}
+                          >
+                            <Feather name="trash-2" size={14} color={Colors.dangerCoral} />
+                          </TouchableOpacity>
+                        )}
+                      </View>
+                    </View>
+
+                    <Text style={styles.pollQuestion}>{poll.question}</Text>
+
+                    <View style={styles.optionsList}>
+                      {poll.options.map((opt) => (
+                        <View key={opt.id} style={styles.votedOptionItem}>
+                          <View style={styles.votedOptionLabelRow}>
+                            <View style={styles.optionNameWithCheck}>
+                              <Text style={styles.votedOptionName}>{opt.text}</Text>
+                              {opt.isUserVoted && (
+                                <View style={styles.checkCircle}>
+                                  <Feather
+                                    name="check"
+                                    size={12}
+                                    color={Colors.primary}
+                                  />
+                                </View>
+                              )}
+                            </View>
+                            <Text
+                              style={[
+                                styles.votedOptionPercent,
+                                opt.isUserVoted && styles.votedOptionPercentActive,
+                              ]}
+                            >
+                              {opt.percentage}%
+                            </Text>
+                          </View>
+
+                          <View style={styles.progressBarTrack}>
+                            <View
+                              style={[
+                                styles.progressBarFill,
+                                {
+                                  width: `${opt.percentage}%`,
+                                  backgroundColor: opt.isUserVoted
+                                    ? Colors.primary
+                                    : Colors.surfaceNavyLight,
+                                },
+                              ]}
+                            />
+                          </View>
+                        </View>
+                      ))}
+                    </View>
+
+                    <View style={styles.cardFooter}>
+                      {voterDots.length > 0 && (
+                        <View style={styles.avatarCluster}>
+                          {voterDots.map((dot, idx) => (
+                            <View
+                              key={`dot-${idx}`}
+                              style={[
+                                styles.clusterDot,
+                                idx > 0 && styles.clusterDotOverlap,
+                                { backgroundColor: dot.bgColor },
+                              ]}
+                            >
+                              <Text style={styles.clusterDotText}>{dot.initial}</Text>
+                            </View>
+                          ))}
+                        </View>
+                      )}
+
+                      <Text style={styles.footerInfoText}>
+                        {`${poll.totalVotes} of ${eligibleTotal} voted · ${poll.closesText}`}
+                      </Text>
+                    </View>
+                  </TouchableOpacity>
+                );
+              }
+
+              // Unvoted Poll Card
+              const pickedForPoll = selectedOptions[poll.id] || [];
               return (
-                <TouchableOpacity
-                  key={poll.id}
-                  style={styles.card}
-                  onPress={() => onOpenPollResults && onOpenPollResults(poll)}
-                  activeOpacity={0.85}
-                >
-                  {/* Top Author Row */}
+                <View key={poll.id} style={styles.card}>
                   <View style={styles.cardTopRow}>
                     <View style={styles.authorGroup}>
                       <View
@@ -213,159 +496,64 @@ export const FamilyPollsModal: React.FC<FamilyPollsModalProps> = ({
                       </Text>
                     </View>
 
-                    <View style={styles.votedBadge}>
-                      <Text style={styles.votedBadgeText}>You voted</Text>
+                    <View style={styles.voteNowBadge}>
+                      <Text style={styles.voteNowBadgeText}>Vote now</Text>
                     </View>
                   </View>
 
-                  {/* Question */}
                   <Text style={styles.pollQuestion}>{poll.question}</Text>
 
-                  {/* Options with percentages */}
-                  <View style={styles.optionsList}>
-                    {poll.options.map((opt) => (
-                      <View key={opt.id} style={styles.votedOptionItem}>
-                        <View style={styles.votedOptionLabelRow}>
-                          <View style={styles.optionNameWithCheck}>
-                            <Text style={styles.votedOptionName}>{opt.text}</Text>
-                            {opt.isUserVoted && (
-                              <View style={styles.checkCircle}>
-                                <Feather
-                                  name="check"
-                                  size={12}
-                                  color={Colors.primary}
-                                />
-                              </View>
-                            )}
-                          </View>
-                          <Text
-                            style={[
-                              styles.votedOptionPercent,
-                              opt.isUserVoted && styles.votedOptionPercentActive,
-                            ]}
-                          >
-                            {opt.percentage}%
-                          </Text>
-                        </View>
-
-                        {/* Progress Bar */}
-                        <View style={styles.progressBarTrack}>
+                  <View style={styles.radioOptionsList}>
+                    {poll.options.map((opt) => {
+                      const isSelected = pickedForPoll.includes(opt.id);
+                      return (
+                        <TouchableOpacity
+                          key={opt.id}
+                          style={styles.radioOptionItem}
+                          onPress={() => handleSelectOption(poll, opt.id)}
+                          activeOpacity={0.7}
+                        >
                           <View
                             style={[
-                              styles.progressBarFill,
-                              {
-                                width: `${opt.percentage}%`,
-                                backgroundColor: opt.isUserVoted
-                                  ? Colors.primary
-                                  : Colors.surfaceNavyLight,
-                              },
+                              styles.radioCircle,
+                              isSelected && styles.radioCircleSelected,
                             ]}
-                          />
-                        </View>
-                      </View>
-                    ))}
+                          >
+                            {isSelected && <View style={styles.radioInnerDot} />}
+                          </View>
+                          <Text style={styles.radioOptionText}>{opt.text}</Text>
+                        </TouchableOpacity>
+                      );
+                    })}
                   </View>
 
-                  {/* Footer */}
-                  <View style={styles.cardFooter}>
-                    <View style={styles.avatarCluster}>
-                      <View
-                        style={[
-                          styles.clusterDot,
-                          { backgroundColor: Colors.avatarBrown },
-                        ]}
-                      >
-                        <Text style={styles.clusterDotText}>P</Text>
-                      </View>
-                      <View
-                        style={[
-                          styles.clusterDot,
-                          styles.clusterDotOverlap,
-                          { backgroundColor: Colors.avatarNavy },
-                        ]}
-                      >
-                        <Text style={styles.clusterDotText}>R</Text>
-                      </View>
-                      <View
-                        style={[
-                          styles.clusterDot,
-                          styles.clusterDotOverlap,
-                          { backgroundColor: Colors.avatarOlive },
-                        ]}
-                      >
-                        <Text style={styles.clusterDotText}>Aa</Text>
-                      </View>
-                    </View>
-
-                    <Text style={styles.footerInfoText}>
-                      {poll.totalVotes} of 5 voted · {poll.closesText}
-                    </Text>
-                  </View>
-                </TouchableOpacity>
-              );
-            }
-
-            // Unvoted Poll Card
-            return (
-              <View key={poll.id} style={styles.card}>
-                {/* Top Author Row */}
-                <View style={styles.cardTopRow}>
-                  <View style={styles.authorGroup}>
-                    <View
-                      style={[
-                        styles.authorAvatar,
-                        { backgroundColor: poll.authorColor },
-                      ]}
+                  {poll.allowMultiple && pickedForPoll.length > 0 && (
+                    <TouchableOpacity
+                      style={styles.submitVoteBtn}
+                      onPress={() => submitVote(poll, pickedForPoll)}
+                      activeOpacity={0.85}
                     >
-                      <Text style={styles.authorAvatarText}>
-                        {poll.authorInitial}
-                      </Text>
-                    </View>
-                    <Text style={styles.authorText}>
-                      Asked by {poll.authorName} · {poll.timeText}
-                    </Text>
-                  </View>
+                      <Text style={styles.submitVoteBtnText}>Submit vote</Text>
+                    </TouchableOpacity>
+                  )}
 
-                  <View style={styles.voteNowBadge}>
-                    <Text style={styles.voteNowBadgeText}>Vote now</Text>
-                  </View>
+                  <Text style={styles.unvotedFooterText}>
+                    {`${poll.totalVotes} of ${eligibleTotal} voted · ${poll.closesText}`}
+                  </Text>
                 </View>
+              );
+            })
+          )}
 
-                {/* Question */}
-                <Text style={styles.pollQuestion}>{poll.question}</Text>
-
-                {/* Radio Options */}
-                <View style={styles.radioOptionsList}>
-                  {poll.options.map((opt) => {
-                    const isSelected = selectedOptions[poll.id] === opt.id;
-                    return (
-                      <TouchableOpacity
-                        key={opt.id}
-                        style={styles.radioOptionItem}
-                        onPress={() => handleSelectRadio(poll.id, opt.id)}
-                        activeOpacity={0.7}
-                      >
-                        <View
-                          style={[
-                            styles.radioCircle,
-                            isSelected && styles.radioCircleSelected,
-                          ]}
-                        >
-                          {isSelected && <View style={styles.radioInnerDot} />}
-                        </View>
-                        <Text style={styles.radioOptionText}>{opt.text}</Text>
-                      </TouchableOpacity>
-                    );
-                  })}
-                </View>
-
-                {/* Footer */}
-                <Text style={styles.unvotedFooterText}>
-                  {poll.totalVotes} of 5 voted · {poll.closesText}
-                </Text>
-              </View>
-            );
-          })}
+          {!pollsProp && nextCursor && (
+            <TouchableOpacity
+              style={styles.loadMoreBtn}
+              onPress={() => loadPolls(activeTab, nextCursor)}
+              activeOpacity={0.75}
+            >
+              <Text style={styles.loadMoreText}>Load more polls</Text>
+            </TouchableOpacity>
+          )}
         </ScrollView>
 
         {/* Bottom CTA Button */}
@@ -389,12 +577,27 @@ export const FamilyPollsModal: React.FC<FamilyPollsModalProps> = ({
             <Text style={styles.createPollButtonText}>Create poll</Text>
           </TouchableOpacity>
         </View>
+
+        <PulseDialog
+          dialog={dialog}
+          onClose={() => setDialog(INITIAL_PULSE_DIALOG_STATE)}
+        />
       </View>
-    </Modal>
+    </PulseModalContainer>
   );
 };
 
 const styles = StyleSheet.create({
+  inlineOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    zIndex: 999,
+    elevation: 20,
+    backgroundColor: Colors.background,
+  },
   container: {
     flex: 1,
     backgroundColor: Colors.background,
@@ -640,10 +843,57 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontFamily: 'Roboto-Medium',
   },
+  submitVoteBtn: {
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: Colors.primary,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 12,
+  },
+  submitVoteBtnText: {
+    color: Colors.white,
+    fontSize: 14,
+    fontFamily: 'Roboto-Bold',
+  },
   unvotedFooterText: {
     color: Colors.textSecondary,
     fontSize: 12,
     fontFamily: 'Roboto-Medium',
+  },
+  emptyCard: {
+    backgroundColor: Colors.cardBackground,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    padding: 24,
+    alignItems: 'center',
+    marginTop: 12,
+  },
+  emptyTitle: {
+    fontSize: 17,
+    fontFamily: 'Roboto-Bold',
+    color: Colors.white,
+    marginBottom: 6,
+  },
+  emptySubtitle: {
+    fontSize: 14,
+    color: Colors.textSecondary,
+    textAlign: 'center',
+    lineHeight: 20,
+  },
+  loadMoreBtn: {
+    alignSelf: 'center',
+    paddingVertical: 10,
+    paddingHorizontal: 18,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: '#3A4556',
+  },
+  loadMoreText: {
+    color: Colors.primary,
+    fontSize: 13.5,
+    fontFamily: 'Roboto-SemiBold',
   },
   bottomBar: {
     position: 'absolute',

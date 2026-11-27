@@ -1,9 +1,12 @@
 export * from './types';
 export * from './tripConstants';
+export * from './tripApiHelpers';
 export { TripPlannerModal } from './TripPlannerModal';
 export type { TripScreenName, TripPlannerModalProps } from './TripPlannerModal';
+export { TripsListModal } from './TripsListModal';
+export type { TripsListModalProps } from './TripsListModal';
 export { FindCommonDatesModal } from './FindCommonDatesModal';
 export { TripDetailsModal } from './TripDetailsModal';
 export { TripBookingsModal } from './TripBookingsModal';
+export { AddTripBookingModal } from './AddTripBookingModal';
 export { TripPackingModal } from './TripPackingModal';
-

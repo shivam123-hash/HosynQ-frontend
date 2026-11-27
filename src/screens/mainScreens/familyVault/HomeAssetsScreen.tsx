@@ -1,164 +1,270 @@
-import React from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   View,
   Text,
   TouchableOpacity,
   StyleSheet,
   ScrollView,
-  StatusBar,
+  RefreshControl,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Feather from '@react-native-vector-icons/feather';
-import { CarIcon } from './VaultIcons';
+import { useAppDispatch, useAppSelector } from '../../../redux';
+import { fetchVaultItemsThunk } from '../../../redux/features/vault/vaultSlice';
+import { VaultItemApi } from '../../../services/vaultServices';
+import { VaultListSkeleton } from '../../../components/SkeletonLoader';
+import AddEditVaultItemModal from './AddEditVaultItemModal';
+import {
+  formatDaysRemainingBadge,
+  formatVaultShortDate,
+  getDaysRemaining,
+  isJestTestEnv,
+  scheduleVaultAfterTransition,
+} from './vaultApiHelpers';
 
 export interface HomeAssetsScreenProps {
-  onBack?: () => void;
-  onSelectAsset?: (asset: any) => void;
+  onBack: () => void;
+  onSelectAsset?: (item: VaultItemApi) => void;
   onAddAsset?: () => void;
+  itemsOverride?: VaultItemApi[];
 }
+
+const getAssetVisual = (kind?: string | null): { icon: string; color: string } => {
+  switch (String(kind || '').toUpperCase()) {
+    case 'VEHICLE':
+      return { icon: 'truck', color: '#F0923A' };
+    case 'PROPERTY':
+      return { icon: 'home', color: '#5B9BF1' };
+    case 'APPLIANCE':
+      return { icon: 'cpu', color: '#6FD9A6' };
+    default:
+      return { icon: 'box', color: '#E56B9F' };
+  }
+};
 
 export const HomeAssetsScreen: React.FC<HomeAssetsScreenProps> = ({
   onBack,
   onSelectAsset,
   onAddAsset,
+  itemsOverride,
 }) => {
   const insets = useSafeAreaInsets();
+  const dispatch = useAppDispatch();
+  const vaultState = useAppSelector((state) => state.vault);
+
+  const [refreshing, setRefreshing] = useState(false);
+  const [addModalVisible, setAddModalVisible] = useState(false);
+
+  const loadAssets = useCallback(async () => {
+    await dispatch(fetchVaultItemsThunk({ category: 'ASSET' }));
+  }, [dispatch]);
+
+  useEffect(() => {
+    if (itemsOverride || (isJestTestEnv() && vaultState.hasLoadedItems)) return;
+    return scheduleVaultAfterTransition(() => {
+      loadAssets();
+    });
+  }, [itemsOverride, loadAssets, vaultState.hasLoadedItems]);
+
+  const handleRefresh = useCallback(async () => {
+    setRefreshing(true);
+    try {
+      await loadAssets();
+    } finally {
+      setRefreshing(false);
+    }
+  }, [loadAssets]);
+
+  const assets = useMemo(() => {
+    const source = itemsOverride || vaultState.items;
+    return source.filter((item) => {
+      const cat = String(item.category).toUpperCase();
+      return cat === 'ASSET' || cat === 'PROPERTY';
+    });
+  }, [itemsOverride, vaultState.items]);
+
+  const isInitialLoading =
+    !itemsOverride &&
+    !vaultState.hasLoadedItems &&
+    vaultState.loadingItems;
+
+  const handleAddPress = () => {
+    if (onAddAsset) {
+      onAddAsset();
+      return;
+    }
+    setAddModalVisible(true);
+  };
 
   return (
-    <View style={[styles.container, { paddingTop: insets.top + 8 }]}>
-      <StatusBar barStyle="light-content" />
-
-      {/* Header */}
+    <View style={[styles.container, { paddingTop: insets.top }]}>
       <View style={styles.header}>
         <TouchableOpacity
-          onPress={onBack}
-          activeOpacity={0.7}
           style={styles.circleBtn}
+          onPress={onBack}
+          activeOpacity={0.75}
           accessibilityRole="button"
           accessibilityLabel="Back"
         >
           <Feather name="chevron-left" size={22} color="#FFFFFF" />
         </TouchableOpacity>
-
         <Text style={styles.headerTitle}>Home assets</Text>
-
         <View style={styles.headerPlaceholder} />
       </View>
 
-      <ScrollView
-        style={{ flex: 1 }}
-        contentContainerStyle={[
-          styles.content,
-          { paddingBottom: Math.max(insets.bottom, 16) + 110 },
+      {isInitialLoading ? (
+        <VaultListSkeleton />
+      ) : (
+        <ScrollView
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={[
+            styles.content,
+            { paddingBottom: 100 + insets.bottom },
+          ]}
+          refreshControl={
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={handleRefresh}
+              tintColor="#F0923A"
+              colors={['#F0923A']}
+            />
+          }
+        >
+          {assets.length === 0 ? (
+            <View style={styles.emptyCard}>
+              <Feather name="home" size={22} color="#5B9BF1" />
+              <Text style={styles.emptyTitle}>No home assets added</Text>
+              <Text style={styles.emptySubtitle}>
+                Add vehicles, properties, or major appliances to link policies and warranties directly to them.
+              </Text>
+            </View>
+          ) : (
+            <View style={styles.card}>
+              {assets.map((asset, idx) => {
+                const vis = getAssetVisual(asset.kind);
+                const days = getDaysRemaining(asset);
+                const badge = formatDaysRemainingBadge(days, asset.dueLabel);
+
+                const line1 = [
+                  asset.number,
+                  asset.provider,
+                  asset.dueOn
+                    ? `${asset.dueLabel || 'Due'} ${formatVaultShortDate(asset.dueOn)}`
+                    : null,
+                  asset.serviceDueOn
+                    ? `Service ${formatVaultShortDate(asset.serviceDueOn)}`
+                    : null,
+                ]
+                  .filter(Boolean)
+                  .join(' · ');
+
+                const linkedCount = asset.linkedItems?.length || 0;
+                const line2 =
+                  linkedCount > 0
+                    ? `${linkedCount} linked policy/document${
+                        linkedCount === 1 ? '' : 's'
+                      }`
+                    : asset.notes || null;
+
+                return (
+                  <React.Fragment key={asset.id}>
+                    {idx > 0 && <View style={styles.divider} />}
+                    <TouchableOpacity
+                      style={styles.row}
+                      activeOpacity={0.75}
+                      onPress={() => onSelectAsset?.(asset)}
+                      accessibilityRole="button"
+                    >
+                      <View
+                        style={[styles.iconBox, { borderColor: vis.color }]}
+                      >
+                        <Feather
+                          name={vis.icon as any}
+                          size={18}
+                          color={vis.color}
+                        />
+                      </View>
+                      <View style={styles.rowInfo}>
+                        <View style={styles.titleRow}>
+                          <Text
+                            style={[styles.titleRowText, { flex: 1 }]}
+                            numberOfLines={1}
+                          >
+                            {asset.title}
+                          </Text>
+                          {badge && (
+                            <View style={styles.badgePucDue}>
+                              <Text style={styles.badgePucDueText}>
+                                {badge.text}
+                              </Text>
+                            </View>
+                          )}
+                        </View>
+                        {line1 ? (
+                          <Text style={styles.rowSubtitle}>{line1}</Text>
+                        ) : null}
+                        {line2 ? (
+                          <Text style={styles.rowSubtitle}>{line2}</Text>
+                        ) : null}
+                      </View>
+                      <Feather
+                        name="chevron-right"
+                        size={18}
+                        color="#8A97AB"
+                        style={{ marginLeft: 8 }}
+                      />
+                    </TouchableOpacity>
+                  </React.Fragment>
+                );
+              })}
+            </View>
+          )}
+
+          <TouchableOpacity
+            style={styles.tipCard}
+            activeOpacity={0.8}
+            onPress={handleAddPress}
+          >
+            <View style={styles.tipIcon}>
+              <Feather name="zap" size={18} color="#F7C08E" />
+            </View>
+            <Text style={styles.tipText}>
+              Tip: Scan an RC book, deed, or appliance invoice to create an asset and link policies to it automatically.
+            </Text>
+          </TouchableOpacity>
+        </ScrollView>
+      )}
+
+      <View
+        style={[
+          styles.bottomBar,
+          { paddingBottom: Math.max(insets.bottom, 16) },
         ]}
-        showsVerticalScrollIndicator={false}
       >
-        {/* Assets Card */}
-        <View style={styles.card}>
-          {/* Asset 1: Flat */}
-          <TouchableOpacity
-            style={styles.row}
-            onPress={() => onSelectAsset?.({ title: 'Flat · Sector 45, Gurugram' })}
-            activeOpacity={0.7}
-          >
-            <View style={[styles.iconBox, { borderColor: '#F0923A' }]}>
-              <Feather name="home" size={20} color="#F0923A" />
-            </View>
-            <View style={styles.rowInfo}>
-              <Text style={styles.rowTitle}>Flat · Sector 45, Gurugram</Text>
-              <Text style={styles.rowSubtitle}>
-                Property tax due Jul 2027{'\n'}Papers in Documents
-              </Text>
-            </View>
-            <Feather name="chevron-right" size={18} color="#5D6C83" />
-          </TouchableOpacity>
-
-          <View style={styles.divider} />
-
-          {/* Asset 2: Hyundai Creta */}
-          <TouchableOpacity
-            style={styles.row}
-            onPress={() => onSelectAsset?.({ title: 'Hyundai Creta' })}
-            activeOpacity={0.7}
-          >
-            <View style={[styles.iconBox, { borderColor: '#3DC4C4' }]}>
-              <CarIcon size={20} color="#3DC4C4" />
-            </View>
-            <View style={styles.rowInfo}>
-              <View style={styles.titleRow}>
-                <Text style={styles.titleRowText}>Hyundai Creta</Text>
-                <View style={styles.badgePucDue}>
-                  <Text style={styles.badgePucDueText}>PUC due</Text>
-                </View>
-              </View>
-              <Text style={styles.rowSubtitle}>
-                DL 3C AB 1234 · PUC expires 15 Nov{'\n'}Insurance and service history linked
-              </Text>
-            </View>
-            <Feather name="chevron-right" size={18} color="#5D6C83" style={{ marginLeft: 8 }} />
-          </TouchableOpacity>
-
-          <View style={styles.divider} />
-
-          {/* Asset 3: Honda Activa */}
-          <TouchableOpacity
-            style={styles.row}
-            onPress={() => onSelectAsset?.({ title: 'Honda Activa' })}
-            activeOpacity={0.7}
-          >
-            <View style={[styles.iconBox, { borderColor: '#3DC4C4' }]}>
-              <CarIcon size={20} color="#3DC4C4" />
-            </View>
-            <View style={styles.rowInfo}>
-              <Text style={styles.rowTitle}>Honda Activa</Text>
-              <Text style={styles.rowSubtitle}>HR 26 CX 4410 · PUC valid till Mar 2027</Text>
-            </View>
-            <Feather name="chevron-right" size={18} color="#5D6C83" />
-          </TouchableOpacity>
-
-          <View style={styles.divider} />
-
-          {/* Asset 4: Inverter */}
-          <TouchableOpacity
-            style={styles.row}
-            onPress={() => onSelectAsset?.({ title: 'Inverter · Luminous' })}
-            activeOpacity={0.7}
-          >
-            <View style={[styles.iconBox, { borderColor: '#4CC38A' }]}>
-              <Feather name="activity" size={20} color="#4CC38A" />
-            </View>
-            <View style={styles.rowInfo}>
-              <Text style={styles.rowTitle}>Inverter · Luminous</Text>
-              <Text style={styles.rowSubtitle}>
-                Battery replaced Feb 2025 · Check Feb 2027
-              </Text>
-            </View>
-            <Feather name="chevron-right" size={18} color="#5D6C83" />
-          </TouchableOpacity>
-        </View>
-
-        {/* AI Tip / Scan Banner Card */}
-        <View style={styles.tipCard}>
-          <Feather name="zap" size={20} color="#F0923A" style={styles.tipIcon} />
-          <Text style={styles.tipText}>
-            Add a photo of the RC or bill and HosynQ fills in the dates for you.
-          </Text>
-        </View>
-      </ScrollView>
-
-      {/* Floating / Pinned Bottom Action Button */}
-      <View style={[styles.bottomBar, { paddingBottom: Math.max(insets.bottom, 16) + 6 }]}>
         <TouchableOpacity
           style={styles.addButton}
-          onPress={onAddAsset}
-          activeOpacity={0.8}
+          onPress={handleAddPress}
+          activeOpacity={0.85}
           accessibilityRole="button"
           accessibilityLabel="Add asset"
         >
-          <Feather name="plus" size={20} color="#FFFFFF" style={{ marginRight: 6 }} />
+          <Feather
+            name="plus"
+            size={20}
+            color="#FFFFFF"
+            style={{ marginRight: 6 }}
+          />
           <Text style={styles.addButtonText}>Add asset</Text>
         </TouchableOpacity>
       </View>
+
+      <AddEditVaultItemModal
+        visible={addModalVisible}
+        initialCategory="ASSET"
+        initialKind="VEHICLE"
+        onClose={() => setAddModalVisible(false)}
+        onSaved={loadAssets}
+      />
     </View>
   );
 };
@@ -207,6 +313,28 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
     marginBottom: 16,
   },
+  emptyCard: {
+    backgroundColor: '#122440',
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: '#1F3352',
+    padding: 22,
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  emptyTitle: {
+    fontSize: 15.5,
+    fontFamily: 'Roboto-SemiBold',
+    color: '#FFFFFF',
+    marginTop: 10,
+    marginBottom: 6,
+  },
+  emptySubtitle: {
+    fontSize: 13,
+    color: '#8A97AB',
+    textAlign: 'center',
+    lineHeight: 18,
+  },
   row: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -231,6 +359,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     marginBottom: 4,
+    gap: 8,
   },
   titleRowText: {
     fontSize: 15,

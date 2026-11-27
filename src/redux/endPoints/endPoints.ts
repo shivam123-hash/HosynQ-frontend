@@ -2,16 +2,16 @@ import { Platform, NativeModules } from 'react-native';
 
 /**
  * Local development host configuration:
- * Current Mac Wi-Fi IP: 192.168.29.41
+ * Current Mac Wi-Fi IP: 192.168.1.11
  * (Find by running `ifconfig | grep "inet 192"` in Mac terminal)
  */
-export const DEV_MACHINE_IP = '192.168.29.41';
+export const DEV_MACHINE_IP = '192.168.1.11';
 
 /**
  * Automatically extracts the development host IP:
  * 1. Checks NativeModules.SourceCode.scriptURL (Metro packager IP)
- *    If Metro is accessed from 192.168.29.41, this dynamically resolves it!
- * 2. Falls back to DEV_MACHINE_IP (192.168.29.41) so real devices never call
+ *    If Metro is accessed from 192.168.1.11, this dynamically resolves it!
+ * 2. Falls back to DEV_MACHINE_IP (192.168.1.11) so real devices never call
  *    "localhost" (which points to the mobile device itself and causes Network Error).
  */
 export const resolveDevHost = (): string => {
@@ -21,21 +21,17 @@ export const resolveDevHost = (): string => {
       const match = scriptURL.match(/^https?:\/\/([^:/]+)/i);
       const host = match?.[1];
       if (host) {
-        // When Metro is on localhost (standard React Native with adb reverse on Android, or simulator on iOS),
-        // localhost routes directly to Mac with zero Wi-Fi or firewall latency!
+        // On iOS simulator, localhost routes directly to the Mac.
+        // On Android physical devices, localhost hits the phone unless tcp:5000 is adb-reversed,
+        // so prefer DEV_MACHINE_IP (which reaches the Mac over Wi-Fi on both physical device & emulator).
         if (host === 'localhost' || host === '127.0.0.1') {
-          return 'localhost';
+          return Platform.OS === 'android' ? DEV_MACHINE_IP : 'localhost';
         }
         return host;
       }
     }
   } catch (e) {
     // fallback below
-  }
-
-  // On Android, localhost connects via adb reverse tcp:5000 tcp:5000 (or emulator loopback)
-  if (Platform.OS === 'android') {
-    return 'localhost';
   }
 
   return DEV_MACHINE_IP;
@@ -169,6 +165,36 @@ const API_ROUTES = {
   NOTIFICATIONS_REGISTER_DEVICE: 'notifications/devices',
   NOTIFICATIONS_SEND_TEST: 'notifications/test',
 
+  // Trip Planner Endpoints (Postman Requests #1-#15)
+  TRIPS: 'trips',
+  TRIPS_COMMON_DATES: 'trips/common-dates',
+  TRIP_BY_ID: (tripId: string) => `trips/${tripId}`,
+  TRIP_CANCEL: (tripId: string) => `trips/${tripId}/cancel`,
+  TRIP_PACKING_LIST: (tripId: string) => `trips/${tripId}/packing-list`,
+  TRIP_BOOKINGS: (tripId: string) => `trips/${tripId}/bookings`,
+  TRIP_BOOKING_BY_ID: (tripId: string, bookingId: string) =>
+    `trips/${tripId}/bookings/${bookingId}`,
+
+  // Family Pulse Endpoints (Postman Requests #1-#24)
+  PULSE_HOME: 'pulse',
+  PULSE_MOOD: 'pulse/mood',
+  PULSE_APPRECIATIONS: 'pulse/appreciations',
+  PULSE_APPRECIATION_BY_ID: (id: string) => `pulse/appreciations/${id}`,
+  PULSE_APPRECIATION_REACTION: (id: string) => `pulse/appreciations/${id}/reaction`,
+  PULSE_POLLS: 'pulse/polls',
+  PULSE_POLL_BY_ID: (id: string) => `pulse/polls/${id}`,
+  PULSE_POLL_VOTE: (id: string) => `pulse/polls/${id}/vote`,
+  PULSE_POLL_CLOSE: (id: string) => `pulse/polls/${id}/close`,
+  PULSE_MILESTONES: 'pulse/milestones',
+  PULSE_MILESTONE_BY_ID: (id: string) => `pulse/milestones/${id}`,
+  PULSE_MILESTONE_PHOTOS: (id: string) => `pulse/milestones/${id}/photos`,
+  PULSE_MILESTONE_REACTION: (id: string) => `pulse/milestones/${id}/reaction`,
+
+  // Family Vault Endpoints (Postman Requests #1-#9)
+  VAULT_HOME: 'vault',
+  VAULT_LIFE_PROFILE_DOCS: 'vault/life-profile-documents',
+  VAULT_ITEMS: 'vault/items',
+  VAULT_ITEM_BY_ID: (id: string) => `vault/items/${id}`,
   // Chat Endpoints
   CHAT_THREADS: 'chat/threads',
   CHAT_THREAD_MESSAGES: (threadId: string, queryParams?: { limit?: number; before?: string }) => {

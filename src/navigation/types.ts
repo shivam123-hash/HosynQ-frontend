@@ -184,7 +184,8 @@ export type RootStackParamList = {
   VaultWarranties: undefined;
   VaultHomeAssets: undefined;
   VaultImportantContacts: undefined;
-  VaultItemDetail: { item?: any } | undefined;
+  VaultScans: undefined;
+  VaultItemDetail: { item?: any; itemId?: string } | undefined;
   MyProfile: undefined;
   NotificationPreferences: undefined;
   PrivacyConsent: undefined;

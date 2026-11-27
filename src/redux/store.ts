@@ -10,6 +10,9 @@ import tasksReducer from './features/tasks/tasksSlice';
 import listsReducer from './features/lists/listsSlice';
 import calendarReducer from './features/calendar/calendarSlice';
 import notificationsReducer from './features/notifications/notificationsSlice';
+import tripsReducer from './features/trips/tripsSlice';
+import pulseReducer from './features/pulse/pulseSlice';
+import vaultReducer from './features/vault/vaultSlice';
 import chatReducer from './features/chat/chatSlice';
 import { setStore } from './storeRegistry';
 
@@ -25,6 +28,9 @@ export const store = configureStore({
     lists: listsReducer,
     calendar: calendarReducer,
     notifications: notificationsReducer,
+    trips: tripsReducer,
+    pulse: pulseReducer,
+    vault: vaultReducer,
     chat: chatReducer,
   },
   middleware: (getDefaultMiddleware) =>

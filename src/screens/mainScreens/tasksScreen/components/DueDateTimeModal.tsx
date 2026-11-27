@@ -16,6 +16,7 @@ import { Colors, Fonts, Typography } from '../../../../units';
 
 export interface DueDateTimeModalProps {
   visible: boolean;
+  asModal?: boolean;
   initialDate?: string;
   initialTime?: string;
   onClose: () => void;
@@ -143,6 +144,7 @@ interface CalendarCell {
 
 const DueDateTimeModal: React.FC<DueDateTimeModalProps> = ({
   visible,
+  asModal = true,
   initialDate = 'Today',
   initialTime = '6:00 PM',
   onClose,
@@ -400,13 +402,11 @@ const DueDateTimeModal: React.FC<DueDateTimeModalProps> = ({
 
   const formattedSelectedPill = formatDisplayDate(selectedDate);
 
-  return (
-    <Modal
-      visible={visible}
-      transparent
-      animationType="slide"
-      onRequestClose={onClose}
-    >
+  if (!asModal && !visible) {
+    return null;
+  }
+
+  const modalBody = (
       <View style={styles.overlay}>
         <TouchableOpacity
           style={styles.backdrop}
@@ -753,6 +753,24 @@ const DueDateTimeModal: React.FC<DueDateTimeModalProps> = ({
           onCancel={() => setIsTimePickerVisible(false)}
         />
       </View>
+  );
+
+  if (!asModal) {
+    return (
+      <View style={[StyleSheet.absoluteFill, { zIndex: 1200, elevation: 24 }]}>
+        {modalBody}
+      </View>
+    );
+  }
+
+  return (
+    <Modal
+      visible={visible}
+      transparent
+      animationType="slide"
+      onRequestClose={onClose}
+    >
+      {modalBody}
     </Modal>
   );
 };

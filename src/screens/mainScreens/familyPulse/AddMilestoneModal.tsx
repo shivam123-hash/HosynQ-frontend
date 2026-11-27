@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import {
   View,
   Text,
@@ -10,65 +10,161 @@ import {
   Switch,
   Image,
   Pressable,
+  ActivityIndicator,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Feather from '@react-native-vector-icons/feather';
 import ImagePicker from 'react-native-image-crop-picker';
+import { useAppDispatch, useAppSelector } from '../../../redux';
+import {
+  createMilestoneThunk,
+  uploadMilestonePhotoThunk,
+} from '../../../redux/features/pulse/pulseSlice';
+import { PulseMilestoneType } from '../../../services/pulseServices';
 import Colors from '../../../units/Colors';
 import DueDateTimeModal from '../tasksScreen/components/DueDateTimeModal';
+import { FamilyMemberPulse } from './types';
+import {
+  extractPulseMembersFromFamilyState,
+  isJestTestEnv,
+} from './pulseApiHelpers';
+import PulseModalContainer from './PulseModalContainer';
+import PulseDialog, {
+  INITIAL_PULSE_DIALOG_STATE,
+  PulseDialogState,
+} from './PulseDialog';
 
-export type MilestonePhoto =
-  | { id: string; type: 'court' }
-  | { id: string; type: 'image'; uri: string };
+export interface MilestonePhoto {
+  id: string;
+  type: 'image';
+  uri: string;
+  filename?: string;
+  mime?: string;
+}
 
 export interface AddMilestoneModalProps {
   visible: boolean;
+  asModal?: boolean;
+  members?: FamilyMemberPulse[];
   onClose: () => void;
-  onSaveMilestone: (milestoneData: {
+  onSaveMilestone?: (milestoneData: {
     personId: string;
     personName: string;
     title: string;
     dateText: string;
+    achievedOn: string;
+    type: PulseMilestoneType;
     saveToLifeProfile: boolean;
     shareInPulse: boolean;
     photos?: MilestonePhoto[];
   }) => void;
 }
 
-const MEMBERS = [
-  { id: 'anaya', name: 'Anaya', initial: 'A', color: Colors.avatarWine },
-  { id: 'aarav', name: 'Aarav', initial: 'Aa', color: Colors.avatarOlive },
-  { id: 'you', name: 'You', initial: 'P', color: Colors.avatarBrown },
-  { id: 'rohan', name: 'Rohan', initial: 'R', color: Colors.avatarNavy },
-  { id: 'dadi', name: 'Dadi', initial: 'D', color: Colors.avatarGreen },
-  {
-    id: 'family',
-    name: 'Family',
-    initial: 'Fam',
-    color: 'transparent',
-    isGroup: true,
-  },
+const MILESTONE_TYPES: Array<{ id: PulseMilestoneType; label: string }> = [
+  { id: 'FIRST', label: 'First' },
+  { id: 'PHYSICAL', label: 'Physical' },
+  { id: 'LEARNING', label: 'Learning' },
+  { id: 'SOCIAL', label: 'Social' },
+  { id: 'OTHER', label: 'Other' },
 ];
+
+const formatTodayDefaults = () => {
+  const now = new Date();
+  const iso = now.toISOString().slice(0, 10);
+  const label = now.toLocaleDateString('en-US', {
+    weekday: 'short',
+    day: 'numeric',
+    month: 'short',
+    year: 'numeric',
+  });
+  return { iso, label };
+};
 
 export const AddMilestoneModal: React.FC<AddMilestoneModalProps> = ({
   visible,
+  asModal = true,
+  members: membersProp,
   onClose,
   onSaveMilestone,
 }) => {
   const insets = useSafeAreaInsets();
-  const [selectedPersonId, setSelectedPersonId] = useState('anaya');
-  const [title, setTitle] = useState('Reached the badminton semi-final');
+  const dispatch = useAppDispatch();
+  const familyState = useAppSelector((state) => state.family);
+
+  const memberOptions = useMemo(() => {
+    const resolved =
+      membersProp && membersProp.length > 0
+        ? membersProp
+        : extractPulseMembersFromFamilyState(familyState);
+    const items = resolved.map((m) => ({
+      id: m.id,
+      name: m.name,
+      initial: m.initial,
+      color: m.bgColor,
+      isGroup: false,
+      isYou: Boolean(m.isYou),
+      isAdult: m.isAdult,
+      hasAccount: Boolean(m.hasAccount),
+    }));
+    items.push({
+      id: 'family',
+      name: 'Family',
+      initial: 'Fam',
+      color: 'transparent',
+      isGroup: true,
+      isYou: false,
+      isAdult: false,
+      hasAccount: false,
+    });
+    return items;
+  }, [membersProp, familyState]);
+
+  const defaultToday = useMemo(() => formatTodayDefaults(), []);
+
+  const [selectedPersonId, setSelectedPersonId] = useState<string>('family');
+  const [milestoneType, setMilestoneType] = useState<PulseMilestoneType>('FIRST');
+  const [title, setTitle] = useState('');
   const [isTitleFocused, setIsTitleFocused] = useState(false);
-  const [dateText, setDateText] = useState('Wed, 28 Oct 2026');
+  const [achievedOn, setAchievedOn] = useState(defaultToday.iso);
+  const [dateText, setDateText] = useState(defaultToday.label);
   const [showDatePicker, setShowDatePicker] = useState(false);
-  const [photos, setPhotos] = useState<MilestonePhoto[]>([
-    { id: 'initial-court', type: 'court' },
-  ]);
+  const [photos, setPhotos] = useState<MilestonePhoto[]>([]);
   const [showPhotoOptions, setShowPhotoOptions] = useState(false);
   const [saveToLifeProfile, setSaveToLifeProfile] = useState(true);
   const [shareInPulse, setShareInPulse] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [dialog, setDialog] = useState<PulseDialogState>(INITIAL_PULSE_DIALOG_STATE);
 
-  const selectedPerson = MEMBERS.find((m) => m.id === selectedPersonId) || MEMBERS[0];
+  useEffect(() => {
+    if (!visible) return;
+    const today = formatTodayDefaults();
+    const initialMember = memberOptions[0];
+    setSelectedPersonId(initialMember?.id || 'family');
+    setMilestoneType('FIRST');
+    setTitle('');
+    setAchievedOn(today.iso);
+    setDateText(today.label);
+    setPhotos([]);
+    setShareInPulse(true);
+    setSaveToLifeProfile(Boolean(initialMember && !initialMember.isGroup));
+  }, [visible, memberOptions]);
+
+  const selectedPerson =
+    memberOptions.find((m) => m.id === selectedPersonId) || memberOptions[0];
+
+  const canSaveToLifeProfile = useMemo(() => {
+    if (!selectedPerson || selectedPerson.isGroup) return false;
+    // Backend allows inLifeProfile for self, or child/member without account (admin)
+    if (selectedPerson.isYou) return true;
+    if (!selectedPerson.hasAccount || !selectedPerson.isAdult) return true;
+    return false;
+  }, [selectedPerson]);
+
+  useEffect(() => {
+    if (!canSaveToLifeProfile && saveToLifeProfile) {
+      setSaveToLifeProfile(false);
+    }
+  }, [canSaveToLifeProfile, saveToLifeProfile]);
 
   const handleTakePhoto = async () => {
     try {
@@ -82,12 +178,22 @@ export const AddMilestoneModal: React.FC<AddMilestoneModalProps> = ({
           id: `${Date.now()}-${Math.random()}`,
           type: 'image',
           uri: image.path,
+          filename: image.filename,
+          mime: image.mime,
         };
         setPhotos((prev) => [...prev, newPhoto].slice(0, 6));
       }
     } catch (error: any) {
       if (error?.code !== 'E_PICKER_CANCELLED') {
-        // user cancelled or picker error
+        setDialog({
+          visible: true,
+          type: 'danger',
+          iconName: 'alert-circle',
+          title: 'Camera unavailable',
+          description: 'Could not open camera right now.',
+          primaryButtonText: 'OK',
+          secondaryButtonText: '',
+        });
       }
     }
   };
@@ -104,6 +210,8 @@ export const AddMilestoneModal: React.FC<AddMilestoneModalProps> = ({
           id: `${Date.now()}-${Math.random()}`,
           type: 'image',
           uri: img.path,
+          filename: img.filename,
+          mime: img.mime,
         }));
         setPhotos((prev) => [...prev, ...newItems].slice(0, 6));
       } else if (res?.path) {
@@ -111,12 +219,22 @@ export const AddMilestoneModal: React.FC<AddMilestoneModalProps> = ({
           id: `${Date.now()}-${Math.random()}`,
           type: 'image',
           uri: res.path,
+          filename: res.filename,
+          mime: res.mime,
         };
         setPhotos((prev) => [...prev, newPhoto].slice(0, 6));
       }
     } catch (error: any) {
       if (error?.code !== 'E_PICKER_CANCELLED') {
-        // user cancelled or picker error
+        setDialog({
+          visible: true,
+          type: 'danger',
+          iconName: 'alert-circle',
+          title: 'Gallery unavailable',
+          description: 'Could not choose photo right now.',
+          primaryButtonText: 'OK',
+          secondaryButtonText: '',
+        });
       }
     }
   };
@@ -125,25 +243,105 @@ export const AddMilestoneModal: React.FC<AddMilestoneModalProps> = ({
     setPhotos((prev) => prev.filter((p) => p.id !== id));
   };
 
-  const handleSave = () => {
-    if (!title.trim()) return;
-    onSaveMilestone({
+  const handleSave = async () => {
+    const cleanTitle = title.trim();
+    if (!cleanTitle) {
+      setDialog({
+        visible: true,
+        type: 'warning',
+        iconName: 'alert-circle',
+        title: 'Add a milestone title',
+        description: 'Tell everyone what happened before saving.',
+        primaryButtonText: 'OK',
+        secondaryButtonText: '',
+      });
+      return;
+    }
+
+    const effectiveLifeProfile = canSaveToLifeProfile && saveToLifeProfile;
+    if (!effectiveLifeProfile && !shareInPulse) {
+      setDialog({
+        visible: true,
+        type: 'warning',
+        iconName: 'alert-circle',
+        title: 'Choose where to save',
+        description: 'Enable Life Profile or Share in Family Pulse.',
+        primaryButtonText: 'OK',
+        secondaryButtonText: '',
+      });
+      return;
+    }
+
+    const callbackPayload = {
       personId: selectedPerson.id,
       personName: selectedPerson.name,
-      title: title.trim(),
+      title: cleanTitle,
       dateText,
-      saveToLifeProfile,
+      achievedOn,
+      type: milestoneType,
+      saveToLifeProfile: effectiveLifeProfile,
       shareInPulse,
       photos,
-    });
-    onClose();
+    };
+
+    if (onSaveMilestone && isJestTestEnv()) {
+      onSaveMilestone(callbackPayload);
+      onClose();
+      return;
+    }
+
+    setSaving(true);
+    try {
+      const apiPayload = {
+        ...(selectedPerson.isGroup ? {} : { memberId: selectedPerson.id }),
+        title: cleanTitle,
+        achievedOn,
+        type: milestoneType,
+        inLifeProfile: effectiveLifeProfile,
+        sharedToPulse: shareInPulse,
+      };
+
+      const res = await dispatch(createMilestoneThunk(apiPayload));
+      if (createMilestoneThunk.rejected.match(res)) {
+        setDialog({
+          visible: true,
+          type: 'danger',
+          iconName: 'alert-circle',
+          title: 'Could not save milestone',
+          description: (res.payload as string) || 'Please try again.',
+          primaryButtonText: 'OK',
+          secondaryButtonText: '',
+        });
+        return;
+      }
+
+      const createdId = res.payload?.id;
+      if (createdId && photos.length > 0) {
+        for (const photo of photos) {
+          const formData = new FormData();
+          formData.append('file', {
+            uri: photo.uri,
+            name: photo.filename || `milestone-${Date.now()}.jpg`,
+            type: photo.mime || 'image/jpeg',
+          } as any);
+          await dispatch(
+            uploadMilestonePhotoThunk({ milestoneId: createdId, formData })
+          );
+        }
+      }
+
+      onSaveMilestone?.(callbackPayload);
+      onClose();
+    } finally {
+      setSaving(false);
+    }
   };
 
   return (
-    <Modal
+    <PulseModalContainer
       visible={visible}
-      animationType="slide"
-      transparent={false}
+      asModal={asModal}
+      variant="push"
       onRequestClose={onClose}
     >
       <View style={[styles.container, { paddingTop: Math.max(insets.top, 16) }]}>
@@ -163,28 +361,32 @@ export const AddMilestoneModal: React.FC<AddMilestoneModalProps> = ({
         </View>
 
         <ScrollView
-          style={styles.scrollArea}
+          style={styles.scrollView}
           contentContainerStyle={[
             styles.scrollContent,
-            { paddingBottom: insets.bottom + 90 },
+            { paddingBottom: Math.max(insets.bottom + 100, 110) },
           ]}
           showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled"
         >
-          {/* Whose milestone? */}
-          <Text style={styles.sectionHeaderUpper}>WHOSE MILESTONE?</Text>
+          {/* Who is this for? */}
+          <Text style={styles.sectionHeaderUpper}>WHO IS THIS FOR?</Text>
           <ScrollView
             horizontal
             showsHorizontalScrollIndicator={false}
-            contentContainerStyle={styles.memberPickerRow}
+            contentContainerStyle={styles.membersRow}
           >
-            {MEMBERS.map((member) => {
-              const isSelected = selectedPersonId === member.id;
+            {memberOptions.map((member) => {
+              const isSelected = member.id === selectedPersonId;
               return (
                 <TouchableOpacity
                   key={member.id}
-                  style={styles.memberItem}
+                  style={styles.memberColumn}
                   onPress={() => setSelectedPersonId(member.id)}
-                  activeOpacity={0.7}
+                  activeOpacity={0.8}
+                  accessibilityRole="button"
+                  accessibilityState={{ selected: isSelected }}
+                  accessibilityLabel={member.name}
                 >
                   <View
                     style={[
@@ -201,7 +403,7 @@ export const AddMilestoneModal: React.FC<AddMilestoneModalProps> = ({
                       ]}
                     >
                       {member.isGroup ? (
-                        <Feather name="users" size={18} color={Colors.white} />
+                        <Feather name="users" size={18} color="#8A97AB" />
                       ) : (
                         <Text style={styles.avatarInitial}>{member.initial}</Text>
                       )}
@@ -237,8 +439,35 @@ export const AddMilestoneModal: React.FC<AddMilestoneModalProps> = ({
               placeholder="e.g. Reached badminton semi-final"
               placeholderTextColor={Colors.textPlaceholder}
               selectionColor={Colors.primary}
+              maxLength={150}
             />
           </View>
+
+          {/* Category / Type */}
+          <Text style={styles.sectionHeaderUpper}>CATEGORY</Text>
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.typeChipsRow}
+          >
+            {MILESTONE_TYPES.map((t) => {
+              const active = milestoneType === t.id;
+              return (
+                <TouchableOpacity
+                  key={t.id}
+                  style={[styles.typeChip, active && styles.typeChipActive]}
+                  onPress={() => setMilestoneType(t.id)}
+                  activeOpacity={0.8}
+                >
+                  <Text
+                    style={[styles.typeChipText, active && styles.typeChipTextActive]}
+                  >
+                    {t.label}
+                  </Text>
+                </TouchableOpacity>
+              );
+            })}
+          </ScrollView>
 
           {/* When */}
           <TouchableOpacity
@@ -270,19 +499,11 @@ export const AddMilestoneModal: React.FC<AddMilestoneModalProps> = ({
           <View style={styles.photosGrid}>
             {photos.map((photo) => (
               <View key={photo.id} style={styles.photoSlotFilled}>
-                {photo.type === 'court' ? (
-                  <View style={styles.courtNetGraphic}>
-                    <View style={styles.courtNetVertical} />
-                    <View style={styles.courtNetHorizontal} />
-                    <View style={styles.shuttlecockBall} />
-                  </View>
-                ) : (
-                  <Image
-                    source={{ uri: photo.uri }}
-                    style={styles.photoImage}
-                    resizeMode="cover"
-                  />
-                )}
+                <Image
+                  source={{ uri: photo.uri }}
+                  style={styles.photoImage}
+                  resizeMode="cover"
+                />
                 <TouchableOpacity
                   style={styles.photoRemoveBtn}
                   onPress={() => handleRemovePhoto(photo.id)}
@@ -295,7 +516,7 @@ export const AddMilestoneModal: React.FC<AddMilestoneModalProps> = ({
               </View>
             ))}
 
-            {photos.length < 6 && (
+            {photos.length < 6 ? (
               <TouchableOpacity
                 style={styles.photoSlotAdd}
                 activeOpacity={0.7}
@@ -303,50 +524,49 @@ export const AddMilestoneModal: React.FC<AddMilestoneModalProps> = ({
                 accessibilityRole="button"
                 accessibilityLabel="Add photo"
               >
-                <Feather name="camera" size={22} color={Colors.primary} />
+                <Feather name="plus" size={20} color="#8A97AB" />
               </TouchableOpacity>
-            )}
+            ) : null}
           </View>
 
           {/* Settings Card */}
           <View style={styles.settingsCard}>
-            {/* Save to Life Profile */}
             <View style={styles.settingRow}>
               <View style={styles.settingTextGroup}>
-                <Text style={styles.settingTitle}>
-                  Save to {selectedPerson.name}’s Life Profile
-                </Text>
+                <Text style={styles.settingTitle}>Save in Life Profile</Text>
                 <Text style={styles.settingSubtitle}>
-                  Under F · Interests and activities
+                  {canSaveToLifeProfile
+                    ? `Keep permanently in ${selectedPerson.name}'s memories`
+                    : selectedPerson.isGroup
+                    ? 'Available for individual member milestones'
+                    : 'Only available for your own or child profiles'}
                 </Text>
               </View>
               <Switch
-                value={saveToLifeProfile}
+                value={canSaveToLifeProfile && saveToLifeProfile}
                 onValueChange={setSaveToLifeProfile}
-                trackColor={{
-                  false: Colors.surfaceMuted,
-                  true: Colors.primary,
-                }}
+                disabled={!canSaveToLifeProfile}
+                trackColor={{ false: Colors.surfaceNavy, true: Colors.primary }}
                 thumbColor={Colors.white}
+                ios_backgroundColor={Colors.surfaceNavy}
               />
             </View>
 
             <View style={styles.divider} />
 
-            {/* Share in Family Pulse */}
             <View style={styles.settingRow}>
               <View style={styles.settingTextGroup}>
                 <Text style={styles.settingTitle}>Share in Family Pulse</Text>
-                <Text style={styles.settingSubtitle}>Everyone can react</Text>
+                <Text style={styles.settingSubtitle}>
+                  Celebrate with everyone in the feed
+                </Text>
               </View>
               <Switch
                 value={shareInPulse}
                 onValueChange={setShareInPulse}
-                trackColor={{
-                  false: Colors.surfaceMuted,
-                  true: Colors.primary,
-                }}
+                trackColor={{ false: Colors.surfaceNavy, true: Colors.primary }}
                 thumbColor={Colors.white}
+                ios_backgroundColor={Colors.surfaceNavy}
               />
             </View>
           </View>
@@ -355,35 +575,34 @@ export const AddMilestoneModal: React.FC<AddMilestoneModalProps> = ({
         {/* Date Picker Modal */}
         <DueDateTimeModal
           visible={showDatePicker}
-          initialDate={dateText}
+          initialDate={achievedOn}
           onClose={() => setShowDatePicker(false)}
-          onSave={(dateLabel, dueFormatted) => {
-            setDateText(dateLabel || dueFormatted);
+          onSave={(_dateLabel, formatted, _time, isoDate) => {
+            if (isoDate) {
+              setAchievedOn(isoDate);
+            }
+            if (formatted) {
+              setDateText(formatted);
+            }
             setShowDatePicker(false);
           }}
         />
 
-        {/* Photo Options Modal */}
+        {/* Photo Picker Options */}
         <Modal
-          animationType="slide"
-          transparent={true}
           visible={showPhotoOptions}
+          transparent
+          animationType="fade"
           onRequestClose={() => setShowPhotoOptions(false)}
-          statusBarTranslucent
         >
           <Pressable
             style={styles.sheetOverlay}
             onPress={() => setShowPhotoOptions(false)}
           >
-            <Pressable
-              style={styles.sheetContent}
-              onPress={(e) => e.stopPropagation()}
-            >
+            <Pressable style={styles.sheetContent} onPress={(e) => e.stopPropagation()}>
               <View style={styles.sheetHandle} />
-              <Text style={styles.sheetTitle}>Add photo</Text>
-              <Text style={styles.sheetSubtitle}>
-                Take a photo or choose from your library
-              </Text>
+              <Text style={styles.sheetTitle}>Add Photo</Text>
+              <Text style={styles.sheetSubtitle}>Choose an option</Text>
 
               <View style={styles.sheetActionsRow}>
                 <TouchableOpacity
@@ -394,7 +613,7 @@ export const AddMilestoneModal: React.FC<AddMilestoneModalProps> = ({
                   <View style={styles.sheetIconCircle}>
                     <Feather name="camera" size={20} color={Colors.primary} />
                   </View>
-                  <Text style={styles.sheetActionText}>Take photo</Text>
+                  <Text style={styles.sheetActionText}>Take a photo</Text>
                 </TouchableOpacity>
 
                 <TouchableOpacity
@@ -430,13 +649,23 @@ export const AddMilestoneModal: React.FC<AddMilestoneModalProps> = ({
           <TouchableOpacity
             style={styles.saveButton}
             onPress={handleSave}
+            disabled={saving}
             activeOpacity={0.85}
           >
-            <Text style={styles.saveButtonText}>Save milestone</Text>
+            {saving ? (
+              <ActivityIndicator color={Colors.white} />
+            ) : (
+              <Text style={styles.saveButtonText}>Save milestone</Text>
+            )}
           </TouchableOpacity>
         </View>
+
+        <PulseDialog
+          dialog={dialog}
+          onClose={() => setDialog(INITIAL_PULSE_DIALOG_STATE)}
+        />
       </View>
-    </Modal>
+    </PulseModalContainer>
   );
 };
 
@@ -475,12 +704,12 @@ const styles = StyleSheet.create({
     width: 44,
     height: 44,
   },
-  scrollArea: {
+  scrollView: {
     flex: 1,
   },
   scrollContent: {
     paddingHorizontal: 20,
-    paddingTop: 8,
+    paddingTop: 12,
   },
   sectionHeaderUpper: {
     fontSize: 12,
@@ -489,12 +718,12 @@ const styles = StyleSheet.create({
     letterSpacing: 0.8,
     marginBottom: 12,
   },
-  memberPickerRow: {
+  membersRow: {
     flexDirection: 'row',
     gap: 14,
-    marginBottom: 20,
+    paddingBottom: 22,
   },
-  memberItem: {
+  memberColumn: {
     alignItems: 'center',
   },
   avatarWrapper: {
@@ -558,6 +787,32 @@ const styles = StyleSheet.create({
     fontFamily: 'Roboto-Medium',
     padding: 0,
   },
+  typeChipsRow: {
+    flexDirection: 'row',
+    gap: 8,
+    marginBottom: 22,
+  },
+  typeChip: {
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: 18,
+    borderWidth: 1,
+    borderColor: '#3A4556',
+    backgroundColor: Colors.cardBackground,
+  },
+  typeChipActive: {
+    borderColor: Colors.primary,
+    backgroundColor: 'rgba(240, 145, 58, 0.16)',
+  },
+  typeChipText: {
+    fontSize: 13,
+    fontFamily: 'Roboto-Medium',
+    color: '#CAD4DF',
+  },
+  typeChipTextActive: {
+    color: Colors.primary,
+    fontFamily: 'Roboto-Bold',
+  },
   whenCard: {
     backgroundColor: Colors.cardBackground,
     borderRadius: 20,
@@ -606,7 +861,7 @@ const styles = StyleSheet.create({
     width: 82,
     height: 82,
     borderRadius: 16,
-    backgroundColor: '#164035',
+    backgroundColor: '#132238',
     overflow: 'hidden',
     position: 'relative',
   },
@@ -626,37 +881,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     zIndex: 10,
-  },
-  courtNetGraphic: {
-    flex: 1,
-    position: 'relative',
-  },
-  courtNetVertical: {
-    position: 'absolute',
-    left: '50%',
-    top: 0,
-    bottom: '50%',
-    width: 2,
-    marginLeft: -1,
-    backgroundColor: 'rgba(255, 255, 255, 0.45)',
-  },
-  courtNetHorizontal: {
-    position: 'absolute',
-    top: '50%',
-    left: 0,
-    right: 0,
-    height: 2,
-    marginTop: -1,
-    backgroundColor: 'rgba(255, 255, 255, 0.45)',
-  },
-  shuttlecockBall: {
-    position: 'absolute',
-    top: 20,
-    right: 14,
-    width: 14,
-    height: 14,
-    borderRadius: 7,
-    backgroundColor: Colors.white,
   },
   photoSlotAdd: {
     width: 82,
