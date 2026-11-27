@@ -14,6 +14,7 @@ import tripsReducer from './features/trips/tripsSlice';
 import pulseReducer from './features/pulse/pulseSlice';
 import vaultReducer from './features/vault/vaultSlice';
 import chatReducer from './features/chat/chatSlice';
+import homeReducer from './features/home/homeSlice';
 import { setStore } from './storeRegistry';
 
 export const store = configureStore({
@@ -32,6 +33,7 @@ export const store = configureStore({
     pulse: pulseReducer,
     vault: vaultReducer,
     chat: chatReducer,
+    home: homeReducer,
   },
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware({

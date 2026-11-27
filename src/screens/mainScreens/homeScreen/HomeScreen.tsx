@@ -5,6 +5,8 @@ import {
   StatusBar,
   RefreshControl,
   Alert,
+  NativeScrollEvent,
+  NativeSyntheticEvent,
 } from 'react-native';
 import { isJestTestEnv } from '../familyPulse/pulseApiHelpers';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -22,6 +24,13 @@ import {
   createCalendarEvent,
   updateCalendarEvent,
 } from '../../../redux/features/calendar/calendarSlice';
+import {
+  fetchHomePageThunk,
+  fetchHomeSectionThunk,
+  setActiveBriefPeriod,
+} from '../../../redux/features/home/homeSlice';
+import { BriefPeriod } from '../../../services/homeServices';
+import { getCurrentCoordinates } from '../../../services/locationService';
 import { isUUID } from '../tasksScreen/taskApiHelpers';
 import { mapApiTaskToUiTask } from '../tasksScreen/TasksScreen';
 import {
@@ -45,6 +54,7 @@ import {
   LifeProfileBanner,
   FamilyPulseSection,
   BottomNavBar,
+  HomeScreenSkeleton,
 } from './components';
 import { CreateTaskModal, TaskDetailModal } from '../tasksScreen/components';
 import { TaskItem as TasksScreenTaskItem } from '../tasksScreen/types';
@@ -216,6 +226,9 @@ const HomeScreen: React.FC<HomeScreenProps> = ({
   const userInitial = firstName ? firstName.charAt(0).toUpperCase() : 'P';
 
   const now = new Date();
+  const homeState = useAppSelector((state) => state.home);
+  const homeSections = homeState?.sections || {};
+
   const currentHour = now.getHours();
   const dynamicGreeting = isTestEnv
     ? 'Good afternoon'
@@ -232,9 +245,11 @@ const HomeScreen: React.FC<HomeScreenProps> = ({
         month: 'long',
       });
 
-  const unreadCount = notificationsState?.unreadCount ?? 0;
+  const unreadCount =
+    homeSections.HEADER?.unreadNotifications ??
+    (notificationsState?.unreadCount ?? 0);
 
-  const [attentionItems] = useState<AttentionItem[]>(INITIAL_ATTENTION_ITEMS);
+  const [attentionItems, setAttentionItems] = useState<AttentionItem[]>(INITIAL_ATTENTION_ITEMS);
   const [upcomingEvents, setUpcomingEvents] = useState<EventItem[]>(
     isTestEnv ? INITIAL_UPCOMING_EVENTS : []
   );
@@ -243,9 +258,23 @@ const HomeScreen: React.FC<HomeScreenProps> = ({
   const [familyMembers, setFamilyMembers] = useState<FamilyMemberStatus[]>(INITIAL_FAMILY_MEMBERS);
   const [suggestion, setSuggestion] = useState(INITIAL_SMART_SUGGESTION);
 
-  // Sync tasks, calendar feed, and unread count on mount
+  // Sync tasks, calendar feed, home feed, and unread count on mount
   useEffect(() => {
+    if (isTestEnv) return;
     const todayStr = new Date().toISOString().slice(0, 10);
+    // 1. Initial Home Feed load (limit=7, previewSize=5, withinDays=7)
+    dispatch(
+      fetchHomePageThunk({
+        query: {
+          today: todayStr,
+          withinDays: 7,
+          previewSize: 5,
+          limit: 7,
+        },
+      })
+    );
+
+    // 2. Background sync tasks, unread count & calendar
     dispatch(
       fetchTasks({
         status: 'PENDING',
@@ -261,13 +290,52 @@ const HomeScreen: React.FC<HomeScreenProps> = ({
         show: ['EVENTS'],
       })
     );
-  }, [dispatch]);
+  }, [dispatch, isTestEnv]);
 
-  // Sync with Redux tasks when available
+  // Sync Needs Attention from Home API
+  useEffect(() => {
+    const needsAttentionData = homeSections.NEEDS_ATTENTION;
+    if (
+      needsAttentionData?.items &&
+      Array.isArray(needsAttentionData.items) &&
+      needsAttentionData.items.length > 0
+    ) {
+      const mapped: AttentionItem[] = needsAttentionData.items.map((item: any) => ({
+        id: item.id || `att-${item.title}`,
+        title: item.title,
+        subtitle:
+          item.subtitle ||
+          (item.daysLeft !== undefined
+            ? item.daysLeft < 0
+              ? `${Math.abs(item.daysLeft)}d overdue`
+              : item.daysLeft === 0
+              ? 'Due today'
+              : `Due in ${item.daysLeft}d`
+            : 'Urgent attention required'),
+        type:
+          item.daysLeft !== undefined && item.daysLeft < 0
+            ? 'urgent'
+            : item.daysLeft !== undefined && item.daysLeft <= 1
+            ? 'warning'
+            : 'info',
+        dueDate: item.dueOn || 'Today',
+        category: (item.kind?.toLowerCase() || 'household') as any,
+      }));
+      setAttentionItems(mapped);
+    }
+  }, [homeSections.NEEDS_ATTENTION]);
+
+  // Sync with Redux tasks when available (or Home API PENDING_TASKS)
   const apiTasks = tasksState?.tasks || [];
   useEffect(() => {
-    if (apiTasks && apiTasks.length > 0) {
-      const mapped: TaskItem[] = apiTasks.map((t) => {
+    const pendingData = homeSections.PENDING_TASKS;
+    const sourceTasks =
+      pendingData?.tasks && Array.isArray(pendingData.tasks) && pendingData.tasks.length > 0
+        ? pendingData.tasks
+        : apiTasks;
+
+    if (sourceTasks && sourceTasks.length > 0) {
+      const mapped: TaskItem[] = sourceTasks.map((t: any) => {
         const uiTask = mapApiTaskToUiTask(t);
         const cat = (uiTask.category?.toLowerCase() || 'household') as TaskItem['category'];
         const validCat = ['household', 'finance', 'health', 'travel'].includes(cat) ? cat : 'household';
@@ -287,16 +355,22 @@ const HomeScreen: React.FC<HomeScreenProps> = ({
       });
       setTasks(mapped);
     }
-  }, [apiTasks]);
+  }, [apiTasks, homeSections.PENDING_TASKS]);
 
-  // Sync calendar events from Redux feed when available
+  // Sync calendar events from Redux feed or Home API UPCOMING_TODAY
   const apiCalendarEvents = calendarState?.feed?.events;
   useEffect(() => {
-    if (apiCalendarEvents) {
-      if (isTestEnv && apiCalendarEvents.length === 0) {
+    const upcomingData = homeSections.UPCOMING_TODAY;
+    const sourceEvents =
+      upcomingData?.events && Array.isArray(upcomingData.events) && upcomingData.events.length > 0
+        ? upcomingData.events
+        : apiCalendarEvents;
+
+    if (sourceEvents) {
+      if (isTestEnv && sourceEvents.length === 0) {
         return;
       }
-      const mapped: EventItem[] = apiCalendarEvents.map((e: any, idx: number) => {
+      const mapped: EventItem[] = sourceEvents.map((e: any, idx: number) => {
         const rawId = e.id || e.eventId || e._id;
         const eventId = rawId ? String(rawId) : `event-${idx}-${Date.now()}`;
         const timeStr = e.startTime || '15:00';
@@ -326,9 +400,23 @@ const HomeScreen: React.FC<HomeScreenProps> = ({
       });
       setUpcomingEvents(mapped);
     }
-  }, [apiCalendarEvents, isTestEnv]);
+  }, [apiCalendarEvents, homeSections.UPCOMING_TODAY, isTestEnv]);
 
-  // Sync with Redux family members when available
+  // Sync recently done from Home API
+  useEffect(() => {
+    const doneData = homeSections.RECENTLY_DONE;
+    if (doneData?.tasks && Array.isArray(doneData.tasks) && doneData.tasks.length > 0) {
+      const mapped = doneData.tasks.map((t: any, idx: number) => ({
+        id: t.id || `done-${idx}`,
+        title: t.title || 'Completed Task',
+        completedBy: t.completedBy?.fullName || t.completedBy?.firstName || 'Family member',
+        timeAgo: 'Recently',
+      }));
+      setRecentlyDone(mapped);
+    }
+  }, [homeSections.RECENTLY_DONE]);
+
+  // Sync with Redux family members or Home API FAMILY_PULSE
   const currentFamily = familyState?.myFamilyData?.family || familyState?.family;
   const familyName = useMemo(() => {
     return (
@@ -338,7 +426,29 @@ const HomeScreen: React.FC<HomeScreenProps> = ({
       'The Sharma Family'
     );
   }, [currentFamily, familyState?.basicFamilyData]);
+
   useEffect(() => {
+    const pulseData = homeSections.FAMILY_PULSE;
+    if (pulseData?.members && Array.isArray(pulseData.members) && pulseData.members.length > 0) {
+      const mappedMembers: FamilyMemberStatus[] = pulseData.members.map(
+        (m: any, idx: number) => {
+          const name = m.fullName || (m.isMe ? 'You' : `Member ${idx + 1}`);
+          const initial = name.trim()[0]?.toUpperCase() || 'M';
+          return {
+            id: String(m.memberId || `mem-${idx}`),
+            name: m.isMe ? `${name.split(' ')[0]} (You)` : name.split(' ')[0],
+            initials: initial,
+            avatarBg: m.avatarColor || '#1F3A66',
+            status: m.state === 'HOME' ? 'At Home' : m.state === 'MOVING' ? 'On the move' : 'Online',
+            location: m.place || 'Home',
+            isSafe: true,
+          };
+        }
+      );
+      setFamilyMembers(mappedMembers);
+      return;
+    }
+
     if (currentFamily?.members && currentFamily.members.length > 0) {
       const mappedMembers: FamilyMemberStatus[] = currentFamily.members.map(
         (m: any, idx: number) => {
@@ -357,7 +467,7 @@ const HomeScreen: React.FC<HomeScreenProps> = ({
       );
       setFamilyMembers(mappedMembers);
     }
-  }, [currentFamily]);
+  }, [currentFamily, homeSections.FAMILY_PULSE]);
 
   const calendarFamilyMembers = useMemo(() => {
     return extractFamilyMembersFromState(familyState);
@@ -370,29 +480,113 @@ const HomeScreen: React.FC<HomeScreenProps> = ({
     }
   }, [calendarFamilyMembers.length, dispatch, isTestEnv]);
 
-  // Pull to refresh simulation
-  const onRefresh = useCallback(() => {
+  // Pull to refresh with current coordinates and section refresh
+  const onRefresh = useCallback(async () => {
     setRefreshing(true);
     const todayStr = new Date().toISOString().slice(0, 10);
-    dispatch(
-      fetchTasks({
-        status: 'PENDING',
-        today: todayStr,
-      })
-    );
-    dispatch(fetchUnreadCount());
-    dispatch(
-      fetchCalendarFeed({
-        from: todayStr,
-        to: todayStr,
-        today: todayStr,
-        show: ['EVENTS'],
-      })
-    );
-    setTimeout(() => {
+    try {
+      const coords = await getCurrentCoordinates(3500);
+      await Promise.allSettled([
+        dispatch(
+          fetchHomePageThunk({
+            query: {
+              today: todayStr,
+              withinDays: 7,
+              previewSize: 5,
+              limit: 7,
+              lat: coords?.lat,
+              lng: coords?.lng,
+            },
+            isRefresh: true,
+          })
+        ),
+        dispatch(fetchUnreadCount()),
+        dispatch(
+          fetchTasks({
+            status: 'PENDING',
+            today: todayStr,
+          })
+        ),
+        dispatch(
+          fetchCalendarFeed({
+            from: todayStr,
+            to: todayStr,
+            today: todayStr,
+            show: ['EVENTS'],
+          })
+        ),
+      ]);
+    } finally {
       setRefreshing(false);
-    }, 1000);
+    }
   }, [dispatch]);
+
+  // Infinite scroll: load next sections batch when approaching bottom
+  const handleScroll = useCallback(
+    (event: NativeSyntheticEvent<NativeScrollEvent>) => {
+      const { layoutMeasurement, contentOffset, contentSize } = event.nativeEvent;
+      const isCloseToBottom =
+        layoutMeasurement.height + contentOffset.y >= contentSize.height - 120;
+
+      if (
+        isCloseToBottom &&
+        homeState.pagination.hasMore &&
+        !homeState.loadingMore &&
+        homeState.pagination.nextCursor
+      ) {
+        const todayStr = new Date().toISOString().slice(0, 10);
+        dispatch(
+          fetchHomePageThunk({
+            query: {
+              today: todayStr,
+              withinDays: 7,
+              previewSize: 5,
+              limit: 8,
+              before: homeState.pagination.nextCursor,
+            },
+            isLoadMore: true,
+          })
+        );
+      }
+    },
+    [dispatch, homeState.pagination, homeState.loadingMore]
+  );
+
+  // Timeframe change on brief card (only updates BRIEF section data)
+  const handleTimeframeChange = useCallback(
+    (timeframe: BriefTimeframe) => {
+      const periodMap: Record<BriefTimeframe, BriefPeriod> = {
+        today: 'TODAY',
+        week: 'WEEK',
+        month: 'MONTH',
+      };
+      const targetPeriod = periodMap[timeframe] || 'TODAY';
+      dispatch(setActiveBriefPeriod(targetPeriod));
+      const todayStr = new Date().toISOString().slice(0, 10);
+      dispatch(
+        fetchHomeSectionThunk({
+          section: 'BRIEF',
+          params: {
+            period: targetPeriod,
+            today: todayStr,
+            withinDays: 7,
+            previewSize: 5,
+          },
+        })
+      );
+    },
+    [dispatch]
+  );
+
+  // Brief dynamic text & counts
+  const briefData = homeSections.BRIEF;
+  const dynamicBriefText =
+    briefData?.text ||
+    (isTestEnv
+      ? "Aarav's PTM is at 3:00 PM and Rohan is picking him up. The electricity bill of ₹2,840 is due tomorrow, and Dadi's BP tablets run out on Sunday."
+      : "Aarav's PTM is at 3:00 PM and Rohan is picking him up. The electricity bill of ₹2,840 is due tomorrow, and Dadi's BP tablets run out on Sunday. Weather is clear with a high of 27°C.");
+  const briefTaskCount = briefData?.basedOn?.tasks ?? tasks.length;
+  const briefEventCount = briefData?.basedOn?.events ?? upcomingEvents.length;
 
   // Task check/uncheck handler with Redux API synchronization
   const handleToggleTask = (taskId: string) => {
@@ -424,9 +618,23 @@ const HomeScreen: React.FC<HomeScreenProps> = ({
 
     if (isUUID(taskId)) {
       if (willComplete) {
-        dispatch(completeTask({ taskId, today }));
+        dispatch(completeTask({ taskId, today })).then(() => {
+          dispatch(
+            fetchHomeSectionThunk({
+              section: 'PENDING_TASKS',
+              params: { today, previewSize: 5 },
+            })
+          );
+        });
       } else {
-        dispatch(reopenTask(taskId));
+        dispatch(reopenTask(taskId)).then(() => {
+          dispatch(
+            fetchHomeSectionThunk({
+              section: 'PENDING_TASKS',
+              params: { today, previewSize: 5 },
+            })
+          );
+        });
       }
     }
   };
@@ -536,6 +744,8 @@ const HomeScreen: React.FC<HomeScreenProps> = ({
       <ScrollView
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.scrollContent}
+        onScroll={handleScroll}
+        scrollEventThrottle={200}
         refreshControl={
           <RefreshControl
             refreshing={refreshing}
@@ -545,33 +755,37 @@ const HomeScreen: React.FC<HomeScreenProps> = ({
           />
         }
       >
-        {/* User Greeting */}
-        <HomeGreeting
-          dateString={dynamicDateString}
-          greeting={dynamicGreeting}
-          userName={firstName}
-        />
+        {!homeState.hasLoadedInitial && homeState.loading && !isTestEnv ? (
+          <HomeScreenSkeleton />
+        ) : (
+          <>
+            {/* User Greeting */}
+            <HomeGreeting
+              dateString={dynamicDateString}
+              greeting={dynamicGreeting}
+              userName={firstName}
+            />
 
-        {/* AI Daily Brief Card */}
-        <BriefCard
-          onReadFullBrief={() =>
-            onOpenBrief
-              ? onOpenBrief('today')
-              : Alert.alert(
-                  'Daily AI Brief',
-                  "Aarav's PTM is at 3:00 PM and Rohan is picking him up. The electricity bill of ₹2,840 is due tomorrow, and Dadi's BP tablets run out on Sunday. Weather is clear with a high of 27°C."
-                )
-          }
-          onTimeframeChange={(tf) => onOpenBrief?.(tf)}
-        />
+            {/* AI Daily Brief Card */}
+            <BriefCard
+              todayBriefText={dynamicBriefText}
+              taskCount={briefTaskCount}
+              eventCount={briefEventCount}
+              onReadFullBrief={() =>
+                onOpenBrief
+                  ? onOpenBrief((homeState.activeBriefPeriod.toLowerCase() as any))
+                  : Alert.alert('Daily AI Brief', dynamicBriefText)
+              }
+              onTimeframeChange={handleTimeframeChange}
+            />
 
-        {/* 4 Quick Action Buttons */}
-        <QuickActionsBar
-          onAddTask={handleAddTaskPress}
-          onAddEvent={onAddEventPress}
-          onHeadingHome={handleHeadingHomePress}
-          onScan={onScanPress}
-        />
+            {/* 4 Quick Action Buttons */}
+            <QuickActionsBar
+              onAddTask={handleAddTaskPress}
+              onAddEvent={onAddEventPress}
+              onHeadingHome={handleHeadingHomePress}
+              onScan={onScanPress}
+            />
 
         {/* Needs Attention Alerts */}
         <NeedsAttentionSection
@@ -731,6 +945,8 @@ const HomeScreen: React.FC<HomeScreenProps> = ({
             }))
           }
         />
+          </>
+        )}
       </ScrollView>
 
       {/* Floating Bottom Navigation Bar */}

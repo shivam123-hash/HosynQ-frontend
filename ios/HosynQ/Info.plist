@@ -41,7 +41,7 @@
 	<key>NSLocalNetworkUsageDescription</key>
 	<string>HosynQ connects to your development server on your local Wi-Fi network.</string>
 	<key>NSLocationWhenInUseUsageDescription</key>
-	<string/>
+	<string>HosynQ needs your location to show local weather and family pulse updates.</string>
 	<key>NSPhotoLibraryUsageDescription</key>
 	<string>HosynQ needs access to your photo library to select and upload your certificates and profile avatar.</string>
 	<key>NSCameraUsageDescription</key>

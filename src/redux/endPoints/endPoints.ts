@@ -195,6 +195,12 @@ const API_ROUTES = {
   VAULT_LIFE_PROFILE_DOCS: 'vault/life-profile-documents',
   VAULT_ITEMS: 'vault/items',
   VAULT_ITEM_BY_ID: (id: string) => `vault/items/${id}`,
+
+  // Home Screen Endpoints (HOME-01 to HOME-14)
+  HOME: 'home',
+  HOME_BRIEF: 'home/brief',
+  HOME_NEEDS_ATTENTION: 'home/needs-attention',
+
   // Chat Endpoints
   CHAT_THREADS: 'chat/threads',
   CHAT_THREAD_MESSAGES: (threadId: string, queryParams?: { limit?: number; before?: string }) => {

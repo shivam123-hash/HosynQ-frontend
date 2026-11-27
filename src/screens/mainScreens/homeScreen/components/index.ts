@@ -9,6 +9,7 @@ import RecentlyDoneSection, { RecentlyDoneSectionProps } from './RecentlyDoneSec
 import LifeProfileBanner, { LifeProfileBannerProps } from './LifeProfileBanner';
 import FamilyPulseSection, { FamilyPulseSectionProps } from './FamilyPulseSection';
 import BottomNavBar, { BottomNavBarProps } from './BottomNavBar';
+import HomeScreenSkeleton from './HomeScreenSkeleton';
 
 export {
   HomeHeader,
@@ -22,6 +23,7 @@ export {
   LifeProfileBanner,
   FamilyPulseSection,
   BottomNavBar,
+  HomeScreenSkeleton,
 };
 
 export type {
