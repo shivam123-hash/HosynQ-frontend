@@ -7,6 +7,7 @@ import {
   Modal,
   Alert,
   Share,
+  Image,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Feather from '@react-native-vector-icons/feather';
@@ -16,9 +17,11 @@ import AppOptionsMenu from '../common/AppOptionsMenu';
 export interface ImageViewerModalProps {
   visible: boolean;
   onClose: () => void;
+  imageUrl?: string | null;
   senderName?: string;
   timestamp?: string;
   caption?: string;
+  messageId?: string;
   onSaveToVault?: () => void;
   onReply?: () => void;
 }
@@ -26,9 +29,11 @@ export interface ImageViewerModalProps {
 export const ImageViewerModal: React.FC<ImageViewerModalProps> = ({
   visible,
   onClose,
+  imageUrl,
   senderName = 'Dadi',
   timestamp = 'Today, 1:15 PM',
   caption = 'Diyas for tonight. Anaya, help me light them at 7?',
+  messageId,
   onSaveToVault,
   onReply,
 }) => {
@@ -117,15 +122,23 @@ export const ImageViewerModal: React.FC<ImageViewerModalProps> = ({
 
         {/* Center Image / Illustration Preview */}
         <View style={styles.imageStage}>
-          <View style={styles.diyasStage}>
-            {/* 5 Warm Diya lamps */}
-            {[0, 1, 2, 3, 4].map((idx) => (
-              <View key={`diya-${idx}`} style={styles.diyaContainer}>
-                <View style={styles.diyaFlameGlow} />
-                <View style={styles.diyaBowl} />
-              </View>
-            ))}
-          </View>
+          {imageUrl ? (
+            <Image
+              source={{ uri: imageUrl }}
+              style={styles.fullImage}
+              resizeMode="contain"
+            />
+          ) : (
+            <View style={styles.diyasStage}>
+              {/* 5 Warm Diya lamps */}
+              {[0, 1, 2, 3, 4].map((idx) => (
+                <View key={`diya-${idx}`} style={styles.diyaContainer}>
+                  <View style={styles.diyaFlameGlow} />
+                  <View style={styles.diyaBowl} />
+                </View>
+              ))}
+            </View>
+          )}
         </View>
 
         {/* Caption & Carousel Dots & Bottom Action Buttons */}
@@ -240,6 +253,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     paddingHorizontal: 16,
+  },
+  fullImage: {
+    width: '100%',
+    height: 380,
+    borderRadius: 16,
   },
   diyasStage: {
     width: '100%',

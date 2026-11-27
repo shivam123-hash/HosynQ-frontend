@@ -75,6 +75,10 @@ import {
 export interface CalendarScreenProps {
   initialViewMode?: CalendarViewMode;
   initialDate?: string;
+  initialEventId?: string | null;
+  onClearInitialEvent?: () => void;
+  returnToChat?: boolean;
+  onReturnToChat?: () => void;
   onProfilePress?: () => void;
   onNotificationsPress?: () => void;
   onExplorePress?: () => void;
@@ -88,6 +92,10 @@ export interface CalendarScreenProps {
 export const CalendarScreen: React.FC<CalendarScreenProps> = ({
   initialViewMode = 'day',
   initialDate,
+  initialEventId,
+  onClearInitialEvent,
+  returnToChat,
+  onReturnToChat,
   onProfilePress,
   onNotificationsPress,
   onExplorePress,
@@ -430,6 +438,10 @@ export const CalendarScreen: React.FC<CalendarScreenProps> = ({
 
   // Modals state
   const [selectedEventForDetail, setSelectedEventForDetail] = useState<CalendarEvent | null>(null);
+  const returnToChatRef = useRef(returnToChat);
+  useEffect(() => {
+    returnToChatRef.current = returnToChat;
+  }, [returnToChat]);
   const [selectedEventForComments, setSelectedEventForComments] = useState<CalendarEvent | null>(null);
   const [selectedEventForCancel, setSelectedEventForCancel] = useState<CalendarEvent | null>(null);
   const [createModalVisible, setCreateModalVisible] = useState(false);
@@ -590,6 +602,44 @@ export const CalendarScreen: React.FC<CalendarScreenProps> = ({
         });
     }
   };
+
+  // Deep-navigation: sync selectedDate if initialDate prop is provided
+  useEffect(() => {
+    if (initialDate) {
+      setSelectedDate(initialDate);
+    }
+  }, [initialDate]);
+
+  // Deep-navigation: open event detail if initialEventId prop is provided
+  useEffect(() => {
+    if (initialEventId) {
+      const found = events.find((e) => e.id === initialEventId);
+      if (found) {
+        handleOpenEventDetail(found);
+      } else {
+        const placeholder: CalendarEvent = {
+          id: initialEventId,
+          title: 'Loading event...',
+          date: initialDate || selectedDate,
+          startTime: '',
+          endTime: '',
+          formattedDate: '',
+          formattedTime: '',
+          isAllDay: true,
+          category: 'other',
+          categoryColor: '#3A8EF0',
+          location: '',
+          goingMemberIds: [],
+          goingMembers: [],
+          reminders: 'None',
+          repeat: 'Never',
+          comments: [],
+        };
+        handleOpenEventDetail(placeholder);
+      }
+      onClearInitialEvent?.();
+    }
+  }, [initialEventId, events]);
 
   const handleSaveEvent = async (eventData: Partial<CalendarEvent>) => {
     const targetId = eventToEdit?.id || eventData.id;
@@ -1096,7 +1146,12 @@ export const CalendarScreen: React.FC<CalendarScreenProps> = ({
         }
         event={selectedEventForDetail}
         members={familyMembersList}
-        onClose={() => setSelectedEventForDetail(null)}
+        onClose={() => {
+          setSelectedEventForDetail(null);
+          if (returnToChatRef.current) {
+            onReturnToChat?.();
+          }
+        }}
         onEditEvent={(evt) => {
           handleSaveEvent(evt);
         }}

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import {
   View,
   Text,
@@ -6,114 +6,596 @@ import {
   StyleSheet,
   Modal,
   TextInput,
-  ScrollView,
+  FlatList,
   KeyboardAvoidingView,
   Platform,
   Alert,
+  ActivityIndicator,
+  StatusBar,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Feather from '@react-native-vector-icons/feather';
 import Colors from '../../../units/Colors';
-import { ChatMessage } from './types';
+import { useAppDispatch, useAppSelector } from '../../../redux';
+import {
+  fetchChatMessages,
+  fetchMoreChatMessages,
+  sendChatMessage,
+  markChatThreadRead,
+  startJustUsChat,
+  setActiveThreadId,
+  addOptimisticPendingMessage,
+  fetchChatThreads,
+  reactToChatMessage,
+  removeChatReaction,
+} from '../../../redux/features/chat/chatSlice';
+import { getMyFamilyBasicThunk, getMyFamilyThunk } from '../../../redux/features/family/familySlice';
+import { extractFamilyMembersFromState } from '../calendarScreen/calendarApiHelpers';
+import { ApiChatMessage, ApiChatPartner, ApiChatSender } from '../../../services/chatServices';
 import AppOptionsMenu from '../common/AppOptionsMenu';
+import { SmartReactionsModal } from './SmartReactionsModal';
 
 export interface JustUsModalProps {
   visible: boolean;
   onClose: () => void;
+  threadId?: string;
+  partner?: any;
   isAvailable?: boolean;
   onInvitePartner?: () => void;
   onHideJustUs?: () => void;
 }
 
-const DEFAULT_JUST_US_MESSAGES: ChatMessage[] = [
-  {
-    id: 'ju-1',
-    senderId: 'rohan',
-    senderName: 'Rohan',
-    senderInitial: 'R',
-    senderColor: Colors.avatarNavy,
-    nameColor: Colors.accentBlueSoft,
-    text: 'Anniversary is on the 21st. Should we plan something?',
-    timeText: '10:12 PM',
-    isYou: false,
-    status: 'delivered',
-    dateSeparator: 'Yesterday',
-  },
-  {
-    id: 'ju-2',
-    senderId: 'you',
-    senderName: 'You',
-    senderInitial: 'P',
-    senderColor: Colors.avatarBrown,
-    nameColor: Colors.white,
-    text: 'Yes! Lonavala for the weekend?',
-    timeText: '10:14 PM',
-    isYou: true,
-    status: 'delivered',
-  },
-  {
-    id: 'ju-3',
-    senderId: 'rohan',
-    senderName: 'Rohan',
-    senderInitial: 'R',
-    senderColor: Colors.avatarNavy,
-    nameColor: Colors.accentBlueSoft,
-    text: 'Booked the table for Saturday. Don’t tell the kids!',
-    timeText: '1:05 PM',
-    isYou: false,
-    status: 'delivered',
-    dateSeparator: 'Today',
-  },
-  {
-    id: 'ju-4',
-    senderId: 'you',
-    senderName: 'You',
-    senderInitial: 'P',
-    senderColor: Colors.avatarBrown,
-    nameColor: Colors.white,
-    text: 'Perfect. I’ll ask Dadi to babysit.',
-    timeText: '1:07 PM',
-    isYou: true,
-    status: 'delivered',
-  },
-];
+// RFC4122 v4 UUID generator safe for React Native
+const generateUUID = (): string => {
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
+    const r = (Math.random() * 16) | 0;
+    const v = c === 'x' ? r : (r & 0x3) | 0x8;
+    return v.toString(16);
+  });
+};
+
+// Pure TS Base64 encoding/decoding for Just Us E2EE ciphertext envelope
+const B64_CHARS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/=';
+
+const safeBase64Encode = (input: string): string => {
+  try {
+    const str = String(input);
+    let output = '';
+    for (
+      let block = 0, charCode, i = 0, map = B64_CHARS;
+      str.charAt(i | 0) || ((map = '='), i % 1);
+      output += map.charAt(63 & (block >> (8 - (i % 1) * 8)))
+    ) {
+      charCode = str.charCodeAt((i += 3 / 4));
+      if (charCode > 0xff) return str;
+      block = (block << 8) | charCode;
+    }
+    return output;
+  } catch {
+    return input;
+  }
+};
+
+const safeBase64Decode = (input?: string | null): string => {
+  if (!input) return '';
+  try {
+    const str = String(input).replace(/[=]+$/, '');
+    if (str.length % 4 === 1) return input;
+    let output = '';
+    for (
+      let bc = 0, bs = 0, buffer, idx = 0;
+      (buffer = str.charAt(idx++));
+      ~buffer && ((bs = bc % 4 ? bs * 64 + buffer : buffer), bc++ % 4)
+        ? (output += String.fromCharCode(255 & (bs >> ((-2 * bc) & 6))))
+        : 0
+    ) {
+      buffer = B64_CHARS.indexOf(buffer);
+    }
+    return output || input;
+  } catch {
+    return input;
+  }
+};
+
+const formatMessageTime = (dateStr?: string | null): string => {
+  if (!dateStr) return '';
+  const d = new Date(dateStr);
+  if (isNaN(d.getTime())) return '';
+  return d.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit', hour12: true });
+};
+
+const formatDateSeparator = (dateStr?: string | null): string => {
+  if (!dateStr) return '';
+  const d = new Date(dateStr);
+  if (isNaN(d.getTime())) return '';
+  const now = new Date();
+  if (d.toDateString() === now.toDateString()) return 'Today';
+  const yesterday = new Date(now);
+  yesterday.setDate(now.getDate() - 1);
+  if (d.toDateString() === yesterday.toDateString()) return 'Yesterday';
+  return d.toLocaleDateString([], { month: 'short', day: 'numeric', year: 'numeric' });
+};
+
+const isDifferentDay = (d1Str?: string | null, d2Str?: string | null): boolean => {
+  if (!d1Str || !d2Str) return false;
+  const d1 = new Date(d1Str);
+  const d2 = new Date(d2Str);
+  return d1.toDateString() !== d2.toDateString();
+};
+
+const getSenderInitial = (sender?: ApiChatSender | null, fallback = '?'): string => {
+  if (!sender || !sender.fullName) return fallback;
+  return sender.fullName.charAt(0).toUpperCase();
+};
 
 export const JustUsModal: React.FC<JustUsModalProps> = ({
   visible,
   onClose,
+  threadId,
+  partner: propPartner,
   isAvailable: initialAvailable = true,
   onInvitePartner,
   onHideJustUs,
 }) => {
   const insets = useSafeAreaInsets();
-  const [isAvailable, setIsAvailable] = useState(initialAvailable);
-  const [messages, setMessages] = useState<ChatMessage[]>(DEFAULT_JUST_US_MESSAGES);
-  const [inputText, setInputText] = useState('');
-  const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const dispatch = useAppDispatch();
 
-  React.useEffect(() => {
+  // Redux state
+  const chatState = useAppSelector((state) => state.chat);
+  const familyState = useAppSelector((state) => state.family);
+  const currentUser = useAppSelector((state) => state.baseProfile.user);
+
+  // Component state
+  const [createdThreadId, setCreatedThreadId] = useState<string | null>(null);
+  const [selectedPartner, setSelectedPartner] = useState<ApiChatPartner | null>(null);
+  const [selectedMessageForReactions, setSelectedMessageForReactions] = useState<ApiChatMessage | null>(null);
+  const [inputText, setInputText] = useState('');
+  const [isAvailable, setIsAvailable] = useState(initialAvailable);
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [startingMemberId, setStartingMemberId] = useState<string | null>(null);
+  const flatListRef = useRef<FlatList>(null);
+
+  // Active Just Us Thread ID resolution
+  const activeThreadId = useMemo(() => {
+    if (createdThreadId) return createdThreadId;
+    if (threadId && threadId !== 'just_us') return threadId;
+    return '';
+  }, [createdThreadId, threadId]);
+
+  // Eligible adult members to start Just Us with (if no thread exists yet)
+  const eligibleAdults = useMemo(() => {
+    const candidates = [
+      familyState.family?.members,
+      familyState.myFamilyData?.family?.members,
+      familyState.basicFamilyData?.members,
+      (familyState.basicFamilyData as any)?.family?.members,
+      (familyState as any)?.familyMembers,
+      (familyState.family as any)?.data?.members,
+    ];
+
+    let rawList: any[] = [];
+    for (const c of candidates) {
+      if (Array.isArray(c) && c.length > 0) {
+        rawList = c;
+        break;
+      }
+    }
+
+    if (rawList.length === 0) {
+      const extracted = extractFamilyMembersFromState(familyState);
+      if (Array.isArray(extracted) && extracted.length > 0) {
+        rawList = extracted;
+      }
+    }
+
+    const myId =
+      familyState.myMemberId ||
+      (familyState.basicFamilyData as any)?.myMemberId ||
+      (familyState.basicFamilyData as any)?.family?.myMemberId ||
+      currentUser?.id;
+
+    const existingPartnerIds = new Set(
+      chatState.threads.justUs
+        .map((t) => t.partner?.memberId || (t as any)?.partnerMemberId || (t as any)?.targetMemberId || (t as any)?.memberId)
+        .filter(Boolean)
+        .map(String)
+    );
+    const existingPartnerNames = new Set(
+      chatState.threads.justUs
+        .map((t) => t.partner?.fullName)
+        .filter(Boolean)
+    );
+
+    return rawList
+      .filter((m: any) => {
+        if (m.isYou) return false;
+        const mId = String(m.memberId || m.id || m.userId || m._id || '');
+        if (myId && mId === String(myId)) return false;
+        const role = String(m.role || m.familyRole || '').toUpperCase();
+        if (role === 'CHILD' || role === 'DEPENDENT_CHILD_PROFILE') return false;
+        return true;
+      })
+      .map((m: any, idx: number) => {
+        const targetId = String(m.memberId || m.id || m.userId || m._id || `m-${idx}`);
+        const fullName = m.fullName || m.name || `Family Member`;
+        const hasExisting = existingPartnerIds.has(targetId) || existingPartnerNames.has(fullName);
+        const baseRole = m.familyRole || m.role || (m.relationship ? m.relationship : 'Adult Member');
+        const role = hasExisting ? `${baseRole} · Existing Chat` : baseRole;
+        const avatarColor = m.avatarColor || m.color || (idx % 2 === 0 ? Colors.avatarNavy : Colors.avatarBrown);
+        return {
+          id: targetId,
+          memberId: targetId,
+          fullName,
+          role,
+          avatarColor,
+          hasExisting,
+        };
+      });
+  }, [familyState, currentUser, chatState.threads.justUs]);
+
+  // Partner resolution
+  const partner: ApiChatPartner | null = useMemo(() => {
+    if (selectedPartner) return selectedPartner;
+    if (propPartner) return propPartner;
+    if (activeThreadId) {
+      const targetThread = chatState.threads.justUs.find((t) => t.id === activeThreadId);
+      if (targetThread?.partner) return targetThread.partner;
+    }
+    if (chatState.threads.justUs.length > 0 && chatState.threads.justUs[0].partner) {
+      return chatState.threads.justUs[0].partner;
+    }
+    if (eligibleAdults.length === 1) {
+      return {
+        memberId: eligibleAdults[0].id,
+        fullName: eligibleAdults[0].fullName,
+        avatarColor: eligibleAdults[0].avatarColor,
+      };
+    }
+    return null;
+  }, [selectedPartner, propPartner, chatState.threads.justUs, activeThreadId, eligibleAdults]);
+
+  const partnerName = partner?.fullName || 'Partner';
+  const partnerInitial = partnerName.charAt(0).toUpperCase();
+  const partnerColor = partner?.avatarColor || Colors.avatarNavy;
+
+  // Messages list from Redux
+  const messages = chatState.messagesByThread[activeThreadId] || [];
+  const messagesLoading = chatState.messagesLoadingByThread[activeThreadId] || false;
+  const pagination = chatState.paginationByThread[activeThreadId];
+
+  // Lifecycle: Ensure family data is loaded if eligibleAdults is empty
+  useEffect(() => {
+    if (visible && eligibleAdults.length === 0) {
+      dispatch(getMyFamilyBasicThunk());
+      dispatch(getMyFamilyThunk());
+    }
+  }, [visible, eligibleAdults.length, dispatch]);
+
+  // Lifecycle: When opening modal, fetch messages and mark read
+  useEffect(() => {
+    if (visible && activeThreadId && activeThreadId !== 'just_us') {
+      dispatch(setActiveThreadId(activeThreadId));
+      dispatch(fetchChatMessages({ threadId: activeThreadId }));
+      dispatch(markChatThreadRead(activeThreadId));
+    }
+    return () => {
+      if (visible) {
+        dispatch(setActiveThreadId(null));
+      }
+    };
+  }, [visible, activeThreadId, dispatch]);
+
+  useEffect(() => {
     if (!visible) {
       setIsMenuOpen(false);
+      setInputText('');
+      setCreatedThreadId(null);
+      setSelectedPartner(null);
+      setSelectedMessageForReactions(null);
     }
   }, [visible]);
 
-  const handleSendMessage = () => {
-    if (!inputText.trim()) return;
-    const newMsg: ChatMessage = {
-      id: `ju-${Date.now()}`,
-      senderId: 'you',
-      senderName: 'You',
-      senderInitial: 'P',
-      senderColor: Colors.avatarBrown,
-      nameColor: Colors.white,
-      text: inputText.trim(),
-      timeText: 'Just now',
-      isYou: true,
-      status: 'delivered',
+  // Load older messages
+  const handleLoadMore = useCallback(() => {
+    if (pagination?.hasMore && !pagination?.loadingMore && activeThreadId && activeThreadId !== 'just_us') {
+      dispatch(fetchMoreChatMessages({ threadId: activeThreadId }));
+    }
+  }, [pagination, activeThreadId, dispatch]);
+
+  // Send Encrypted Message
+  const handleSendMessage = useCallback(async () => {
+    const text = inputText.trim();
+    if (!text || !activeThreadId || activeThreadId === 'just_us') return;
+
+    const clientId = generateUUID();
+    const ciphertext = safeBase64Encode(text);
+
+    const optimisticMsg: ApiChatMessage = {
+      id: clientId,
+      threadId: activeThreadId,
+      clientId,
+      kind: 'TEXT',
+      sender: {
+        memberId: currentUser?.id || 'me',
+        fullName: currentUser?.fullName || 'You',
+        avatarUrl: currentUser?.avatarUrl || null,
+        avatarColor: currentUser?.avatarColor || Colors.avatarBrown,
+      },
+      text,
+      ciphertext,
+      createdAt: new Date().toISOString(),
+      reactions: [],
+      isMine: true,
     };
-    setMessages((prev) => [...prev, newMsg]);
+
+    dispatch(
+      addOptimisticPendingMessage({
+        threadId: activeThreadId,
+        message: optimisticMsg,
+      })
+    );
+
     setInputText('');
+
+    try {
+      console.log('[JustUsModal] Sending ciphertext-only payload for Just Us to thread:', activeThreadId);
+      await dispatch(
+        sendChatMessage({
+          threadId: activeThreadId,
+          payload: {
+            clientId,
+            ciphertext,
+          },
+        })
+      ).unwrap();
+    } catch (err: any) {
+      console.error('[JustUsModal] Failed to send encrypted message:', err);
+      Alert.alert(
+        'Notice',
+        typeof err === 'string' ? err : err?.message || 'Failed to send message to server.'
+      );
+    }
+  }, [inputText, activeThreadId, currentUser, dispatch]);
+
+  // Start Just Us with an adult family member
+  const handleStartJustUs = useCallback(
+    async (memberId: string) => {
+      if (!memberId || startingMemberId) return;
+      console.log('[JustUsModal] handleStartJustUs called for memberId:', memberId);
+
+      // Check if thread already exists in local Redux state for this member
+      const existingThread = chatState.threads.justUs.find((t) => {
+        const p = t.partner;
+        const targetAdult = eligibleAdults.find((a: any) => a.id === memberId);
+        return (
+          p?.memberId === memberId ||
+          (t as any)?.partnerMemberId === memberId ||
+          (t as any)?.targetMemberId === memberId ||
+          (t as any)?.memberId === memberId ||
+          (targetAdult?.fullName && p?.fullName === targetAdult.fullName)
+        );
+      });
+
+      if (existingThread?.id) {
+        console.log('[JustUsModal] Thread already exists in state, switching to it:', existingThread.id);
+        setCreatedThreadId(existingThread.id);
+        const foundAdult = eligibleAdults.find((a: any) => a.id === memberId);
+        if (foundAdult) {
+          setSelectedPartner({
+            memberId: foundAdult.id,
+            fullName: foundAdult.fullName,
+            avatarColor: foundAdult.avatarColor,
+          });
+        }
+        dispatch(setActiveThreadId(existingThread.id));
+        dispatch(fetchChatMessages({ threadId: existingThread.id }));
+        return;
+      }
+
+      try {
+        setStartingMemberId(memberId);
+        console.log('[JustUsModal] Calling startJustUsChat thunk with memberId:', memberId);
+        const thread = await dispatch(startJustUsChat(memberId)).unwrap();
+        console.log('[JustUsModal] startJustUsChat returned thread:', thread);
+        const tid = (thread as any)?.id || (thread as any)?.threadId || (thread as any)?._id;
+        if (tid) {
+          setCreatedThreadId(tid);
+          const foundAdult = eligibleAdults.find((a: any) => a.id === memberId);
+          if (foundAdult) {
+            setSelectedPartner({
+              memberId: foundAdult.id,
+              fullName: foundAdult.fullName,
+              avatarColor: foundAdult.avatarColor,
+            });
+          }
+          dispatch(setActiveThreadId(tid));
+          dispatch(fetchChatMessages({ threadId: tid }));
+          dispatch(fetchChatThreads());
+        } else {
+          Alert.alert('Notice', 'Unable to start chat. Invalid thread response from server.');
+        }
+      } catch (err: any) {
+        console.error('[JustUsModal] Failed to start Just Us:', err);
+        const displayErr = typeof err === 'string' ? err : err?.message || JSON.stringify(err);
+        Alert.alert('Notice', displayErr);
+      } finally {
+        setStartingMemberId(null);
+      }
+    },
+    [dispatch, startingMemberId, eligibleAdults, chatState.threads.justUs]
+  );
+
+  // Determine if Just Us is active or unavailable
+  const hasJustUsThread = Boolean(activeThreadId && activeThreadId !== 'just_us');
+  const showPartnerSelector = !hasJustUsThread && (eligibleAdults.length > 0 || Boolean(chatState.threads.canStartJustUs));
+  const showUnavailable = !isAvailable || (!hasJustUsThread && !showPartnerSelector);
+
+  // Select emoji reaction from long-press picker modal
+  const handleSelectReaction = useCallback(
+    (emoji: string) => {
+      if (!selectedMessageForReactions || !activeThreadId) return;
+      const msg = selectedMessageForReactions;
+      if (msg.myReaction === emoji) {
+        dispatch(removeChatReaction({ threadId: activeThreadId, messageId: msg.id }));
+      } else {
+        dispatch(reactToChatMessage({ threadId: activeThreadId, messageId: msg.id, emoji }));
+      }
+      setSelectedMessageForReactions(null);
+    },
+    [selectedMessageForReactions, activeThreadId, dispatch]
+  );
+
+  // Toggle reaction chip underneath message bubble
+  const handleToggleReactionChip = useCallback(
+    (msg: ApiChatMessage, emoji: string) => {
+      if (!activeThreadId) return;
+      if (msg.myReaction === emoji) {
+        dispatch(removeChatReaction({ threadId: activeThreadId, messageId: msg.id }));
+      } else {
+        dispatch(reactToChatMessage({ threadId: activeThreadId, messageId: msg.id, emoji }));
+      }
+    },
+    [activeThreadId, dispatch]
+  );
+
+  // Render Reactions Row attached to bubble corner
+  const renderReactionsRow = (msg: ApiChatMessage, isMine: boolean) => {
+    if (!msg.reactions || msg.reactions.length === 0) return null;
+    return (
+      <View
+        style={[
+          styles.reactionsAttachedBadge,
+          isMine ? styles.reactionsAttachedRight : styles.reactionsAttachedLeft,
+        ]}
+      >
+        {msg.reactions.map((r) => {
+          const isUserReacted = msg.myReaction === r.emoji;
+          return (
+            <TouchableOpacity
+              key={r.emoji}
+              style={[
+                styles.reactionPill,
+                isUserReacted && styles.reactionPillActive,
+              ]}
+              onPress={() => handleToggleReactionChip(msg, r.emoji)}
+              activeOpacity={0.7}
+            >
+              <Text style={styles.reactionEmoji}>{r.emoji}</Text>
+              {r.count > 1 && (
+                <Text
+                  style={[
+                    styles.reactionCount,
+                    isUserReacted && styles.reactionCountActive,
+                  ]}
+                >
+                  {r.count}
+                </Text>
+              )}
+            </TouchableOpacity>
+          );
+        })}
+      </View>
+    );
   };
+
+  // Render Single Message Item (inverted)
+  const renderMessageItem = useCallback(
+    ({ item, index }: { item: ApiChatMessage; index: number }) => {
+      const isMine = Boolean(item.isMine);
+      const prevItem = messages[index + 1];
+      const showDateSep = !prevItem || isDifferentDay(item.createdAt, prevItem.createdAt);
+
+      const timeStr = formatMessageTime(item.createdAt);
+      // Decrypt message: use text if available, or decode ciphertext envelope
+      const displayText = item.text || safeBase64Decode(item.ciphertext) || 'Encrypted message';
+      const senderInitial = isMine ? 'P' : getSenderInitial(item.sender, partnerInitial);
+      const senderColor = isMine ? Colors.avatarBrown : (item.sender?.avatarColor || partnerColor);
+
+      return (
+        <View key={item.clientId || item.id}>
+          {/* Date Separator */}
+          {showDateSep && (
+            <View style={styles.dateSeparatorRow}>
+              <View style={styles.datePill}>
+                <Text style={styles.datePillText}>
+                  {formatDateSeparator(item.createdAt)}
+                </Text>
+              </View>
+            </View>
+          )}
+
+          {isMine ? (
+            /* Outgoing Message (Right) */
+            <View style={styles.outgoingMessageContainer}>
+              <View style={styles.bubbleWrapper}>
+                <TouchableOpacity
+                  style={[
+                    styles.outgoingBubble,
+                    Boolean(item.reactions && item.reactions.length > 0) &&
+                      styles.bubbleWithReactionOutgoing,
+                  ]}
+                  onLongPress={() => setSelectedMessageForReactions(item)}
+                  activeOpacity={0.85}
+                >
+                  <Text style={styles.outgoingText}>{displayText}</Text>
+                </TouchableOpacity>
+                {renderReactionsRow(item, true)}
+              </View>
+              <View
+                style={[
+                  styles.outgoingMetaRow,
+                  Boolean(item.reactions && item.reactions.length > 0) &&
+                    styles.metaRowWithReactions,
+                ]}
+              >
+                <Text style={styles.metaTimeText}>{timeStr}</Text>
+                <Feather
+                  name={item.seenBy && item.seenBy.length > 0 ? 'check-circle' : 'check'}
+                  size={14}
+                  color={Colors.accentTeal}
+                />
+              </View>
+            </View>
+          ) : (
+            /* Incoming Message (Left) */
+            <View style={styles.incomingMessageContainer}>
+              <View style={styles.incomingRow}>
+                <View style={[styles.avatarCircle, { backgroundColor: senderColor }]}>
+                  <Text style={styles.avatarInitial}>{senderInitial}</Text>
+                </View>
+                <View style={styles.incomingContentGroup}>
+                  <View style={styles.bubbleWrapper}>
+                    <TouchableOpacity
+                      style={[
+                        styles.incomingBubble,
+                        Boolean(item.reactions && item.reactions.length > 0) &&
+                          styles.bubbleWithReactionIncoming,
+                      ]}
+                      onLongPress={() => setSelectedMessageForReactions(item)}
+                      activeOpacity={0.85}
+                    >
+                      <Text style={styles.incomingText}>{displayText}</Text>
+                    </TouchableOpacity>
+                    {renderReactionsRow(item, false)}
+                  </View>
+                  <Text
+                    style={[
+                      styles.incomingTimeText,
+                      Boolean(item.reactions && item.reactions.length > 0) &&
+                        styles.incomingTimeWithReactions,
+                    ]}
+                  >
+                    {timeStr}
+                  </Text>
+                </View>
+              </View>
+            </View>
+          )}
+        </View>
+      );
+    },
+    [messages, partnerInitial, partnerColor]
+  );
 
   return (
     <Modal
@@ -121,10 +603,12 @@ export const JustUsModal: React.FC<JustUsModalProps> = ({
       animationType="slide"
       transparent={false}
       onRequestClose={onClose}
+      statusBarTranslucent={true}
     >
       <KeyboardAvoidingView
         style={styles.keyboardContainer}
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        keyboardVerticalOffset={Platform.OS === 'android' ? (StatusBar.currentHeight || 0) : 0}
       >
         <View style={[styles.container, { paddingTop: Math.max(insets.top, 16) }]}>
           {/* Header */}
@@ -149,8 +633,10 @@ export const JustUsModal: React.FC<JustUsModalProps> = ({
                 />
                 <Text style={styles.headerTitle}>Just Us</Text>
               </View>
-              {isAvailable && (
-                <Text style={styles.headerSubtitle}>You and Rohan · Private</Text>
+              {hasJustUsThread ? (
+                <Text style={styles.headerSubtitle}>You and {partnerName} · Private</Text>
+              ) : (
+                <Text style={styles.headerSubtitle}>Private · Adult Only</Text>
               )}
             </View>
 
@@ -173,14 +659,24 @@ export const JustUsModal: React.FC<JustUsModalProps> = ({
             items={[
               {
                 id: 'toggle-availability',
-                label: isAvailable ? 'Mark Unavailable' : 'Mark Available',
+                label: isAvailable ? 'View Unavailable Screen' : 'View Chat',
                 iconName: 'toggle-right',
                 onPress: () => setIsAvailable((prev) => !prev),
+              },
+              {
+                id: 'hide-just-us',
+                label: 'Hide Just Us',
+                iconName: 'eye-off',
+                destructive: true,
+                onPress: () => {
+                  if (onHideJustUs) onHideJustUs();
+                  onClose();
+                },
               },
             ]}
           />
 
-          {!isAvailable ? (
+          {showUnavailable ? (
             /* Unavailable / Decision Needed View (CHT-11) */
             <View style={styles.unavailableContainer}>
               {/* Callout Banner */}
@@ -192,8 +688,7 @@ export const JustUsModal: React.FC<JustUsModalProps> = ({
                   style={styles.flagIcon}
                 />
                 <Text style={styles.decisionBannerText}>
-                  Needs decision: what single parents, or families without a couple,
-                  see here.
+                  Private space for couples in the family. Children never see this chat.
                 </Text>
               </View>
 
@@ -223,7 +718,7 @@ export const JustUsModal: React.FC<JustUsModalProps> = ({
                   style={styles.inviteButton}
                   onPress={
                     onInvitePartner ||
-                    (() => Alert.alert('Invite', 'Invite link copied.'))
+                    (() => Alert.alert('Invite', 'Invite link copied to clipboard.'))
                   }
                   activeOpacity={0.85}
                 >
@@ -245,84 +740,108 @@ export const JustUsModal: React.FC<JustUsModalProps> = ({
                 </TouchableOpacity>
               </View>
             </View>
+          ) : showPartnerSelector ? (
+            /* Start Just Us Selector View */
+            <View style={styles.selectorContainer}>
+              <View style={styles.privacyBanner}>
+                <Feather
+                  name="lock"
+                  size={16}
+                  color={Colors.accentPurple}
+                  style={styles.bannerLockIcon}
+                />
+                <Text style={styles.privacyBannerText}>
+                  Choose an adult family member to start a private encrypted 1-to-1 chat.
+                </Text>
+              </View>
+
+              <Text style={styles.selectorHeading}>Select your partner</Text>
+              {eligibleAdults.length === 0 ? (
+                <View style={styles.emptyAdultsBox}>
+                  <Feather name="users" size={32} color={Colors.textSecondary} />
+                  <Text style={styles.emptyAdultsTitle}>No other adult members</Text>
+                  <Text style={styles.emptyAdultsSubtitle}>
+                    Invite your partner to the family first to start a private Just Us chat.
+                  </Text>
+                </View>
+              ) : (
+                eligibleAdults.map((adult: any) => {
+                  const isStarting = startingMemberId === adult.id;
+                  return (
+                    <TouchableOpacity
+                      key={adult.id}
+                      style={styles.adultCard}
+                      onPress={() => handleStartJustUs(adult.id)}
+                      disabled={Boolean(startingMemberId)}
+                      activeOpacity={0.7}
+                    >
+                      <View
+                        style={[
+                          styles.avatarCircle,
+                          { backgroundColor: adult.avatarColor || Colors.avatarNavy },
+                        ]}
+                      >
+                        <Text style={styles.avatarInitial}>
+                          {(adult.fullName || 'A').charAt(0).toUpperCase()}
+                        </Text>
+                      </View>
+                      <View style={styles.adultInfo}>
+                        <Text style={styles.adultName}>{adult.fullName}</Text>
+                        <Text style={styles.adultRole}>{adult.role}</Text>
+                      </View>
+                      {isStarting ? (
+                        <ActivityIndicator size="small" color={Colors.accentPurple} />
+                      ) : (
+                        <Feather name="chevron-right" size={20} color={Colors.textSecondary} />
+                      )}
+                    </TouchableOpacity>
+                  );
+                })
+              )}
+            </View>
           ) : (
             /* Populated Private Chat View (CHT-10) */
             <View style={styles.chatArea}>
-              <ScrollView
-                style={styles.scrollArea}
-                contentContainerStyle={styles.scrollContent}
-                showsVerticalScrollIndicator={false}
-              >
-                {/* Privacy Banner */}
-                <View style={styles.privacyBanner}>
-                  <Feather
-                    name="lock"
-                    size={16}
-                    color={Colors.textSecondary}
-                    style={styles.bannerLockIcon}
-                  />
-                  <Text style={styles.privacyBannerText}>
-                    Private and encrypted. Children can’t see this chat, and it never
-                    appears in Pulse.
-                  </Text>
+              {/* Privacy Banner */}
+              <View style={styles.privacyBanner}>
+                <Feather
+                  name="lock"
+                  size={16}
+                  color={Colors.textSecondary}
+                  style={styles.bannerLockIcon}
+                />
+                <Text style={styles.privacyBannerText}>
+                  Private and encrypted. Children can’t see this chat, and it never
+                  appears in Pulse.
+                </Text>
+              </View>
+
+              {messagesLoading && messages.length === 0 ? (
+                <View style={styles.loadingBox}>
+                  <ActivityIndicator size="large" color={Colors.accentPurple} />
+                  <Text style={styles.loadingText}>Loading encrypted messages...</Text>
                 </View>
-
-                {messages.map((msg) => (
-                  <View key={msg.id}>
-                    {/* Date Separator */}
-                    {msg.dateSeparator && (
-                      <View style={styles.dateSeparatorRow}>
-                        <View style={styles.datePill}>
-                          <Text style={styles.datePillText}>
-                            {msg.dateSeparator}
-                          </Text>
-                        </View>
+              ) : (
+                <FlatList
+                  ref={flatListRef}
+                  data={messages}
+                  inverted
+                  keyExtractor={(item) => item.clientId || item.id}
+                  renderItem={renderMessageItem}
+                  onEndReached={handleLoadMore}
+                  onEndReachedThreshold={0.2}
+                  style={styles.scrollArea}
+                  contentContainerStyle={styles.scrollContent}
+                  showsVerticalScrollIndicator={false}
+                  ListFooterComponent={
+                    pagination?.loadingMore ? (
+                      <View style={styles.loadMoreFooter}>
+                        <ActivityIndicator size="small" color={Colors.accentPurple} />
                       </View>
-                    )}
-
-                    {msg.isYou ? (
-                      // Outgoing Message (Right)
-                      <View style={styles.outgoingMessageContainer}>
-                        <View style={styles.outgoingBubble}>
-                          <Text style={styles.outgoingText}>{msg.text}</Text>
-                        </View>
-                        <View style={styles.outgoingMetaRow}>
-                          <Text style={styles.metaTimeText}>{msg.timeText}</Text>
-                          <Feather
-                            name="check"
-                            size={14}
-                            color={Colors.accentTeal}
-                          />
-                        </View>
-                      </View>
-                    ) : (
-                      // Incoming Message (Left)
-                      <View style={styles.incomingMessageContainer}>
-                        <View style={styles.incomingRow}>
-                          <View
-                            style={[
-                              styles.avatarCircle,
-                              { backgroundColor: msg.senderColor },
-                            ]}
-                          >
-                            <Text style={styles.avatarInitial}>
-                              {msg.senderInitial}
-                            </Text>
-                          </View>
-                          <View style={styles.incomingContentGroup}>
-                            <View style={styles.incomingBubble}>
-                              <Text style={styles.incomingText}>{msg.text}</Text>
-                            </View>
-                            <Text style={styles.incomingTimeText}>
-                              {msg.timeText}
-                            </Text>
-                          </View>
-                        </View>
-                      </View>
-                    )}
-                  </View>
-                ))}
-              </ScrollView>
+                    ) : undefined
+                  }
+                />
+              )}
 
               {/* Message Input Bar */}
               <View
@@ -333,10 +852,15 @@ export const JustUsModal: React.FC<JustUsModalProps> = ({
               >
                 <TouchableOpacity
                   style={styles.plusButton}
-                  onPress={() => Alert.alert('Add', 'Attach photo or doc')}
+                  onPress={() =>
+                    Alert.alert(
+                      'Just Us Chat',
+                      'Just Us is reserved for private end-to-end encrypted text messages only.'
+                    )
+                  }
                   activeOpacity={0.7}
                 >
-                  <Feather name="plus" size={20} color={Colors.white} />
+                  <Feather name="shield" size={18} color={Colors.accentPurple} />
                 </TouchableOpacity>
 
                 <View style={styles.inputPill}>
@@ -344,25 +868,31 @@ export const JustUsModal: React.FC<JustUsModalProps> = ({
                     style={styles.messageInput}
                     value={inputText}
                     onChangeText={setInputText}
-                    placeholder="Message Rohan"
+                    placeholder={`Message ${partnerName}`}
                     placeholderTextColor={Colors.textPlaceholder}
                     onSubmitEditing={handleSendMessage}
                   />
                   <TouchableOpacity
                     style={styles.cameraIconBtn}
+                    onPress={() =>
+                      Alert.alert(
+                        'Private Chat',
+                        'Photos and shared items are shared in Family chat. Just Us is strictly encrypted text.'
+                      )
+                    }
                     activeOpacity={0.7}
                   >
                     <Feather
-                      name="camera"
-                      size={18}
-                      color={Colors.textSecondary}
+                      name="lock"
+                      size={16}
+                      color={Colors.accentPurple}
                     />
                   </TouchableOpacity>
                 </View>
 
                 {inputText.trim().length > 0 ? (
                   <TouchableOpacity
-                    style={styles.micButton}
+                    style={styles.sendButton}
                     onPress={handleSendMessage}
                     activeOpacity={0.85}
                   >
@@ -371,15 +901,28 @@ export const JustUsModal: React.FC<JustUsModalProps> = ({
                 ) : (
                   <TouchableOpacity
                     style={styles.micButton}
+                    onPress={() =>
+                      Alert.alert('Encrypted Chat', `Type a message to send securely to ${partnerName}.`)
+                    }
                     activeOpacity={0.85}
                   >
-                    <Feather name="mic" size={18} color={Colors.white} />
+                    <Feather name="lock" size={18} color={Colors.white} />
                   </TouchableOpacity>
                 )}
               </View>
             </View>
           )}
         </View>
+
+        {/* Emoji Reactions Modal */}
+        <SmartReactionsModal
+          visible={!!selectedMessageForReactions}
+          message={selectedMessageForReactions || undefined}
+          onClose={() => setSelectedMessageForReactions(null)}
+          onSelectReaction={handleSelectReaction}
+          onSelectQuickReply={(reply) => setInputText(reply)}
+          onReply={() => setSelectedMessageForReactions(null)}
+        />
       </KeyboardAvoidingView>
     </Modal>
   );
@@ -510,98 +1053,234 @@ const styles = StyleSheet.create({
   },
   inviteButtonText: {
     color: Colors.white,
-    fontSize: 16,
+    fontSize: 15,
     fontFamily: 'Roboto-Bold',
   },
   hideButton: {
-    paddingVertical: 10,
+    height: 48,
+    borderRadius: 24,
+    borderWidth: 1,
+    borderColor: Colors.border,
     alignItems: 'center',
     justifyContent: 'center',
+    backgroundColor: 'transparent',
   },
   hideButtonText: {
-    color: Colors.primary,
+    color: Colors.textSecondary,
+    fontSize: 14,
+    fontFamily: 'Roboto-Medium',
+  },
+  selectorContainer: {
+    flex: 1,
+    paddingHorizontal: 20,
+    paddingTop: 16,
+  },
+  selectorHeading: {
+    fontSize: 16,
+    fontFamily: 'Roboto-Bold',
+    color: Colors.white,
+    marginTop: 24,
+    marginBottom: 12,
+  },
+  adultCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#131F33',
+    padding: 14,
+    borderRadius: 16,
+    marginBottom: 10,
+    borderWidth: 1,
+    borderColor: '#192E4A',
+  },
+  adultInfo: {
+    flex: 1,
+    marginLeft: 12,
+  },
+  adultName: {
     fontSize: 15,
-    fontFamily: 'Roboto-SemiBold',
+    fontFamily: 'Roboto-Bold',
+    color: Colors.white,
+    marginBottom: 2,
+  },
+  adultRole: {
+    fontSize: 12,
+    color: Colors.textSecondary,
+  },
+  emptyAdultsBox: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 40,
+    paddingHorizontal: 20,
+  },
+  emptyAdultsTitle: {
+    fontSize: 16,
+    fontFamily: 'Roboto-Bold',
+    color: Colors.white,
+    marginTop: 12,
+    marginBottom: 6,
+  },
+  emptyAdultsSubtitle: {
+    fontSize: 13,
+    color: Colors.textSecondary,
+    textAlign: 'center',
+    lineHeight: 18,
   },
   chatArea: {
     flex: 1,
   },
-  scrollArea: {
-    flex: 1,
-  },
-  scrollContent: {
-    paddingHorizontal: 20,
-    paddingTop: 12,
-    paddingBottom: 24,
-    gap: 16,
-  },
   privacyBanner: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: Colors.cardElevated,
-    borderRadius: 16,
-    padding: 14,
+    backgroundColor: 'rgba(157, 101, 229, 0.1)',
+    marginHorizontal: 20,
+    marginTop: 8,
+    marginBottom: 12,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    borderRadius: 12,
     borderWidth: 1,
-    borderColor: Colors.border,
-    marginBottom: 10,
+    borderColor: 'rgba(157, 101, 229, 0.25)',
   },
   bannerLockIcon: {
     marginRight: 10,
   },
   privacyBannerText: {
     flex: 1,
-    color: Colors.textSecondary,
     fontSize: 12,
-    lineHeight: 16,
+    color: '#CAD4DF',
+    lineHeight: 17,
+    fontFamily: 'Roboto-Regular',
+  },
+  loadingBox: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  loadingText: {
+    fontSize: 13,
+    color: '#8A97AB',
+    fontFamily: 'Roboto-Medium',
+    marginTop: 12,
+  },
+  scrollArea: {
+    flex: 1,
+  },
+  scrollContent: {
+    paddingHorizontal: 20,
+    paddingTop: 8,
+    paddingBottom: 20,
+    gap: 14,
+  },
+  loadMoreFooter: {
+    paddingVertical: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   dateSeparatorRow: {
     alignItems: 'center',
-    marginVertical: 12,
+    marginVertical: 10,
   },
   datePill: {
-    backgroundColor: Colors.surfaceSubtle,
+    backgroundColor: '#162842',
     paddingHorizontal: 12,
     paddingVertical: 4,
     borderRadius: 12,
-    borderWidth: 1,
-    borderColor: Colors.border,
   },
   datePillText: {
-    color: Colors.textSecondary,
-    fontSize: 12,
-    fontFamily: 'Roboto-SemiBold',
+    fontSize: 11,
+    color: '#8A97AB',
+    fontFamily: 'Roboto-Medium',
   },
   outgoingMessageContainer: {
     alignItems: 'flex-end',
-    marginBottom: 12,
+  },
+  bubbleWrapper: {
+    position: 'relative',
+    maxWidth: '82%',
+  },
+  bubbleWithReactionOutgoing: {
+    marginBottom: 8,
+  },
+  bubbleWithReactionIncoming: {
+    marginBottom: 8,
+  },
+  reactionsAttachedBadge: {
+    position: 'absolute',
+    bottom: -6,
+    flexDirection: 'row',
+    gap: 3,
+    zIndex: 10,
+  },
+  reactionsAttachedRight: {
+    right: 4,
+  },
+  reactionsAttachedLeft: {
+    left: 10,
+  },
+  metaRowWithReactions: {
+    marginTop: 8,
+  },
+  incomingTimeWithReactions: {
+    marginTop: 8,
+  },
+  reactionPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#1E293B',
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 10,
+    borderWidth: 0.8,
+    borderColor: 'rgba(255, 255, 255, 0.18)',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.25,
+    shadowRadius: 1.5,
+    elevation: 3,
+  },
+  reactionPillActive: {
+    borderColor: Colors.accentPurple,
+    backgroundColor: 'rgba(157, 101, 229, 0.22)',
+  },
+  reactionEmoji: {
+    fontSize: 12,
+  },
+  reactionCount: {
+    fontSize: 11,
+    fontFamily: 'Roboto-Bold',
+    color: '#8A97AB',
+    marginLeft: 3,
+  },
+  reactionCountActive: {
+    color: Colors.accentPurple,
   },
   outgoingBubble: {
-    backgroundColor: Colors.primary,
-    borderRadius: 20,
-    borderBottomRightRadius: 4,
-    paddingHorizontal: 18,
-    paddingVertical: 12,
+    backgroundColor: '#8E44AD',
+    borderRadius: 18,
+    paddingHorizontal: 16,
+    paddingVertical: 10,
     maxWidth: '80%',
   },
   outgoingText: {
-    color: Colors.black,
+    color: Colors.white,
     fontSize: 15,
-    fontFamily: 'Roboto-Medium',
     lineHeight: 20,
+    fontFamily: 'Roboto-Medium',
   },
   outgoingMetaRow: {
     flexDirection: 'row',
     alignItems: 'center',
     marginTop: 4,
+    marginRight: 2,
+    gap: 4,
   },
   metaTimeText: {
     fontSize: 11,
-    color: Colors.textSecondary,
-    marginRight: 4,
+    color: '#8A97AB',
+    fontFamily: 'Roboto-Regular',
   },
   incomingMessageContainer: {
     alignItems: 'flex-start',
-    marginBottom: 12,
   },
   incomingRow: {
     flexDirection: 'row',
@@ -609,30 +1288,26 @@ const styles = StyleSheet.create({
     maxWidth: '85%',
   },
   avatarCircle: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
+    width: 34,
+    height: 34,
+    borderRadius: 17,
     alignItems: 'center',
     justifyContent: 'center',
-    marginRight: 10,
-    marginBottom: 16,
+    marginRight: 8,
   },
   avatarInitial: {
     color: Colors.white,
-    fontSize: 12,
+    fontSize: 13,
     fontFamily: 'Roboto-Bold',
   },
   incomingContentGroup: {
     flex: 1,
   },
   incomingBubble: {
-    backgroundColor: Colors.cardBackground,
-    borderRadius: 20,
-    borderBottomLeftRadius: 4,
-    paddingHorizontal: 18,
-    paddingVertical: 12,
-    borderWidth: 1,
-    borderColor: Colors.border,
+    backgroundColor: '#162842',
+    borderRadius: 18,
+    paddingHorizontal: 16,
+    paddingVertical: 10,
   },
   incomingText: {
     color: Colors.white,
@@ -641,37 +1316,39 @@ const styles = StyleSheet.create({
   },
   incomingTimeText: {
     fontSize: 11,
-    color: Colors.textSecondary,
+    color: '#8A97AB',
     marginTop: 4,
-    marginLeft: 4,
+    marginLeft: 2,
+    fontFamily: 'Roboto-Regular',
   },
   inputBar: {
+    width: '100%',
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 16,
-    paddingTop: 10,
+    paddingTop: 12,
     backgroundColor: Colors.background,
     borderTopWidth: 1,
-    borderTopColor: Colors.borderSubtle,
+    borderTopColor: '#192E4A',
     gap: 10,
   },
   plusButton: {
     width: 44,
     height: 44,
     borderRadius: 22,
-    backgroundColor: Colors.cardBackground,
+    backgroundColor: 'transparent',
     borderWidth: 1,
-    borderColor: Colors.border,
+    borderColor: '#3A4556',
     alignItems: 'center',
     justifyContent: 'center',
   },
   inputPill: {
     flex: 1,
-    height: 44,
-    borderRadius: 22,
-    backgroundColor: Colors.cardBackground,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: 'transparent',
     borderWidth: 1,
-    borderColor: Colors.border,
+    borderColor: '#3A4556',
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 16,
@@ -680,15 +1357,26 @@ const styles = StyleSheet.create({
     flex: 1,
     color: Colors.white,
     fontSize: 15,
+    padding: 0,
   },
   cameraIconBtn: {
     padding: 4,
   },
+  sendButton: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: Colors.accentPurple,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   micButton: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    backgroundColor: Colors.primary,
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: '#2A1F44',
+    borderWidth: 1,
+    borderColor: Colors.accentPurple,
     alignItems: 'center',
     justifyContent: 'center',
   },

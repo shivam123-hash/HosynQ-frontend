@@ -1,36 +1,36 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
   TouchableOpacity,
   StyleSheet,
   Modal,
-  TouchableWithoutFeedback,
   ScrollView,
   Clipboard,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Feather from '@react-native-vector-icons/feather';
 import Colors from '../../../units/Colors';
-import { ChatMessage } from './types';
 
 export interface SmartReactionsModalProps {
   visible: boolean;
-  message?: ChatMessage;
+  message?: any;
   onClose: () => void;
   onSelectReaction: (emoji: string) => void;
-  onSelectQuickReply: (replyText: string) => void;
-  onTurnIntoTask: (taskTitle: string) => void;
-  onTurnIntoReminder: (reminderTitle: string) => void;
-  onReply: (message: ChatMessage) => void;
+  onSelectQuickReply?: (replyText: string) => void;
+  onTurnIntoTask?: (taskTitle: string) => void;
+  onTurnIntoReminder?: (reminderTitle: string) => void;
+  onReply: (message: any) => void;
 }
 
-const EMOJIS = ['❤️', '👍', '😊', '✅', '+'];
+const QUICK_EMOJIS = ['❤️', '👍', '😊', '✅'];
 
-const DEFAULT_QUICK_REPLIES = [
-  'I’ll get you at 7:30',
-  'Papa will pick you up',
-  'Take an auto, share ETA',
+const EXTENDED_EMOJIS = [
+  '❤️', '👍', '😊', '✅', '😂', '🔥',
+  '🎉', '🙏', '👏', '💯', '🤔', '😍',
+  '🥰', '🤣', '😭', '😮', '😢', '😡',
+  '🤩', '🥳', '🙌', '🤝', '💪', '✨',
+  '💔', '🚀', '⚡', '☕', '🎂', '🍕',
 ];
 
 export const SmartReactionsModal: React.FC<SmartReactionsModalProps> = ({
@@ -38,13 +38,17 @@ export const SmartReactionsModal: React.FC<SmartReactionsModalProps> = ({
   message,
   onClose,
   onSelectReaction,
-  onSelectQuickReply,
-  onTurnIntoTask,
-  onTurnIntoReminder,
   onReply,
 }) => {
   const insets = useSafeAreaInsets();
   const [selectedEmoji, setSelectedEmoji] = useState('👍');
+  const [showMoreEmojis, setShowMoreEmojis] = useState(false);
+
+  useEffect(() => {
+    if (!visible) {
+      setShowMoreEmojis(false);
+    }
+  }, [visible]);
 
   const handleCopy = () => {
     if (message?.text) {
@@ -59,11 +63,6 @@ export const SmartReactionsModal: React.FC<SmartReactionsModalProps> = ({
     onClose();
   };
 
-  const handleQuickReplyPress = (reply: string) => {
-    onSelectQuickReply(reply);
-    onClose();
-  };
-
   return (
     <Modal
       visible={visible}
@@ -71,174 +70,126 @@ export const SmartReactionsModal: React.FC<SmartReactionsModalProps> = ({
       transparent={true}
       onRequestClose={onClose}
     >
-      <TouchableWithoutFeedback onPress={onClose}>
-        <View style={styles.overlay}>
-          {/* Floating Emoji Bar */}
-          <View style={styles.floatingEmojiBar}>
-            {EMOJIS.map((emoji) => {
-              const isSelected = selectedEmoji === emoji;
-              return (
-                <TouchableOpacity
-                  key={emoji}
-                  style={[
-                    styles.emojiBtn,
-                    isSelected && styles.emojiBtnSelected,
-                  ]}
-                  onPress={() => handleReactionPress(emoji)}
-                  activeOpacity={0.7}
-                >
-                  <Text style={styles.emojiText}>{emoji}</Text>
-                </TouchableOpacity>
-              );
-            })}
-          </View>
+      <View style={styles.overlay}>
+        {/* Backdrop touch to close modal */}
+        <TouchableOpacity
+          style={StyleSheet.absoluteFill}
+          activeOpacity={1}
+          onPress={onClose}
+        />
 
-          {/* Bottom Sheet */}
-          <TouchableWithoutFeedback>
-            <View
-              style={[
-                styles.sheetContainer,
-                { paddingBottom: Math.max(insets.bottom, 20) },
-              ]}
-            >
-              {/* Drag Handle */}
-              <View style={styles.handleBar} />
+        {/* Floating Emoji Bar */}
+        <View style={styles.floatingEmojiBar}>
+          {QUICK_EMOJIS.map((emoji) => {
+            const isSelected = selectedEmoji === emoji;
+            return (
+              <TouchableOpacity
+                key={emoji}
+                style={[
+                  styles.emojiBtn,
+                  isSelected && styles.emojiBtnSelected,
+                ]}
+                onPress={() => handleReactionPress(emoji)}
+                activeOpacity={0.7}
+              >
+                <Text style={styles.emojiText}>{emoji}</Text>
+              </TouchableOpacity>
+            );
+          })}
 
-              <Text style={styles.sheetTitle}>Smart reactions</Text>
+          {/* Plus button to show / hide extended emojis */}
+          <TouchableOpacity
+            style={[
+              styles.emojiBtn,
+              showMoreEmojis && styles.emojiBtnSelected,
+            ]}
+            onPress={() => setShowMoreEmojis((prev) => !prev)}
+            activeOpacity={0.7}
+          >
+            <Feather
+              name={showMoreEmojis ? 'chevron-down' : 'plus'}
+              size={20}
+              color={showMoreEmojis ? Colors.primary : Colors.white}
+            />
+          </TouchableOpacity>
+        </View>
 
-              <ScrollView showsVerticalScrollIndicator={false}>
-                {/* Section 1: QUICK REPLIES */}
-                <Text style={styles.sectionHeaderUpper}>QUICK REPLIES</Text>
-                <View style={styles.quickRepliesWrap}>
-                  {DEFAULT_QUICK_REPLIES.map((reply) => (
+        {/* Bottom Sheet */}
+        <View
+          style={[
+            styles.sheetContainer,
+            { paddingBottom: Math.max(insets.bottom, 20) },
+          ]}
+        >
+          {/* Drag Handle */}
+          <View style={styles.handleBar} />
+
+          <Text style={styles.sheetTitle}>Smart reactions</Text>
+
+          <ScrollView showsVerticalScrollIndicator={false}>
+            {/* Extended Emojis Grid (When + button is clicked) */}
+            {showMoreEmojis && (
+              <View style={styles.moreEmojisContainer}>
+                <View style={styles.moreEmojisHeaderRow}>
+                  <Text style={styles.sectionHeaderUpper}>ALL REACTIONS</Text>
+                  <TouchableOpacity
+                    onPress={() => setShowMoreEmojis(false)}
+                    hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                  >
+                    <Feather name="x" size={16} color={Colors.textSecondary} />
+                  </TouchableOpacity>
+                </View>
+                <View style={styles.moreEmojisGrid}>
+                  {EXTENDED_EMOJIS.map((emoji) => (
                     <TouchableOpacity
-                      key={reply}
-                      style={styles.replyChip}
-                      onPress={() => handleQuickReplyPress(reply)}
+                      key={emoji}
+                      style={styles.moreEmojiBtn}
+                      onPress={() => handleReactionPress(emoji)}
                       activeOpacity={0.7}
                     >
-                      <Text style={styles.replyChipText}>{reply}</Text>
+                      <Text style={styles.moreEmojiText}>{emoji}</Text>
                     </TouchableOpacity>
                   ))}
                 </View>
+              </View>
+            )}
 
-                {/* Section 2: TURN INTO */}
-                <View style={styles.turnIntoHeaderRow}>
-                  <Feather
-                    name="star"
-                    size={14}
-                    color={Colors.primary}
-                    style={styles.starIcon}
-                  />
-                  <Text style={styles.turnIntoLabel}>TURN INTO</Text>
-                </View>
+            {/* Bottom Action Buttons (Reply / Copy) */}
+            <View style={styles.actionsRow}>
+              <TouchableOpacity
+                style={styles.actionButton}
+                onPress={() => {
+                  if (message) onReply(message);
+                  onClose();
+                }}
+                activeOpacity={0.7}
+              >
+                <Feather
+                  name="corner-up-left"
+                  size={16}
+                  color={Colors.white}
+                  style={styles.actionIcon}
+                />
+                <Text style={styles.actionButtonText}>Reply</Text>
+              </TouchableOpacity>
 
-                <View style={styles.turnIntoCard}>
-                  {/* Task Row */}
-                  <TouchableOpacity
-                    style={styles.turnIntoRow}
-                    onPress={() => {
-                      onTurnIntoTask('Pick up Anaya at 7:30 PM');
-                      onClose();
-                    }}
-                    activeOpacity={0.7}
-                  >
-                    <View style={styles.taskIconBox}>
-                      <Feather
-                        name="check-square"
-                        size={18}
-                        color={Colors.primary}
-                      />
-                    </View>
-                    <View style={styles.turnIntoTextGroup}>
-                      <Text style={styles.turnIntoTitle}>
-                        Task: Pick up Anaya at 7:30 PM
-                      </Text>
-                      <Text style={styles.turnIntoSubtitle}>
-                        Assign to Rohan · Lodhi Sports Complex
-                      </Text>
-                    </View>
-                    <Feather
-                      name="chevron-right"
-                      size={18}
-                      color={Colors.textSecondary}
-                    />
-                  </TouchableOpacity>
-
-                  <View style={styles.divider} />
-
-                  {/* Reminder Row */}
-                  <TouchableOpacity
-                    style={styles.turnIntoRow}
-                    onPress={() => {
-                      onTurnIntoReminder('Leave office at 7:05 PM');
-                      onClose();
-                    }}
-                    activeOpacity={0.7}
-                  >
-                    <View style={styles.reminderIconBox}>
-                      <Feather
-                        name="bell"
-                        size={18}
-                        color={Colors.accentPurple}
-                      />
-                    </View>
-                    <View style={styles.turnIntoTextGroup}>
-                      <Text style={styles.turnIntoTitle}>
-                        Reminder: Leave office at 7:05 PM
-                      </Text>
-                      <Text style={styles.turnIntoSubtitle}>For Rohan</Text>
-                    </View>
-                    <Feather
-                      name="chevron-right"
-                      size={18}
-                      color={Colors.textSecondary}
-                    />
-                  </TouchableOpacity>
-                </View>
-
-                <Text style={styles.footnoteText}>
-                  Nothing is added until you confirm.
-                </Text>
-
-                {/* Bottom Action Buttons (Reply / Copy) */}
-                <View style={styles.actionsRow}>
-                  <TouchableOpacity
-                    style={styles.actionButton}
-                    onPress={() => {
-                      if (message) onReply(message);
-                      onClose();
-                    }}
-                    activeOpacity={0.7}
-                  >
-                    <Feather
-                      name="corner-up-left"
-                      size={16}
-                      color={Colors.white}
-                      style={styles.actionIcon}
-                    />
-                    <Text style={styles.actionButtonText}>Reply</Text>
-                  </TouchableOpacity>
-
-                  <TouchableOpacity
-                    style={styles.actionButton}
-                    onPress={handleCopy}
-                    activeOpacity={0.7}
-                  >
-                    <Feather
-                      name="copy"
-                      size={16}
-                      color={Colors.primary}
-                      style={styles.actionIcon}
-                    />
-                    <Text style={styles.actionButtonText}>Copy</Text>
-                  </TouchableOpacity>
-                </View>
-              </ScrollView>
+              <TouchableOpacity
+                style={styles.actionButton}
+                onPress={handleCopy}
+                activeOpacity={0.7}
+              >
+                <Feather
+                  name="copy"
+                  size={16}
+                  color={Colors.primary}
+                  style={styles.actionIcon}
+                />
+                <Text style={styles.actionButtonText}>Copy</Text>
+              </TouchableOpacity>
             </View>
-          </TouchableWithoutFeedback>
+          </ScrollView>
         </View>
-      </TouchableWithoutFeedback>
+      </View>
     </Modal>
   );
 };
@@ -267,6 +218,7 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     alignItems: 'center',
     justifyContent: 'center',
+    backgroundColor: Colors.surfaceSubtle,
   },
   emojiBtnSelected: {
     backgroundColor: 'rgba(240, 145, 58, 0.2)',
@@ -303,99 +255,43 @@ const styles = StyleSheet.create({
     letterSpacing: -0.3,
     marginBottom: 16,
   },
+  moreEmojisContainer: {
+    backgroundColor: Colors.cardElevated,
+    borderRadius: 20,
+    padding: 16,
+    marginBottom: 20,
+    borderWidth: 1,
+    borderColor: Colors.border,
+  },
+  moreEmojisHeaderRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 12,
+  },
+  moreEmojisGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 10,
+    justifyContent: 'space-between',
+  },
+  moreEmojiBtn: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: Colors.surfaceSubtle,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  moreEmojiText: {
+    fontSize: 22,
+  },
   sectionHeaderUpper: {
     fontSize: 12,
     fontFamily: 'Roboto-Bold',
     color: Colors.textSecondary,
     letterSpacing: 0.6,
     marginBottom: 10,
-  },
-  quickRepliesWrap: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 8,
-    marginBottom: 20,
-  },
-  replyChip: {
-    paddingHorizontal: 16,
-    paddingVertical: 10,
-    borderRadius: 20,
-    backgroundColor: Colors.surfaceSubtle,
-    borderWidth: 1,
-    borderColor: Colors.border,
-  },
-  replyChipText: {
-    color: Colors.white,
-    fontSize: 14,
-    fontFamily: 'Roboto-Medium',
-  },
-  turnIntoHeaderRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 10,
-  },
-  starIcon: {
-    marginRight: 6,
-  },
-  turnIntoLabel: {
-    fontSize: 12,
-    fontFamily: 'Roboto-Bold',
-    color: Colors.primary,
-    letterSpacing: 0.8,
-  },
-  turnIntoCard: {
-    backgroundColor: Colors.cardElevated,
-    borderRadius: 20,
-    borderWidth: 1,
-    borderColor: Colors.border,
-    marginBottom: 14,
-  },
-  turnIntoRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: 14,
-  },
-  taskIconBox: {
-    width: 40,
-    height: 40,
-    borderRadius: 12,
-    backgroundColor: 'rgba(240, 145, 58, 0.15)',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginRight: 12,
-  },
-  reminderIconBox: {
-    width: 40,
-    height: 40,
-    borderRadius: 12,
-    backgroundColor: 'rgba(157, 101, 229, 0.15)',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginRight: 12,
-  },
-  turnIntoTextGroup: {
-    flex: 1,
-    marginRight: 8,
-  },
-  turnIntoTitle: {
-    fontSize: 14,
-    fontFamily: 'Roboto-Bold',
-    color: Colors.white,
-    marginBottom: 2,
-  },
-  turnIntoSubtitle: {
-    fontSize: 12,
-    color: Colors.textSecondary,
-  },
-  divider: {
-    height: 1,
-    backgroundColor: Colors.borderSubtle,
-  },
-  footnoteText: {
-    fontSize: 13,
-    color: Colors.textSecondary,
-    textAlign: 'center',
-    marginBottom: 18,
   },
   actionsRow: {
     flexDirection: 'row',

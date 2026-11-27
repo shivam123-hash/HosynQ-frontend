@@ -29,7 +29,8 @@ export interface ChatMessage {
 }
 
 export interface ChatThreadItem {
-  id: 'family' | 'just_us';
+  id: string;
+  kind?: 'FAMILY' | 'JUST_US';
   title: string;
   subtitle: string;
   timeText: string;
@@ -37,6 +38,7 @@ export interface ChatThreadItem {
   isPrivate?: boolean;
   iconType: 'users' | 'lock';
   avatarColor: string;
+  partner?: any;
 }
 
 export interface SharedSummaryItem {

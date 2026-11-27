@@ -164,6 +164,11 @@ export const mapApiTaskToUiTask = (apiTask: TaskItemData): TaskItem => {
 export interface TasksScreenProps {
   initialMainTab?: TasksMainTab;
   initialStatus?: TasksStatusTab;
+  initialTaskId?: string | null;
+  initialListId?: string | null;
+  onClearInitialIds?: () => void;
+  returnToChat?: boolean;
+  onReturnToChat?: () => void;
   forceEmpty?: boolean;
   onProfilePress?: () => void;
   onExplorePress?: () => void;
@@ -182,6 +187,11 @@ export interface TasksScreenProps {
 const TasksScreen: React.FC<TasksScreenProps> = ({
   initialMainTab = 'tasks',
   initialStatus = 'pending',
+  initialTaskId,
+  initialListId,
+  onClearInitialIds,
+  returnToChat,
+  onReturnToChat,
   forceEmpty = false,
   showBottomNavBar = true,
   initialTasks,
@@ -309,6 +319,13 @@ const TasksScreen: React.FC<TasksScreenProps> = ({
   );
   const [mainTab, setMainTab] = useState<TasksMainTab>(initialMainTab);
   const [statusTab, setStatusTab] = useState<TasksStatusTab>(initialStatus);
+
+  // Sync mainTab when initialMainTab prop changes
+  useEffect(() => {
+    if (initialMainTab) {
+      setMainTab(initialMainTab);
+    }
+  }, [initialMainTab]);
   const statusContentOpacity = useRef(new Animated.Value(1)).current;
 
   const handleSelectStatusTab = useCallback(
@@ -363,6 +380,99 @@ const TasksScreen: React.FC<TasksScreenProps> = ({
     forceEmpty ? [] : initialLists !== undefined ? initialLists : []
   );
   const [selectedList, setSelectedList] = useState<ListGroup | null>(null);
+
+  const returnToChatRef = useRef(returnToChat);
+  useEffect(() => {
+    returnToChatRef.current = returnToChat;
+  }, [returnToChat]);
+
+  // Handle deep navigation to a specific task
+  useEffect(() => {
+    if (initialTaskId) {
+      setMainTab('tasks');
+      const foundTask = tasks.find((t) => t.id === initialTaskId);
+      if (foundTask) {
+        setSelectedTask(foundTask);
+      } else {
+        const placeholderTask: TaskItem = {
+          id: initialTaskId,
+          title: 'Loading task...',
+          dueDate: '',
+          dueType: 'today',
+          isCompleted: false,
+          assignee: '',
+          assigneeInitial: '?',
+          assigneeAvatarBg: Colors.avatarBrown,
+          assigneeAvatarColor: Colors.white,
+          category: 'household',
+          priority: 'medium',
+          repeat: 'Doesn’t repeat',
+          reminders: 'None',
+          viewers: 'Everyone in family',
+          notes: '',
+        };
+        setSelectedTask(placeholderTask);
+      }
+      if (isUUID(initialTaskId)) {
+        dispatch(fetchTaskDetail({ taskId: initialTaskId, today: new Date().toISOString().slice(0, 10) }));
+      }
+      onClearInitialIds?.();
+    }
+  }, [initialTaskId, tasks, dispatch, onClearInitialIds]);
+
+  // Update selectedTask once full task detail is fetched or tasks update
+  useEffect(() => {
+    if (apiSelectedTask && selectedTask && selectedTask.id === apiSelectedTask.id) {
+      if (selectedTask.title === 'Loading task...') {
+        setSelectedTask(mapApiTaskToUiTask(apiSelectedTask));
+      }
+    }
+  }, [apiSelectedTask, selectedTask]);
+
+  useEffect(() => {
+    if (selectedTask && selectedTask.title === 'Loading task...') {
+      const match = tasks.find((t) => t.id === selectedTask.id);
+      if (match) {
+        setSelectedTask(match);
+      }
+    }
+  }, [tasks, selectedTask]);
+
+  // Handle deep navigation to a specific list
+  useEffect(() => {
+    if (initialListId) {
+      setMainTab('lists');
+      const foundList = lists.find((l) => l.id === initialListId);
+      if (foundList) {
+        setSelectedList(foundList);
+      } else {
+        const placeholderList: ListGroup = {
+          id: initialListId,
+          title: 'Loading list...',
+          type: 'custom',
+          typeLabel: 'Custom',
+          items: [],
+          sharedWith: ['Family'],
+          isSharedWithAll: true,
+          completedCount: 0,
+          itemCount: 0,
+        };
+        setSelectedList(placeholderList);
+        dispatch(fetchLists());
+      }
+      onClearInitialIds?.();
+    }
+  }, [initialListId, lists, dispatch, onClearInitialIds]);
+
+  // Update selectedList once lists update
+  useEffect(() => {
+    if (selectedList && selectedList.title === 'Loading list...') {
+      const match = lists.find((l) => l.id === selectedList.id);
+      if (match) {
+        setSelectedList(match);
+      }
+    }
+  }, [lists, selectedList]);
   const [newListModalVisible, setNewListModalVisible] = useState(false);
   const [newListPrefillType, setNewListPrefillType] =
     useState<ListType>('grocery');
@@ -1219,6 +1329,9 @@ const TasksScreen: React.FC<TasksScreenProps> = ({
         onClose={() => {
           setSelectedTask(null);
           dispatch(clearSelectedTask());
+          if (returnToChatRef.current) {
+            onReturnToChat?.();
+          }
         }}
         onToggleComplete={(task) => {
           if (task.isCompleted) {
@@ -1227,9 +1340,18 @@ const TasksScreen: React.FC<TasksScreenProps> = ({
             handleCompleteTask(task);
           }
           setSelectedTask(null);
+          if (returnToChatRef.current) {
+            onReturnToChat?.();
+          }
         }}
         onReassign={handleReassignTask}
-        onDelete={handleDeleteTask}
+        onDelete={(taskId) => {
+          handleDeleteTask(taskId);
+          setSelectedTask(null);
+          if (returnToChatRef.current) {
+            onReturnToChat?.();
+          }
+        }}
         onUpdateTask={(updatedTask) => {
           setTasks((prev) =>
             prev.map((t) => (t.id === updatedTask.id ? updatedTask : t))
@@ -1258,7 +1380,12 @@ const TasksScreen: React.FC<TasksScreenProps> = ({
       <ListDetailModal
         visible={Boolean(selectedList)}
         list={selectedList}
-        onClose={() => setSelectedList(null)}
+        onClose={() => {
+          setSelectedList(null);
+          if (returnToChatRef.current) {
+            onReturnToChat?.();
+          }
+        }}
         onUpdateList={handleUpdateList}
         onDeleteList={handleDeleteList}
       />

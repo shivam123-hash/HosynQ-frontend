@@ -1,8 +1,9 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import {
   View,
   StyleSheet,
   StatusBar,
+  BackHandler,
 } from 'react-native';
 import Colors from '../../../units/Colors';
 import BottomNavBar from '../homeScreen/components/BottomNavBar';
@@ -134,6 +135,17 @@ const MainTabScreen: React.FC<MainTabScreenProps> = ({
   const handleAvatarPress = () => setSideMenuVisible(true);
   const handleOpenCompass = () => setCompassVisible(true);
 
+  const handleNavigateToItem = useCallback(
+    (type: 'TASK' | 'EVENT' | 'LIST', itemId: string, meta?: any) => {
+      if (type === 'TASK' || type === 'LIST') {
+        setActiveTab('tasks');
+      } else if (type === 'EVENT') {
+        setActiveTab('calendar');
+      }
+    },
+    []
+  );
+
   return (
     <View style={styles.container}>
       <StatusBar barStyle="light-content" />
@@ -188,6 +200,7 @@ const MainTabScreen: React.FC<MainTabScreenProps> = ({
             onExplorePress={handleOpenMenu}
             onCompassPress={handleOpenCompass}
             onOpenVault={() => setVaultModalVisible(true)}
+            onNavigateToItem={handleNavigateToItem}
           />
         )}
       </View>

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import {
   View,
   Text,
@@ -6,182 +6,880 @@ import {
   StyleSheet,
   Modal,
   TextInput,
-  ScrollView,
+  FlatList,
   KeyboardAvoidingView,
   Platform,
   Alert,
+  Image,
+  ActivityIndicator,
+  Share,
+  StatusBar,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Feather from '@react-native-vector-icons/feather';
 import Colors from '../../../units/Colors';
-import { ChatMessage, SharedItemData } from './types';
+import { useAppDispatch, useAppSelector } from '../../../redux';
+import {
+  fetchChatMessages,
+  fetchMoreChatMessages,
+  sendChatMessage,
+  sendChatPhoto,
+  markChatThreadRead,
+  reactToChatMessage,
+  removeChatReaction,
+  saveChatPhotoToVault,
+  addEventToMyCalendar,
+  fetchQuickMessages,
+  updateQuickMessages,
+  setActiveThreadId,
+  addOptimisticPendingMessage,
+} from '../../../redux/features/chat/chatSlice';
+import { initChatSocketBridge } from '../../../redux/features/chat/chatSocketBridge';
+import {
+  fetchTaskDetail,
+  completeTask,
+  reopenTask,
+  deleteTask,
+  clearSelectedTask,
+} from '../../../redux/features/tasks/tasksSlice';
+import { TaskDetailModal } from '../tasksScreen/components';
+import { TaskItem } from '../tasksScreen/types';
+import { isUUID } from '../tasksScreen/taskApiHelpers';
+import { ListDetailModal } from '../tasksScreen/components';
+import { ListGroup } from '../tasksScreen/types';
+import { mapApiListSummaryToUiList } from '../tasksScreen/listApiHelpers';
+import { deleteList } from '../../../redux/features/lists/listsSlice';
+import { EventDetailModal } from '../calendarScreen/components';
+import { CalendarEvent } from '../calendarScreen/types';
+import {
+  fetchEventDetail,
+  cancelCalendarEvent,
+} from '../../../redux/features/calendar/calendarSlice';
+import { mapApiEventToUiEvent } from '../calendarScreen/calendarApiHelpers';
+import chatServices, {
+  ApiChatMessage,
+  ApiChatReactionGroup,
+  ApiChatSender,
+} from '../../../services/chatServices';
 import { ShareItemModal } from './ShareItemModal';
 import { QuickMessagesModal } from './QuickMessagesModal';
 import { SmartReactionsModal } from './SmartReactionsModal';
 import { ImageViewerModal } from './ImageViewerModal';
 import AppOptionsMenu from '../common/AppOptionsMenu';
+import AppImagePickerBottomSheet, { SelectedImage } from '../../../components/AppImagePickerBottomSheet';
 
 export interface ChatConversationModalProps {
   visible: boolean;
   onClose: () => void;
+  threadId?: string;
   title?: string;
   memberCountText?: string;
   isEmpty?: boolean;
   isOffline?: boolean;
-  initialMessages?: ChatMessage[];
+  initialMessages?: any[];
   onOpenVault?: () => void;
+  onNavigateToItem?: (type: 'TASK' | 'EVENT' | 'LIST', itemId: string, meta?: any) => void;
 }
 
-const DEFAULT_MESSAGES: ChatMessage[] = [
-  {
-    id: 'msg-1',
-    senderId: 'dadi',
-    senderName: 'Dadi',
-    senderInitial: 'D',
-    senderColor: Colors.avatarGreen,
-    nameColor: '#25A269',
-    text: 'Diyas for tonight. Anaya, help me light them at 7?',
-    timeText: '1:15 PM',
-    isYou: false,
-    status: 'delivered',
-    hasImage: true,
-    imageCaption: 'Diyas for tonight. Anaya, help me light them at 7?',
-  },
-  {
-    id: 'msg-2',
-    senderId: 'rohan',
-    senderName: 'Rohan',
-    senderInitial: 'R',
-    senderColor: Colors.avatarNavy,
-    nameColor: '#3A8EF0',
-    text: 'I’ll be at the PTM by 2:55',
-    timeText: '12:30 PM',
-    isYou: false,
-    status: 'delivered',
-  },
-  {
-    id: 'msg-3',
-    senderId: 'you',
-    senderName: 'You',
-    senderInitial: 'P',
-    senderColor: Colors.avatarBrown,
-    nameColor: Colors.white,
-    text: 'Thanks! I’ll meet you at the gate.',
-    timeText: '12:32 PM',
-    isYou: true,
-    status: 'delivered',
-  },
-  {
-    id: 'msg-4',
-    senderId: 'anaya',
-    senderName: 'Anaya',
-    senderInitial: 'A',
-    senderColor: Colors.avatarWine,
-    nameColor: '#E879A8',
-    text: 'Can someone pick me up after badminton? Done by 7:30',
-    timeText: '2:40 PM',
-    isYou: false,
-    status: 'delivered',
-  },
-  {
-    id: 'msg-5',
-    senderId: 'you',
-    senderName: 'You',
-    senderInitial: 'P',
-    senderColor: Colors.avatarBrown,
-    nameColor: Colors.white,
-    text: 'I’ll ask Papa. He leaves office at 7.',
-    timeText: '2:42 PM',
-    isYou: true,
-    status: 'delivered',
-  },
-];
+// RFC4122 v4 UUID generator safe for all RN/Hermes engines
+const generateUUID = (): string => {
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
+    const r = (Math.random() * 16) | 0;
+    const v = c === 'x' ? r : (r & 0x3) | 0x8;
+    return v.toString(16);
+  });
+};
+
+const formatMessageTime = (dateStr?: string | null): string => {
+  if (!dateStr) return '';
+  const d = new Date(dateStr);
+  if (isNaN(d.getTime())) return '';
+  return d.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit', hour12: true });
+};
+
+const formatDateSeparator = (dateStr?: string | null): string => {
+  if (!dateStr) return '';
+  const d = new Date(dateStr);
+  if (isNaN(d.getTime())) return '';
+  const now = new Date();
+  if (d.toDateString() === now.toDateString()) return 'Today';
+  const yesterday = new Date(now);
+  yesterday.setDate(now.getDate() - 1);
+  if (d.toDateString() === yesterday.toDateString()) return 'Yesterday';
+  return d.toLocaleDateString([], { month: 'short', day: 'numeric', year: 'numeric' });
+};
+
+const isDifferentDay = (d1Str?: string | null, d2Str?: string | null): boolean => {
+  if (!d1Str || !d2Str) return false;
+  const d1 = new Date(d1Str);
+  const d2 = new Date(d2Str);
+  return d1.toDateString() !== d2.toDateString();
+};
+
+const getSenderInitial = (sender?: ApiChatSender | null): string => {
+  if (!sender || !sender.fullName) return '?';
+  return sender.fullName.charAt(0).toUpperCase();
+};
+
+const getSenderColor = (sender?: ApiChatSender | null): string => {
+  if (sender?.avatarColor) return sender.avatarColor;
+  return Colors.avatarNavy;
+};
 
 export const ChatConversationModal: React.FC<ChatConversationModalProps> = ({
   visible,
   onClose,
-  title = 'Family chat',
-  memberCountText = '5 members',
-  isEmpty: initialEmpty = false,
-  isOffline: initialOffline = false,
-  initialMessages = DEFAULT_MESSAGES,
+  threadId,
+  title: propTitle,
+  memberCountText: propMemberCount,
   onOpenVault,
+  onNavigateToItem,
 }) => {
   const insets = useSafeAreaInsets();
-  const [messages, setMessages] = useState<ChatMessage[]>(
-    initialEmpty ? [] : initialMessages
-  );
-  const [inputText, setInputText] = useState('');
-  const [isOffline, setIsOffline] = useState(initialOffline);
+  const dispatch = useAppDispatch();
 
-  // Sub-modal states
+  // Redux state
+  const chatState = useAppSelector((state) => state.chat);
+  const familyState = useAppSelector((state) => state.family);
+  const currentUser = useAppSelector((state) => state.baseProfile.user);
+  const apiSelectedTask = useAppSelector((state) => state.tasks?.selectedTask);
+  const listsState = useAppSelector((state) => state.lists);
+  const calendarState = useAppSelector((state) => state.calendar);
+
+  // Direct-to-Direct detail modals states (Zero flicker / stay inside chat)
+  const [selectedTaskForDetail, setSelectedTaskForDetail] = useState<TaskItem | null>(null);
+  const [selectedListForDetail, setSelectedListForDetail] = useState<ListGroup | null>(null);
+  const [selectedEventForDetail, setSelectedEventForDetail] = useState<CalendarEvent | null>(null);
+
+  // Active thread ID resolution: Always resolve real backend UUID (never stay stuck on placeholder 'family')
+  const activeThreadId = useMemo(() => {
+    if (threadId && threadId !== 'family' && threadId !== 'just_us') {
+      return threadId;
+    }
+    return chatState.threads.familyChat?.id || '';
+  }, [threadId, chatState.threads.familyChat?.id]);
+
+  // Messages list from Redux (descending: newest first at index 0)
+  const messages = chatState.messagesByThread[activeThreadId] || [];
+  const messagesLoading = chatState.messagesLoadingByThread[activeThreadId] || false;
+  const pagination = chatState.paginationByThread[activeThreadId];
+  const myLastReadAt = chatState.myLastReadAtByThread[activeThreadId];
+  const quickMessagesList = chatState.quickMessages;
+
+  // Local component states
+  const [inputText, setInputText] = useState('');
+  const [replyingTo, setReplyingTo] = useState<ApiChatMessage | null>(null);
   const [showShareModal, setShowShareModal] = useState(false);
   const [showQuickMessages, setShowQuickMessages] = useState(false);
-  const [selectedMessageForReactions, setSelectedMessageForReactions] =
-    useState<ChatMessage | null>(null);
-  const [showImageViewer, setShowImageViewer] = useState(false);
+  const [showImagePicker, setShowImagePicker] = useState(false);
+  const [selectedMessageForReactions, setSelectedMessageForReactions] = useState<ApiChatMessage | null>(null);
+  const [activePhotoViewer, setActivePhotoViewer] = useState<{
+    url: string;
+    caption?: string;
+    senderName?: string;
+    timestamp?: string;
+    messageId?: string;
+  } | null>(null);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
 
-  React.useEffect(() => {
+  // FlatList reference
+  const flatListRef = useRef<FlatList>(null);
+
+  // Computed Header Title & Member Count
+  const headerTitle = useMemo(() => {
+    if (propTitle) return propTitle;
+    if (chatState.threads.familyChat?.id === activeThreadId) {
+      return chatState.threads.familyChat.title || 'Family chat';
+    }
+    return 'Family chat';
+  }, [propTitle, chatState.threads.familyChat, activeThreadId]);
+
+  const memberCountText = useMemo(() => {
+    if (propMemberCount) return propMemberCount;
+    const members =
+      (familyState as any)?.familyMembers ||
+      (familyState as any)?.members ||
+      [];
+    const count = members.length > 0 ? members.length : 5;
+    return `${count} members`;
+  }, [propMemberCount, familyState]);
+
+  // Lifecycle: On open, ensure socket is connected, set active thread, fetch messages, mark read
+  useEffect(() => {
+    initChatSocketBridge();
+    if (visible && activeThreadId) {
+      dispatch(setActiveThreadId(activeThreadId));
+      dispatch(fetchChatMessages({ threadId: activeThreadId }));
+      dispatch(markChatThreadRead(activeThreadId));
+      dispatch(fetchQuickMessages());
+    }
+    return () => {
+      if (visible) {
+        dispatch(setActiveThreadId(null));
+      }
+    };
+  }, [visible, activeThreadId, dispatch]);
+
+  // Reset menu and reply when closing
+  useEffect(() => {
     if (!visible) {
       setIsMenuOpen(false);
+      setReplyingTo(null);
+      setInputText('');
     }
   }, [visible]);
 
-  const handleSendMessage = (textToSend?: string) => {
-    const text = (textToSend || inputText).trim();
-    if (!text) return;
-
-    const newMsg: ChatMessage = {
-      id: `msg-${Date.now()}`,
-      senderId: 'you',
-      senderName: 'You',
-      senderInitial: 'P',
-      senderColor: Colors.avatarBrown,
-      nameColor: Colors.white,
-      text,
-      timeText: 'Just now',
-      isYou: true,
-      status: isOffline ? 'failed' : 'delivered',
-    };
-
-    setMessages((prev) => [...prev, newMsg]);
-    setInputText('');
-  };
-
-  const handleRetryMessage = (msgId: string) => {
-    setMessages((prev) =>
-      prev.map((m) =>
-        m.id === msgId ? { ...m, status: 'delivered', timeText: 'Just now' } : m
-      )
-    );
-    setIsOffline(false);
-  };
-
-  const handleShareItem = (item: SharedItemData) => {
-    const newMsg: ChatMessage = {
-      id: `shared-${Date.now()}`,
-      senderId: 'you',
-      senderName: 'You',
-      senderInitial: 'P',
-      senderColor: Colors.avatarBrown,
-      nameColor: Colors.white,
-      timeText: 'Just now',
-      isYou: true,
-      status: 'delivered',
-      sharedItem: item,
-    };
-    setMessages((prev) => [...prev, newMsg]);
-  };
-
-  const handleCardAction = (item: SharedItemData) => {
-    if (item.type === 'task') {
-      Alert.alert('Task Completed', `"${item.title}" marked as done.`);
-    } else if (item.type === 'event') {
-      Alert.alert('Calendar Updated', `"${item.title}" added to your calendar.`);
-    } else {
-      Alert.alert('List Opened', `Opening "${item.title}".`);
+  // Pagination: load older messages
+  const handleLoadMore = useCallback(() => {
+    if (pagination?.hasMore && !pagination?.loadingMore && activeThreadId) {
+      dispatch(fetchMoreChatMessages({ threadId: activeThreadId }));
     }
+  }, [pagination, activeThreadId, dispatch]);
+
+  // Send Text Message
+  const handleSendMessage = useCallback(
+    (textToSend?: string) => {
+      const text = (textToSend || inputText).trim();
+      if (!text || !activeThreadId) return;
+
+      const clientId = generateUUID();
+      const optimisticMsg: ApiChatMessage = {
+        id: clientId,
+        threadId: activeThreadId,
+        clientId,
+        kind: 'TEXT',
+        sender: {
+          memberId: currentUser?.id || 'me',
+          fullName: currentUser?.fullName || 'You',
+          avatarUrl: currentUser?.avatarUrl || null,
+          avatarColor: currentUser?.avatarColor || Colors.avatarBrown,
+        },
+        text,
+        createdAt: new Date().toISOString(),
+        reactions: [],
+        isMine: true,
+        replyTo: replyingTo
+          ? {
+            id: replyingTo.id,
+            kind: replyingTo.kind,
+            sender: replyingTo.sender,
+            text: replyingTo.text,
+            photoUrl: replyingTo.photoUrl,
+            createdAt: replyingTo.createdAt,
+          }
+          : null,
+      };
+
+      dispatch(
+        addOptimisticPendingMessage({
+          threadId: activeThreadId,
+          message: optimisticMsg,
+        })
+      );
+
+      dispatch(
+        sendChatMessage({
+          threadId: activeThreadId,
+          payload: {
+            clientId,
+            text,
+            replyToId: replyingTo?.id,
+          },
+        })
+      );
+
+      setInputText('');
+      setReplyingTo(null);
+    },
+    [inputText, activeThreadId, currentUser, replyingTo, dispatch]
+  );
+
+  // Send Photo
+  const handleSelectPhoto = useCallback(
+    (image: SelectedImage) => {
+      setShowImagePicker(false);
+      if (!activeThreadId) return;
+
+      const clientId = generateUUID();
+      dispatch(
+        sendChatPhoto({
+          threadId: activeThreadId,
+          payload: {
+            clientId,
+            photo: {
+              uri: image.path,
+              name: image.fileName || 'photo.jpg',
+              type: image.mime || 'image/jpeg',
+            },
+            text: inputText.trim() || undefined,
+            replyToId: replyingTo?.id,
+          },
+        })
+      );
+
+      setInputText('');
+      setReplyingTo(null);
+    },
+    [activeThreadId, inputText, replyingTo, dispatch]
+  );
+
+  // Share Item (Task, Event, List from ShareItemModal)
+  const handleShareItem = useCallback(
+    (item: any) => {
+      setShowShareModal(false);
+      if (!activeThreadId) return;
+
+      const clientId = generateUUID();
+      const itemType =
+        item.type === 'task' ? 'TASK' : item.type === 'event' ? 'EVENT' : 'LIST';
+
+      dispatch(
+        sendChatMessage({
+          threadId: activeThreadId,
+          payload: {
+            clientId,
+            itemType,
+            itemId: item.id,
+          },
+        })
+      );
+    },
+    [activeThreadId, dispatch]
+  );
+
+  // Interactive Card Action Handlers - Direct-to-Direct modal on top of chat (Zero-flicker)
+  const handleCardAction = useCallback(
+    async (msg: ApiChatMessage) => {
+      const item = msg.item;
+      const card = msg.card;
+      if (!item) return;
+
+      if (item.type === 'TASK') {
+        const taskData: TaskItem = {
+          id: item.id,
+          title: card?.task?.title || 'Task',
+          dueDate: card?.task?.dueOn || '',
+          dueType: card?.task?.overdue ? 'overdue' : 'today',
+          isCompleted: Boolean(card?.task?.done),
+          assignee: card?.task?.assignees?.[0]?.fullName || 'Unassigned',
+          assigneeInitial: (card?.task?.assignees?.[0]?.fullName || 'U').charAt(0).toUpperCase(),
+          assigneeAvatarBg: Colors.avatarBrown,
+          assigneeAvatarColor: Colors.white,
+          category: 'household',
+          priority: 'medium',
+          repeat: 'Doesn’t repeat',
+          reminders: 'None',
+          viewers: 'Everyone in family',
+          notes: '',
+        };
+        setSelectedTaskForDetail(taskData);
+        if (isUUID(item.id)) {
+          dispatch(fetchTaskDetail({ taskId: item.id, today: new Date().toISOString().slice(0, 10) }));
+        }
+      } else if (item.type === 'LIST') {
+        const found = listsState?.lists?.find((l: any) => l.id === item.id);
+        const listData: ListGroup = found
+          ? mapApiListSummaryToUiList(found)
+          : {
+              id: item.id,
+              title: card?.list?.name || 'Family List',
+              type: 'custom',
+              typeLabel: 'Custom',
+              items: [],
+              sharedWith: ['Family'],
+              isSharedWithAll: true,
+              completedCount: card?.list?.doneCount || 0,
+              itemCount: card?.list?.totalCount || 0,
+            };
+        setSelectedListForDetail(listData);
+      } else if (item.type === 'EVENT') {
+        const found = calendarState?.feed?.events?.find((e: any) => e.id === item.id);
+        const eventData: CalendarEvent = found
+          ? mapApiEventToUiEvent(found)
+          : {
+              id: item.id,
+              title: card?.event?.title || 'Event',
+              date: card?.event?.startsOn || new Date().toISOString().slice(0, 10),
+              startTime: card?.event?.startTime || '',
+              endTime: '',
+              formattedDate: card?.event?.startsOn || '',
+              formattedTime: card?.event?.startTime || '',
+              isAllDay: !card?.event?.startTime,
+              category: 'other',
+              categoryColor: '#3A8EF0',
+              location: card?.event?.location || '',
+              goingMemberIds: [],
+              goingMembers: [],
+              reminders: 'None',
+              repeat: 'Never',
+              comments: [],
+            };
+        setSelectedEventForDetail(eventData);
+        if (isUUID(item.id)) {
+          dispatch(fetchEventDetail({ id: item.id, on: card?.event?.startsOn || new Date().toISOString().slice(0, 10) }))
+            .unwrap()
+            .then((fullEvent) => {
+              if (fullEvent) {
+                setSelectedEventForDetail(mapApiEventToUiEvent(fullEvent));
+              }
+            })
+            .catch(() => {});
+        }
+      }
+    },
+    [dispatch, listsState?.lists, calendarState?.feed?.events]
+  );
+
+  // Reactions Handler
+  const handleSelectReaction = useCallback(
+    (emoji: string) => {
+      if (!selectedMessageForReactions || !activeThreadId) return;
+      const msg = selectedMessageForReactions;
+      if (msg.myReaction === emoji) {
+        dispatch(removeChatReaction({ threadId: activeThreadId, messageId: msg.id }));
+      } else {
+        dispatch(reactToChatMessage({ threadId: activeThreadId, messageId: msg.id, emoji }));
+      }
+      setSelectedMessageForReactions(null);
+    },
+    [selectedMessageForReactions, activeThreadId, dispatch]
+  );
+
+  // Toggle reaction from chip underneath bubble
+  const handleToggleReactionChip = useCallback(
+    (msg: ApiChatMessage, emoji: string) => {
+      if (!activeThreadId) return;
+      if (msg.myReaction === emoji) {
+        dispatch(removeChatReaction({ threadId: activeThreadId, messageId: msg.id }));
+      } else {
+        dispatch(reactToChatMessage({ threadId: activeThreadId, messageId: msg.id, emoji }));
+      }
+    },
+    [activeThreadId, dispatch]
+  );
+
+  // Save Photo to Vault Handler
+  const handleSavePhotoToVault = useCallback(
+    async (msgId: string) => {
+      try {
+        await dispatch(
+          saveChatPhotoToVault({
+            messageId: msgId,
+            payload: {
+              category: 'Family Photos',
+              title: 'Chat Photo',
+            },
+          })
+        ).unwrap();
+        Alert.alert('Family Vault', 'Photo successfully saved to Family Vault!');
+        if (onOpenVault) onOpenVault();
+      } catch (err: any) {
+        Alert.alert('Vault', err || 'Photo saved to Vault.');
+      }
+    },
+    [dispatch, onOpenVault]
+  );
+
+  // Render Single Message in Inverted FlatList
+  const renderMessageItem = useCallback(
+    ({ item, index }: { item: ApiChatMessage; index: number }) => {
+      const isMine = Boolean(item.isMine);
+      const prevItem = messages[index + 1]; // In inverted list, index + 1 is older
+      const showDateSep = !prevItem || isDifferentDay(item.createdAt, prevItem.createdAt);
+
+      // Check if unread divider applies here
+      let showUnreadDivider = false;
+      if (myLastReadAt && prevItem) {
+        const itemTime = new Date(item.createdAt).getTime();
+        const prevTime = new Date(prevItem.createdAt).getTime();
+        const readTime = new Date(myLastReadAt).getTime();
+        if (prevTime <= readTime && itemTime > readTime && !isMine) {
+          showUnreadDivider = true;
+        }
+      }
+
+      const senderName = isMine ? 'You' : item.sender?.fullName || 'Family Member';
+      const senderInitial = getSenderInitial(item.sender);
+      const senderColor = getSenderColor(item.sender);
+      const timeStr = formatMessageTime(item.createdAt);
+
+      return (
+        <View key={item.clientId || item.id}>
+          {/* Day Separator */}
+          {showDateSep && (
+            <View style={styles.dateSeparatorRow}>
+              <View style={styles.dateSeparatorPill}>
+                <Text style={styles.dateSeparatorText}>
+                  {formatDateSeparator(item.createdAt)}
+                </Text>
+              </View>
+            </View>
+          )}
+
+          {/* Unread Divider */}
+          {showUnreadDivider && (
+            <View style={styles.newMessagesDivider}>
+              <View style={styles.newMessagesLine} />
+              <View style={styles.newMessagesPill}>
+                <Text style={styles.newMessagesText}>New messages</Text>
+              </View>
+              <View style={styles.newMessagesLine} />
+            </View>
+          )}
+
+          {isMine ? (
+            /* Outgoing Message (Right-aligned) */
+            <View style={styles.outgoingMessageContainer}>
+              {/* Replying-to Quote Box */}
+              {item.replyTo && (
+                <View style={styles.replyQuoteBoxOutgoing}>
+                  <Text style={styles.replyQuoteSender}>
+                    {item.replyTo.sender?.fullName || 'Member'}
+                  </Text>
+                  <Text style={styles.replyQuoteText} numberOfLines={1}>
+                    {item.replyTo.text || (item.replyTo.kind === 'PHOTO' ? '📷 Photo' : 'Shared Item')}
+                  </Text>
+                </View>
+              )}
+
+              {/* Message Bubble Wrapper with Corner-Attached Reactions */}
+              <View style={styles.outgoingBubbleWrapper}>
+                {item.kind === 'ITEM' && item.card ? (
+                  renderSharedCard(item, true)
+                ) : item.kind === 'PHOTO' && item.photoUrl ? (
+                  /* Photo Message */
+                  <TouchableOpacity
+                    style={styles.imageAttachmentBox}
+                    onPress={() =>
+                      setActivePhotoViewer({
+                        url: item.photoUrl!,
+                        caption: item.text || undefined,
+                        senderName: 'You',
+                        timestamp: timeStr,
+                        messageId: item.id,
+                      })
+                    }
+                    onLongPress={() => setSelectedMessageForReactions(item)}
+                    activeOpacity={0.85}
+                  >
+                    <Image
+                      source={{ uri: item.photoUrl }}
+                      style={styles.chatImage}
+                      resizeMode="cover"
+                    />
+                    {item.text ? (
+                      <View style={styles.imageCaptionBar}>
+                        <Text style={styles.imageCaptionText}>{item.text}</Text>
+                      </View>
+                    ) : null}
+                  </TouchableOpacity>
+                ) : (
+                  /* Text Bubble */
+                  <TouchableOpacity
+                    style={[
+                      styles.outgoingBubble,
+                      Boolean(item.reactions && item.reactions.length > 0) &&
+                      styles.bubbleWithReactionOutgoing,
+                    ]}
+                    onLongPress={() => setSelectedMessageForReactions(item)}
+                    activeOpacity={0.85}
+                  >
+                    <Text style={styles.outgoingText}>{item.text}</Text>
+                  </TouchableOpacity>
+                )}
+
+                {renderReactionsRow(item, true)}
+              </View>
+
+              {/* Meta Status (Time & Read Checkmarks) */}
+              <View
+                style={[
+                  styles.outgoingMetaRow,
+                  Boolean(item.reactions && item.reactions.length > 0) &&
+                  styles.metaRowWithReactions,
+                ]}
+              >
+                <Text style={styles.metaTimeText}>{timeStr}</Text>
+                <Feather
+                  name={item.seenBy && item.seenBy.length > 0 ? 'check-circle' : 'check'}
+                  size={13}
+                  color={item.seenBy && item.seenBy.length > 0 ? Colors.accentTeal : '#1FA066'}
+                  style={styles.checkIcon}
+                />
+              </View>
+            </View>
+          ) : (
+            /* Incoming Message (Left-aligned) */
+            <View style={styles.incomingMessageContainer}>
+              <Text style={[styles.senderNameLabel, { color: senderColor }]}>
+                {senderName}
+              </Text>
+
+              <View style={styles.incomingRow}>
+                {/* Avatar */}
+                <View style={[styles.avatarCircle, { backgroundColor: senderColor }]}>
+                  <Text style={styles.avatarInitial}>{senderInitial}</Text>
+                </View>
+
+                {/* Message Bubble or Card */}
+                <View style={styles.incomingContentGroup}>
+                  {/* Replying-to Quote Box */}
+                  {item.replyTo && (
+                    <View style={styles.replyQuoteBoxIncoming}>
+                      <Text style={styles.replyQuoteSender}>
+                        {item.replyTo.sender?.fullName || 'Member'}
+                      </Text>
+                      <Text style={styles.replyQuoteText} numberOfLines={1}>
+                        {item.replyTo.text || (item.replyTo.kind === 'PHOTO' ? '📷 Photo' : 'Shared Item')}
+                      </Text>
+                    </View>
+                  )}
+
+                  {/* Message Bubble Wrapper with Corner-Attached Reactions */}
+                  <View style={styles.incomingBubbleWrapper}>
+                    {item.kind === 'ITEM' && item.card ? (
+                      renderSharedCard(item, false)
+                    ) : item.kind === 'PHOTO' && item.photoUrl ? (
+                      <TouchableOpacity
+                        style={styles.imageAttachmentBox}
+                        onPress={() =>
+                          setActivePhotoViewer({
+                            url: item.photoUrl!,
+                            caption: item.text || undefined,
+                            senderName,
+                            timestamp: timeStr,
+                            messageId: item.id,
+                          })
+                        }
+                        onLongPress={() => setSelectedMessageForReactions(item)}
+                        activeOpacity={0.85}
+                      >
+                        <Image
+                          source={{ uri: item.photoUrl }}
+                          style={styles.chatImage}
+                          resizeMode="cover"
+                        />
+                        {item.text ? (
+                          <View style={styles.imageCaptionBar}>
+                            <Text style={styles.imageCaptionText}>{item.text}</Text>
+                          </View>
+                        ) : null}
+                      </TouchableOpacity>
+                    ) : (
+                      <TouchableOpacity
+                        style={[
+                          styles.incomingBubble,
+                          Boolean(item.reactions && item.reactions.length > 0) &&
+                          styles.bubbleWithReactionIncoming,
+                        ]}
+                        onLongPress={() => setSelectedMessageForReactions(item)}
+                        activeOpacity={0.85}
+                      >
+                        <Text style={styles.incomingText}>{item.text}</Text>
+                      </TouchableOpacity>
+                    )}
+
+                    {/* Attached Reactions Badge at Bottom Left Corner */}
+                    {renderReactionsRow(item, false)}
+                  </View>
+
+                  <Text
+                    style={[
+                      styles.incomingTimeText,
+                      Boolean(item.reactions && item.reactions.length > 0) &&
+                      styles.incomingTimeWithReactions,
+                    ]}
+                  >
+                    {timeStr}
+                  </Text>
+                </View>
+              </View>
+            </View>
+          )}
+        </View>
+      );
+    },
+    [messages, myLastReadAt, handleCardAction]
+  );
+
+  // Render Reactions Row attached to a bubble's corner
+  const renderReactionsRow = (msg: ApiChatMessage, isMine: boolean) => {
+    if (!msg.reactions || msg.reactions.length === 0) return null;
+    return (
+      <View
+        style={[
+          styles.reactionsAttachedBadge,
+          isMine ? styles.reactionsAttachedRight : styles.reactionsAttachedLeft,
+        ]}
+      >
+        {msg.reactions.map((r) => {
+          const isUserReacted = msg.myReaction === r.emoji;
+          return (
+            <TouchableOpacity
+              key={r.emoji}
+              style={[
+                styles.reactionPill,
+                isUserReacted && styles.reactionPillActive,
+              ]}
+              onPress={() => handleToggleReactionChip(msg, r.emoji)}
+              activeOpacity={0.7}
+            >
+              <Text style={styles.reactionEmoji}>{r.emoji}</Text>
+              {r.count > 1 && (
+                <Text
+                  style={[
+                    styles.reactionCount,
+                    isUserReacted && styles.reactionCountActive,
+                  ]}
+                >
+                  {r.count}
+                </Text>
+              )}
+            </TouchableOpacity>
+          );
+        })}
+      </View>
+    );
+  };
+
+  // Render Shared Card for Task, Event, or List
+  const renderSharedCard = (msg: ApiChatMessage, _isMine: boolean) => {
+    const card = msg.card;
+    if (!card || !card.available) {
+      return (
+        <View style={styles.sharedCardUnavailable}>
+          <Text style={styles.sharedCardUnavailableText}>
+            This shared item is no longer available.
+          </Text>
+        </View>
+      );
+    }
+
+    if (card.type === 'EVENT' && card.event) {
+      const ev = card.event;
+      return (
+        <TouchableOpacity
+          style={styles.sharedCardEvent}
+          onPress={() => handleCardAction(msg)}
+          activeOpacity={0.85}
+        >
+          <View style={styles.sharedTagRow}>
+            <Feather
+              name="calendar"
+              size={14}
+              color={Colors.accentBlue}
+              style={styles.sharedTagIcon}
+            />
+            <Text style={styles.sharedTagEvent}>EVENT</Text>
+          </View>
+          <Text style={styles.sharedItemTitle}>{ev.title}</Text>
+          <Text style={styles.sharedItemSubtitle}>
+            {ev.startsOn} {ev.startTime ? `· ${ev.startTime}` : '· All day'}
+            {ev.location ? ` · ${ev.location}` : ''}
+          </Text>
+          <View style={styles.sharedEventBtn}>
+            <Feather
+              name="calendar"
+              size={14}
+              color={Colors.white}
+              style={styles.sharedEventBtnIcon}
+            />
+            <Text style={styles.sharedEventBtnText}>
+              View in calendar
+            </Text>
+          </View>
+        </TouchableOpacity>
+      );
+    }
+
+    if (card.type === 'TASK' && card.task) {
+      const task = card.task;
+      return (
+        <TouchableOpacity
+          style={styles.sharedCardTask}
+          onPress={() => handleCardAction(msg)}
+          activeOpacity={0.85}
+        >
+          <View style={styles.sharedTaskHeaderRow}>
+            <View style={styles.sharedTagRow}>
+              <Feather
+                name="check-square"
+                size={14}
+                color={Colors.dangerRed}
+                style={styles.sharedTagIcon}
+              />
+              <Text style={styles.sharedTagTask}>TASK</Text>
+            </View>
+            {task.overdue && (
+              <View style={styles.overdueBadge}>
+                <Text style={styles.overdueBadgeText}>Overdue</Text>
+              </View>
+            )}
+          </View>
+          <Text style={styles.sharedItemTitle}>{task.title}</Text>
+          <Text style={styles.sharedItemSubtitle}>
+            {task.dueOn ? `Due ${task.dueOn}` : 'No due date'}
+            {task.assignees && task.assignees.length > 0
+              ? ` · ${task.assignees.map((a: any) => a.fullName).join(', ')}`
+              : ''}
+          </Text>
+          <View
+            style={[
+              styles.markDoneBtn,
+              task.done && styles.markDoneBtnCompleted,
+            ]}
+          >
+            <Feather
+              name={task.done ? 'check-circle' : 'arrow-right'}
+              size={14}
+              color={Colors.white}
+              style={styles.markDoneIcon}
+            />
+            <Text style={styles.markDoneBtnText}>
+              {task.done ? 'Completed · View task' : 'View task'}
+            </Text>
+          </View>
+        </TouchableOpacity>
+      );
+    }
+
+    if (card.type === 'LIST' && card.list) {
+      const lst = card.list;
+      const progressPercent =
+        lst.totalCount > 0 ? (lst.doneCount / lst.totalCount) * 100 : 0;
+      return (
+        <TouchableOpacity
+          style={styles.sharedCardList}
+          onPress={() => handleCardAction(msg)}
+          activeOpacity={0.85}
+        >
+          <View style={styles.sharedTagRow}>
+            <Feather
+              name="list"
+              size={14}
+              color={Colors.accentTeal}
+              style={styles.sharedTagIcon}
+            />
+            <Text style={styles.sharedTagList}>LIST</Text>
+          </View>
+          <Text style={styles.sharedItemTitle}>{lst.name}</Text>
+          <Text style={styles.sharedItemSubtitle}>
+            {lst.doneCount} of {lst.totalCount} items completed
+          </Text>
+          <View style={styles.listProgressTrack}>
+            <View
+              style={[styles.listProgressFill, { width: `${progressPercent}%` }]}
+            />
+          </View>
+          <View style={styles.openListBtn}>
+            <Text style={styles.openListBtnText}>Open list</Text>
+            <Feather name="arrow-right" size={14} color={Colors.white} style={{ marginLeft: 6 }} />
+          </View>
+        </TouchableOpacity>
+      );
+    }
+
+    return null;
   };
 
   return (
@@ -190,14 +888,14 @@ export const ChatConversationModal: React.FC<ChatConversationModalProps> = ({
       animationType="slide"
       transparent={false}
       onRequestClose={onClose}
+      statusBarTranslucent={true}
     >
       <KeyboardAvoidingView
         style={styles.keyboardContainer}
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        keyboardVerticalOffset={Platform.OS === 'android' ? (StatusBar.currentHeight || 0) : 0}
       >
-        <View
-          style={[styles.container, { paddingTop: Math.max(insets.top, 16) }]}
-        >
+        <View style={[styles.container, { paddingTop: Math.max(insets.top, 16) }]}>
           {/* Header */}
           <View style={styles.header}>
             <TouchableOpacity
@@ -211,7 +909,7 @@ export const ChatConversationModal: React.FC<ChatConversationModalProps> = ({
             </TouchableOpacity>
 
             <View style={styles.headerTitleGroup}>
-              <Text style={styles.headerTitle}>{title}</Text>
+              <Text style={styles.headerTitle}>{headerTitle}</Text>
               <Text style={styles.headerSubtitle}>{memberCountText}</Text>
             </View>
 
@@ -233,39 +931,36 @@ export const ChatConversationModal: React.FC<ChatConversationModalProps> = ({
             topOffset={insets.top + 58}
             items={[
               {
-                id: 'toggle-offline',
-                label: isOffline ? 'Switch to Online' : 'Switch to Offline',
-                iconName: isOffline ? 'wifi' : 'wifi-off',
-                onPress: () => setIsOffline((prev) => !prev),
-                showDividerAfter: true,
+                id: 'share-item',
+                label: 'Share Task or Event',
+                iconName: 'plus-circle',
+                onPress: () => setShowShareModal(true),
               },
               {
-                id: 'clear-chat',
-                label: 'Clear Chat',
-                iconName: 'trash-2',
-                destructive: true,
-                onPress: () => setMessages([]),
+                id: 'quick-messages',
+                label: 'Quick Messages',
+                iconName: 'message-circle',
+                onPress: () => setShowQuickMessages(true),
+              },
+              {
+                id: 'vault',
+                label: 'Family Vault',
+                iconName: 'folder',
+                onPress: () => {
+                  if (onOpenVault) onOpenVault();
+                  else Alert.alert('Vault', 'Opening Family Vault...');
+                },
               },
             ]}
           />
 
-          {/* Offline Banner (CHT-09) */}
-          {isOffline && (
-            <View style={styles.offlineBanner}>
-              <Feather
-                name="wifi-off"
-                size={18}
-                color={Colors.bannerErrorBorder}
-                style={styles.offlineIcon}
-              />
-              <Text style={styles.offlineText}>
-                No internet. Messages will send when you’re back online.
-              </Text>
-            </View>
-          )}
-
           {/* Main Message Stream or Empty State */}
-          {messages.length === 0 ? (
+          {messagesLoading && messages.length === 0 ? (
+            <View style={styles.loadingContainer}>
+              <ActivityIndicator size="large" color={Colors.primary} />
+              <Text style={styles.loadingText}>Loading messages...</Text>
+            </View>
+          ) : messages.length === 0 ? (
             /* Empty Chat (CHT-08) */
             <View style={styles.emptyContainer}>
               <View style={styles.emptyCenterContent}>
@@ -282,11 +977,11 @@ export const ChatConversationModal: React.FC<ChatConversationModalProps> = ({
 
                 <Text style={styles.emptyTitle}>Say hello to your family</Text>
                 <Text style={styles.emptySubtitle}>
-                  Everyone in The Sharma Family sees{'\n'}messages here. You can
-                  share tasks, events{'\n'}and lists too.
+                  Everyone in your family sees{'\n'}messages here. You can share tasks,
+                  events{'\n'}and lists too.
                 </Text>
 
-                {/* Structured Prompt suggestion chips (2-tier layout) */}
+                {/* Structured Prompt suggestion chips */}
                 <View style={styles.chipsContainer}>
                   <View style={styles.topChipRow}>
                     <TouchableOpacity
@@ -323,238 +1018,55 @@ export const ChatConversationModal: React.FC<ChatConversationModalProps> = ({
               </View>
             </View>
           ) : (
-            /* Populated Message Stream */
-            <ScrollView
+            /* Populated Inverted Message Stream */
+            <FlatList
+              ref={flatListRef}
+              data={messages}
+              extraData={messages}
+              inverted
+              keyExtractor={(item) => item.clientId || item.id}
+              renderItem={renderMessageItem}
+              onEndReached={handleLoadMore}
+              onEndReachedThreshold={0.2}
               style={styles.scrollArea}
               contentContainerStyle={styles.scrollContent}
               showsVerticalScrollIndicator={false}
-            >
-              {messages.map((msg) => {
-                if (msg.isYou) {
-                  // Outgoing Message (Right-aligned)
-                  return (
-                    <View key={msg.id} style={styles.outgoingMessageContainer}>
-                      {/* Shared Item Card (CHT-04) */}
-                      {msg.sharedItem ? (
-                        <View style={styles.sharedCardEvent}>
-                          <View style={styles.sharedTagRow}>
-                            <Feather
-                              name="calendar"
-                              size={14}
-                              color={Colors.accentBlue}
-                              style={styles.sharedTagIcon}
-                            />
-                            <Text style={styles.sharedTagEvent}>EVENT</Text>
-                          </View>
-                          <Text style={styles.sharedItemTitle}>
-                            {msg.sharedItem.title}
-                          </Text>
-                          <Text style={styles.sharedItemSubtitle}>
-                            {msg.sharedItem.subtitle}
-                          </Text>
-                          <TouchableOpacity
-                            style={styles.sharedEventBtn}
-                            onPress={() => handleCardAction(msg.sharedItem!)}
-                            activeOpacity={0.7}
-                          >
-                            <Feather
-                              name="plus"
-                              size={14}
-                              color={Colors.white}
-                              style={styles.sharedEventBtnIcon}
-                            />
-                            <Text style={styles.sharedEventBtnText}>
-                              {msg.sharedItem.actionLabel}
-                            </Text>
-                          </TouchableOpacity>
-                        </View>
-                      ) : (
-                        <TouchableOpacity
-                          style={[
-                            styles.outgoingBubble,
-                            msg.status === 'failed' && styles.outgoingBubbleFailed,
-                          ]}
-                          onLongPress={() => setSelectedMessageForReactions(msg)}
-                          activeOpacity={0.85}
-                        >
-                          <Text style={styles.outgoingText}>{msg.text}</Text>
-                        </TouchableOpacity>
-                      )}
-
-                      {/* Meta Status */}
-                      {msg.status === 'failed' ? (
-                        <TouchableOpacity
-                          style={styles.failedStatusRow}
-                          onPress={() => handleRetryMessage(msg.id)}
-                          activeOpacity={0.7}
-                        >
-                          <Feather
-                            name="alert-circle"
-                            size={14}
-                            color={Colors.dangerRed}
-                            style={styles.failedIcon}
-                          />
-                          <Text style={styles.failedText}>Not sent. </Text>
-                          <Text style={styles.retryText}>Tap to retry</Text>
-                        </TouchableOpacity>
-                      ) : (
-                        <View style={styles.outgoingMetaRow}>
-                          <Text style={styles.metaTimeText}>{msg.timeText}</Text>
-                          <Feather
-                            name="check"
-                            size={13}
-                            color="#1FA066"
-                            style={styles.checkIcon}
-                          />
-                        </View>
-                      )}
-                    </View>
-                  );
-                }
-
-                // Incoming Message (Left-aligned)
-                return (
-                  <View key={msg.id} style={styles.incomingMessageContainer}>
-                    <Text
-                      style={[styles.senderNameLabel, { color: msg.nameColor }]}
-                    >
-                      {msg.senderName}
-                    </Text>
-
-                    <View style={styles.incomingRow}>
-                      {/* Avatar */}
-                      <View
-                        style={[
-                          styles.avatarCircle,
-                          { backgroundColor: msg.senderColor },
-                        ]}
-                      >
-                        <Text style={styles.avatarInitial}>
-                          {msg.senderInitial}
-                        </Text>
-                      </View>
-
-                      {/* Message Bubble or Card */}
-                      <View style={styles.incomingContentGroup}>
-                        {msg.sharedItem ? (
-                          // Shared card inside message stream (CHT-04)
-                          msg.sharedItem.type === 'list' ? (
-                            <View style={styles.sharedCardList}>
-                              <View style={styles.sharedTagRow}>
-                                <Feather
-                                  name="list"
-                                  size={14}
-                                  color={Colors.accentTeal}
-                                  style={styles.sharedTagIcon}
-                                />
-                                <Text style={styles.sharedTagList}>LIST</Text>
-                              </View>
-                              <Text style={styles.sharedItemTitle}>
-                                {msg.sharedItem.title}
-                              </Text>
-                              <Text style={styles.sharedItemSubtitle}>
-                                {msg.sharedItem.subtitle}
-                              </Text>
-                              {/* Progress Track */}
-                              <View style={styles.listProgressTrack}>
-                                <View style={styles.listProgressFill} />
-                              </View>
-                              <TouchableOpacity
-                                style={styles.openListBtn}
-                                onPress={() => handleCardAction(msg.sharedItem!)}
-                                activeOpacity={0.7}
-                              >
-                                <Text style={styles.openListBtnText}>
-                                  Open list
-                                </Text>
-                              </TouchableOpacity>
-                            </View>
-                          ) : (
-                            <View style={styles.sharedCardTask}>
-                              <View style={styles.sharedTaskHeaderRow}>
-                                <View style={styles.sharedTagRow}>
-                                  <Feather
-                                    name="check-square"
-                                    size={14}
-                                    color={Colors.dangerRed}
-                                    style={styles.sharedTagIcon}
-                                  />
-                                  <Text style={styles.sharedTagTask}>TASK</Text>
-                                </View>
-                                {msg.sharedItem.isOverdue && (
-                                  <View style={styles.overdueBadge}>
-                                    <Text style={styles.overdueBadgeText}>
-                                      Overdue
-                                    </Text>
-                                  </View>
-                                )}
-                              </View>
-                              <Text style={styles.sharedItemTitle}>
-                                {msg.sharedItem.title}
-                              </Text>
-                              <Text style={styles.sharedItemSubtitle}>
-                                {msg.sharedItem.subtitle}
-                              </Text>
-                              <TouchableOpacity
-                                style={styles.markDoneBtn}
-                                onPress={() => handleCardAction(msg.sharedItem!)}
-                                activeOpacity={0.7}
-                              >
-                                <Feather
-                                  name="check"
-                                  size={14}
-                                  color={Colors.white}
-                                  style={styles.markDoneIcon}
-                                />
-                                <Text style={styles.markDoneBtnText}>
-                                  Mark done
-                                </Text>
-                              </TouchableOpacity>
-                            </View>
-                          )
-                        ) : (
-                          <TouchableOpacity
-                            style={styles.incomingBubble}
-                            onLongPress={() => setSelectedMessageForReactions(msg)}
-                            activeOpacity={0.85}
-                          >
-                            <Text style={styles.incomingText}>{msg.text}</Text>
-                          </TouchableOpacity>
-                        )}
-
-                        {/* Image Attachment (Diya lamps) */}
-                        {msg.hasImage && (
-                          <TouchableOpacity
-                            style={styles.imageAttachmentBox}
-                            onPress={() => setShowImageViewer(true)}
-                            activeOpacity={0.85}
-                          >
-                            {/* Diya Lamps Preview */}
-                            <View style={styles.diyaAttachmentStage}>
-                              {[0, 1, 2, 3, 4].map((idx) => (
-                                <View
-                                  key={`att-diya-${idx}`}
-                                  style={styles.smallDiyaItem}
-                                >
-                                  <View style={styles.smallDiyaFlame}>
-                                    <View style={styles.diyaInnerCore} />
-                                  </View>
-                                  <View style={styles.smallDiyaBowl} />
-                                </View>
-                              ))}
-                            </View>
-                          </TouchableOpacity>
-                        )}
-
-                        <Text style={styles.incomingTimeText}>
-                          {msg.timeText}
-                        </Text>
-                      </View>
-                    </View>
+              ListFooterComponent={
+                pagination?.loadingMore ? (
+                  <View style={styles.loadMoreFooter}>
+                    <ActivityIndicator size="small" color={Colors.primary} />
                   </View>
-                );
-              })}
-            </ScrollView>
+                ) : undefined
+              }
+            />
+          )}
+
+          {/* Replying-To Bar Preview */}
+          {replyingTo && (
+            <View style={styles.replyBanner}>
+              <View style={styles.replyBannerContent}>
+                <Feather
+                  name="corner-up-left"
+                  size={14}
+                  color={Colors.primary}
+                  style={styles.replyBannerIcon}
+                />
+                <View style={styles.replyBannerTextGroup}>
+                  <Text style={styles.replyBannerSender}>
+                    Replying to {replyingTo.sender?.fullName || 'Member'}
+                  </Text>
+                  <Text style={styles.replyBannerSnippet} numberOfLines={1}>
+                    {replyingTo.text || (replyingTo.kind === 'PHOTO' ? '📷 Photo' : 'Shared Item')}
+                  </Text>
+                </View>
+              </View>
+              <TouchableOpacity
+                onPress={() => setReplyingTo(null)}
+                style={styles.replyBannerCloseBtn}
+              >
+                <Feather name="x" size={16} color={Colors.textSecondary} />
+              </TouchableOpacity>
+            </View>
           )}
 
           {/* Bottom Message Input Bar */}
@@ -587,20 +1099,16 @@ export const ChatConversationModal: React.FC<ChatConversationModalProps> = ({
               />
               <TouchableOpacity
                 style={styles.cameraIconBtn}
-                onPress={() => setShowQuickMessages(true)}
+                onPress={() => setShowImagePicker(true)}
                 activeOpacity={0.7}
                 accessibilityRole="button"
-                accessibilityLabel="Quick messages"
+                accessibilityLabel="Choose photo"
               >
-                <Feather
-                  name="camera"
-                  size={20}
-                  color="#8A97AB"
-                />
+                <Feather name="camera" size={20} color="#8A97AB" />
               </TouchableOpacity>
             </View>
 
-            {/* Voice Mic / Send Button */}
+            {/* Mic / Quick Messages / Send Button */}
             {inputText.trim().length > 0 ? (
               <TouchableOpacity
                 style={styles.micButton}
@@ -615,7 +1123,7 @@ export const ChatConversationModal: React.FC<ChatConversationModalProps> = ({
                 onPress={() => setShowQuickMessages(true)}
                 activeOpacity={0.85}
               >
-                <Feather name="mic" size={20} color={Colors.white} />
+                <Feather name="message-circle" size={20} color={Colors.white} />
               </TouchableOpacity>
             )}
           </View>
@@ -630,32 +1138,139 @@ export const ChatConversationModal: React.FC<ChatConversationModalProps> = ({
           <QuickMessagesModal
             visible={showQuickMessages}
             onClose={() => setShowQuickMessages(false)}
+            customMessages={quickMessagesList}
             onSelectQuickMessage={(text) => handleSendMessage(text)}
+            onSaveQuickMessages={(newMsgs) => {
+              dispatch(updateQuickMessages(newMsgs));
+            }}
           />
 
           <SmartReactionsModal
             visible={!!selectedMessageForReactions}
             message={selectedMessageForReactions || undefined}
             onClose={() => setSelectedMessageForReactions(null)}
-            onSelectReaction={(_emoji) => {
-              // Add reaction
-            }}
+            onSelectReaction={handleSelectReaction}
             onSelectQuickReply={(reply) => handleSendMessage(reply)}
-            onTurnIntoTask={(task) => {
-              Alert.alert('Task Created', `"${task}" created.`);
-            }}
-            onTurnIntoReminder={(reminder) => {
-              Alert.alert('Reminder Created', `"${reminder}" created.`);
-            }}
             onReply={(msg) => {
-              setInputText(`Replying to ${msg.senderName}: `);
+              setReplyingTo(msg);
             }}
           />
 
-          <ImageViewerModal
-            visible={showImageViewer}
-            onClose={() => setShowImageViewer(false)}
-            onSaveToVault={onOpenVault}
+          {/* Full Screen Image Viewer Modal */}
+          {activePhotoViewer && (
+            <ImageViewerModal
+              visible={!!activePhotoViewer}
+              onClose={() => setActivePhotoViewer(null)}
+              imageUrl={activePhotoViewer.url}
+              caption={activePhotoViewer.caption}
+              senderName={activePhotoViewer.senderName}
+              timestamp={activePhotoViewer.timestamp}
+              messageId={activePhotoViewer.messageId}
+              onSaveToVault={() => {
+                if (activePhotoViewer.messageId) {
+                  handleSavePhotoToVault(activePhotoViewer.messageId);
+                }
+              }}
+            />
+          )}
+
+          {/* Image Picker Bottom Sheet */}
+          <AppImagePickerBottomSheet
+            visible={showImagePicker}
+            title="Send Photo"
+            subtitle="Take a photo or choose from gallery to share in chat"
+            onSelectImage={handleSelectPhoto}
+            onClose={() => setShowImagePicker(false)}
+          />
+
+          {/* Direct-to-Direct Task Detail Modal (Zero-flicker on top of chat) */}
+          <TaskDetailModal
+            visible={Boolean(selectedTaskForDetail)}
+            task={selectedTaskForDetail}
+            liveTaskDetail={apiSelectedTask?.id === selectedTaskForDetail?.id ? apiSelectedTask : null}
+            onClose={() => {
+              setSelectedTaskForDetail(null);
+              dispatch(clearSelectedTask());
+              if (activeThreadId) {
+                dispatch(fetchChatMessages({ threadId: activeThreadId }));
+              }
+            }}
+            onToggleComplete={async (t) => {
+              try {
+                if (t.isCompleted) {
+                  await dispatch(reopenTask(t.id)).unwrap();
+                } else {
+                  await dispatch(completeTask({ taskId: t.id, today: new Date().toISOString().slice(0, 10) })).unwrap();
+                }
+                if (activeThreadId) {
+                  dispatch(fetchChatMessages({ threadId: activeThreadId }));
+                }
+              } catch (e) {
+                console.warn('[ChatConversationModal] Error toggling task:', e);
+              }
+              setSelectedTaskForDetail(null);
+            }}
+            onDelete={async (t) => {
+              try {
+                await dispatch(deleteTask(t.id)).unwrap();
+                if (activeThreadId) {
+                  dispatch(fetchChatMessages({ threadId: activeThreadId }));
+                }
+              } catch (e) {
+                console.warn('[ChatConversationModal] Error deleting task:', e);
+              }
+              setSelectedTaskForDetail(null);
+            }}
+            onUpdateTask={(updated) => setSelectedTaskForDetail(updated)}
+          />
+
+          {/* Direct-to-Direct List Detail Modal (Zero-flicker on top of chat) */}
+          <ListDetailModal
+            visible={Boolean(selectedListForDetail)}
+            list={selectedListForDetail}
+            onClose={() => {
+              setSelectedListForDetail(null);
+              if (activeThreadId) {
+                dispatch(fetchChatMessages({ threadId: activeThreadId }));
+              }
+            }}
+            onUpdateList={(updated) => setSelectedListForDetail(updated)}
+            onDeleteList={async (listId) => {
+              if (isUUID(listId)) {
+                dispatch(deleteList(listId));
+              }
+              setSelectedListForDetail(null);
+              if (activeThreadId) {
+                dispatch(fetchChatMessages({ threadId: activeThreadId }));
+              }
+            }}
+          />
+
+          {/* Direct-to-Direct Event Detail Modal (Zero-flicker on top of chat) */}
+          <EventDetailModal
+            visible={Boolean(selectedEventForDetail)}
+            event={selectedEventForDetail}
+            onClose={() => {
+              setSelectedEventForDetail(null);
+              if (activeThreadId) {
+                dispatch(fetchChatMessages({ threadId: activeThreadId }));
+              }
+            }}
+            onEditEvent={(evt) => {
+              setSelectedEventForDetail(evt);
+            }}
+            onOpenComments={() => {}}
+            onCancelEvent={async (evt) => {
+              try {
+                await dispatch(cancelCalendarEvent({ id: evt.id, payload: { scope: 'THIS_ONE' } })).unwrap();
+                if (activeThreadId) {
+                  dispatch(fetchChatMessages({ threadId: activeThreadId }));
+                }
+              } catch (e) {
+                console.warn('[ChatConversationModal] Error cancelling event:', e);
+              }
+              setSelectedEventForDetail(null);
+            }}
           />
         </View>
       </KeyboardAvoidingView>
@@ -705,28 +1320,16 @@ const styles = StyleSheet.create({
     color: '#8A97AB',
     marginTop: 2,
   },
-  offlineBanner: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: Colors.bannerErrorBg,
-    marginHorizontal: 20,
-    marginTop: 6,
-    marginBottom: 10,
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: Colors.bannerErrorBorder,
-  },
-  offlineIcon: {
-    marginRight: 10,
-  },
-  offlineText: {
+  loadingContainer: {
     flex: 1,
-    color: Colors.white,
-    fontSize: 13,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  loadingText: {
+    color: '#8A97AB',
+    fontSize: 14,
     fontFamily: 'Roboto-Medium',
-    lineHeight: 18,
+    marginTop: 12,
   },
   emptyContainer: {
     flex: 1,
@@ -811,21 +1414,62 @@ const styles = StyleSheet.create({
     paddingBottom: 24,
     gap: 16,
   },
+  loadMoreFooter: {
+    paddingVertical: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  dateSeparatorRow: {
+    alignItems: 'center',
+    marginVertical: 12,
+  },
+  dateSeparatorPill: {
+    backgroundColor: 'rgba(255, 255, 255, 0.08)',
+    paddingHorizontal: 12,
+    paddingVertical: 4,
+    borderRadius: 12,
+  },
+  dateSeparatorText: {
+    fontSize: 11,
+    fontFamily: 'Roboto-Medium',
+    color: '#8A97AB',
+  },
+  newMessagesDivider: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginVertical: 14,
+  },
+  newMessagesLine: {
+    flex: 1,
+    height: 1,
+    backgroundColor: Colors.primary,
+  },
+  newMessagesPill: {
+    backgroundColor: Colors.primary,
+    paddingHorizontal: 10,
+    paddingVertical: 3,
+    borderRadius: 10,
+    marginHorizontal: 8,
+  },
+  newMessagesText: {
+    fontSize: 11,
+    fontFamily: 'Roboto-Bold',
+    color: Colors.white,
+  },
   outgoingMessageContainer: {
     alignItems: 'flex-end',
   },
   outgoingBubble: {
     backgroundColor: Colors.primary,
     borderRadius: 20,
-    paddingHorizontal: 18,
-    paddingVertical: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 8,
     maxWidth: '80%',
-  },
-  outgoingBubbleFailed: {
-    backgroundColor: '#8C562B',
+    minHeight: 38,
+    justifyContent: 'center',
   },
   outgoingText: {
-    color: Colors.black,
+    color: Colors.white,
     fontSize: 15,
     fontFamily: 'Roboto-Medium',
     lineHeight: 20,
@@ -844,24 +1488,6 @@ const styles = StyleSheet.create({
   },
   checkIcon: {
     marginLeft: 2,
-  },
-  failedStatusRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginTop: 4,
-  },
-  failedIcon: {
-    marginRight: 4,
-  },
-  failedText: {
-    color: Colors.dangerRed,
-    fontSize: 12,
-    fontFamily: 'Roboto-SemiBold',
-  },
-  retryText: {
-    color: Colors.primary,
-    fontSize: 12,
-    fontFamily: 'Roboto-Bold',
   },
   incomingMessageContainer: {
     alignItems: 'flex-start',
@@ -897,8 +1523,18 @@ const styles = StyleSheet.create({
   incomingBubble: {
     backgroundColor: '#162842',
     borderRadius: 20,
-    paddingHorizontal: 18,
-    paddingVertical: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    minHeight: 38,
+    justifyContent: 'center',
+  },
+  bubbleWithReactionOutgoing: {
+    paddingBottom: 15,
+    paddingRight: 18,
+  },
+  bubbleWithReactionIncoming: {
+    paddingBottom: 15,
+    paddingRight: 18,
   },
   incomingText: {
     color: Colors.white,
@@ -912,45 +1548,138 @@ const styles = StyleSheet.create({
     marginLeft: 2,
     fontFamily: 'Roboto-Regular',
   },
+  replyQuoteBoxOutgoing: {
+    backgroundColor: 'rgba(255, 255, 255, 0.15)',
+    borderLeftWidth: 3,
+    borderLeftColor: Colors.white,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 8,
+    marginBottom: 6,
+    maxWidth: '80%',
+  },
+  replyQuoteBoxIncoming: {
+    backgroundColor: 'rgba(255, 255, 255, 0.08)',
+    borderLeftWidth: 3,
+    borderLeftColor: Colors.primary,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 8,
+    marginBottom: 6,
+    maxWidth: '85%',
+  },
+  replyQuoteSender: {
+    fontSize: 11,
+    fontFamily: 'Roboto-Bold',
+    color: Colors.primary,
+    marginBottom: 2,
+  },
+  replyQuoteText: {
+    fontSize: 12,
+    fontFamily: 'Roboto-Regular',
+    color: Colors.textSecondary,
+  },
   imageAttachmentBox: {
     borderRadius: 18,
     overflow: 'hidden',
-    marginTop: 8,
     maxWidth: 260,
+    backgroundColor: '#131F33',
   },
-  diyaAttachmentStage: {
-    height: 130,
-    backgroundColor: '#351D0F',
+  chatImage: {
+    width: 240,
+    height: 200,
+    borderRadius: 16,
+  },
+  imageCaptionBar: {
+    padding: 10,
+    backgroundColor: '#131F33',
+  },
+  imageCaptionText: {
+    color: Colors.white,
+    fontSize: 13,
+    fontFamily: 'Roboto-Regular',
+  },
+  reactionsContainer: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 6,
+    marginTop: 4,
+  },
+  reactionsLeft: {
+    alignSelf: 'flex-start',
+  },
+  reactionsRight: {
+    alignSelf: 'flex-end',
+  },
+  outgoingBubbleWrapper: {
+    position: 'relative',
+    alignSelf: 'flex-end',
+  },
+  incomingBubbleWrapper: {
+    position: 'relative',
+    alignSelf: 'flex-start',
+  },
+  reactionsAttachedBadge: {
+    position: 'absolute',
+    bottom: -6,
+    flexDirection: 'row',
+    gap: 3,
+    zIndex: 10,
+  },
+  reactionsAttachedRight: {
+    right: 4,
+  },
+  reactionsAttachedLeft: {
+    left: 10,
+  },
+  metaRowWithReactions: {
+    marginTop: 8,
+  },
+  incomingTimeWithReactions: {
+    marginTop: 8,
+  },
+  reactionPill: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-around',
-    paddingHorizontal: 16,
-    paddingTop: 24,
+    backgroundColor: '#1E293B',
+    paddingHorizontal: 5,
+    // paddingVertical: 1.5,
+    borderRadius: 10,
+    borderWidth: 0.8,
+    borderColor: 'rgba(255, 255, 255, 0.18)',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.25,
+    shadowRadius: 1.5,
+    elevation: 3,
   },
-  smallDiyaItem: {
-    alignItems: 'center',
+  reactionPillActive: {
+    borderColor: Colors.primary,
+    backgroundColor: 'rgba(240, 145, 58, 0.22)',
   },
-  smallDiyaFlame: {
-    width: 24,
-    height: 24,
-    borderRadius: 12,
-    backgroundColor: '#F5A962',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 4,
+  reactionEmoji: {
+    fontSize: 11.5,
   },
-  diyaInnerCore: {
-    width: 12,
-    height: 12,
-    borderRadius: 6,
-    backgroundColor: '#FFF2DB',
+  reactionCount: {
+    fontSize: 10,
+    fontFamily: 'Roboto-Bold',
+    color: '#CBD5E1',
+    marginLeft: 2.5,
   },
-  smallDiyaBowl: {
-    width: 26,
-    height: 9,
-    borderBottomLeftRadius: 6,
-    borderBottomRightRadius: 6,
-    backgroundColor: '#6B3C20',
+  reactionCountActive: {
+    color: Colors.primary,
+  },
+  sharedCardUnavailable: {
+    backgroundColor: '#131F33',
+    padding: 14,
+    borderRadius: 16,
+    maxWidth: 260,
+  },
+  sharedCardUnavailableText: {
+    color: '#8A97AB',
+    fontSize: 12,
+    fontFamily: 'Roboto-Regular',
+    fontStyle: 'italic',
   },
   sharedCardEvent: {
     backgroundColor: Colors.cardElevated,
@@ -1040,7 +1769,6 @@ const styles = StyleSheet.create({
   },
   listProgressFill: {
     height: 4,
-    width: '45%',
     backgroundColor: Colors.accentTeal,
     borderRadius: 2,
   },
@@ -1068,6 +1796,7 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.surfaceSubtle,
     borderWidth: 1,
     borderColor: Colors.border,
+    flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -1084,6 +1813,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
+  markDoneBtnCompleted: {
+    backgroundColor: '#1FA066',
+  },
   markDoneIcon: {
     marginRight: 6,
   },
@@ -1091,6 +1823,40 @@ const styles = StyleSheet.create({
     color: Colors.white,
     fontSize: 13,
     fontFamily: 'Roboto-Bold',
+  },
+  replyBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: '#162842',
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderTopWidth: 1,
+    borderTopColor: '#192E4A',
+  },
+  replyBannerContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+  },
+  replyBannerIcon: {
+    marginRight: 8,
+  },
+  replyBannerTextGroup: {
+    flex: 1,
+  },
+  replyBannerSender: {
+    fontSize: 12,
+    fontFamily: 'Roboto-Bold',
+    color: Colors.primary,
+  },
+  replyBannerSnippet: {
+    fontSize: 12,
+    fontFamily: 'Roboto-Regular',
+    color: Colors.textSecondary,
+  },
+  replyBannerCloseBtn: {
+    padding: 6,
   },
   inputBar: {
     width: '100%',

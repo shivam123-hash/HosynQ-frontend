@@ -38,6 +38,7 @@ export const resolveDevHost = (): string => {
 };
 
 export const API_BASE_URL = `http://${resolveDevHost()}:5000/api/v1`;
+export const API_SOCKET_CHAT_URL = `http://${resolveDevHost()}:5000/chat`;
 
 const API_ROUTES = {
   // Auth & Session Endpoints
@@ -194,6 +195,27 @@ const API_ROUTES = {
   VAULT_LIFE_PROFILE_DOCS: 'vault/life-profile-documents',
   VAULT_ITEMS: 'vault/items',
   VAULT_ITEM_BY_ID: (id: string) => `vault/items/${id}`,
+  // Chat Endpoints
+  CHAT_THREADS: 'chat/threads',
+  CHAT_THREAD_MESSAGES: (threadId: string, queryParams?: { limit?: number; before?: string }) => {
+    let url = `chat/threads/${threadId}/messages`;
+    const params: string[] = [];
+    if (queryParams?.limit) params.push(`limit=${queryParams.limit}`);
+    if (queryParams?.before) params.push(`before=${encodeURIComponent(queryParams.before)}`);
+    if (params.length > 0) url += `?${params.join('&')}`;
+    return url;
+  },
+  CHAT_SEND_MESSAGE: (threadId: string) => `chat/threads/${threadId}/messages`,
+  CHAT_SEND_PHOTO: (threadId: string) => `chat/threads/${threadId}/photos`,
+  CHAT_THREAD_READ: (threadId: string) => `chat/threads/${threadId}/read`,
+  CHAT_MESSAGE_REACTION: (messageId: string) => `chat/messages/${messageId}/reaction`,
+  CHAT_MESSAGE_SAVE_TO_VAULT: (messageId: string) => `chat/messages/${messageId}/save-to-vault`,
+  CALENDAR_EVENT_ADD_TO_MY_CALENDAR: (eventId: string) => `calendar/events/${eventId}/add-to-my-calendar`,
+  CHAT_SEARCH: (query: string, limit: number = 20) => `chat/search?q=${encodeURIComponent(query)}&limit=${limit}`,
+  CHAT_SHARED: 'chat/shared',
+  CHAT_JUST_US: 'chat/just-us',
+  CHAT_KEY: 'chat/key',
+  CHAT_QUICK_MESSAGES: 'chat/quick-messages',
 };
 
 export default API_ROUTES;

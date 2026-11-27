@@ -24,6 +24,11 @@ export * from './pulseServices';
 
 export { default as vaultServices } from './vaultServices';
 export * from './vaultServices';
+export { default as chatServices } from './chatServices';
+export * from './chatServices';
+
+export { default as chatSocket } from './chatSocket';
+export * from './chatSocket';
 
 export * from './googleAuthService';
 export * from './appleAuthService';

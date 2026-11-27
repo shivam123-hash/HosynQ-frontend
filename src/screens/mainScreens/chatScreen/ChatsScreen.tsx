@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import {
   View,
   Text,
@@ -6,14 +6,24 @@ import {
   StyleSheet,
   ScrollView,
   TextInput,
+  RefreshControl,
+  ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import Feather from '@react-native-vector-icons/feather';
 import Colors from '../../../units/Colors';
 import AppTopBar from '../../../components/AppTopBar';
+import { useAppDispatch, useAppSelector } from '../../../redux';
+import {
+  fetchChatThreads,
+  setActiveThreadId,
+  searchChatMessages,
+} from '../../../redux/features/chat/chatSlice';
+import { getMyFamilyBasicThunk, getMyFamilyThunk } from '../../../redux/features/family/familySlice';
+import { initChatSocketBridge } from '../../../redux/features/chat/chatSocketBridge';
 import { ChatConversationModal } from './ChatConversationModal';
 import { JustUsModal } from './JustUsModal';
-import { ChatThreadItem, SharedSummaryItem } from './types';
+import { ChatThreadItem } from './types';
 
 export interface ChatsScreenProps {
   onProfilePress?: () => void;
@@ -21,50 +31,60 @@ export interface ChatsScreenProps {
   onExplorePress?: () => void;
   onCompassPress?: () => void;
   onOpenVault?: () => void;
+  onNavigateToItem?: (type: 'TASK' | 'EVENT' | 'LIST', itemId: string, meta?: any) => void;
+  autoOpenFamilyChat?: boolean;
+  onFamilyChatOpened?: () => void;
 }
 
-const DEFAULT_THREADS: ChatThreadItem[] = [
-  {
-    id: 'family',
-    title: 'Family chat',
-    subtitle: 'Anaya: Can someone pick me up after badminton?',
-    timeText: '2:40 PM',
-    unreadCount: 2,
-    iconType: 'users',
-    avatarColor: 'rgba(58, 142, 240, 0.2)',
-  },
-  {
-    id: 'just_us',
-    title: 'Just Us',
-    subtitle: 'Rohan: Booked the table for Saturday',
-    timeText: '1:05 PM',
-    unreadCount: 1,
-    isPrivate: true,
-    iconType: 'lock',
-    avatarColor: 'rgba(157, 101, 229, 0.2)',
-  },
-];
+// Helpers
+const formatThreadTime = (dateStr?: string | null): string => {
+  if (!dateStr) return '';
+  const d = new Date(dateStr);
+  if (isNaN(d.getTime())) return '';
+  const now = new Date();
+  if (d.toDateString() === now.toDateString()) {
+    return d.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit', hour12: true });
+  }
+  const yesterday = new Date(now);
+  yesterday.setDate(now.getDate() - 1);
+  if (d.toDateString() === yesterday.toDateString()) {
+    return 'Yesterday';
+  }
+  return d.toLocaleDateString([], { month: 'short', day: 'numeric' });
+};
 
-const DEFAULT_SHARED_ITEMS: SharedSummaryItem[] = [
-  {
-    id: 'sh-1',
-    type: 'list',
-    title: 'Diwali shopping',
-    subtitle: 'List · 6 of 14 done · Shared by Dadi',
-    iconName: 'list',
-    iconBgColor: 'rgba(46, 196, 182, 0.15)',
-    iconColor: Colors.accentTeal,
-  },
-  {
-    id: 'sh-2',
-    type: 'event',
-    title: 'Aarav’s PTM',
-    subtitle: 'Event · Fri, 6 Nov · Shared by you',
-    iconName: 'calendar',
-    iconBgColor: 'rgba(58, 142, 240, 0.15)',
-    iconColor: Colors.accentBlue,
-  },
-];
+const formatThreadSubtitle = (
+  lastMessage: any,
+  isJustUs: boolean = false
+): string => {
+  if (!lastMessage) return 'Say hello';
+
+  if (isJustUs && lastMessage.ciphertext) {
+    return 'Encrypted message';
+  }
+
+  const senderName = lastMessage.isMine
+    ? 'You'
+    : lastMessage.sender?.fullName || 'Member';
+
+  if (lastMessage.kind === 'PHOTO') {
+    return lastMessage.text ? `📷 ${lastMessage.text}` : '📷 Photo';
+  }
+
+  if (lastMessage.kind === 'ITEM') {
+    const itemType = lastMessage.itemType || lastMessage.item?.type;
+    if (itemType === 'TASK') return `${senderName}: Shared a task`;
+    if (itemType === 'EVENT') return `${senderName}: Shared an event`;
+    if (itemType === 'LIST') return `${senderName}: Shared a list`;
+    return `${senderName}: Shared an item`;
+  }
+
+  if (lastMessage.text) {
+    return `${senderName}: ${lastMessage.text}`;
+  }
+
+  return 'Say hello';
+};
 
 export const ChatsScreen: React.FC<ChatsScreenProps> = ({
   onProfilePress,
@@ -72,23 +92,215 @@ export const ChatsScreen: React.FC<ChatsScreenProps> = ({
   onExplorePress,
   onCompassPress,
   onOpenVault,
+  onNavigateToItem,
+  autoOpenFamilyChat,
+  onFamilyChatOpened,
 }) => {
   const insets = useSafeAreaInsets();
+  const dispatch = useAppDispatch();
+
+  // Redux state
+  const chatState = useAppSelector((state) => state.chat);
+  const familyState = useAppSelector((state) => state.family);
+
   const [searchQuery, setSearchQuery] = useState('');
+  const [refreshing, setRefreshing] = useState(false);
   const [showFamilyChat, setShowFamilyChat] = useState(false);
   const [showJustUs, setShowJustUs] = useState(false);
+  const [selectedThreadId, setSelectedThreadId] = useState<string | undefined>(undefined);
+  const [selectedJustUsPartner, setSelectedJustUsPartner] = useState<any>(null);
 
-  const filteredThreads = DEFAULT_THREADS.filter(
-    (t) =>
-      t.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      t.subtitle.toLowerCase().includes(searchQuery.toLowerCase())
+  // Initialize Socket.IO bridge, chat threads, and ensure family data is loaded
+  useEffect(() => {
+    initChatSocketBridge();
+    dispatch(fetchChatThreads());
+    dispatch(getMyFamilyBasicThunk());
+    dispatch(getMyFamilyThunk());
+  }, [dispatch]);
+
+  // Pull to refresh handler
+  const handleRefresh = useCallback(async () => {
+    setRefreshing(true);
+    try {
+      await dispatch(fetchChatThreads()).unwrap().catch(() => {});
+    } finally {
+      setRefreshing(false);
+    }
+  }, [dispatch]);
+
+  // Handle Search submit / debounce
+  useEffect(() => {
+    if (searchQuery.trim().length >= 2) {
+      const timer = setTimeout(() => {
+        dispatch(searchChatMessages({ query: searchQuery.trim() }));
+      }, 350);
+      return () => clearTimeout(timer);
+    }
+  }, [searchQuery, dispatch]);
+
+  // Family details for member count
+  const familyMembersCount = useMemo(() => {
+    const list =
+      familyState?.family?.members ||
+      (familyState as any)?.familyMembers ||
+      [];
+    return list.length > 0 ? `${list.length} members` : 'Family chat';
+  }, [familyState]);
+
+  // Map Redux threads to UI list
+  const threadsList: ChatThreadItem[] = useMemo(() => {
+    const items: ChatThreadItem[] = [];
+
+    // 1. Family Chat
+    const fc = chatState.threads.familyChat;
+    if (fc) {
+      items.push({
+        id: fc.id,
+        kind: 'FAMILY',
+        title: fc.title || 'Family chat',
+        subtitle: formatThreadSubtitle(fc.lastMessage, false),
+        timeText: formatThreadTime(fc.lastMessage?.createdAt || fc.lastReadAt),
+        unreadCount: fc.unreadCount || 0,
+        iconType: 'users',
+        avatarColor: 'rgba(58, 142, 240, 0.2)',
+      });
+    } else {
+      // Default placeholder while first fetch loads
+      items.push({
+        id: 'family',
+        kind: 'FAMILY',
+        title: 'Family chat',
+        subtitle: 'Tap to chat with your family',
+        timeText: '',
+        unreadCount: 0,
+        iconType: 'users',
+        avatarColor: 'rgba(58, 142, 240, 0.2)',
+      });
+    }
+
+    // 2. Just Us (Adults) - Only include actual created Just Us threads
+    const justUsList = chatState.threads.justUs;
+    if (Array.isArray(justUsList) && justUsList.length > 0) {
+      justUsList.forEach((ju) => {
+        const partnerName = ju.partner?.fullName || 'Partner';
+        items.push({
+          id: ju.id,
+          kind: 'JUST_US',
+          title: `Just Us · ${partnerName}`,
+          subtitle: formatThreadSubtitle(ju.lastMessage, true),
+          timeText: formatThreadTime(ju.lastMessage?.createdAt || ju.lastReadAt),
+          unreadCount: ju.unreadCount || 0,
+          isPrivate: true,
+          iconType: 'lock',
+          avatarColor: 'rgba(157, 101, 229, 0.2)',
+          partner: ju.partner,
+        });
+      });
+    }
+
+    return items;
+  }, [chatState.threads]);
+
+  // Filtered threads by search
+  const filteredThreads = useMemo(() => {
+    if (!searchQuery.trim()) return threadsList;
+    const q = searchQuery.toLowerCase().trim();
+    return threadsList.filter(
+      (t) =>
+        t.title.toLowerCase().includes(q) ||
+        t.subtitle.toLowerCase().includes(q)
+    );
+  }, [threadsList, searchQuery]);
+
+  // Open Family Chat modal
+  const handleOpenFamilyChat = useCallback(
+    (threadId?: string) => {
+      const realId = chatState.threads.familyChat?.id;
+      const id = threadId && threadId !== 'family' ? threadId : realId || 'family';
+      setSelectedThreadId(id);
+      if (id !== 'family') {
+        dispatch(setActiveThreadId(id));
+      }
+      setShowFamilyChat(true);
+    },
+    [dispatch, chatState.threads.familyChat]
   );
 
-  const filteredShared = DEFAULT_SHARED_ITEMS.filter(
-    (s) =>
-      s.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      s.subtitle.toLowerCase().includes(searchQuery.toLowerCase())
+  // Auto-reopen Family Chat when returning from a shared item (Task, Event, List)
+  useEffect(() => {
+    if (autoOpenFamilyChat) {
+      handleOpenFamilyChat();
+      onFamilyChatOpened?.();
+    }
+  }, [autoOpenFamilyChat, handleOpenFamilyChat, onFamilyChatOpened]);
+
+  // Open Just Us modal with an existing thread
+  const handleOpenJustUs = useCallback(
+    (threadItem: ChatThreadItem) => {
+      const id = threadItem.id && threadItem.id !== 'just_us' ? threadItem.id : undefined;
+      setSelectedThreadId(id);
+      setSelectedJustUsPartner(threadItem.partner || null);
+      if (id) {
+        dispatch(setActiveThreadId(id));
+      } else {
+        dispatch(setActiveThreadId(null));
+      }
+      setShowJustUs(true);
+    },
+    [dispatch]
   );
+
+  // Open Just Us in creation mode (Partner selector)
+  const handleOpenCreateJustUs = useCallback(() => {
+    setSelectedThreadId(undefined);
+    setSelectedJustUsPartner(null);
+    dispatch(setActiveThreadId(null));
+    setShowJustUs(true);
+  }, [dispatch]);
+
+  // Count how many adult members don't have a Just Us chat yet
+  const remainingAdultsCount = useMemo(() => {
+    const rawList: any[] =
+      familyState?.family?.members ||
+      familyState?.myFamilyData?.family?.members ||
+      (familyState?.basicFamilyData as any)?.members ||
+      (familyState?.basicFamilyData as any)?.family?.members ||
+      [];
+    const myId =
+      familyState?.myMemberId ||
+      (familyState?.basicFamilyData as any)?.myMemberId ||
+      (familyState?.basicFamilyData as any)?.family?.myMemberId;
+
+    const existingPartnerIds = new Set(
+      chatState.threads.justUs
+        .map((t) => t.partner?.memberId || (t as any)?.partnerMemberId || (t as any)?.targetMemberId || (t as any)?.memberId)
+        .filter(Boolean)
+        .map(String)
+    );
+    const existingPartnerNames = new Set(
+      chatState.threads.justUs
+        .map((t) => t.partner?.fullName)
+        .filter(Boolean)
+    );
+
+    const remaining = rawList.filter((m: any) => {
+      if (m.isYou) return false;
+      const mId = String(m.memberId || m.id || m.userId || m._id || '');
+      if (myId && mId === String(myId)) return false;
+      const role = String(m.role || m.familyRole || '').toUpperCase();
+      if (role === 'CHILD' || role === 'DEPENDENT_CHILD_PROFILE') return false;
+      const fullName = m.fullName || m.name;
+      return !existingPartnerIds.has(mId) && !existingPartnerNames.has(fullName);
+    });
+
+    return remaining.length;
+  }, [familyState, chatState.threads.justUs]);
+
+  // Partner name for Just Us note
+  const justUsPartnerName = useMemo(() => {
+    const firstJu = chatState.threads.justUs?.[0];
+    return firstJu?.partner?.fullName || 'your partner';
+  }, [chatState.threads.justUs]);
 
   return (
     <SafeAreaView style={styles.safeArea} edges={['top', 'left', 'right']}>
@@ -107,6 +319,14 @@ export const ChatsScreen: React.FC<ChatsScreenProps> = ({
           { paddingBottom: insets.bottom + 120 },
         ]}
         showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={handleRefresh}
+            tintColor={Colors.primary}
+            colors={[Colors.primary]}
+          />
+        }
       >
         {/* Title */}
         <Text style={styles.screenTitle}>Chats</Text>
@@ -126,75 +346,120 @@ export const ChatsScreen: React.FC<ChatsScreenProps> = ({
             placeholder="Search messages"
             placeholderTextColor="#8A97AB"
           />
+          {searchQuery.length > 0 && (
+            <TouchableOpacity
+              onPress={() => setSearchQuery('')}
+              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+            >
+              <Feather name="x" size={16} color="#8A97AB" />
+            </TouchableOpacity>
+          )}
         </View>
 
         {/* Chat Threads Card Container */}
         <View style={styles.threadsCard}>
-          {filteredThreads.map((thread, index) => {
-            const isJustUs = thread.id === 'just_us';
-            return (
-              <View key={thread.id}>
-                {index > 0 && <View style={styles.divider} />}
-                <TouchableOpacity
-                  style={styles.threadItem}
-                  onPress={() => {
-                    if (isJustUs) {
-                      setShowJustUs(true);
-                    } else {
-                      setShowFamilyChat(true);
-                    }
-                  }}
-                  activeOpacity={0.7}
-                >
-                  {/* Left Avatar Icon */}
-                  <View
-                    style={[
-                      styles.avatarBox,
-                      isJustUs
-                        ? styles.avatarBoxJustUs
-                        : styles.avatarBoxFamily,
-                    ]}
-                  >
-                    <Feather
-                      name={thread.iconType}
-                      size={20}
-                      color={
-                        isJustUs ? Colors.accentPurple : Colors.accentBlue
+          {chatState.threadsLoading && filteredThreads.length === 0 ? (
+            <View style={styles.loadingBox}>
+              <ActivityIndicator size="small" color={Colors.primary} />
+            </View>
+          ) : (
+            filteredThreads.map((thread, index) => {
+              const isJustUs = thread.kind === 'JUST_US' || thread.id === 'just_us';
+              return (
+                <View key={thread.id}>
+                  {index > 0 && <View style={styles.divider} />}
+                  <TouchableOpacity
+                    style={styles.threadItem}
+                    onPress={() => {
+                      if (isJustUs) {
+                        handleOpenJustUs(thread);
+                      } else {
+                        handleOpenFamilyChat(thread.id);
                       }
-                    />
-                  </View>
+                    }}
+                    activeOpacity={0.7}
+                  >
+                    {/* Left Avatar Icon */}
+                    <View
+                      style={[
+                        styles.avatarBox,
+                        isJustUs
+                          ? styles.avatarBoxJustUs
+                          : styles.avatarBoxFamily,
+                      ]}
+                    >
+                      <Feather
+                        name={thread.iconType}
+                        size={20}
+                        color={
+                          isJustUs ? Colors.accentPurple : Colors.accentBlue
+                        }
+                      />
+                    </View>
 
-                  {/* Thread Information */}
-                  <View style={styles.threadTextGroup}>
-                    <View style={styles.threadTitleRow}>
-                      <Text style={styles.threadTitle}>{thread.title}</Text>
-                      {thread.isPrivate && (
-                        <View style={styles.privatePill}>
-                          <Text style={styles.privatePillText}>Private</Text>
+                    {/* Thread Information */}
+                    <View style={styles.threadTextGroup}>
+                      <View style={styles.threadTitleRow}>
+                        <Text style={styles.threadTitle}>{thread.title}</Text>
+                        {thread.isPrivate && (
+                          <View style={styles.privatePill}>
+                            <Text style={styles.privatePillText}>Private</Text>
+                          </View>
+                        )}
+                      </View>
+                      <Text style={styles.threadSubtitle} numberOfLines={1}>
+                        {thread.subtitle}
+                      </Text>
+                    </View>
+
+                    {/* Right Meta Column */}
+                    <View style={styles.threadMetaGroup}>
+                      <Text style={styles.threadTimeText}>{thread.timeText}</Text>
+                      {thread.unreadCount > 0 && (
+                        <View style={styles.unreadBadge}>
+                          <Text style={styles.unreadBadgeText}>
+                            {thread.unreadCount}
+                          </Text>
                         </View>
                       )}
                     </View>
-                    <Text style={styles.threadSubtitle} numberOfLines={1}>
-                      {thread.subtitle}
-                    </Text>
-                  </View>
-
-                  {/* Right Meta Column */}
-                  <View style={styles.threadMetaGroup}>
-                    <Text style={styles.threadTimeText}>{thread.timeText}</Text>
-                    {thread.unreadCount > 0 && (
-                      <View style={styles.unreadBadge}>
-                        <Text style={styles.unreadBadgeText}>
-                          {thread.unreadCount}
-                        </Text>
-                      </View>
-                    )}
-                  </View>
-                </TouchableOpacity>
-              </View>
-            );
-          })}
+                  </TouchableOpacity>
+                </View>
+              );
+            })
+          )}
         </View>
+
+        {/* Just Us Section - If no Just Us threads created yet, show Create Just Us card/button */}
+        {chatState.threads.justUs.length === 0 ? (
+          <TouchableOpacity
+            style={styles.createJustUsCard}
+            onPress={handleOpenCreateJustUs}
+            activeOpacity={0.75}
+          >
+            <View style={styles.createJustUsIconBox}>
+              <Feather name="lock" size={20} color={Colors.accentPurple} />
+            </View>
+            <View style={styles.createJustUsTextBox}>
+              <Text style={styles.createJustUsTitle}>Create Just Us Chat</Text>
+              <Text style={styles.createJustUsSubtitle}>
+                Start a private 1-to-1 encrypted chat with an adult member
+              </Text>
+            </View>
+            <View style={styles.createJustUsActionBtn}>
+              <Feather name="plus" size={18} color={Colors.white} />
+            </View>
+          </TouchableOpacity>
+        ) : (
+          <TouchableOpacity
+            style={styles.addAnotherJustUsBtn}
+            onPress={handleOpenCreateJustUs}
+            activeOpacity={0.7}
+          >
+            <Feather name="plus" size={16} color={Colors.accentPurple} />
+            <Text style={styles.addAnotherJustUsText}>Start another Just Us chat</Text>
+          </TouchableOpacity>
+        )}
 
         {/* Privacy Note */}
         <View style={styles.privacyNoteRow}>
@@ -205,73 +470,41 @@ export const ChatsScreen: React.FC<ChatsScreenProps> = ({
             style={styles.privacyLockIcon}
           />
           <Text style={styles.privacyNoteText}>
-            Just Us is only for you and Rohan. Children can’t see it, and it never
-            shows in Pulse.
+            Just Us is only for you and {justUsPartnerName}. Children can’t see it,
+            and it never shows in Pulse.
           </Text>
-        </View>
-
-        {/* Section Header: Shared in Family chat */}
-        <View style={styles.sectionHeaderRow}>
-          <Text style={styles.sectionTitle}>Shared in Family chat</Text>
-          <TouchableOpacity activeOpacity={0.7}>
-            <Text style={styles.seeAllText}>See all</Text>
-          </TouchableOpacity>
-        </View>
-
-        {/* Shared Items Card */}
-        <View style={styles.sharedItemsCard}>
-          {filteredShared.map((item, index) => (
-            <View key={item.id}>
-              {index > 0 && <View style={styles.divider} />}
-              <TouchableOpacity
-                style={styles.sharedItemRow}
-                onPress={() => setShowFamilyChat(true)}
-                activeOpacity={0.7}
-              >
-                {/* Icon */}
-                <View
-                  style={[
-                    styles.sharedIconBox,
-                    { backgroundColor: item.iconBgColor },
-                  ]}
-                >
-                  <Feather
-                    name={item.iconName as any}
-                    size={20}
-                    color={item.iconColor}
-                  />
-                </View>
-
-                {/* Text details */}
-                <View style={styles.sharedTextGroup}>
-                  <Text style={styles.sharedItemTitle}>{item.title}</Text>
-                  <Text style={styles.sharedItemSubtitle}>{item.subtitle}</Text>
-                </View>
-
-                <Feather
-                  name="chevron-right"
-                  size={18}
-                  color={Colors.textSecondary}
-                />
-              </TouchableOpacity>
-            </View>
-          ))}
         </View>
       </ScrollView>
 
       {/* Family Chat Modal (CHT-02, CHT-04, CHT-08, CHT-09) */}
       <ChatConversationModal
         visible={showFamilyChat}
-        onClose={() => setShowFamilyChat(false)}
+        onClose={() => {
+          setShowFamilyChat(false);
+          dispatch(setActiveThreadId(null));
+        }}
+        threadId={selectedThreadId}
         title="Family chat"
-        memberCountText="5 members"
+        memberCountText={familyMembersCount}
         onOpenVault={onOpenVault}
+        onNavigateToItem={(type, itemId, meta) => {
+          setShowFamilyChat(false);
+          dispatch(setActiveThreadId(null));
+          onNavigateToItem?.(type, itemId, meta);
+        }}
       />
 
       {/* Just Us Modal (CHT-10, CHT-11) */}
       <JustUsModal
         visible={showJustUs}
-        onClose={() => setShowJustUs(false)}
+        onClose={() => {
+          setShowJustUs(false);
+          dispatch(setActiveThreadId(null));
+          setSelectedThreadId(undefined);
+          setSelectedJustUsPartner(null);
+        }}
+        threadId={selectedThreadId}
+        partner={selectedJustUsPartner}
         isAvailable={true}
       />
     </SafeAreaView>
@@ -300,178 +533,189 @@ const styles = StyleSheet.create({
   searchBar: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: Colors.cardBackground,
-    borderRadius: 26,
-    paddingHorizontal: 18,
-    height: 52,
-    borderWidth: 1.5,
-    borderColor: Colors.border,
-    marginBottom: 20,
+    backgroundColor: '#1E293B',
+    borderRadius: 12,
+    paddingHorizontal: 14,
+    height: 44,
+    marginBottom: 24,
   },
   searchIcon: {
-    marginRight: 12,
+    marginRight: 10,
   },
   searchInput: {
     flex: 1,
     color: Colors.white,
     fontSize: 15,
+    fontFamily: 'Roboto-Regular',
     padding: 0,
   },
   threadsCard: {
-    backgroundColor: Colors.cardBackground,
-    borderRadius: 24,
-    borderWidth: 1.5,
-    borderColor: Colors.border,
+    backgroundColor: '#131F33',
+    borderRadius: 16,
     overflow: 'hidden',
-    marginBottom: 14,
+  },
+  loadingBox: {
+    paddingVertical: 24,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   threadItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 18,
-    paddingHorizontal: 16,
+    padding: 16,
   },
   avatarBox: {
-    width: 52,
-    height: 52,
-    borderRadius: 26,
+    width: 48,
+    height: 48,
+    borderRadius: 24,
     alignItems: 'center',
     justifyContent: 'center',
     marginRight: 14,
-    borderWidth: 2,
-    backgroundColor: 'transparent',
   },
   avatarBoxFamily: {
-    borderColor: '#3A8EF0',
+    backgroundColor: 'rgba(58, 142, 240, 0.15)',
   },
   avatarBoxJustUs: {
-    borderColor: '#9D65E5',
+    backgroundColor: 'rgba(157, 101, 229, 0.15)',
   },
   threadTextGroup: {
     flex: 1,
-    marginRight: 8,
+    justifyContent: 'center',
   },
   threadTitleRow: {
     flexDirection: 'row',
     alignItems: 'center',
     marginBottom: 4,
+    gap: 8,
   },
   threadTitle: {
     fontSize: 16,
-    fontFamily: 'Roboto-Bold',
+    fontFamily: 'Roboto-Medium',
     color: Colors.white,
-    marginRight: 8,
   },
   privatePill: {
-    paddingHorizontal: 10,
+    backgroundColor: 'rgba(157, 101, 229, 0.2)',
+    paddingHorizontal: 6,
     paddingVertical: 2,
-    borderRadius: 12,
-    borderWidth: 1.5,
-    borderColor: '#9D65E5',
-    backgroundColor: 'transparent',
+    borderRadius: 6,
   },
   privatePillText: {
-    color: '#A884F0',
-    fontSize: 12,
-    fontFamily: 'Roboto-SemiBold',
+    fontSize: 11,
+    fontFamily: 'Roboto-Medium',
+    color: Colors.accentPurple,
   },
   threadSubtitle: {
-    fontSize: 13,
-    color: '#CAD4DF',
-    marginTop: 2,
+    fontSize: 14,
+    fontFamily: 'Roboto-Regular',
+    color: Colors.textSecondary,
   },
   threadMetaGroup: {
     alignItems: 'flex-end',
-    justifyContent: 'center',
+    marginLeft: 12,
   },
   threadTimeText: {
     fontSize: 12,
+    fontFamily: 'Roboto-Regular',
     color: '#8A97AB',
     marginBottom: 6,
-    fontFamily: 'Roboto-Medium',
   },
   unreadBadge: {
-    width: 22,
-    height: 22,
-    borderRadius: 11,
-    backgroundColor: '#F0913A',
+    backgroundColor: Colors.primary,
+    minWidth: 20,
+    height: 20,
+    borderRadius: 10,
     alignItems: 'center',
     justifyContent: 'center',
+    paddingHorizontal: 6,
   },
   unreadBadgeText: {
-    color: '#0B1A2F',
-    fontSize: 12,
-    fontFamily: 'Roboto-Bold',
-  },
-  divider: {
-    height: 1,
-    backgroundColor: '#192A44',
-  },
-  privacyNoteRow: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    paddingHorizontal: 4,
-    marginBottom: 28,
-  },
-  privacyLockIcon: {
-    marginRight: 8,
-    marginTop: 2,
-  },
-  privacyNoteText: {
-    flex: 1,
-    fontSize: 12,
-    color: '#8A97AB',
-    lineHeight: 18,
-  },
-  sectionHeaderRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: 12,
-  },
-  sectionTitle: {
-    fontSize: 18,
+    fontSize: 11,
     fontFamily: 'Roboto-Bold',
     color: Colors.white,
   },
-  seeAllText: {
-    color: Colors.primary,
-    fontSize: 14,
-    fontFamily: 'Roboto-SemiBold',
+  divider: {
+    height: 1,
+    backgroundColor: 'rgba(255, 255, 255, 0.06)',
+    marginLeft: 78,
   },
-  sharedItemsCard: {
-    backgroundColor: Colors.cardBackground,
-    borderRadius: 20,
-    borderWidth: 1,
-    borderColor: Colors.border,
-    overflow: 'hidden',
-  },
-  sharedItemRow: {
+  createJustUsCard: {
     flexDirection: 'row',
     alignItems: 'center',
+    backgroundColor: '#131F33',
+    borderRadius: 20,
     padding: 16,
+    marginTop: 14,
+    borderWidth: 1.5,
+    borderColor: 'rgba(157, 101, 229, 0.35)',
   },
-  sharedIconBox: {
+  createJustUsIconBox: {
     width: 44,
     height: 44,
-    borderRadius: 14,
+    borderRadius: 22,
+    backgroundColor: 'rgba(157, 101, 229, 0.15)',
     alignItems: 'center',
     justifyContent: 'center',
     marginRight: 14,
   },
-  sharedTextGroup: {
+  createJustUsTextBox: {
     flex: 1,
-    marginRight: 8,
   },
-  sharedItemTitle: {
-    fontSize: 15,
+  createJustUsTitle: {
+    fontSize: 16,
     fontFamily: 'Roboto-Bold',
     color: Colors.white,
-    marginBottom: 2,
+    marginBottom: 3,
   },
-  sharedItemSubtitle: {
+  createJustUsSubtitle: {
     fontSize: 12,
-    color: Colors.textSecondary,
+    fontFamily: 'Roboto-Regular',
+    color: '#8A97AB',
+    lineHeight: 16,
+  },
+  createJustUsActionBtn: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: Colors.accentPurple,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginLeft: 10,
+  },
+  addAnotherJustUsBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    marginTop: 12,
+    backgroundColor: 'rgba(157, 101, 229, 0.08)',
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: 'rgba(157, 101, 229, 0.25)',
+    gap: 8,
+  },
+  addAnotherJustUsText: {
+    fontSize: 13,
+    fontFamily: 'Roboto-Medium',
+    color: Colors.accentPurple,
+  },
+  privacyNoteRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    marginTop: 14,
+    marginBottom: 28,
+    paddingHorizontal: 4,
+  },
+  privacyLockIcon: {
+    marginTop: 2,
+    marginRight: 8,
+  },
+  privacyNoteText: {
+    flex: 1,
+    fontSize: 12,
+    fontFamily: 'Roboto-Regular',
+    color: '#8A97AB',
+    lineHeight: 18,
   },
 });
 
