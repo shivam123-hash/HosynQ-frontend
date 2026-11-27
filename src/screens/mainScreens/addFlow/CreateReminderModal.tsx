@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import {
   View,
   Text,
@@ -9,125 +9,376 @@ import {
   ScrollView,
   KeyboardAvoidingView,
   Platform,
+  ActivityIndicator,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Feather from '@react-native-vector-icons/feather';
 import Colors from '../../../units/Colors';
+import { useAppDispatch, useAppSelector } from '../../../redux';
+import { getMyFamilyBasicThunk } from '../../../redux/features/family/familySlice';
+import {
+  createReminderThunk,
+  updateReminderThunk,
+} from '../../../redux/features/reminders/remindersSlice';
+import { isUUID } from '../../../redux/features/lists/listsSlice';
+import {
+  ReminderApi,
+  UpdateReminderPayload,
+} from '../../../services/remindersServices';
+import DueDateTimeModal from '../tasksScreen/components/DueDateTimeModal';
+import ReminderDialog, {
+  INITIAL_REMINDER_DIALOG_STATE,
+  ReminderDialogState,
+} from './ReminderDialog';
+import {
+  REMINDER_REPEAT_OPTIONS,
+  REMINDER_WEEKDAYS,
+  convertWhenChipToIstSchedule,
+  extractReminderMembersFromFamilyState,
+  format24HourTo12Hour,
+  formatReminderRecipients,
+  formatReminderScheduleLabel,
+  getIstDateParts,
+  isJestTestEnv,
+  mapApiRepeatToUi,
+  mapUiRepeatToApi,
+} from './reminderApiHelpers';
 import { ReminderItem } from './types';
 
 export interface CreateReminderModalProps {
   visible: boolean;
+  asModal?: boolean;
   onClose: () => void;
-  onSaveReminder: (reminder: ReminderItem) => void;
+  onSaveReminder?: (reminder: ReminderItem) => void;
+  onApiSaved?: (reminder: ReminderApi, isEdit: boolean) => void;
   onConvertToTask?: () => void;
+  reminderToEdit?: ReminderApi | null;
 }
 
-interface FamilyMemberOption {
-  id: string;
-  name: string;
-  displayName: string;
-  initial: string;
-  color: string;
-  textColor: string;
-}
-
-const FAMILY_MEMBERS: FamilyMemberOption[] = [
-  {
-    id: 'm1',
-    name: 'You',
-    displayName: 'Priya (you)',
-    initial: 'P',
-    color: Colors.avatarBrown,
-    textColor: Colors.amberLight,
-  },
-  {
-    id: 'm2',
-    name: 'Rohan',
-    displayName: 'Rohan',
-    initial: 'R',
-    color: Colors.avatarNavy,
-    textColor: Colors.accentBlueSoft,
-  },
-  {
-    id: 'm3',
-    name: 'Anaya',
-    displayName: 'Anaya',
-    initial: 'A',
-    color: Colors.avatarWine,
-    textColor: Colors.accentPink,
-  },
-  {
-    id: 'm4',
-    name: 'Aarav',
-    displayName: 'Aarav',
-    initial: 'Aa',
-    color: Colors.avatarOlive,
-    textColor: Colors.accentYellow,
-  },
-  {
-    id: 'm5',
-    name: 'Dadi',
-    displayName: 'Dadi',
-    initial: 'D',
-    color: Colors.avatarGreen,
-    textColor: Colors.accentGreenSoft,
-  },
-];
-
-const REPEAT_OPTIONS = [
-  'Doesn’t repeat',
-  'Daily',
-  'Every week',
-  'Every month',
-  'Every year',
-];
+const WHEN_CHIPS = [
+  'In 1 hour',
+  'This evening, 7:00 PM',
+  'Tomorrow, 9:00 AM',
+  'Pick a time',
+] as const;
 
 export const CreateReminderModal: React.FC<CreateReminderModalProps> = ({
   visible,
+  asModal = true,
   onClose,
   onSaveReminder,
+  onApiSaved,
   onConvertToTask,
+  reminderToEdit,
 }) => {
   const insets = useSafeAreaInsets();
-  const [title, setTitle] = useState('Call the plumber about the kitchen tap');
+  const dispatch = useAppDispatch();
+  const familyState = useAppSelector((state) => state.family);
+  const remindersState = useAppSelector((state) => state.reminders);
+  const isTestEnv = isJestTestEnv();
+
+  const { members, myMemberId, isChild } = useMemo(
+    () => extractReminderMembersFromFamilyState(familyState),
+    [familyState]
+  );
+
+  const isEditing = Boolean(reminderToEdit?.id);
+
+  const [title, setTitle] = useState('');
   const [reminderType, setReminderType] = useState<'time' | 'place'>('time');
-  const [selectedWhen, setSelectedWhen] = useState('This evening, 7:00 PM');
-  const [assignee, setAssignee] = useState('You');
+  const [selectedWhen, setSelectedWhen] = useState<string>('This evening, 7:00 PM');
+  const [customIsoDate, setCustomIsoDate] = useState<string>('');
+  const [customTimeStr, setCustomTimeStr] = useState<string>('7:00 PM');
+  const [selectedMemberIds, setSelectedMemberIds] = useState<string[]>([]);
   const [repeat, setRepeat] = useState('Doesn’t repeat');
+  const [repeatDays, setRepeatDays] = useState<string[]>(['MON', 'TUE', 'WED', 'THU', 'FRI']);
+  const [repeatEndsOn, setRepeatEndsOn] = useState<string>('');
   const [showAssigneeModal, setShowAssigneeModal] = useState(false);
   const [showRepeatModal, setShowRepeatModal] = useState(false);
+  const [datePickerTarget, setDatePickerTarget] = useState<
+    'schedule' | 'repeatEnd' | null
+  >(null);
+  const [dialog, setDialog] = useState<ReminderDialogState>(
+    INITIAL_REMINDER_DIALOG_STATE
+  );
 
-  const currentMember =
-    FAMILY_MEMBERS.find((m) => m.name === assignee) || FAMILY_MEMBERS[0];
+  useEffect(() => {
+    if (!visible) return;
+    if ((members.length === 0 || !familyState?.basicFamilyData) && !isTestEnv) {
+      dispatch(getMyFamilyBasicThunk());
+    }
 
-  const whenChips = [
-    'In 1 hour',
-    'This evening, 7:00 PM',
-    'Tomorrow, 9:00 AM',
-    'Pick a time',
-  ];
+    if (reminderToEdit) {
+      setTitle(reminderToEdit.text || '');
+      setReminderType('time');
+      setSelectedWhen('Pick a time');
+      setCustomIsoDate(
+        reminderToEdit.remindOn
+          ? String(reminderToEdit.remindOn).slice(0, 10)
+          : getIstDateParts().isoDate
+      );
+      setCustomTimeStr(
+        reminderToEdit.remindTime
+          ? format24HourTo12Hour(reminderToEdit.remindTime)
+          : '7:00 PM'
+      );
+      const editMemberIds = (reminderToEdit.members || [])
+        .map((m) => m.memberId)
+        .filter((id) => isUUID(id));
+      setSelectedMemberIds(
+        editMemberIds.length > 0
+          ? editMemberIds
+          : isUUID(myMemberId)
+          ? [myMemberId]
+          : []
+      );
+      setRepeat(mapApiRepeatToUi(reminderToEdit.repeat));
+      setRepeatDays(
+        reminderToEdit.repeatDays && reminderToEdit.repeatDays.length > 0
+          ? reminderToEdit.repeatDays
+          : ['MON', 'TUE', 'WED', 'THU', 'FRI']
+      );
+      setRepeatEndsOn(
+        reminderToEdit.repeatEndsOn
+          ? String(reminderToEdit.repeatEndsOn).slice(0, 10)
+          : ''
+      );
+    } else {
+      setTitle('');
+      setReminderType('time');
+      setSelectedWhen('This evening, 7:00 PM');
+      setCustomIsoDate(getIstDateParts().isoDate);
+      setCustomTimeStr('7:00 PM');
+      const fallbackSelf =
+        (isUUID(myMemberId) ? myMemberId : '') ||
+        members.find((m) => m.isYou && isUUID(m.id))?.id ||
+        members.find((m) => isUUID(m.id))?.id ||
+        '';
+      setSelectedMemberIds(fallbackSelf ? [fallbackSelf] : []);
+      setRepeat('Doesn’t repeat');
+      setRepeatDays(['MON', 'TUE', 'WED', 'THU', 'FRI']);
+      setRepeatEndsOn('');
+    }
+    setShowAssigneeModal(false);
+    setShowRepeatModal(false);
+    setDatePickerTarget(null);
+  }, [visible, reminderToEdit, members.length, myMemberId, dispatch, isTestEnv]);
 
-  const handleSetReminder = () => {
-    const newReminder: ReminderItem = {
-      id: `rem-${Date.now()}`,
-      title: title.trim() || 'Reminder',
-      type: reminderType,
-      whenText: selectedWhen,
-      assignee,
-      repeat,
-    };
-    onSaveReminder(newReminder);
-    onClose();
+  const schedulePreview = useMemo(
+    () => convertWhenChipToIstSchedule(selectedWhen, customIsoDate, customTimeStr),
+    [selectedWhen, customIsoDate, customTimeStr]
+  );
+
+  const selectedMembersList = useMemo(() => {
+    if (members.length === 0) return [];
+    const selectedSet = new Set(selectedMemberIds);
+    const matched = members.filter((m) => selectedSet.has(m.id));
+    if (matched.length > 0) return matched;
+    const self = members.find((m) => m.isYou) || members[0];
+    return self ? [self] : [];
+  }, [members, selectedMemberIds]);
+
+  const primaryMember = selectedMembersList[0];
+
+  const assigneeDisplayText = useMemo(() => {
+    if (selectedMembersList.length === 0) return 'You';
+    if (selectedMembersList.length === 1) return selectedMembersList[0].name;
+    if (selectedMembersList.length === 2) {
+      return `${selectedMembersList[0].firstName} & ${selectedMembersList[1].firstName}`;
+    }
+    return `${selectedMembersList[0].firstName} +${selectedMembersList.length - 1}`;
+  }, [selectedMembersList]);
+
+  const toggleMember = (id: string) => {
+    if (isChild) {
+      setSelectedMemberIds([id]);
+      setShowAssigneeModal(false);
+      return;
+    }
+    setSelectedMemberIds((prev) => {
+      if (prev.includes(id)) {
+        return prev.length > 1 ? prev.filter((x) => x !== id) : prev;
+      }
+      if (prev.length >= 30) return prev;
+      return [...prev, id];
+    });
   };
 
-  return (
-    <Modal
-      visible={visible}
-      animationType="slide"
-      transparent={false}
-      onRequestClose={onClose}
-    >
-      <View style={[styles.container, { paddingTop: insets.top }]}>
+  const toggleWeekday = (day: string) => {
+    setRepeatDays((prev) =>
+      prev.includes(day) ? prev.filter((d) => d !== day) : [...prev, day]
+    );
+  };
+
+  const handleSelectWhenChip = (chipText: string) => {
+    setSelectedWhen(chipText);
+    if (chipText === 'Pick a time') {
+      setDatePickerTarget('schedule');
+    }
+  };
+
+  const handleSetReminder = async () => {
+    const cleanText = title.trim();
+    if (!cleanText) {
+      setDialog({
+        visible: true,
+        type: 'warning',
+        iconName: 'bell',
+        title: 'Reminder text required',
+        description: 'Enter what you want to be reminded about.',
+        primaryButtonText: 'OK',
+      });
+      return;
+    }
+
+    if (cleanText.length > 120) {
+      setDialog({
+        visible: true,
+        type: 'warning',
+        iconName: 'alert-circle',
+        title: 'Reminder too long',
+        description: 'Please keep the reminder under 120 characters.',
+        primaryButtonText: 'OK',
+      });
+      return;
+    }
+
+    const validAppMemberSet = new Set(
+      members.map((m) => m.id).filter((id) => isUUID(id))
+    );
+    const validMemberIds = selectedMemberIds.filter((id) =>
+      validAppMemberSet.has(id)
+    );
+    const { remindOn, remindTime } = schedulePreview;
+    const repeatApi = mapUiRepeatToApi(repeat);
+
+    if (repeatApi === 'CUSTOM') {
+      if (repeatDays.length === 0) {
+        setDialog({
+          visible: true,
+          type: 'warning',
+          iconName: 'repeat',
+          title: 'Select repeat days',
+          description: 'Pick at least one day for a custom repeating reminder.',
+          primaryButtonText: 'OK',
+        });
+        return;
+      }
+      if (repeatEndsOn && repeatEndsOn < remindOn) {
+        setDialog({
+          visible: true,
+          type: 'warning',
+          iconName: 'calendar',
+          title: 'Invalid end date',
+          description: 'Repeat end date cannot be before the reminder date.',
+          primaryButtonText: 'OK',
+        });
+        return;
+      }
+    }
+
+    try {
+      if (isEditing && reminderToEdit) {
+        const updatePayload: UpdateReminderPayload = {
+          text: cleanText,
+          remindOn,
+          remindTime,
+          ...(validMemberIds.length > 0 ? { memberIds: validMemberIds } : {}),
+        };
+        if (repeatApi) {
+          updatePayload.repeat = repeatApi;
+        } else if (reminderToEdit.repeat) {
+          updatePayload.repeat = null;
+        }
+        if (repeatApi === 'CUSTOM') {
+          updatePayload.repeatDays = repeatDays;
+          if (repeatEndsOn) {
+            updatePayload.repeatEndsOn = repeatEndsOn;
+          } else if (reminderToEdit.repeatEndsOn) {
+            updatePayload.repeatEndsOn = null;
+          }
+        } else if (reminderToEdit.repeatEndsOn) {
+          updatePayload.repeatEndsOn = null;
+        }
+
+        const updated = await dispatch(
+          updateReminderThunk({
+            id: reminderToEdit.id,
+            payload: updatePayload,
+          })
+        ).unwrap();
+
+        onApiSaved?.(updated, true);
+        onSaveReminder?.({
+          id: updated.id,
+          title: updated.text,
+          type: reminderType,
+          whenText: formatReminderScheduleLabel(
+            updated.remindOn,
+            updated.remindTime
+          ),
+          assignee: formatReminderRecipients(updated),
+          repeat,
+        });
+        onClose();
+        return;
+      }
+
+      const created = await dispatch(
+        createReminderThunk({
+          text: cleanText,
+          remindOn,
+          remindTime,
+          ...(validMemberIds.length > 0 ? { memberIds: validMemberIds } : {}),
+          ...(repeatApi ? { repeat: repeatApi } : {}),
+          ...(repeatApi === 'CUSTOM'
+            ? {
+                repeatDays,
+                ...(repeatEndsOn ? { repeatEndsOn } : {}),
+              }
+            : {}),
+        })
+      ).unwrap();
+
+      onApiSaved?.(created, false);
+      onSaveReminder?.({
+        id: created.id,
+        title: created.text,
+        type: reminderType,
+        whenText: formatReminderScheduleLabel(
+          created.remindOn,
+          created.remindTime
+        ),
+        assignee: formatReminderRecipients(created),
+        repeat,
+      });
+      onClose();
+    } catch (err: any) {
+      setDialog({
+        visible: true,
+        type: 'danger',
+        iconName: 'alert-circle',
+        title: isEditing ? 'Could not update reminder' : 'Could not set reminder',
+        description: String(err || 'Please check the schedule and try again.'),
+        primaryButtonText: 'OK',
+      });
+    }
+  };
+
+  const repeatApiValue = mapUiRepeatToApi(repeat);
+
+  if (!asModal && !visible) {
+    return null;
+  }
+
+  const content = (
+      <View
+        style={[
+          styles.container,
+          !asModal && styles.inlineOverlay,
+          { paddingTop: insets.top },
+        ]}
+      >
         <KeyboardAvoidingView
           behavior={Platform.OS === 'ios' ? 'padding' : undefined}
           style={styles.flex}
@@ -144,7 +395,9 @@ export const CreateReminderModal: React.FC<CreateReminderModalProps> = ({
               <Feather name="x" size={20} color={Colors.white} />
             </TouchableOpacity>
             <View style={styles.headerTitleContainer} pointerEvents="none">
-              <Text style={styles.headerTitle}>New reminder</Text>
+              <Text style={styles.headerTitle}>
+                {isEditing ? 'Edit reminder' : 'New reminder'}
+              </Text>
             </View>
           </View>
 
@@ -152,6 +405,7 @@ export const CreateReminderModal: React.FC<CreateReminderModalProps> = ({
             style={styles.scrollView}
             contentContainerStyle={styles.scrollContent}
             showsVerticalScrollIndicator={false}
+            keyboardShouldPersistTaps="handled"
           >
             {/* Remind me to... Input */}
             <Text style={styles.inputLabel}>Remind me to...</Text>
@@ -162,6 +416,7 @@ export const CreateReminderModal: React.FC<CreateReminderModalProps> = ({
                 placeholder="What do you want to be reminded about?"
                 placeholderTextColor={Colors.textPlaceholder}
                 style={styles.textInput}
+                maxLength={120}
                 multiline
               />
             </View>
@@ -181,7 +436,11 @@ export const CreateReminderModal: React.FC<CreateReminderModalProps> = ({
                 <Feather
                   name="clock"
                   size={16}
-                  color={reminderType === 'time' ? Colors.cardInsetDark : Colors.textSubtle}
+                  color={
+                    reminderType === 'time'
+                      ? Colors.cardInsetDark
+                      : Colors.textSubtle
+                  }
                   style={styles.segmentIcon}
                 />
                 <Text
@@ -207,7 +466,11 @@ export const CreateReminderModal: React.FC<CreateReminderModalProps> = ({
                 <Feather
                   name="map-pin"
                   size={16}
-                  color={reminderType === 'place' ? Colors.cardInsetDark : Colors.textSubtle}
+                  color={
+                    reminderType === 'place'
+                      ? Colors.cardInsetDark
+                      : Colors.textSubtle
+                  }
                   style={styles.segmentIcon}
                 />
                 <Text
@@ -221,15 +484,30 @@ export const CreateReminderModal: React.FC<CreateReminderModalProps> = ({
               </TouchableOpacity>
             </View>
 
+            {reminderType === 'place' && (
+              <Text style={styles.rolledNote}>
+                Place nudges live in Compass — pick a schedule below so this reminder still alerts on time.
+              </Text>
+            )}
+
             {/* WHEN Section */}
-            <Text style={styles.sectionHeading}>WHEN</Text>
+            <View style={styles.whenHeaderRow}>
+              <Text style={styles.sectionHeading}>WHEN (IST)</Text>
+              <Text style={styles.whenPreviewText}>
+                {formatReminderScheduleLabel(
+                  schedulePreview.remindOn,
+                  schedulePreview.remindTime
+                )}
+              </Text>
+            </View>
+
             <View style={styles.chipsContainer}>
-              {whenChips.map((chipText) => {
+              {WHEN_CHIPS.map((chipText) => {
                 const isSelected = selectedWhen === chipText;
                 return (
                   <TouchableOpacity
                     key={chipText}
-                    onPress={() => setSelectedWhen(chipText)}
+                    onPress={() => handleSelectWhenChip(chipText)}
                     activeOpacity={0.7}
                     style={[
                       styles.chip,
@@ -246,12 +524,23 @@ export const CreateReminderModal: React.FC<CreateReminderModalProps> = ({
                           : styles.chipTextUnselected,
                       ]}
                     >
-                      {chipText}
+                      {chipText === 'Pick a time' && isSelected
+                        ? formatReminderScheduleLabel(
+                            schedulePreview.remindOn,
+                            schedulePreview.remindTime
+                          )
+                        : chipText}
                     </Text>
                   </TouchableOpacity>
                 );
               })}
             </View>
+
+            {schedulePreview.rolledToTomorrow && (
+              <Text style={styles.rolledNote}>
+                7:00 PM today has passed in IST — scheduled for tomorrow at 7:00 PM.
+              </Text>
+            )}
 
             {/* Remind & Repeat Card Container */}
             <View style={styles.cardContainer}>
@@ -261,7 +550,7 @@ export const CreateReminderModal: React.FC<CreateReminderModalProps> = ({
                 activeOpacity={0.7}
                 style={styles.rowItem}
                 accessibilityRole="button"
-                accessibilityLabel={`Remind ${assignee}`}
+                accessibilityLabel={`Remind ${assigneeDisplayText}`}
               >
                 <View style={styles.rowLeft}>
                   <Feather name="user" size={18} color={Colors.textSubtle} />
@@ -271,23 +560,33 @@ export const CreateReminderModal: React.FC<CreateReminderModalProps> = ({
                       <View
                         style={[
                           styles.avatarCircle,
-                          { backgroundColor: currentMember.color },
+                          {
+                            backgroundColor:
+                              primaryMember?.color || Colors.avatarBrown,
+                          },
                         ]}
                       >
                         <Text
                           style={[
                             styles.avatarText,
-                            { color: currentMember.textColor },
+                            {
+                              color:
+                                primaryMember?.textColor || Colors.amberLight,
+                            },
                           ]}
                         >
-                          {currentMember.initial}
+                          {primaryMember?.initial || 'Y'}
                         </Text>
                       </View>
-                      <Text style={styles.rowValue}>{assignee}</Text>
+                      <Text style={styles.rowValue}>{assigneeDisplayText}</Text>
                     </View>
                   </View>
                 </View>
-                <Feather name="chevron-right" size={18} color={Colors.textMutedSoft} />
+                <Feather
+                  name="chevron-right"
+                  size={18}
+                  color={Colors.textMutedSoft}
+                />
               </TouchableOpacity>
 
               <View style={styles.rowDivider} />
@@ -307,31 +606,85 @@ export const CreateReminderModal: React.FC<CreateReminderModalProps> = ({
                     <Text style={styles.rowValue}>{repeat}</Text>
                   </View>
                 </View>
-                <Feather name="chevron-right" size={18} color={Colors.textMutedSoft} />
+                <Feather
+                  name="chevron-right"
+                  size={18}
+                  color={Colors.textMutedSoft}
+                />
               </TouchableOpacity>
             </View>
 
-            {/* Hint Box (Nudge to task) */}
-            <View style={styles.hintBox}>
-              <Feather
-                name="bell"
-                size={16}
-                color={Colors.textSubtle}
-                style={styles.hintIcon}
-              />
-              <Text style={styles.hintText}>
-                A reminder is just a nudge. If someone needs to get it done,{' '}
-                <Text
-                  onPress={() => {
-                    onClose();
-                    onConvertToTask?.();
-                  }}
-                  style={styles.hintLink}
+            {repeatApiValue === 'CUSTOM' && (
+              <View style={styles.customRepeatBox}>
+                <Text style={styles.customLabel}>REPEAT ON DAYS</Text>
+                <View style={styles.weekdaysRow}>
+                  {REMINDER_WEEKDAYS.map((day) => {
+                    const active = repeatDays.includes(day);
+                    return (
+                      <TouchableOpacity
+                        key={day}
+                        style={[
+                          styles.weekdayChip,
+                          active && styles.weekdayChipActive,
+                        ]}
+                        onPress={() => toggleWeekday(day)}
+                      >
+                        <Text
+                          style={[
+                            styles.weekdayText,
+                            active && styles.weekdayTextActive,
+                          ]}
+                        >
+                          {day.slice(0, 3)}
+                        </Text>
+                      </TouchableOpacity>
+                    );
+                  })}
+                </View>
+
+                <TouchableOpacity
+                  style={styles.repeatEndRow}
+                  onPress={() => setDatePickerTarget('repeatEnd')}
                 >
-                  make it a task instead.
+                  <Text style={styles.repeatEndLabel}>
+                    {repeatEndsOn
+                      ? `Ends on ${repeatEndsOn}`
+                      : 'Optional: Pick end date'}
+                  </Text>
+                  {repeatEndsOn ? (
+                    <TouchableOpacity onPress={() => setRepeatEndsOn('')}>
+                      <Text style={styles.clearEndText}>Clear</Text>
+                    </TouchableOpacity>
+                  ) : (
+                    <Feather name="calendar" size={16} color={Colors.primary} />
+                  )}
+                </TouchableOpacity>
+              </View>
+            )}
+
+            {/* Hint Box (Nudge to task) */}
+            {!isEditing && (
+              <View style={styles.hintBox}>
+                <Feather
+                  name="bell"
+                  size={16}
+                  color={Colors.textSubtle}
+                  style={styles.hintIcon}
+                />
+                <Text style={styles.hintText}>
+                  A reminder is just a nudge. If someone needs to get it done,{' '}
+                  <Text
+                    onPress={() => {
+                      onClose();
+                      onConvertToTask?.();
+                    }}
+                    style={styles.hintLink}
+                  >
+                    make it a task instead.
+                  </Text>
                 </Text>
-              </Text>
-            </View>
+              </View>
+            )}
           </ScrollView>
 
           {/* Bottom Submit Button */}
@@ -343,24 +696,26 @@ export const CreateReminderModal: React.FC<CreateReminderModalProps> = ({
           >
             <TouchableOpacity
               onPress={handleSetReminder}
+              disabled={remindersState.submitting}
               activeOpacity={0.8}
               style={styles.submitBtn}
               accessibilityRole="button"
-              accessibilityLabel="Set reminder"
+              accessibilityLabel={isEditing ? 'Save changes' : 'Set reminder'}
             >
-              <Text style={styles.submitBtnText}>Set reminder</Text>
+              {remindersState.submitting ? (
+                <ActivityIndicator color={Colors.white} />
+              ) : (
+                <Text style={styles.submitBtnText}>
+                  {isEditing ? 'Save changes' : 'Set reminder'}
+                </Text>
+              )}
             </TouchableOpacity>
           </View>
         </KeyboardAvoidingView>
 
-        {/* Assignee Picker Bottom Sheet Modal */}
-        <Modal
-          visible={showAssigneeModal}
-          transparent
-          animationType="fade"
-          onRequestClose={() => setShowAssigneeModal(false)}
-        >
-          <View style={styles.pickerOverlay}>
+        {/* Assignee Picker Inline Bottom Sheet (non-modal to prevent iOS nested Modal bug) */}
+        {showAssigneeModal && (
+          <View style={[StyleSheet.absoluteFill, styles.pickerOverlay, { zIndex: 1100 }]}>
             <TouchableOpacity
               style={styles.pickerBackdrop}
               activeOpacity={1}
@@ -375,66 +730,76 @@ export const CreateReminderModal: React.FC<CreateReminderModalProps> = ({
               <View style={styles.pickerHandle} />
               <Text style={styles.pickerTitle}>Remind who?</Text>
               <Text style={styles.pickerSubtitle}>
-                Choose a family member to notify
+                {isChild
+                  ? 'You can set reminders for yourself'
+                  : 'Choose app-enabled family members to notify'}
               </Text>
-              <View style={styles.pickerCard}>
-                {FAMILY_MEMBERS.map((member, idx) => {
-                  const isSelected = assignee === member.name;
-                  return (
-                    <TouchableOpacity
-                      key={member.id}
-                      style={[
-                        styles.pickerRow,
-                        idx > 0 && styles.pickerRowDivider,
-                      ]}
-                      onPress={() => {
-                        setAssignee(member.name);
-                        setShowAssigneeModal(false);
-                      }}
-                      activeOpacity={0.7}
-                    >
-                      <View
+              {members.length === 0 ? (
+                <View style={styles.emptyMembersBox}>
+                  <Text style={styles.emptyMembersText}>
+                    Defaulting to you. No other app-enabled family members found yet.
+                  </Text>
+                </View>
+              ) : (
+                <View style={styles.pickerCard}>
+                  {members.map((member, idx) => {
+                    const isSelected = selectedMemberIds.includes(member.id);
+                    return (
+                      <TouchableOpacity
+                        key={member.id}
                         style={[
-                          styles.avatarCircle,
-                          { backgroundColor: member.color },
+                          styles.pickerRow,
+                          idx > 0 && styles.pickerRowDivider,
                         ]}
+                        onPress={() => toggleMember(member.id)}
+                        activeOpacity={0.7}
                       >
-                        <Text
+                        <View
                           style={[
-                            styles.avatarText,
-                            { color: member.textColor },
+                            styles.avatarCircle,
+                            { backgroundColor: member.color },
                           ]}
                         >
-                          {member.initial}
+                          <Text
+                            style={[
+                              styles.avatarText,
+                              { color: member.textColor },
+                            ]}
+                          >
+                            {member.initial}
+                          </Text>
+                        </View>
+                        <Text style={styles.pickerRowText}>
+                          {member.displayName}
                         </Text>
-                      </View>
-                      <Text style={styles.pickerRowText}>
-                        {member.displayName}
-                      </Text>
-                      <View
-                        style={[
-                          styles.radioOuter,
-                          isSelected && styles.radioOuterSelected,
-                        ]}
-                      >
-                        {isSelected && <View style={styles.radioInner} />}
-                      </View>
-                    </TouchableOpacity>
-                  );
-                })}
-              </View>
+                        <View
+                          style={[
+                            styles.checkOuter,
+                            isSelected && styles.checkOuterSelected,
+                          ]}
+                        >
+                          {isSelected && (
+                            <Feather name="check" size={13} color="#0B1A2F" />
+                          )}
+                        </View>
+                      </TouchableOpacity>
+                    );
+                  })}
+                </View>
+              )}
+              <TouchableOpacity
+                style={styles.sheetDoneBtn}
+                onPress={() => setShowAssigneeModal(false)}
+              >
+                <Text style={styles.sheetDoneText}>Done</Text>
+              </TouchableOpacity>
             </View>
           </View>
-        </Modal>
+        )}
 
-        {/* Repeat Picker Bottom Sheet Modal */}
-        <Modal
-          visible={showRepeatModal}
-          transparent
-          animationType="fade"
-          onRequestClose={() => setShowRepeatModal(false)}
-        >
-          <View style={styles.pickerOverlay}>
+        {/* Repeat Picker Inline Bottom Sheet */}
+        {showRepeatModal && (
+          <View style={[StyleSheet.absoluteFill, styles.pickerOverlay, { zIndex: 1100 }]}>
             <TouchableOpacity
               style={styles.pickerBackdrop}
               activeOpacity={1}
@@ -450,22 +815,22 @@ export const CreateReminderModal: React.FC<CreateReminderModalProps> = ({
               <Text style={styles.pickerTitle}>Repeat</Text>
               <Text style={styles.pickerSubtitle}>Set reminder cadence</Text>
               <View style={styles.pickerCard}>
-                {REPEAT_OPTIONS.map((opt, idx) => {
-                  const isSelected = repeat === opt;
+                {REMINDER_REPEAT_OPTIONS.map((opt, idx) => {
+                  const isSelected = repeat === opt.label;
                   return (
                     <TouchableOpacity
-                      key={opt}
+                      key={opt.label}
                       style={[
                         styles.pickerRow,
                         idx > 0 && styles.pickerRowDivider,
                       ]}
                       onPress={() => {
-                        setRepeat(opt);
+                        setRepeat(opt.label);
                         setShowRepeatModal(false);
                       }}
                       activeOpacity={0.7}
                     >
-                      <Text style={styles.pickerRowText}>{opt}</Text>
+                      <Text style={styles.pickerRowText}>{opt.label}</Text>
                       <View
                         style={[
                           styles.radioOuter,
@@ -480,8 +845,50 @@ export const CreateReminderModal: React.FC<CreateReminderModalProps> = ({
               </View>
             </View>
           </View>
-        </Modal>
+        )}
+
+        {/* Date / Time Picker (non-modal overlay) */}
+        <DueDateTimeModal
+          asModal={false}
+          visible={Boolean(datePickerTarget)}
+          initialDate={
+            datePickerTarget === 'repeatEnd'
+              ? repeatEndsOn || customIsoDate
+              : customIsoDate || getIstDateParts().isoDate
+          }
+          initialTime={customTimeStr || '7:00 PM'}
+          onClose={() => setDatePickerTarget(null)}
+          onSave={(_dateLabel, _formatted, dueTime, isoDate) => {
+            if (datePickerTarget === 'repeatEnd') {
+              if (isoDate) setRepeatEndsOn(isoDate);
+            } else {
+              if (isoDate) setCustomIsoDate(isoDate);
+              if (dueTime) setCustomTimeStr(dueTime);
+              setSelectedWhen('Pick a time');
+            }
+            setDatePickerTarget(null);
+          }}
+        />
+
+        <ReminderDialog
+          dialog={dialog}
+          onClose={() => setDialog(INITIAL_REMINDER_DIALOG_STATE)}
+        />
       </View>
+  );
+
+  if (!asModal) {
+    return content;
+  }
+
+  return (
+    <Modal
+      visible={visible}
+      animationType="slide"
+      transparent={false}
+      onRequestClose={onClose}
+    >
+      {content}
     </Modal>
   );
 };
@@ -490,6 +897,15 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: Colors.background,
+  },
+  inlineOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    zIndex: 1000,
+    elevation: 22,
   },
   flex: {
     flex: 1,
@@ -590,18 +1006,33 @@ const styles = StyleSheet.create({
     color: Colors.cardInsetDark,
     fontFamily: 'Roboto-Bold',
   },
+  whenHeaderRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 12,
+  },
   sectionHeading: {
     fontSize: 12,
     fontFamily: 'Roboto-Bold',
     color: Colors.textPlaceholder,
     letterSpacing: 1,
-    marginBottom: 12,
+  },
+  whenPreviewText: {
+    fontSize: 12.5,
+    fontFamily: 'Roboto-SemiBold',
+    color: Colors.primary,
   },
   chipsContainer: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: 10,
-    marginBottom: 24,
+    marginBottom: 14,
+  },
+  rolledNote: {
+    fontSize: 12,
+    color: Colors.amberLight,
+    marginBottom: 18,
   },
   chip: {
     paddingVertical: 10,
@@ -636,6 +1067,7 @@ const styles = StyleSheet.create({
     borderRadius: 18,
     borderWidth: 1,
     borderColor: Colors.borderBold,
+    marginTop: 8,
     marginBottom: 20,
     overflow: 'hidden',
   },
@@ -686,6 +1118,63 @@ const styles = StyleSheet.create({
     height: 1,
     backgroundColor: Colors.surfaceElevated2,
   },
+  customRepeatBox: {
+    backgroundColor: Colors.cardBackground,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: Colors.borderBold,
+    padding: 16,
+    marginBottom: 20,
+    gap: 12,
+  },
+  customLabel: {
+    fontSize: 11.5,
+    fontFamily: 'Roboto-Bold',
+    color: Colors.textPlaceholder,
+    letterSpacing: 1,
+  },
+  weekdaysRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    gap: 6,
+  },
+  weekdayChip: {
+    flex: 1,
+    height: 36,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: Colors.borderBold,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  weekdayChipActive: {
+    backgroundColor: Colors.primary,
+    borderColor: Colors.primary,
+  },
+  weekdayText: {
+    fontSize: 12,
+    fontFamily: 'Roboto-SemiBold',
+    color: Colors.textSubtle,
+  },
+  weekdayTextActive: {
+    color: '#0B1A2F',
+    fontFamily: 'Roboto-Bold',
+  },
+  repeatEndRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingTop: 6,
+  },
+  repeatEndLabel: {
+    fontSize: 13.5,
+    color: '#CAD4DF',
+  },
+  clearEndText: {
+    fontSize: 13,
+    fontFamily: 'Roboto-SemiBold',
+    color: Colors.primary,
+  },
   hintBox: {
     flexDirection: 'row',
     alignItems: 'flex-start',
@@ -731,8 +1220,7 @@ const styles = StyleSheet.create({
     color: Colors.white,
   },
   pickerOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(5, 11, 18, 0.7)',
+    backgroundColor: 'rgba(5, 11, 18, 0.72)',
     justifyContent: 'flex-end',
   },
   pickerBackdrop: {
@@ -766,6 +1254,17 @@ const styles = StyleSheet.create({
     color: Colors.textTertiary,
     marginBottom: 18,
   },
+  emptyMembersBox: {
+    backgroundColor: Colors.cardBackground,
+    borderRadius: 16,
+    padding: 16,
+    borderWidth: 1,
+    borderColor: Colors.borderBold,
+  },
+  emptyMembersText: {
+    fontSize: 13.5,
+    color: Colors.textSubtle,
+  },
   pickerCard: {
     backgroundColor: Colors.cardBackground,
     borderRadius: 18,
@@ -791,6 +1290,19 @@ const styles = StyleSheet.create({
     color: Colors.white,
     marginLeft: 12,
   },
+  checkOuter: {
+    width: 22,
+    height: 22,
+    borderRadius: 6,
+    borderWidth: 1.5,
+    borderColor: Colors.borderLightAlt,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  checkOuterSelected: {
+    backgroundColor: Colors.primary,
+    borderColor: Colors.primary,
+  },
   radioOuter: {
     width: 20,
     height: 20,
@@ -809,4 +1321,19 @@ const styles = StyleSheet.create({
     borderRadius: 5,
     backgroundColor: Colors.primary,
   },
+  sheetDoneBtn: {
+    marginTop: 14,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: Colors.primary,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  sheetDoneText: {
+    fontSize: 15.5,
+    fontFamily: 'Roboto-Bold',
+    color: '#0B1A2F',
+  },
 });
+
+export default CreateReminderModal;

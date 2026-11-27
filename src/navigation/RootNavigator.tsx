@@ -5,6 +5,7 @@ import AuthNavigator from './AuthNavigator';
 import ProfileNavigator from './ProfileNavigator';
 import YourBriefScreen from '../screens/mainScreens/yourBriefScreen/YourBriefScreen';
 import NeedsAttentionScreen from '../screens/mainScreens/needsAttentionScreen/NeedsAttentionScreen';
+import { RemindersScreen } from '../screens/mainScreens/remindersScreen';
 import NotificationsScreen from '../screens/mainScreens/notificationsScreen/NotificationsScreen';
 import MainTabScreen from '../screens/mainScreens/mainTabScreen/MainTabScreen';
 import MembersScreen from '../screens/mainScreens/familyPulse/MembersScreen';
@@ -152,14 +153,35 @@ const RootNavigator: React.FC<RootNavigatorProps> = ({
             initialFilter={props.route.params?.initialFilter}
             onBack={() => props.navigation.goBack()}
             onItemPress={(item) => {
-              if (item.category === 'renewals') {
+              const src = String(item.source || '').toUpperCase();
+              const targetId = item.rawId || item.taskId || item.id;
+              if (src === 'VAULT') {
+                if (item.vaultItem) {
+                  props.navigation.navigate('VaultItemDetail', { item: item.vaultItem });
+                } else if (targetId) {
+                  props.navigation.navigate('VaultItemDetail', { itemId: targetId });
+                } else {
+                  props.navigation.navigate('VaultDocuments');
+                }
+              } else if (src === 'LIFE_PROFILE' || item.category === 'renewals') {
                 props.navigation.navigate('VaultDocuments');
-              } else if (item.category === 'important_dates') {
+              } else if (
+                src === 'IMPORTANT_DATE' ||
+                item.category === 'important_dates'
+              ) {
                 props.navigation.navigate('Home', { initialTab: 'calendar' });
               } else {
                 props.navigation.navigate('Tasks');
               }
             }}
+          />
+        )}
+      </Stack.Screen>
+      <Stack.Screen name="Reminders">
+        {(props) => (
+          <RemindersScreen
+            initialStatus={props.route.params?.initialStatus}
+            onBack={() => props.navigation.goBack()}
           />
         )}
       </Stack.Screen>

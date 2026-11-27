@@ -195,6 +195,13 @@ const API_ROUTES = {
   VAULT_LIFE_PROFILE_DOCS: 'vault/life-profile-documents',
   VAULT_ITEMS: 'vault/items',
   VAULT_ITEM_BY_ID: (id: string) => `vault/items/${id}`,
+
+  // Home Section Endpoints
+  HOME_NEEDS_ATTENTION: 'home/needs-attention',
+
+  // Reminders Endpoints (Postman Requests #1-#5)
+  REMINDERS: 'reminders',
+  REMINDER_BY_ID: (id: string) => `reminders/${id}`,
   // Chat Endpoints
   CHAT_THREADS: 'chat/threads',
   CHAT_THREAD_MESSAGES: (threadId: string, queryParams?: { limit?: number; before?: string }) => {

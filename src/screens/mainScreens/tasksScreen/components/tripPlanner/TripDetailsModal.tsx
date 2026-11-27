@@ -504,7 +504,7 @@ export const TripDetailsModal: React.FC<TripDetailsModalProps> = ({
           </View>
         </View>
 
-        {Boolean(tripData.id && isUUID(tripData.id)) && (
+        {!tripData.cancelledAt && Boolean(tripData.id && isUUID(tripData.id)) && (
           <TouchableOpacity
             style={styles.cancelTripBtn}
             onPress={handleCancelTrip}
@@ -518,22 +518,24 @@ export const TripDetailsModal: React.FC<TripDetailsModalProps> = ({
       </ScrollView>
 
       {/* Bottom Button */}
-      <View style={styles.bottomBar}>
-        <TouchableOpacity
-          style={styles.bottomButton}
-          onPress={handleSave}
-          disabled={saving || tripsState.actionLoading}
-          activeOpacity={0.85}
-          accessibilityRole="button"
-          accessibilityLabel="Save trip"
-        >
-          {saving || tripsState.actionLoading ? (
-            <ActivityIndicator color={Colors.white} />
-          ) : (
-            <Text style={styles.bottomButtonText}>Save trip</Text>
-          )}
-        </TouchableOpacity>
-      </View>
+      {!tripData.cancelledAt && (
+        <View style={styles.bottomBar}>
+          <TouchableOpacity
+            style={styles.bottomButton}
+            onPress={handleSave}
+            disabled={saving || tripsState.actionLoading}
+            activeOpacity={0.85}
+            accessibilityRole="button"
+            accessibilityLabel="Save trip"
+          >
+            {saving || tripsState.actionLoading ? (
+              <ActivityIndicator color={Colors.white} />
+            ) : (
+              <Text style={styles.bottomButtonText}>Save trip</Text>
+            )}
+          </TouchableOpacity>
+        </View>
+      )}
 
       <TripDialog
         dialog={dialog}

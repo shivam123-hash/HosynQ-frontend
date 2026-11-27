@@ -1,7 +1,16 @@
 import React from 'react';
 import ReactTestRenderer from 'react-test-renderer';
-import { Text, TouchableOpacity } from 'react-native';
+import { Text, TextInput, TouchableOpacity } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
+import { Provider } from 'react-redux';
+import { configureStore } from '@reduxjs/toolkit';
+import remindersServices from '../src/services/remindersServices';
+import vaultReducer from '../src/redux/features/vault/vaultSlice';
+import {
+  mockVaultBillElectric,
+  mockVaultHomeResponse,
+  mockVaultMotorPolicy,
+} from '../src/__test_fixtures__/vaultFixtures';
 import {
   AddSheetModal,
   CreateReminderModal,
@@ -86,6 +95,24 @@ describe('Add Flow Components (ADD-01 to ADD-25)', () => {
   it('renders CreateReminderModal (ADD-02) and saves reminder', async () => {
     const onSave = jest.fn();
     const onClose = jest.fn();
+    const createSpy = jest
+      .spyOn(remindersServices, 'createReminder')
+      .mockResolvedValueOnce({
+        success: true,
+        reminder: {
+          id: '6f9bd72b-40a7-4e10-9bfa-0ac5b2092e60',
+          text: 'Call the plumber about the kitchen tap',
+          remindOn: '2026-11-27',
+          remindTime: '19:00',
+          repeat: null,
+          repeatDays: [],
+          repeatEndsOn: null,
+          status: 'UPCOMING',
+          done: false,
+          members: [],
+          canEdit: true,
+        },
+      });
 
     const renderer = await renderWithProvider(
       <CreateReminderModal
@@ -110,21 +137,31 @@ describe('Add Flow Components (ADD-01 to ADD-25)', () => {
     expect(texts).toContain('This evening, 7:00 PM');
     expect(texts).toContain('Set reminder');
 
+    const input = renderer.root.findByType(TextInput);
+    await ReactTestRenderer.act(async () => {
+      input.props.onChangeText('Call the plumber about the kitchen tap');
+    });
+
     const submitBtn = renderer.root
       .findAllByType(TouchableOpacity)
       .find((t) => t.props.accessibilityLabel === 'Set reminder');
     expect(submitBtn).toBeTruthy();
 
     await ReactTestRenderer.act(async () => {
-      submitBtn?.props.onPress();
+      await submitBtn?.props.onPress();
     });
+    expect(createSpy).toHaveBeenCalledWith(
+      expect.objectContaining({
+        text: 'Call the plumber about the kitchen tap',
+      })
+    );
     expect(onSave).toHaveBeenCalledWith(
       expect.objectContaining({
         title: 'Call the plumber about the kitchen tap',
         type: 'time',
-        whenText: 'This evening, 7:00 PM',
       })
     );
+    createSpy.mockRestore();
   });
 
   it('renders ScanDocumentModal (ADD-05 -> ADD-10 -> ADD-14 -> ADD-17)', async () => {
@@ -766,9 +803,37 @@ describe('Add Flow Components (ADD-01 to ADD-25)', () => {
 
   it('renders FamilyVaultModal (ADD-13) with categories, search and file list', async () => {
     const onClose = jest.fn();
+    const vaultStore = configureStore({
+      reducer: {
+        vault: vaultReducer,
+        family: (state = { basicFamilyData: null, myFamilyData: null }) =>
+          state,
+      },
+      preloadedState: {
+        vault: {
+          home: mockVaultHomeResponse,
+          lifeProfileDocs: null,
+          items: [mockVaultMotorPolicy, mockVaultBillElectric],
+          selectedItem: null,
+          lastScan: null,
+          hasLoadedHome: true,
+          hasLoadedLifeProfileDocs: false,
+          hasLoadedItems: true,
+          loadingHome: false,
+          loadingLifeProfileDocs: false,
+          loadingItems: false,
+          loadingDetail: false,
+          scanningDocument: false,
+          submitting: false,
+          error: null,
+        },
+      },
+    });
 
     const renderer = await renderWithProvider(
-      <FamilyVaultModal visible={true} onClose={onClose} />
+      <Provider store={vaultStore}>
+        <FamilyVaultModal visible={true} onClose={onClose} />
+      </Provider>
     );
 
     const texts = renderer.root
@@ -780,16 +845,15 @@ describe('Add Flow Components (ADD-01 to ADD-25)', () => {
       );
 
     expect(texts).toContain('Family Vault');
-    expect(texts).toContain('Car insurance renews in 19 days');
-    expect(texts).toContain('Documents and renewals');
+    expect(texts).toContain('Car insurance · Renews in 19 days');
     expect(texts).toContain('Insurance');
-    expect(texts).toContain('Warranties and bills');
+    expect(texts).toContain('Warranties & bills');
     expect(texts).toContain('Home assets');
     expect(texts).toContain('Important contacts');
     expect(texts).toContain('Scans and uploads');
     expect(texts).toContain('RECENTLY ADDED');
-    expect(texts).toContain('St. Mary’s circular');
-    expect(texts).toContain('Electricity bill · October');
+    expect(texts).toContain('Car insurance');
+    expect(texts).toContain('Electricity · BSES');
 
     // Tap back button
     const backBtn = renderer.root

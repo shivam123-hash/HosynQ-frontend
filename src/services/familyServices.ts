@@ -20,6 +20,7 @@ export interface FamilyMemberData {
   relationship?: string;
   gender?: string;
   isYou?: boolean;
+  hasAccount?: boolean;
   hasAppAccount?: boolean;
   lifeProfileProgress?: number;
   createdAt?: string;

@@ -4,14 +4,18 @@ import Feather from '@react-native-vector-icons/feather';
 
 export interface NeedsAttentionHeaderProps {
   onBackPress?: () => void;
+  onAddPress?: () => void;
 }
 
-const NeedsAttentionHeader: React.FC<NeedsAttentionHeaderProps> = ({ onBackPress }) => {
+const NeedsAttentionHeader: React.FC<NeedsAttentionHeaderProps> = ({
+  onBackPress,
+  onAddPress,
+}) => {
   return (
     <View style={styles.header}>
       {/* Back Button */}
       <TouchableOpacity
-        style={styles.backButton}
+        style={styles.circleButton}
         onPress={onBackPress}
         activeOpacity={0.7}
         accessibilityLabel="Go back"
@@ -25,8 +29,20 @@ const NeedsAttentionHeader: React.FC<NeedsAttentionHeaderProps> = ({ onBackPress
         <Text style={styles.titleText}>Needs attention</Text>
       </View>
 
-      {/* Right Spacer to keep title centered */}
-      <View style={styles.rightSpacer} />
+      {/* Right Add Reminder Button or Spacer */}
+      {onAddPress ? (
+        <TouchableOpacity
+          style={styles.circleButton}
+          onPress={onAddPress}
+          activeOpacity={0.7}
+          accessibilityLabel="Add reminder"
+          accessibilityRole="button"
+        >
+          <Feather name="plus" size={20} color="#CAD4DF" />
+        </TouchableOpacity>
+      ) : (
+        <View style={styles.rightSpacer} />
+      )}
     </View>
   );
 };
@@ -41,7 +57,7 @@ const styles = StyleSheet.create({
     paddingBottom: 6,
     height: 56,
   },
-  backButton: {
+  circleButton: {
     width: 44,
     height: 44,
     borderRadius: 22,
@@ -69,4 +85,3 @@ const styles = StyleSheet.create({
 });
 
 export default memo(NeedsAttentionHeader);
-

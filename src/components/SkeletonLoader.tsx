@@ -773,6 +773,79 @@ export const VaultDetailSkeleton: React.FC = () => {
   );
 };
 
+/** Skeleton for Home Needs Attention Section */
+export const NeedsAttentionSectionSkeleton: React.FC = () => {
+  return (
+    <View style={{ marginHorizontal: 16, marginBottom: 30, gap: 14 }}>
+      <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', height: 34 }}>
+        <SkeletonBox width={140} height={20} borderRadius={6} />
+        <SkeletonBox width={74} height={30} borderRadius={15} />
+      </View>
+      <View style={styles.tripGroupSkeleton}>
+        {[1, 2, 3].map((row) => (
+          <View key={row} style={styles.tripRowSkeleton}>
+            <SkeletonBox width={38} height={38} borderRadius={19} style={{ marginRight: 14 }} />
+            <View style={{ flex: 1 }}>
+              <SkeletonBox width="68%" height={15} borderRadius={4} style={{ marginBottom: 6 }} />
+              <SkeletonBox width="48%" height={12} borderRadius={4} />
+            </View>
+            <SkeletonBox width={16} height={16} borderRadius={8} />
+          </View>
+        ))}
+      </View>
+    </View>
+  );
+};
+
+/** Skeleton for Needs Attention / Reminders List Screen */
+export const NeedsAttentionSkeleton: React.FC = () => {
+  return (
+    <View style={{ paddingHorizontal: 20, paddingTop: 12 }}>
+      {[1, 2].map((section) => (
+        <View key={section} style={{ marginTop: section === 1 ? 8 : 22 }}>
+          <SkeletonBox width={110} height={12} borderRadius={4} style={{ marginBottom: 10 }} />
+          <View style={styles.tripGroupSkeleton}>
+            {[1, 2, 3].map((row) => (
+              <View key={row} style={styles.tripRowSkeleton}>
+                <SkeletonBox width={40} height={40} borderRadius={20} style={{ marginRight: 14 }} />
+                <View style={{ flex: 1 }}>
+                  <SkeletonBox width="70%" height={15} borderRadius={4} style={{ marginBottom: 6 }} />
+                  <SkeletonBox width="50%" height={12} borderRadius={4} />
+                </View>
+                <SkeletonBox width={68} height={30} borderRadius={15} />
+              </View>
+            ))}
+          </View>
+        </View>
+      ))}
+    </View>
+  );
+};
+
+/** Skeleton for Reminder Detail Modal */
+export const ReminderDetailSkeleton: React.FC = () => {
+  return (
+    <View style={{ paddingHorizontal: 20, paddingTop: 12 }}>
+      <View style={[styles.tripCardSkeleton, { marginBottom: 16 }]}>
+        <SkeletonBox width={90} height={22} borderRadius={11} style={{ marginBottom: 12 }} />
+        <SkeletonBox width="85%" height={20} borderRadius={6} style={{ marginBottom: 8 }} />
+        <SkeletonBox width="60%" height={14} borderRadius={4} />
+      </View>
+      <View style={styles.tripGroupSkeleton}>
+        {[1, 2, 3, 4].map((row) => (
+          <View key={row} style={styles.tripRowSkeleton}>
+            <SkeletonBox width={22} height={22} borderRadius={11} style={{ marginRight: 14 }} />
+            <View style={{ flex: 1 }}>
+              <SkeletonBox width="35%" height={11} borderRadius={4} style={{ marginBottom: 6 }} />
+              <SkeletonBox width="65%" height={14} borderRadius={4} />
+            </View>
+          </View>
+        ))}
+      </View>
+    </View>
+  );
+};
+
 export default {
   SkeletonBox,
   ListsSkeleton,
@@ -795,6 +868,9 @@ export default {
   VaultHomeSkeleton,
   VaultListSkeleton,
   VaultDetailSkeleton,
+  NeedsAttentionSectionSkeleton,
+  NeedsAttentionSkeleton,
+  ReminderDetailSkeleton,
 };
 
 const styles = StyleSheet.create({

@@ -139,7 +139,7 @@ const styles = StyleSheet.create({
   brandTitle: {
     fontSize: 20,
     fontFamily: 'Roboto-Bold',
-    color: Colors.white,
+    color: Colors.primary,
     letterSpacing: -0.2,
   },
   rightActions: {

@@ -1,9 +1,29 @@
+import {
+  HomeAttentionPersonApi,
+  NeedsAttentionSectionName,
+  NeedsAttentionSource,
+} from '../../../services/homeServices';
+
 export interface AttentionItem {
   id: string;
+  key?: string;
+  rawId?: string;
   title: string;
   subtitle: string;
   type: 'urgent' | 'warning' | 'info';
   isOverdue?: boolean;
+  source?: NeedsAttentionSource | 'reminder' | 'task' | 'vault';
+  group?: string | null;
+  on?: string;
+  time?: string | null;
+  daysLeft?: number;
+  amount?: number | null;
+  backendSection?: NeedsAttentionSectionName;
+  people?: HomeAttentionPersonApi[];
+  reminderId?: string;
+  done?: boolean;
+  taskId?: string;
+  vaultItem?: any;
 }
 
 export interface EventItem {
@@ -55,4 +75,3 @@ export interface SmartSuggestion {
 export type NavigationTab = 'home' | 'calendar' | 'chat' | 'tasks';
 export type BriefTimeframe = 'today' | 'week' | 'month';
 export type TaskFilterCategory = 'all' | 'household' | 'finance' | 'health' | 'travel';
-

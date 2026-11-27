@@ -2,22 +2,67 @@ import React, { memo } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import Feather from '@react-native-vector-icons/feather';
 import { AttentionItem } from '../types';
+import { NeedsAttentionSectionSkeleton } from '../../../../components/SkeletonLoader';
 
 export interface NeedsAttentionSectionProps {
   items: AttentionItem[];
+  loading?: boolean;
   onViewAll?: () => void;
   onItemPress?: (item: AttentionItem) => void;
 }
 
 const NeedsAttentionSection: React.FC<NeedsAttentionSectionProps> = ({
   items,
+  loading = false,
   onViewAll,
   onItemPress,
 }) => {
+  if (loading && (!items || items.length === 0)) {
+    return <NeedsAttentionSectionSkeleton />;
+  }
+
   if (!items || items.length === 0) return null;
 
-  const renderIcon = (type: AttentionItem['type']) => {
-    switch (type) {
+  const renderIcon = (item: AttentionItem) => {
+    const src = String(item.source || '').toUpperCase();
+    if (src === 'REMINDER') {
+      return (
+        <Feather
+          name="bell"
+          size={18}
+          color={item.isOverdue ? '#F07A5A' : '#F6C08E'}
+        />
+      );
+    }
+    if (src === 'IMPORTANT_DATE') {
+      return <Feather name="gift" size={18} color="#F6C08E" />;
+    }
+    if (src === 'VAULT') {
+      const grp = String(item.group || '').toUpperCase();
+      const iconName =
+        grp === 'ASSET' || grp === 'VEHICLE' || grp === 'CAR' || grp === 'MOTOR'
+          ? 'truck'
+          : grp === 'INSURANCE'
+          ? 'shield'
+          : 'file-text';
+      return (
+        <Feather
+          name={iconName}
+          size={18}
+          color={item.isOverdue ? '#F07A5A' : '#C9D1DC'}
+        />
+      );
+    }
+    if (src === 'LIFE_PROFILE') {
+      return (
+        <Feather
+          name="file-text"
+          size={18}
+          color={item.isOverdue ? '#F07A5A' : '#C9D1DC'}
+        />
+      );
+    }
+    switch (item.type) {
       case 'urgent':
         return <Feather name="alert-circle" size={18} color="#F07A5A" />;
       case 'warning':
@@ -59,20 +104,28 @@ const NeedsAttentionSection: React.FC<NeedsAttentionSectionProps> = ({
               <View
                 style={[
                   styles.iconCircle,
-                  isUrgent ? styles.urgentIconCircle : styles.normalIconCircle,
+                  isUrgent
+                    ? styles.urgentIconCircle
+                    : String(item.source || '').toUpperCase() === 'REMINDER' ||
+                      String(item.source || '').toUpperCase() === 'IMPORTANT_DATE'
+                    ? styles.reminderIconCircle
+                    : styles.normalIconCircle,
                 ]}
               >
-                {renderIcon(item.type)}
+                {renderIcon(item)}
               </View>
 
               {/* Text Info */}
               <View style={styles.contentCol}>
-                <Text style={styles.itemTitle}>{item.title}</Text>
+                <Text style={styles.itemTitle} numberOfLines={1}>
+                  {item.title}
+                </Text>
                 <Text
                   style={[
                     styles.itemSubtitle,
                     item.isOverdue ? styles.overdueSubtitle : styles.normalSubtitle,
                   ]}
+                  numberOfLines={1}
                 >
                   {item.subtitle}
                 </Text>
@@ -149,11 +202,18 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   urgentIconCircle: {
-    borderWidth: 1.5,
+    backgroundColor: 'transparent',
+    borderWidth: 1,
     borderColor: '#6B3A2A',
   },
+  reminderIconCircle: {
+    backgroundColor: 'transparent',
+    borderWidth: 1,
+    borderColor: '#6E4924',
+  },
   normalIconCircle: {
-    borderWidth: 1.5,
+    backgroundColor: 'transparent',
+    borderWidth: 1,
     borderColor: '#3A4556',
   },
   contentCol: {
@@ -161,22 +221,20 @@ const styles = StyleSheet.create({
     gap: 3,
   },
   itemTitle: {
-    fontSize: 13.5,
-    lineHeight: 18,
+    fontSize: 15,
+    lineHeight: 20,
     fontFamily: 'Roboto-Medium',
     color: '#CAD4DF',
   },
   itemSubtitle: {
-    fontFamily: 'Roboto',
-    fontSize: 12,
-    lineHeight: 16,
+    fontSize: 13,
+    lineHeight: 18,
+    fontFamily: 'Roboto-Regular',
   },
   overdueSubtitle: {
-    fontFamily: 'Roboto-Medium',
-    color: '#F0913A',
+    color: '#F07A5A',
   },
   normalSubtitle: {
-    fontFamily: 'Roboto-Regular',
     color: '#8A97AB',
   },
 });

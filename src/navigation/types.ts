@@ -10,6 +10,7 @@ import type {
 
 import type { BriefTimeframe, NavigationTab } from '../screens/mainScreens/homeScreen/types';
 import type { AttentionFilterType } from '../screens/mainScreens/needsAttentionScreen';
+import type { ReminderStatus } from '../services/remindersServices';
 import type { NotificationFilterType } from '../screens/mainScreens/notificationsScreen';
 import type { TasksMainTab, TasksStatusTab } from '../screens/mainScreens/tasksScreen';
 
@@ -142,6 +143,11 @@ export type RootStackParamList = {
   NeedsAttention:
     | {
         initialFilter?: AttentionFilterType;
+      }
+    | undefined;
+  Reminders:
+    | {
+        initialStatus?: ReminderStatus;
       }
     | undefined;
   Notifications:

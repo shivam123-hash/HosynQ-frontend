@@ -53,14 +53,17 @@ const AttentionCardItem: React.FC<AttentionCardItemProps> = ({
         </Text>
       </View>
 
-      {/* Right Action: Remind Pill Button or Chevron */}
+      {/* Right Action: Remind / Done Pill Button or Chevron */}
       {item.hasRemindButton ? (
         <TouchableOpacity
           style={styles.remindButton}
           onPress={() => onRemindPress?.(item)}
           activeOpacity={0.7}
+          hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
         >
-          <Text style={styles.remindButtonText}>Remind</Text>
+          <Text style={styles.remindButtonText}>
+            {item.actionLabel || 'Remind'}
+          </Text>
         </TouchableOpacity>
       ) : (
         <Feather name="chevron-right" size={18} color="#5A6880" />

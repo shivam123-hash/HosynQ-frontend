@@ -24,6 +24,10 @@ export * from './pulseServices';
 
 export { default as vaultServices } from './vaultServices';
 export * from './vaultServices';
+export { default as remindersServices } from './remindersServices';
+export * from './remindersServices';
+export { default as homeServices } from './homeServices';
+export * from './homeServices';
 export { default as chatServices } from './chatServices';
 export * from './chatServices';
 

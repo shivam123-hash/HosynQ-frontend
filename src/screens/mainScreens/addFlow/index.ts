@@ -6,3 +6,5 @@ export * from './AskHosynQModal';
 export * from './UploadDocumentModal';
 export * from './FamilyVaultModal';
 export * from './ConfirmationToast';
+export * from './ReminderDialog';
+export * from './reminderApiHelpers';

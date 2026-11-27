@@ -167,6 +167,7 @@ export const TripPlannerModal: React.FC<TripPlannerModalProps> = ({
   }, [dispatch, localTripData.id, localTripData.packingListId]);
 
   const tripData = localTripData;
+  const isCancelled = Boolean(tripData.cancelledAt);
 
   const selectedMemberIds = useMemo(
     () => tripData.members.filter((m) => m.selected !== false).map((m) => m.id),
@@ -179,21 +180,25 @@ export const TripPlannerModal: React.FC<TripPlannerModalProps> = ({
   };
 
   const handleOpenDates = () => {
+    if (isCancelled) return;
     if (onOpenDates) onOpenDates();
     setCurrentScreen('dates');
   };
 
   const handleOpenDetails = () => {
+    if (isCancelled) return;
     if (onOpenDetails) onOpenDetails();
     setCurrentScreen('details');
   };
 
   const handleOpenBookings = () => {
+    if (isCancelled) return;
     if (onOpenBookings) onOpenBookings();
     setCurrentScreen('bookings');
   };
 
   const handleOpenPacking = () => {
+    if (isCancelled) return;
     if (onOpenPacking) onOpenPacking();
     setCurrentScreen('packing');
   };
@@ -381,6 +386,7 @@ export const TripPlannerModal: React.FC<TripPlannerModalProps> = ({
   };
 
   const getBottomButtonConfig = () => {
+    if (isCancelled) return null;
     if (!isStep1Done) {
       return {
         label: 'Find common dates',
@@ -476,39 +482,45 @@ export const TripPlannerModal: React.FC<TripPlannerModalProps> = ({
 
           <Text style={styles.headerTitle}>Trip plan</Text>
 
-          <TouchableOpacity
-            style={styles.circleBtn}
-            onPress={() => setIsMenuOpen((prev) => !prev)}
-            activeOpacity={0.7}
-            accessibilityRole="button"
-            accessibilityLabel="Trip options"
-          >
-            <Feather name="more-horizontal" size={22} color={Colors.white} />
-          </TouchableOpacity>
+          {!isCancelled ? (
+            <TouchableOpacity
+              style={styles.circleBtn}
+              onPress={() => setIsMenuOpen((prev) => !prev)}
+              activeOpacity={0.7}
+              accessibilityRole="button"
+              accessibilityLabel="Trip options"
+            >
+              <Feather name="more-horizontal" size={22} color={Colors.white} />
+            </TouchableOpacity>
+          ) : (
+            <View style={styles.headerPlaceholder} />
+          )}
         </View>
 
         {/* Dropdown Options Menu */}
-        <AppOptionsMenu
-          visible={isMenuOpen}
-          onClose={() => setIsMenuOpen(false)}
-          topOffset={insets.top + 58}
-          items={[
-            {
-              id: 'edit-trip',
-              label: 'Edit Trip Details',
-              iconName: 'edit-2',
-              onPress: () => setCurrentScreen('details'),
-              showDividerAfter: true,
-            },
-            {
-              id: 'delete-trip',
-              label: 'Cancel Trip',
-              iconName: 'trash-2',
-              destructive: true,
-              onPress: handleDeleteOrCancelTrip,
-            },
-          ]}
-        />
+        {!isCancelled && (
+          <AppOptionsMenu
+            visible={isMenuOpen}
+            onClose={() => setIsMenuOpen(false)}
+            topOffset={insets.top + 58}
+            items={[
+              {
+                id: 'edit-trip',
+                label: 'Edit Trip Details',
+                iconName: 'edit-2',
+                onPress: () => setCurrentScreen('details'),
+                showDividerAfter: true,
+              },
+              {
+                id: 'delete-trip',
+                label: 'Cancel Trip',
+                iconName: 'trash-2',
+                destructive: true,
+                onPress: handleDeleteOrCancelTrip,
+              },
+            ]}
+          />
+        )}
 
         <ScrollView
           showsVerticalScrollIndicator={false}
@@ -528,7 +540,14 @@ export const TripPlannerModal: React.FC<TripPlannerModalProps> = ({
             <>
               {/* Main Vacation Planner Card */}
               <View style={styles.heroCard}>
-                <Text style={styles.heroTag}>VACATION PLANNER</Text>
+                <View style={styles.heroTagRow}>
+                  <Text style={styles.heroTag}>VACATION PLANNER</Text>
+                  {isCancelled && (
+                    <View style={styles.cancelledPill}>
+                      <Text style={styles.cancelledPillText}>Cancelled</Text>
+                    </View>
+                  )}
+                </View>
                 <Text style={styles.destinationTitle}>
                   {tripData.destination || tripData.name || 'New family trip'}
                 </Text>
@@ -586,7 +605,8 @@ export const TripPlannerModal: React.FC<TripPlannerModalProps> = ({
                 <TouchableOpacity
                   style={styles.stepRow}
                   onPress={handleOpenDates}
-                  activeOpacity={0.7}
+                  disabled={isCancelled}
+                  activeOpacity={isCancelled ? 1 : 0.7}
                   accessibilityRole="button"
                   accessibilityLabel="Find common dates"
                 >
@@ -624,7 +644,8 @@ export const TripPlannerModal: React.FC<TripPlannerModalProps> = ({
                 <TouchableOpacity
                   style={styles.stepRow}
                   onPress={handleOpenDetails}
-                  activeOpacity={0.7}
+                  disabled={isCancelled}
+                  activeOpacity={isCancelled ? 1 : 0.7}
                   accessibilityRole="button"
                   accessibilityLabel="Destination and trip event"
                 >
@@ -664,7 +685,8 @@ export const TripPlannerModal: React.FC<TripPlannerModalProps> = ({
                 <TouchableOpacity
                   style={styles.stepRow}
                   onPress={handleOpenBookings}
-                  activeOpacity={0.7}
+                  disabled={isCancelled}
+                  activeOpacity={isCancelled ? 1 : 0.7}
                   accessibilityRole="button"
                   accessibilityLabel="Bookings and reminders"
                 >
@@ -722,7 +744,8 @@ export const TripPlannerModal: React.FC<TripPlannerModalProps> = ({
                 <TouchableOpacity
                   style={styles.stepRow}
                   onPress={handleOpenPacking}
-                  activeOpacity={0.7}
+                  disabled={isCancelled}
+                  activeOpacity={isCancelled ? 1 : 0.7}
                   accessibilityRole="button"
                   accessibilityLabel="Packing list"
                 >
@@ -760,7 +783,7 @@ export const TripPlannerModal: React.FC<TripPlannerModalProps> = ({
               </View>
 
               {/* Next Pending Booking Reminder Note */}
-              {nextPendingBooking && (
+              {!isCancelled && nextPendingBooking && (
                 <View style={styles.dashedCard}>
                   <Ionicons name="sparkles" size={18} color={Colors.primary} style={styles.sparkleIcon} />
                   <Text style={styles.dashedCardText}>
@@ -826,6 +849,10 @@ const styles = StyleSheet.create({
     fontFamily: Fonts.bold,
     color: Colors.white,
   },
+  headerPlaceholder: {
+    width: 44,
+    height: 44,
+  },
   scrollContent: {
     paddingHorizontal: 20,
     paddingTop: 8,
@@ -838,12 +865,28 @@ const styles = StyleSheet.create({
     borderColor: Colors.accentTealMint,
     padding: 20,
   },
+  heroTagRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 8,
+  },
   heroTag: {
     fontSize: Typography.size.captionSmall,
     fontFamily: Fonts.bold,
     color: Colors.accentTealMint,
     letterSpacing: 1.2,
-    marginBottom: 8,
+  },
+  cancelledPill: {
+    backgroundColor: 'rgba(239, 68, 68, 0.16)',
+    borderRadius: 10,
+    paddingHorizontal: 10,
+    paddingVertical: 3,
+  },
+  cancelledPillText: {
+    fontSize: Typography.size.captionSmall,
+    fontFamily: Fonts.semiBold,
+    color: Colors.danger,
   },
   destinationTitle: {
     fontSize: Typography.size.titleLarge,

@@ -139,6 +139,30 @@ describe('TripPlanner Components', () => {
       expect(allDoneStr).not.toContain('Open packing list');
     });
 
+    it('hides edit and cancel options and shows Cancelled badge for cancelled trips', async () => {
+      const renderer = await renderWithProvider(
+        <TripPlannerModal
+          visible={true}
+          tripData={{
+            ...INITIAL_TRIP_DATA,
+            step1Done: true,
+            step2Done: true,
+            cancelledAt: '2026-11-27T06:00:00.000Z',
+          }}
+          initialScreen="overview"
+          onClose={jest.fn()}
+        />
+      );
+
+      const str = extractRenderedText(renderer);
+      expect(str).toContain('Cancelled');
+      expect(str).not.toContain('Edit Trip Details');
+      expect(str).not.toContain('Cancel Trip');
+      expect(str).not.toContain('Add bookings');
+      expect(str).not.toContain('Manage bookings');
+      expect(renderer.root.findAllByProps({ accessibilityLabel: 'Trip options' })).toHaveLength(0);
+    });
+
     it('renders themed AppDialog instead of native OS Alert when cancelling trip', async () => {
       const renderer = await renderWithProvider(
         <TripPlannerModal

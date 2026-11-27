@@ -13,6 +13,7 @@ import Colors from '../../../units/Colors';
 import { useAppDispatch, useAppSelector } from '../../../redux';
 import {
   fetchTasks,
+  fetchTaskDetailThunk,
   completeTask,
   reopenTask,
 } from '../../../redux/features/tasks/tasksSlice';
@@ -22,6 +23,9 @@ import {
   createCalendarEvent,
   updateCalendarEvent,
 } from '../../../redux/features/calendar/calendarSlice';
+import { deleteReminderThunk } from '../../../redux/features/reminders/remindersSlice';
+import { fetchNeedsAttentionThunk } from '../../../redux/features/home/needsAttentionSlice';
+import { ReminderApi } from '../../../services/remindersServices';
 import { isUUID } from '../tasksScreen/taskApiHelpers';
 import { mapApiTaskToUiTask } from '../tasksScreen/TasksScreen';
 import {
@@ -64,7 +68,12 @@ import {
 import { FamilyPulseModal, FamilyHubModal } from '../familyPulse';
 import { CompassModal, CompassScreenMode } from '../compassScreen';
 import {
-  INITIAL_ATTENTION_ITEMS,
+  ReminderDetailModal,
+  mapHomeAttentionToHomeItem,
+} from '../needsAttentionScreen';
+import { RemindersScreen } from '../remindersScreen';
+import { formatReminderScheduleLabel } from '../addFlow/reminderApiHelpers';
+import {
   INITIAL_UPCOMING_EVENTS,
   INITIAL_PENDING_TASKS,
   INITIAL_RECENTLY_DONE,
@@ -133,6 +142,7 @@ const HomeScreen: React.FC<HomeScreenProps> = ({
   const [internalAddSheetVisible, setInternalAddSheetVisible] = useState(false);
   const [internalEventVisible, setInternalEventVisible] = useState(false);
   const [internalReminderVisible, setInternalReminderVisible] = useState(false);
+  const [internalRemindersListVisible, setInternalRemindersListVisible] = useState(false);
   const [internalScanVisible, setInternalScanVisible] = useState(false);
   const [internalUploadVisible, setInternalUploadVisible] = useState(false);
   const [internalAskVisible, setInternalAskVisible] = useState(false);
@@ -146,6 +156,10 @@ const HomeScreen: React.FC<HomeScreenProps> = ({
   >(undefined);
   const [selectedTaskForDetail, setSelectedTaskForDetail] = useState<TasksScreenTaskItem | null>(null);
   const [selectedEventForDetail, setSelectedEventForDetail] = useState<CalendarEvent | null>(null);
+  const [selectedReminderForDetail, setSelectedReminderForDetail] = useState<{
+    id: string;
+    initial?: ReminderApi | null;
+  } | null>(null);
 
   const toTaskDetailItem = (
     t: Partial<TasksScreenTaskItem> & { title: string }
@@ -175,18 +189,25 @@ const HomeScreen: React.FC<HomeScreenProps> = ({
 
   const showToast = (
     message: string,
-    type: 'success' | 'cancelled' | 'info' = 'success'
+    type: 'success' | 'cancelled' | 'info' = 'success',
+    actions?: { onUndo?: () => void; onView?: () => void }
   ) => {
     setToastConfig({
       visible: true,
       message,
       type,
-      onUndo: () => setToastConfig((p) => ({ ...p, visible: false })),
-      onView: () => setToastConfig((p) => ({ ...p, visible: false })),
+      onUndo: () => {
+        setToastConfig((p) => ({ ...p, visible: false }));
+        actions?.onUndo?.();
+      },
+      onView: () => {
+        setToastConfig((p) => ({ ...p, visible: false }));
+        actions?.onView?.();
+      },
     });
     setTimeout(() => {
       setToastConfig((p) => ({ ...p, visible: false }));
-    }, 4000);
+    }, 4500);
   };
 
   const dispatch = useAppDispatch();
@@ -197,6 +218,8 @@ const HomeScreen: React.FC<HomeScreenProps> = ({
   const tasksState = useAppSelector((state) => state.tasks);
   const calendarState = useAppSelector((state) => state.calendar);
   const notificationsState = useAppSelector((state) => state.notifications);
+  const remindersState = useAppSelector((state) => state.reminders);
+  const needsAttentionState = useAppSelector((state) => state.needsAttention);
 
   const authUser = authState?.user || emailAuthState?.user;
   const fullName =
@@ -234,7 +257,11 @@ const HomeScreen: React.FC<HomeScreenProps> = ({
 
   const unreadCount = notificationsState?.unreadCount ?? 0;
 
-  const [attentionItems] = useState<AttentionItem[]>(INITIAL_ATTENTION_ITEMS);
+  const attentionItems: AttentionItem[] = useMemo(() => {
+    return (needsAttentionState?.items || [])
+      .slice(0, 5)
+      .map(mapHomeAttentionToHomeItem);
+  }, [needsAttentionState?.items]);
   const [upcomingEvents, setUpcomingEvents] = useState<EventItem[]>(
     isTestEnv ? INITIAL_UPCOMING_EVENTS : []
   );
@@ -243,7 +270,7 @@ const HomeScreen: React.FC<HomeScreenProps> = ({
   const [familyMembers, setFamilyMembers] = useState<FamilyMemberStatus[]>(INITIAL_FAMILY_MEMBERS);
   const [suggestion, setSuggestion] = useState(INITIAL_SMART_SUGGESTION);
 
-  // Sync tasks, calendar feed, and unread count on mount
+  // Sync tasks, calendar feed, reminders, vault alerts, and unread count on mount
   useEffect(() => {
     const todayStr = new Date().toISOString().slice(0, 10);
     dispatch(
@@ -261,7 +288,16 @@ const HomeScreen: React.FC<HomeScreenProps> = ({
         show: ['EVENTS'],
       })
     );
-  }, [dispatch]);
+    if (!isTestEnv) {
+      dispatch(
+        fetchNeedsAttentionThunk({
+          section: 'ALL',
+          withinDays: 60,
+          limit: 30,
+        })
+      );
+    }
+  }, [dispatch, isTestEnv]);
 
   // Sync with Redux tasks when available
   const apiTasks = tasksState?.tasks || [];
@@ -362,28 +398,38 @@ const HomeScreen: React.FC<HomeScreenProps> = ({
     }
   }, [calendarFamilyMembers.length, dispatch, isTestEnv]);
 
-  // Pull to refresh simulation
-  const onRefresh = useCallback(() => {
+  // Slide down to refresh Home data including Reminders & Vault alerts
+  const onRefresh = useCallback(async () => {
     setRefreshing(true);
     const todayStr = new Date().toISOString().slice(0, 10);
-    dispatch(
-      fetchTasks({
-        status: 'PENDING',
-        today: todayStr,
-      })
-    );
-    dispatch(fetchUnreadCount());
-    dispatch(
-      fetchCalendarFeed({
-        from: todayStr,
-        to: todayStr,
-        today: todayStr,
-        show: ['EVENTS'],
-      })
-    );
-    setTimeout(() => {
+    try {
+      await Promise.all([
+        dispatch(
+          fetchTasks({
+            status: 'PENDING',
+            today: todayStr,
+          })
+        ),
+        dispatch(fetchUnreadCount()),
+        dispatch(
+          fetchCalendarFeed({
+            from: todayStr,
+            to: todayStr,
+            today: todayStr,
+            show: ['EVENTS'],
+          })
+        ),
+        dispatch(
+          fetchNeedsAttentionThunk({
+            section: 'ALL',
+            withinDays: 60,
+            limit: 30,
+          })
+        ),
+      ]);
+    } finally {
       setRefreshing(false);
-    }, 1000);
+    }
   }, [dispatch]);
 
   // Task check/uncheck handler with Redux API synchronization
@@ -565,14 +611,82 @@ const HomeScreen: React.FC<HomeScreenProps> = ({
           onScan={onScanPress}
         />
 
-        {/* Needs Attention Alerts */}
+        {/* Needs Attention (Unified API: Reminders, Tasks, Vault, Life Profile, Important Dates) */}
         <NeedsAttentionSection
           items={attentionItems}
+          loading={
+            !isTestEnv &&
+            !needsAttentionState?.hasLoaded &&
+            Boolean(needsAttentionState?.loading)
+          }
           onViewAll={
             onOpenNeedsAttention ||
-            (() => Alert.alert('Needs Attention', 'Showing all 3 urgent alerts.'))
+            (() => navigation?.navigate?.('NeedsAttention'))
           }
           onItemPress={(item) => {
+            const src = String(item.source || '').toUpperCase();
+            const targetId = item.rawId || item.reminderId || item.taskId || item.id;
+            if (src === 'REMINDER' && targetId) {
+              const matched =
+                remindersState?.selectedReminder?.id === targetId
+                  ? remindersState.selectedReminder
+                  : null;
+              setSelectedReminderForDetail({
+                id: targetId,
+                initial: matched,
+              });
+              return;
+            }
+            if (src === 'VAULT') {
+              if (navigation?.navigate) {
+                navigation.navigate('VaultItemDetail', { itemId: targetId });
+              } else {
+                setInternalVaultVisible(true);
+              }
+              return;
+            }
+            if (src === 'LIFE_PROFILE') {
+              if (navigation?.navigate) {
+                navigation.navigate('VaultDocuments');
+              } else {
+                setInternalVaultVisible(true);
+              }
+              return;
+            }
+            if (src === 'IMPORTANT_DATE') {
+              if (onOpenCalendar) {
+                onOpenCalendar();
+              } else if (navigation?.navigate) {
+                navigation.navigate('Home', { initialTab: 'calendar' });
+              }
+              return;
+            }
+            if (src === 'TASK') {
+              const matchedTask =
+                tasks.find(
+                  (t) =>
+                    t.id === targetId ||
+                    t.title.toLowerCase().includes(item.title.toLowerCase())
+                ) || null;
+              if (isUUID(targetId)) {
+                dispatch(fetchTaskDetailThunk({ taskId: targetId }));
+              }
+              const detailTask = toTaskDetailItem(
+                matchedTask || {
+                  id: targetId,
+                  title: item.title,
+                  dueDate: item.on || 'Due soon',
+                  assignee:
+                    item.people?.[0]?.fullName?.split(' ')[0] || 'Family',
+                  category: (String(item.group || 'household').toLowerCase()) as any,
+                  isCompleted: false,
+                  priority: item.type === 'urgent' ? 'high' : 'medium',
+                  notes: item.subtitle,
+                }
+              );
+              setSelectedTaskForDetail(detailTask);
+              return;
+            }
             const matchedEvent = upcomingEvents.find((e) =>
               e.title.toLowerCase().includes(item.title.toLowerCase())
             );
@@ -771,7 +885,11 @@ const HomeScreen: React.FC<HomeScreenProps> = ({
         }}
         onSelectReminder={() => {
           setInternalAddSheetVisible(false);
-          setInternalReminderVisible(true);
+          if (navigation && typeof navigation.navigate === 'function') {
+            navigation.navigate('Reminders');
+          } else {
+            setInternalRemindersListVisible(true);
+          }
         }}
         onSelectList={() => {
           setInternalAddSheetVisible(false);
@@ -831,8 +949,34 @@ const HomeScreen: React.FC<HomeScreenProps> = ({
       <CreateReminderModal
         visible={internalReminderVisible}
         onClose={() => setInternalReminderVisible(false)}
+        onApiSaved={(created, isEdit) => {
+          const whenLabel = formatReminderScheduleLabel(
+            created.remindOn,
+            created.remindTime
+          );
+          showToast(
+            isEdit
+              ? `Reminder updated for ${whenLabel}`
+              : `Reminder set for ${whenLabel}`,
+            'success',
+            {
+              onView: () =>
+                setSelectedReminderForDetail({
+                  id: created.id,
+                  initial: created,
+                }),
+              onUndo: !isEdit
+                ? () => {
+                    dispatch(deleteReminderThunk(created.id));
+                  }
+                : undefined,
+            }
+          );
+        }}
         onSaveReminder={(reminder: ReminderItem) => {
-          showToast(`Reminder set for ${reminder.whenText.toLowerCase()}`);
+          if (!reminder.id) {
+            showToast(`Reminder set for ${reminder.whenText.toLowerCase()}`);
+          }
         }}
         onConvertToTask={() => {
           setInternalReminderVisible(false);
@@ -991,6 +1135,34 @@ const HomeScreen: React.FC<HomeScreenProps> = ({
           onCancelEvent={handleCancelEvent}
         />
       )}
+      {/* Reminder Detail Modal (#3, #4, #5) */}
+      {selectedReminderForDetail && (
+        <ReminderDetailModal
+          visible={Boolean(selectedReminderForDetail)}
+          reminderId={selectedReminderForDetail.id}
+          initialReminder={selectedReminderForDetail.initial}
+          onClose={() => setSelectedReminderForDetail(null)}
+          onUpdated={() => {
+            dispatch(
+              fetchNeedsAttentionThunk({
+                section: 'ALL',
+                withinDays: 60,
+                limit: 30,
+              })
+            );
+          }}
+          onDeleted={() => {
+            showToast('Reminder removed', 'cancelled');
+          }}
+        />
+      )}
+
+      {/* Reminders List Screen Fallback */}
+      <RemindersScreen
+        asModal={true}
+        visible={internalRemindersListVisible}
+        onClose={() => setInternalRemindersListVisible(false)}
+      />
     </SafeAreaView>
   );
 };

@@ -31,6 +31,12 @@ import {
   ReminderItem,
   ToastConfig,
 } from '../addFlow';
+import { ReminderDetailModal } from '../needsAttentionScreen';
+import { RemindersScreen } from '../remindersScreen';
+import { deleteReminderThunk } from '../../../redux/features/reminders/remindersSlice';
+import { fetchNeedsAttentionThunk } from '../../../redux/features/home/needsAttentionSlice';
+import { ReminderApi } from '../../../services/remindersServices';
+import { formatReminderScheduleLabel } from '../addFlow/reminderApiHelpers';
 import { SideMenuModal, LogoutConfirmationModal } from '../menuScreens';
 import { CompassModal } from '../compassScreen';
 import {
@@ -89,6 +95,11 @@ const MainTabScreen: React.FC<MainTabScreenProps> = ({
   const [createTaskModalVisible, setCreateTaskModalVisible] = useState(false);
   const [createEventModalVisible, setCreateEventModalVisible] = useState(false);
   const [createReminderModalVisible, setCreateReminderModalVisible] = useState(false);
+  const [remindersListModalVisible, setRemindersListModalVisible] = useState(false);
+  const [selectedReminderForDetail, setSelectedReminderForDetail] = useState<{
+    id: string;
+    initial?: ReminderApi | null;
+  } | null>(null);
   const [scanModalVisible, setScanModalVisible] = useState(false);
   const [uploadModalVisible, setUploadModalVisible] = useState(false);
   const [askModalVisible, setAskModalVisible] = useState(false);
@@ -106,7 +117,8 @@ const MainTabScreen: React.FC<MainTabScreenProps> = ({
 
   const showToast = (
     message: string,
-    type: 'success' | 'cancelled' | 'info' = 'success'
+    type: 'success' | 'cancelled' | 'info' = 'success',
+    actions?: { onUndo?: () => void; onView?: () => void }
   ) => {
     setToastConfig({
       visible: true,
@@ -114,14 +126,16 @@ const MainTabScreen: React.FC<MainTabScreenProps> = ({
       type,
       onUndo: () => {
         setToastConfig((prev) => ({ ...prev, visible: false }));
+        actions?.onUndo?.();
       },
       onView: () => {
         setToastConfig((prev) => ({ ...prev, visible: false }));
+        actions?.onView?.();
       },
     });
     setTimeout(() => {
       setToastConfig((prev) => ({ ...prev, visible: false }));
-    }, 4000);
+    }, 4500);
   };
 
   // Sync activeTab when initialTab prop updates from navigation
@@ -237,7 +251,11 @@ const MainTabScreen: React.FC<MainTabScreenProps> = ({
         }}
         onSelectReminder={() => {
           setAddSheetVisible(false);
-          setCreateReminderModalVisible(true);
+          if (navigation && typeof navigation.navigate === 'function') {
+            navigation.navigate('Reminders');
+          } else {
+            setRemindersListModalVisible(true);
+          }
         }}
         onSelectList={() => {
           setAddSheetVisible(false);
@@ -316,13 +334,63 @@ const MainTabScreen: React.FC<MainTabScreenProps> = ({
       <CreateReminderModal
         visible={createReminderModalVisible}
         onClose={() => setCreateReminderModalVisible(false)}
-        onSaveReminder={(reminder: ReminderItem) => {
-          showToast(`Reminder set for ${reminder.whenText.toLowerCase()}`);
+        onApiSaved={(created, isEdit) => {
+          const whenLabel = formatReminderScheduleLabel(
+            created.remindOn,
+            created.remindTime
+          );
+          showToast(
+            isEdit
+              ? `Reminder updated for ${whenLabel}`
+              : `Reminder set for ${whenLabel}`,
+            'success',
+            {
+              onView: () =>
+                setSelectedReminderForDetail({
+                  id: created.id,
+                  initial: created,
+                }),
+              onUndo: !isEdit
+                ? () => {
+                    dispatch(deleteReminderThunk(created.id));
+                  }
+                : undefined,
+            }
+          );
         }}
+        onSaveReminder={(_reminder: ReminderItem) => {}}
         onConvertToTask={() => {
           setCreateReminderModalVisible(false);
           setCreateTaskModalVisible(true);
         }}
+      />
+
+      {selectedReminderForDetail && (
+        <ReminderDetailModal
+          visible={Boolean(selectedReminderForDetail)}
+          reminderId={selectedReminderForDetail.id}
+          initialReminder={selectedReminderForDetail.initial}
+          onClose={() => setSelectedReminderForDetail(null)}
+          onUpdated={() => {
+            dispatch(
+              fetchNeedsAttentionThunk({
+                section: 'ALL',
+                withinDays: 60,
+                limit: 30,
+              })
+            );
+          }}
+          onDeleted={() => {
+            showToast('Reminder removed', 'cancelled');
+          }}
+        />
+      )}
+
+      {/* Reminders List Screen Fallback */}
+      <RemindersScreen
+        asModal={true}
+        visible={remindersListModalVisible}
+        onClose={() => setRemindersListModalVisible(false)}
       />
 
       {/* Document Scanner Flow (ADD-05 -> ADD-17) */}

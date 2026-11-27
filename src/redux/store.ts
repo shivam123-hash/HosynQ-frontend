@@ -13,6 +13,8 @@ import notificationsReducer from './features/notifications/notificationsSlice';
 import tripsReducer from './features/trips/tripsSlice';
 import pulseReducer from './features/pulse/pulseSlice';
 import vaultReducer from './features/vault/vaultSlice';
+import remindersReducer from './features/reminders/remindersSlice';
+import needsAttentionReducer from './features/home/needsAttentionSlice';
 import chatReducer from './features/chat/chatSlice';
 import { setStore } from './storeRegistry';
 
@@ -31,6 +33,8 @@ export const store = configureStore({
     trips: tripsReducer,
     pulse: pulseReducer,
     vault: vaultReducer,
+    reminders: remindersReducer,
+    needsAttention: needsAttentionReducer,
     chat: chatReducer,
   },
   middleware: (getDefaultMiddleware) =>
