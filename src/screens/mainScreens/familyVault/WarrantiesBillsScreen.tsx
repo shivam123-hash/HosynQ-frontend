@@ -109,17 +109,19 @@ export const WarrantiesBillsScreen: React.FC<WarrantiesBillsScreenProps> = ({
 
   const bills = useMemo(
     () =>
-      sourceItems.filter(
-        (item) => String(item.category).toUpperCase() === 'UTILITIES'
-      ),
+      sourceItems.filter((item) => {
+        const cat = String(item.category).toUpperCase();
+        return cat === 'UTILITIES' || cat === 'WARRANTIES_BILLS';
+      }),
     [sourceItems]
   );
 
   const warranties = useMemo(
     () =>
-      sourceItems.filter(
-        (item) => String(item.category).toUpperCase() === 'WARRANTY'
-      ),
+      sourceItems.filter((item) => {
+        const cat = String(item.category).toUpperCase();
+        return cat === 'WARRANTY' || cat === 'WARRANTIES_BILLS';
+      }),
     [sourceItems]
   );
 
@@ -421,7 +423,7 @@ export const WarrantiesBillsScreen: React.FC<WarrantiesBillsScreenProps> = ({
 
       <AddEditVaultItemModal
         visible={addModalVisible}
-        initialCategory="UTILITIES"
+        initialCategory="WARRANTIES_BILLS"
         onClose={() => setAddModalVisible(false)}
         onSaved={loadItems}
       />

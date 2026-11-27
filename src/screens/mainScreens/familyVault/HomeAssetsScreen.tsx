@@ -56,7 +56,7 @@ export const HomeAssetsScreen: React.FC<HomeAssetsScreenProps> = ({
   const [addModalVisible, setAddModalVisible] = useState(false);
 
   const loadAssets = useCallback(async () => {
-    await dispatch(fetchVaultItemsThunk({ category: 'ASSET' }));
+    await dispatch(fetchVaultItemsThunk());
   }, [dispatch]);
 
   useEffect(() => {
@@ -79,7 +79,7 @@ export const HomeAssetsScreen: React.FC<HomeAssetsScreenProps> = ({
     const source = itemsOverride || vaultState.items;
     return source.filter((item) => {
       const cat = String(item.category).toUpperCase();
-      return cat === 'ASSET' || cat === 'PROPERTY';
+      return cat === 'ASSET' || cat === 'PROPERTY' || cat === 'HOME_ASSETS';
     });
   }, [itemsOverride, vaultState.items]);
 
@@ -260,8 +260,7 @@ export const HomeAssetsScreen: React.FC<HomeAssetsScreenProps> = ({
 
       <AddEditVaultItemModal
         visible={addModalVisible}
-        initialCategory="ASSET"
-        initialKind="VEHICLE"
+        initialCategory="HOME_ASSETS"
         onClose={() => setAddModalVisible(false)}
         onSaved={loadAssets}
       />

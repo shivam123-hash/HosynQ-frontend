@@ -90,7 +90,7 @@ export const DocumentsRenewalsScreen: React.FC<DocumentsRenewalsScreenProps> = (
   const loadData = useCallback(async () => {
     await Promise.all([
       dispatch(fetchVaultLifeProfileDocsThunk()),
-      dispatch(fetchVaultItemsThunk({ category: 'IDENTITY' })),
+      dispatch(fetchVaultItemsThunk()),
     ]);
   }, [dispatch]);
 
@@ -131,9 +131,10 @@ export const DocumentsRenewalsScreen: React.FC<DocumentsRenewalsScreenProps> = (
   const lifeProfileData = lifeProfileDocsOverride || vaultState.lifeProfileDocs;
   const identityItems = useMemo(() => {
     if (identityItemsOverride) return identityItemsOverride;
-    return vaultState.items.filter(
-      (i) => String(i.category).toUpperCase() === 'IDENTITY'
-    );
+    return vaultState.items.filter((i) => {
+      const cat = String(i.category).toUpperCase();
+      return cat === 'IDENTITY' || cat === 'DOCUMENTS';
+    });
   }, [identityItemsOverride, vaultState.items]);
 
   const isInitialLoading =
@@ -644,7 +645,7 @@ export const DocumentsRenewalsScreen: React.FC<DocumentsRenewalsScreenProps> = (
 
       <AddEditVaultItemModal
         visible={addModalVisible}
-        initialCategory="IDENTITY"
+        initialCategory="DOCUMENTS"
         onClose={() => setAddModalVisible(false)}
         onSaved={loadData}
       />

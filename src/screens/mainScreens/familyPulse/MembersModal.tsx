@@ -33,6 +33,7 @@ import { AddChildModal } from './AddChildModal';
 import { DeleteFamilyModal } from './DeleteFamilyModal';
 import { TransferOwnershipModal } from './TransferOwnershipModal';
 import { PulseModalContainer } from './PulseModalContainer';
+import { Fonts } from '../../../units';
 
 export type MemberRole = 'Owner' | 'Admin' | 'Adult' | 'Child';
 
@@ -126,12 +127,12 @@ export const MembersModal: React.FC<MembersModalProps> = ({
 
     const initials = m.fullName
       ? m.fullName
-          .trim()
-          .split(' ')
-          .map((n: string) => n[0])
-          .join('')
-          .slice(0, 2)
-          .toUpperCase()
+        .trim()
+        .split(' ')
+        .map((n: string) => n[0])
+        .join('')
+        .slice(0, 2)
+        .toUpperCase()
       : 'U';
 
     const relText = m.relationship
@@ -156,8 +157,8 @@ export const MembersModal: React.FC<MembersModalProps> = ({
     (pendingRequests && pendingRequests.length > 0)
       ? pendingRequests.length
       : myFamilyData?.pendingRequest
-      ? 1
-      : 0;
+        ? 1
+        : 0;
 
   const handleOpenInvite = () => {
     if (onInviteSomeone) {
@@ -808,13 +809,14 @@ const styles = StyleSheet.create({
     marginLeft: 14,
   },
   memberName: {
-    fontSize: 16,
+    fontSize: Platform.OS === 'ios' ? 17 : 12,
     fontFamily: 'Roboto-SemiBold',
     color: '#FFFFFF',
   },
   memberRelation: {
-    fontSize: 13,
+    fontSize: Platform.OS === 'ios' ? 13 : 10,
     color: '#6C7A90',
+    fontFamily: 'Roboto-Regular',
     marginTop: 2,
   },
   roleBadgeBase: {
@@ -827,7 +829,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   roleBadgeTextBase: {
-    fontSize: 12,
+    fontSize: Platform.OS === 'ios' ? 15 : 10,
     fontFamily: 'Roboto-SemiBold',
   },
   roleBadgeOwner: {
@@ -877,8 +879,8 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   primaryInviteButtonText: {
-    fontSize: 16,
-    fontFamily: 'Roboto-Bold',
+    fontSize: Platform.OS === 'ios' ? 18 : 15,
+    fontFamily: Fonts.semiBold,
     color: '#FFFFFF',
     marginLeft: 8,
   },
@@ -890,8 +892,8 @@ const styles = StyleSheet.create({
     marginTop: 6,
   },
   secondaryAddChildButtonText: {
-    fontSize: 15,
-    fontFamily: 'Roboto-SemiBold',
+    fontSize: Platform.OS === 'ios' ? 18 : 15,
+    fontFamily: Fonts.semiBold,
     color: '#F0913A',
     marginLeft: 8,
   },
@@ -917,8 +919,8 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   leaveFamilyBtnText: {
-    fontSize: 13.5,
-    fontFamily: 'Roboto-Medium',
+    fontSize: Platform.OS === 'ios' ? 15 : 13,
+    fontFamily: Fonts.medium,
     color: '#CAD4DF',
   },
   deleteFamilyBtn: {
@@ -934,8 +936,8 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   deleteFamilyBtnText: {
-    fontSize: 13.5,
-    fontFamily: 'Roboto-Medium',
+    fontSize: Platform.OS === 'ios' ? 15 : 13,
+    fontFamily: Fonts.medium,
     color: '#F06A6D',
   },
 });

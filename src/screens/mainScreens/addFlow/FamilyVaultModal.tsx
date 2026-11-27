@@ -114,7 +114,7 @@ export const FamilyVaultModal: React.FC<FamilyVaultModalProps> = ({
               navigateTo(cat);
             }}
             onSelectItem={(item) => openDetail(item)}
-            onAddToVault={() => openAddModal('INSURANCE', 'MOTOR')}
+            onAddToVault={() => openAddModal('DOCUMENTS')}
           />
         )}
 
@@ -122,7 +122,7 @@ export const FamilyVaultModal: React.FC<FamilyVaultModalProps> = ({
           <DocumentsRenewalsScreen
             onBack={handleBack}
             onSelectDoc={(doc) => openDetail(doc)}
-            onAddDocument={() => openAddModal('IDENTITY', 'PASSPORT')}
+            onAddDocument={() => openAddModal('DOCUMENTS')}
           />
         )}
 
@@ -131,9 +131,9 @@ export const FamilyVaultModal: React.FC<FamilyVaultModalProps> = ({
             onBack={handleBack}
             onSelectPolicy={(policy) => openDetail(policy)}
             onRenewPolicy={(policy) =>
-              openAddModal('INSURANCE', policy.kind || 'MOTOR', policy, true)
+              openAddModal('INSURANCE', undefined, policy, true)
             }
-            onAddPolicy={(kind) => openAddModal('INSURANCE', kind || 'MOTOR')}
+            onAddPolicy={() => openAddModal('INSURANCE')}
           />
         )}
 
@@ -141,7 +141,7 @@ export const FamilyVaultModal: React.FC<FamilyVaultModalProps> = ({
           <WarrantiesBillsScreen
             onBack={handleBack}
             onSelectItem={(item) => openDetail(item)}
-            onAddItem={(cat) => openAddModal(cat || 'UTILITIES')}
+            onAddItem={() => openAddModal('WARRANTIES_BILLS')}
           />
         )}
 
@@ -149,7 +149,7 @@ export const FamilyVaultModal: React.FC<FamilyVaultModalProps> = ({
           <HomeAssetsScreen
             onBack={handleBack}
             onSelectAsset={(asset) => openDetail(asset)}
-            onAddAsset={() => openAddModal('ASSET', 'VEHICLE')}
+            onAddAsset={() => openAddModal('HOME_ASSETS')}
           />
         )}
 
@@ -165,7 +165,7 @@ export const FamilyVaultModal: React.FC<FamilyVaultModalProps> = ({
           <ScansUploadsScreen
             onBack={handleBack}
             onSelectScan={(item) => openDetail(item)}
-            onScanNew={() => openAddModal('IDENTITY', 'PASSPORT')}
+            onScanNew={() => openAddModal('DOCUMENTS')}
           />
         )}
 

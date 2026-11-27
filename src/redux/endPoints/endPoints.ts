@@ -5,7 +5,7 @@ import { Platform, NativeModules } from 'react-native';
  * Current Mac Wi-Fi IP: 192.168.1.11
  * (Find by running `ifconfig | grep "inet 192"` in Mac terminal)
  */
-export const DEV_MACHINE_IP = '192.168.1.11';
+export const DEV_MACHINE_IP = '192.168.29.41';
 
 /**
  * Automatically extracts the development host IP:

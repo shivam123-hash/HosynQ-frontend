@@ -5,7 +5,11 @@ import lifeProfileServices from './lifeProfileServices';
 export type VaultVisibility = 'ADULTS' | 'EVERYONE' | 'ONLY_ME';
 
 export type VaultCategory =
+  | 'DOCUMENTS'
   | 'INSURANCE'
+  | 'WARRANTIES_BILLS'
+  | 'HOME_ASSETS'
+  | 'CONTACTS'
   | 'ASSET'
   | 'PROPERTY'
   | 'FINANCE'
@@ -14,7 +18,6 @@ export type VaultCategory =
   | 'MEDICAL'
   | 'WARRANTY'
   | 'LEGAL'
-  | 'CONTACTS'
   | 'SCANS'
   | string;
 
@@ -88,6 +91,7 @@ export interface VaultItemApi {
   asset?: { id: string; title: string; kind?: string | null; number?: string | null } | null;
   linkedItems?: VaultItemApi[];
   notes?: string | null;
+  hasExpiry?: boolean;
   reminderLeadDays?: number[];
   remindMemberIds?: string[];
   visibility: VaultVisibility;
@@ -155,6 +159,7 @@ export interface CreateVaultItemPayload {
   coveredMemberIds?: string[];
   assetId?: string | null;
   notes?: string | null;
+  hasExpiry?: boolean;
   reminderLeadDays?: number[];
   remindMemberIds?: string[];
   visibility: VaultVisibility;
@@ -181,6 +186,7 @@ export interface UpdateVaultItemPayload {
   coveredMemberIds?: string[];
   assetId?: string | null;
   notes?: string | null;
+  hasExpiry?: boolean;
   reminderLeadDays?: number[];
   remindMemberIds?: string[];
   visibility?: VaultVisibility;

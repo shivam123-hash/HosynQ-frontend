@@ -10,6 +10,7 @@ import {
   ActivityIndicator,
   Pressable,
   Image,
+  Switch,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Feather from '@react-native-vector-icons/feather';
@@ -18,12 +19,13 @@ import { useAppDispatch, useAppSelector } from '../../../redux';
 import {
   clearLastVaultScan,
   createVaultItemThunk,
-  fetchVaultItemsThunk,
   scanVaultDocumentThunk,
   updateVaultItemThunk,
 } from '../../../redux/features/vault/vaultSlice';
 import { isUUID } from '../../../redux/features/lists/listsSlice';
 import {
+  CreateVaultItemPayload,
+  UpdateVaultItemPayload,
   VaultCategory,
   VaultItemApi,
   VaultVisibility,
@@ -53,28 +55,20 @@ export interface AddEditVaultItemModalProps {
 }
 
 const CATEGORY_OPTIONS: Array<{ id: VaultCategory; label: string }> = [
+  { id: 'DOCUMENTS', label: 'Documents' },
   { id: 'INSURANCE', label: 'Insurance' },
-  { id: 'UTILITIES', label: 'Bill' },
-  { id: 'WARRANTY', label: 'Warranty' },
-  { id: 'ASSET', label: 'Asset' },
-  { id: 'IDENTITY', label: 'Document' },
-  { id: 'FINANCE', label: 'Finance' },
-  { id: 'MEDICAL', label: 'Medical' },
-  { id: 'LEGAL', label: 'Legal' },
-  { id: 'CONTACTS', label: 'Contact' },
+  { id: 'WARRANTIES_BILLS', label: 'Warranties & Bills' },
+  { id: 'HOME_ASSETS', label: 'Home Assets' },
+  { id: 'CONTACTS', label: 'Contacts' },
 ];
 
-const KIND_PRESETS: Record<string, string[]> = {
-  INSURANCE: ['MOTOR', 'HEALTH', 'LIFE', 'HOME'],
-  UTILITIES: ['ELECTRICITY', 'INTERNET', 'WATER', 'GAS'],
-  WARRANTY: ['APPLIANCE', 'ELECTRONICS', 'VEHICLE'],
-  ASSET: ['VEHICLE', 'PROPERTY', 'APPLIANCE'],
-  IDENTITY: ['PASSPORT', 'AADHAAR', 'PAN', 'PROPERTY_PAPERS', 'OTHER'],
-  FINANCE: ['BANK', 'LOAN', 'INVESTMENT', 'TAX'],
-  MEDICAL: ['PRESCRIPTION', 'LAB_REPORT', 'VACCINATION', 'OTHER'],
-  LEGAL: ['WILL', 'AGREEMENT', 'DEED', 'OTHER'],
-  CONTACTS: ['DOCTOR', 'SCHOOL', 'HOME_HELP', 'EMERGENCY'],
-};
+const CONTACT_KINDS: Array<{ id: string; label: string }> = [
+  { id: 'DOCTOR', label: 'Doctor' },
+  { id: 'EMERGENCY', label: 'Emergency' },
+  { id: 'HOME_HELP', label: 'Home Help' },
+  { id: 'SCHOOL', label: 'School' },
+  { id: 'OTHER', label: 'Other' },
+];
 
 const REMINDER_PRESETS: Array<{ label: string; days: number[] }> = [
   { label: '30d & 7d', days: [30, 7] },
@@ -89,12 +83,20 @@ const VISIBILITY_OPTIONS: Array<{ id: VaultVisibility; label: string }> = [
   { id: 'ONLY_ME', label: 'Only me' },
 ];
 
+const normalizeCategory = (cat?: string): VaultCategory => {
+  const c = String(cat || '').toUpperCase();
+  if (c === 'INSURANCE') return 'INSURANCE';
+  if (c === 'WARRANTIES_BILLS' || c === 'WARRANTY' || c === 'UTILITIES') return 'WARRANTIES_BILLS';
+  if (c === 'HOME_ASSETS' || c === 'ASSET' || c === 'PROPERTY') return 'HOME_ASSETS';
+  if (c === 'CONTACTS') return 'CONTACTS';
+  return 'DOCUMENTS';
+};
+
 export const AddEditVaultItemModal: React.FC<AddEditVaultItemModalProps> = ({
   visible,
   asModal = false,
   onClose,
-  initialCategory = 'INSURANCE',
-  initialKind,
+  initialCategory = 'DOCUMENTS',
   itemToEdit,
   renewMode = false,
   onSaved,
@@ -110,34 +112,31 @@ export const AddEditVaultItemModal: React.FC<AddEditVaultItemModalProps> = ({
     [familyState]
   );
 
-  const assetOptions = useMemo(
-    () => (vaultState.items || []).filter((it) => String(it.category).toUpperCase() === 'ASSET'),
-    [vaultState.items]
-  );
-
   const isEditing = Boolean(itemToEdit?.id);
 
-  const [category, setCategory] = useState<VaultCategory>(initialCategory);
-  const [kind, setKind] = useState<string>(initialKind || '');
+  // Common form fields
+  const [category, setCategory] = useState<VaultCategory>(() =>
+    normalizeCategory(itemToEdit?.category || initialCategory)
+  );
   const [title, setTitle] = useState('');
-  const [provider, setProvider] = useState('');
-  const [role, setRole] = useState('');
-  const [number, setNumber] = useState('');
-  const [phone, setPhone] = useState('');
-  const [hours, setHours] = useState('');
-  const [amount, setAmount] = useState('');
-  const [sumInsured, setSumInsured] = useState('');
-  const [repeatMonths, setRepeatMonths] = useState('');
-  const [issuedOn, setIssuedOn] = useState('');
-  const [dueOn, setDueOn] = useState('');
-  const [dueLabel, setDueLabel] = useState('');
-  const [serviceDueOn, setServiceDueOn] = useState('');
   const [notes, setNotes] = useState('');
-  const [memberId, setMemberId] = useState<string>('');
-  const [coveredMemberIds, setCoveredMemberIds] = useState<string[]>([]);
-  const [assetId, setAssetId] = useState<string>('');
-  const [reminderLeadDays, setReminderLeadDays] = useState<number[]>([30, 7]);
   const [visibility, setVisibility] = useState<VaultVisibility>('ADULTS');
+
+  // Document fields
+  const [memberId, setMemberId] = useState<string>('');
+  const [hasExpiry, setHasExpiry] = useState<boolean>(true);
+  const [dueOn, setDueOn] = useState('');
+  const [reminderLeadDays, setReminderLeadDays] = useState<number[]>([30, 7]);
+  const [remindMemberIds, setRemindMemberIds] = useState<string[]>([]);
+
+  // Contact fields (only for category === 'CONTACTS')
+  const [contactKind, setContactKind] = useState<string>('DOCTOR');
+  const [contactRole, setContactRole] = useState('');
+  const [contactProvider, setContactProvider] = useState('');
+  const [contactPhone, setContactPhone] = useState('');
+  const [contactHours, setContactHours] = useState('');
+
+  // Scan file attachments
   const [scanId, setScanId] = useState<string>('');
   const [scanFileLabel, setScanFileLabel] = useState<string>('');
   const [frontPick, setFrontPick] = useState<{
@@ -153,67 +152,61 @@ export const AddEditVaultItemModal: React.FC<AddEditVaultItemModalProps> = ({
   const [scanSideTarget, setScanSideTarget] = useState<'front' | 'back'>('front');
   const [skipRead, setSkipRead] = useState<boolean>(false);
   const [showScanSheet, setShowScanSheet] = useState(false);
-  const [dateTarget, setDateTarget] = useState<'issuedOn' | 'dueOn' | 'serviceDueOn' | null>(
-    null
-  );
+  const [dateTarget, setDateTarget] = useState<'dueOn' | null>(null);
   const [dialog, setDialog] = useState<VaultDialogState>(INITIAL_VAULT_DIALOG_STATE);
 
   useEffect(() => {
     if (!visible) return;
     dispatch(clearLastVaultScan());
 
-    if (!isTestEnv) {
-      dispatch(fetchVaultItemsThunk({ category: 'ASSET' }));
-    }
-
     const myId = members.find((m) => m.isYou)?.id || members[0]?.id || '';
 
     if (itemToEdit) {
-      setCategory(itemToEdit.category);
-      setKind(itemToEdit.kind || '');
+      const normCat = normalizeCategory(itemToEdit.category);
+      setCategory(normCat);
       setTitle(itemToEdit.title || '');
-      setProvider(itemToEdit.provider || '');
-      setRole(itemToEdit.role || '');
-      setNumber(itemToEdit.number || '');
-      setPhone(itemToEdit.phone || '');
-      setHours(itemToEdit.hours || '');
-      setAmount(
-        itemToEdit.amount !== null && itemToEdit.amount !== undefined
-          ? String(itemToEdit.amount)
-          : ''
-      );
-      setSumInsured(
-        itemToEdit.sumInsured !== null && itemToEdit.sumInsured !== undefined
-          ? String(itemToEdit.sumInsured)
-          : ''
-      );
-      setRepeatMonths(
-        itemToEdit.repeatMonths !== null && itemToEdit.repeatMonths !== undefined
-          ? String(itemToEdit.repeatMonths)
-          : ''
-      );
-      setIssuedOn(itemToEdit.issuedOn ? String(itemToEdit.issuedOn).slice(0, 10) : '');
-      if (renewMode) {
-        const nextDue = new Date();
-        nextDue.setMonth(nextDue.getMonth() + (itemToEdit.repeatMonths || 12));
-        setDueOn(nextDue.toISOString().slice(0, 10));
-      } else {
-        setDueOn(itemToEdit.dueOn ? String(itemToEdit.dueOn).slice(0, 10) : '');
-      }
-      setDueLabel(itemToEdit.dueLabel || '');
-      setServiceDueOn(
-        itemToEdit.serviceDueOn ? String(itemToEdit.serviceDueOn).slice(0, 10) : ''
-      );
       setNotes(itemToEdit.notes || '');
-      setMemberId(itemToEdit.memberId || itemToEdit.member?.id || myId);
-      setCoveredMemberIds(itemToEdit.coveredMemberIds || []);
-      setAssetId(itemToEdit.assetId || '');
-      setReminderLeadDays(
-        Array.isArray(itemToEdit.reminderLeadDays)
-          ? itemToEdit.reminderLeadDays
-          : [30, 7]
-      );
       setVisibility(itemToEdit.visibility || 'ADULTS');
+
+      if (normCat === 'CONTACTS') {
+        setContactKind(itemToEdit.kind || 'DOCTOR');
+        setContactRole(itemToEdit.role || '');
+        setContactProvider(itemToEdit.provider || '');
+        setContactPhone(itemToEdit.phone || '');
+        setContactHours(itemToEdit.hours || '');
+        setHasExpiry(false);
+        setDueOn('');
+        setReminderLeadDays([]);
+        setRemindMemberIds([]);
+      } else {
+        const itemHasExpiry =
+          itemToEdit.hasExpiry !== undefined
+            ? Boolean(itemToEdit.hasExpiry)
+            : Boolean(itemToEdit.dueOn);
+        setHasExpiry(itemHasExpiry);
+        if (renewMode) {
+          const nextDue = new Date();
+          nextDue.setFullYear(nextDue.getFullYear() + 1);
+          setDueOn(nextDue.toISOString().slice(0, 10));
+        } else {
+          setDueOn(itemToEdit.dueOn ? String(itemToEdit.dueOn).slice(0, 10) : '');
+        }
+        setReminderLeadDays(
+          Array.isArray(itemToEdit.reminderLeadDays)
+            ? itemToEdit.reminderLeadDays
+            : [30, 7]
+        );
+        const resolvedMemberId = itemToEdit.memberId || itemToEdit.member?.id || myId;
+        setMemberId(resolvedMemberId);
+        setRemindMemberIds(
+          Array.isArray(itemToEdit.remindMemberIds) && itemToEdit.remindMemberIds.length > 0
+            ? itemToEdit.remindMemberIds
+            : resolvedMemberId && isUUID(resolvedMemberId)
+            ? [resolvedMemberId]
+            : []
+        );
+      }
+
       setScanId('');
       setFrontPick(null);
       setBackPick(null);
@@ -230,42 +223,37 @@ export const AddEditVaultItemModal: React.FC<AddEditVaultItemModalProps> = ({
       return;
     }
 
-    setCategory(initialCategory);
-    const defaultKind = initialKind || KIND_PRESETS[initialCategory]?.[0] || '';
-    setKind(defaultKind);
+    // New item initialization
+    const targetCat = normalizeCategory(initialCategory);
+    setCategory(targetCat);
     setTitle('');
-    setProvider('');
-    setRole('');
-    setNumber('');
-    setPhone('');
-    setHours('');
-    setAmount('');
-    setSumInsured('');
-    setRepeatMonths(initialCategory === 'UTILITIES' ? '1' : initialCategory === 'INSURANCE' ? '12' : '');
-    setIssuedOn('');
-    setDueOn('');
-    setDueLabel(
-      initialCategory === 'UTILITIES'
-        ? 'Due'
-        : initialCategory === 'ASSET'
-        ? 'PUC'
-        : initialCategory === 'WARRANTY'
-        ? 'Warranty'
-        : 'Renewal'
-    );
-    setServiceDueOn('');
     setNotes('');
-    setMemberId(myId);
-    setCoveredMemberIds(myId && isUUID(myId) ? [myId] : []);
-    setAssetId('');
-    setReminderLeadDays(initialCategory === 'UTILITIES' ? [3, 1] : [30, 7]);
     setVisibility('ADULTS');
+
+    if (targetCat === 'CONTACTS') {
+      setContactKind('DOCTOR');
+      setContactRole('');
+      setContactProvider('');
+      setContactPhone('');
+      setContactHours('');
+      setHasExpiry(false);
+      setDueOn('');
+      setReminderLeadDays([]);
+      setRemindMemberIds([]);
+    } else {
+      setHasExpiry(true);
+      setDueOn('');
+      setReminderLeadDays([30, 7]);
+      setMemberId(myId);
+      setRemindMemberIds(myId && isUUID(myId) ? [myId] : []);
+    }
+
     setScanId('');
     setFrontPick(null);
     setBackPick(null);
     setSkipRead(false);
     setScanFileLabel('');
-  }, [visible, itemToEdit, initialCategory, initialKind, renewMode, members, dispatch, isTestEnv]);
+  }, [visible, itemToEdit, initialCategory, renewMode, members, dispatch, isTestEnv]);
 
   const performScanUpload = async (
     nextFront: { path: string; filename?: string; mime?: string },
@@ -310,21 +298,6 @@ export const AddEditVaultItemModal: React.FC<AddEditVaultItemModalProps> = ({
         ? rawPath
         : `file://${rawPath}`;
 
-    const VALID_SCAN_TYPES = new Set([
-      'PASSPORT',
-      'VISA',
-      'DRIVING_LICENSE',
-      'PAN',
-      'AADHAAR',
-      'BIRTH_CERTIFICATE',
-      'SENIOR_CITIZEN_CARD',
-      'BILL',
-      'OTHER',
-    ]);
-    const rawCandidate =
-      category === 'UTILITIES' ? 'BILL' : String(kind || 'OTHER').toUpperCase();
-    const scanType = VALID_SCAN_TYPES.has(rawCandidate) ? rawCandidate : 'OTHER';
-
     const formData = new FormData();
     formData.append('file', {
       uri: normalizeUploadUri(nextFront.path),
@@ -338,7 +311,7 @@ export const AddEditVaultItemModal: React.FC<AddEditVaultItemModalProps> = ({
         type: nextBack.mime || 'image/jpeg',
       } as any);
     }
-    formData.append('type', scanType);
+    formData.append('type', 'OTHER');
     formData.append('skipRead', skipOcr ? 'true' : 'false');
 
     try {
@@ -360,11 +333,10 @@ export const AddEditVaultItemModal: React.FC<AddEditVaultItemModalProps> = ({
         const extracted = res?.extracted;
         if (!skipOcr && extracted) {
           if (extracted.title && !title.trim()) setTitle(extracted.title);
-          if (extracted.provider && !provider.trim()) setProvider(extracted.provider);
-          if (extracted.number && !number.trim()) setNumber(extracted.number);
-          if (extracted.amount && !amount.trim()) setAmount(String(extracted.amount));
-          if (extracted.issuedOn && !issuedOn) setIssuedOn(extracted.issuedOn);
-          if (extracted.dueOn && !dueOn) setDueOn(extracted.dueOn);
+          if (extracted.dueOn && !dueOn) {
+            setDueOn(extracted.dueOn);
+            setHasExpiry(true);
+          }
         }
       } else {
         setDialog({
@@ -487,8 +459,8 @@ export const AddEditVaultItemModal: React.FC<AddEditVaultItemModalProps> = ({
     }
   };
 
-  const toggleCoveredMember = (id: string) => {
-    setCoveredMemberIds((prev) =>
+  const toggleRemindMember = (id: string) => {
+    setRemindMemberIds((prev) =>
       prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]
     );
   };
@@ -499,67 +471,118 @@ export const AddEditVaultItemModal: React.FC<AddEditVaultItemModalProps> = ({
       setDialog({
         visible: true,
         type: 'warning',
-        title: 'Title required',
-        description: 'Enter a name for this Vault record.',
+        title: category === 'CONTACTS' ? 'Contact name required' : 'Title required',
+        description:
+          category === 'CONTACTS'
+            ? 'Please enter a name for this contact.'
+            : 'Enter a name for this Vault record.',
         primaryButtonText: 'OK',
         secondaryButtonText: '',
       });
       return;
     }
 
-    if (backPick && !frontPick) {
-      setDialog({
-        visible: true,
-        type: 'warning',
-        title: 'Front file required',
-        description: 'Please attach the Front file as well so both images can be uploaded together.',
-        primaryButtonText: 'OK',
-        secondaryButtonText: '',
-      });
-      return;
+    if (category !== 'CONTACTS') {
+      if (backPick && !frontPick) {
+        setDialog({
+          visible: true,
+          type: 'warning',
+          title: 'Front file required',
+          description:
+            'Please attach the Front file as well so both images can be uploaded together.',
+          primaryButtonText: 'OK',
+          secondaryButtonText: '',
+        });
+        return;
+      }
     }
 
-    const validOwnerId = memberId && isUUID(memberId) ? memberId : null;
-    const validCovered = filterValidFamilyMemberIds(coveredMemberIds, members);
-    const validRemindIds =
-      validCovered.length > 0
-        ? validCovered
-        : validOwnerId
-        ? [validOwnerId]
-        : [];
-    const parsedAmount = amount.trim() ? parseInt(amount.trim(), 10) : null;
-    const parsedSumInsured = sumInsured.trim() ? parseInt(sumInsured.trim(), 10) : null;
-    const parsedRepeat = repeatMonths.trim() ? parseInt(repeatMonths.trim(), 10) : null;
+    const cleanNotes = notes.trim() ? notes.trim().slice(0, 1000) : null;
 
     try {
+      if (category === 'CONTACTS') {
+        const contactPayload: CreateVaultItemPayload = {
+          category: 'CONTACTS',
+          title: cleanTitle.slice(0, 120),
+          kind: contactKind.trim() || 'DOCTOR',
+          role: contactRole.trim() ? contactRole.trim().slice(0, 120) : null,
+          provider: contactProvider.trim() ? contactProvider.trim().slice(0, 120) : null,
+          phone: contactPhone.trim() ? contactPhone.trim().slice(0, 40) : null,
+          hours: contactHours.trim() ? contactHours.trim().slice(0, 120) : null,
+          hasExpiry: false,
+          visibility,
+          notes: cleanNotes,
+        };
+
+        if (isEditing && itemToEdit) {
+          const updatePayload: UpdateVaultItemPayload = {
+            title: contactPayload.title,
+            kind: contactPayload.kind,
+            role: contactPayload.role,
+            provider: contactPayload.provider,
+            phone: contactPayload.phone,
+            hours: contactPayload.hours,
+            hasExpiry: false,
+            visibility,
+            notes: cleanNotes,
+          };
+          const updated = await dispatch(
+            updateVaultItemThunk({
+              id: itemToEdit.id,
+              payload: updatePayload,
+            })
+          ).unwrap();
+          onSaved?.(updated);
+          onClose();
+          return;
+        }
+
+        const created = await dispatch(createVaultItemThunk(contactPayload)).unwrap();
+        onSaved?.(created);
+        onClose();
+        return;
+      }
+
+      // Category is DOCUMENTS, INSURANCE, WARRANTIES_BILLS, or HOME_ASSETS
+      const validOwnerId = memberId && isUUID(memberId) ? memberId : null;
+      const validRemindIds = filterValidFamilyMemberIds(remindMemberIds, members);
+      const effectiveRemindIds =
+        validRemindIds.length > 0
+          ? validRemindIds
+          : validOwnerId
+          ? [validOwnerId]
+          : [];
+
+      const docPayload: CreateVaultItemPayload = {
+        category,
+        title: cleanTitle.slice(0, 120),
+        ...(scanId ? { scanId } : {}),
+        memberId: validOwnerId,
+        hasExpiry,
+        dueOn: hasExpiry && dueOn ? dueOn : null,
+        reminderLeadDays: hasExpiry ? reminderLeadDays : [],
+        remindMemberIds: hasExpiry ? effectiveRemindIds : [],
+        visibility,
+        notes: cleanNotes,
+      };
+
       if (isEditing && itemToEdit) {
+        const updateDocPayload: UpdateVaultItemPayload = {
+          title: docPayload.title,
+          ...(scanId ? { scanId } : {}),
+          memberId: validOwnerId,
+          hasExpiry,
+          dueOn: hasExpiry && dueOn ? dueOn : null,
+          reminderLeadDays: hasExpiry ? reminderLeadDays : [],
+          remindMemberIds: hasExpiry ? effectiveRemindIds : [],
+          visibility,
+          notes: cleanNotes,
+        };
+
         const updated = await dispatch(
           updateVaultItemThunk({
             id: itemToEdit.id,
-            payload: {
-              title: cleanTitle.slice(0, 120),
-              kind: kind.trim() || null,
-              provider: provider.trim() || null,
-              role: role.trim() || null,
-              number: number.trim() || null,
-              phone: phone.trim() || null,
-              hours: hours.trim() || null,
-              amount: Number.isNaN(parsedAmount as any) ? null : parsedAmount,
-              sumInsured: Number.isNaN(parsedSumInsured as any) ? null : parsedSumInsured,
-              repeatMonths: Number.isNaN(parsedRepeat as any) ? null : parsedRepeat,
-              issuedOn: issuedOn || null,
-              dueOn: dueOn || null,
-              dueLabel: dueLabel.trim() || null,
-              serviceDueOn: serviceDueOn || null,
-              ...(scanId ? { scanId } : {}),
-              memberId: validOwnerId,
-              coveredMemberIds: validCovered,
-              assetId: assetId && isUUID(assetId) ? assetId : null,
-              notes: notes.trim() ? notes.trim().slice(0, 1000) : null,
-              reminderLeadDays,
-              remindMemberIds: validRemindIds,
-              visibility,
-            },
+            payload: updateDocPayload,
           })
         ).unwrap();
         onSaved?.(updated);
@@ -567,33 +590,7 @@ export const AddEditVaultItemModal: React.FC<AddEditVaultItemModalProps> = ({
         return;
       }
 
-      const created = await dispatch(
-        createVaultItemThunk({
-          category: category.slice(0, 40),
-          title: cleanTitle.slice(0, 120),
-          kind: kind.trim() || null,
-          provider: provider.trim() || null,
-          role: role.trim() || null,
-          number: number.trim() || null,
-          phone: phone.trim() || null,
-          hours: hours.trim() || null,
-          amount: Number.isNaN(parsedAmount as any) ? null : parsedAmount,
-          sumInsured: Number.isNaN(parsedSumInsured as any) ? null : parsedSumInsured,
-          repeatMonths: Number.isNaN(parsedRepeat as any) ? null : parsedRepeat,
-          issuedOn: issuedOn || null,
-          dueOn: dueOn || null,
-          dueLabel: dueLabel.trim() || null,
-          serviceDueOn: serviceDueOn || null,
-          ...(scanId ? { scanId } : {}),
-          memberId: validOwnerId,
-          coveredMemberIds: validCovered,
-          assetId: assetId && isUUID(assetId) ? assetId : null,
-          notes: notes.trim() ? notes.trim().slice(0, 1000) : null,
-          reminderLeadDays,
-          remindMemberIds: validRemindIds,
-          visibility,
-        })
-      ).unwrap();
+      const created = await dispatch(createVaultItemThunk(docPayload)).unwrap();
       onSaved?.(created);
       onClose();
     } catch (err: any) {
@@ -609,47 +606,46 @@ export const AddEditVaultItemModal: React.FC<AddEditVaultItemModalProps> = ({
     }
   };
 
-  const kindChoices = KIND_PRESETS[category] || [];
-
   if (!asModal && !visible) {
     return null;
   }
 
   const content = (
-      <View
-        style={[
-          styles.container,
-          !asModal && styles.inlineOverlayContainer,
-          { paddingTop: Math.max(insets.top, 16) },
-        ]}
-      >
-        {/* Header */}
-        <View style={styles.header}>
-          <TouchableOpacity
-            style={styles.circleBtn}
-            onPress={onClose}
-            activeOpacity={0.7}
-            accessibilityRole="button"
-            accessibilityLabel="Close"
-          >
-            <Feather name="x" size={20} color="#FFFFFF" />
-          </TouchableOpacity>
-          <Text style={styles.headerTitle}>
-            {renewMode ? 'Renew item' : isEditing ? 'Edit item' : 'Add to Vault'}
-          </Text>
-          <View style={styles.headerSpacer} />
-        </View>
-
-        <ScrollView
-          style={{ flex: 1 }}
-          contentContainerStyle={[
-            styles.scrollContent,
-            { paddingBottom: Math.max(insets.bottom, 16) + 96 },
-          ]}
-          showsVerticalScrollIndicator={false}
-          keyboardShouldPersistTaps="handled"
+    <View
+      style={[
+        styles.container,
+        !asModal && styles.inlineOverlayContainer,
+        { paddingTop: Math.max(insets.top, 16) },
+      ]}
+    >
+      {/* Header */}
+      <View style={styles.header}>
+        <TouchableOpacity
+          style={styles.circleBtn}
+          onPress={onClose}
+          activeOpacity={0.7}
+          accessibilityRole="button"
+          accessibilityLabel="Close"
         >
-          {/* Scan / Attach Front & Back Document Files (#3) */}
+          <Feather name="x" size={20} color="#FFFFFF" />
+        </TouchableOpacity>
+        <Text style={styles.headerTitle}>
+          {renewMode ? 'Renew item' : isEditing ? 'Edit item' : 'Add to Vault'}
+        </Text>
+        <View style={styles.headerSpacer} />
+      </View>
+
+      <ScrollView
+        style={{ flex: 1 }}
+        contentContainerStyle={[
+          styles.scrollContent,
+          { paddingBottom: Math.max(insets.bottom, 16) + 96 },
+        ]}
+        showsVerticalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled"
+      >
+        {/* Scan / Attach Front & Back Document Files (shown for all categories except CONTACTS) */}
+        {category !== 'CONTACTS' && (
           <View style={styles.scanSectionCard}>
             <View style={styles.scanHeaderRow}>
               <View style={styles.scanIconCircle}>
@@ -767,219 +763,260 @@ export const AddEditVaultItemModal: React.FC<AddEditVaultItemModalProps> = ({
               </Text>
             </TouchableOpacity>
           </View>
+        )}
 
-          {/* Category selector (locked during edit per API rule #7) */}
-          {!isEditing && (
-            <>
-              <Text style={styles.sectionLabel}>CATEGORY</Text>
-              <ScrollView
-                horizontal
-                showsHorizontalScrollIndicator={false}
-                contentContainerStyle={styles.chipsRow}
-              >
-                {CATEGORY_OPTIONS.map((c) => {
-                  const active = category === c.id;
-                  return (
-                    <TouchableOpacity
-                      key={c.id}
-                      style={[styles.chip, active && styles.chipActive]}
-                      onPress={() => {
-                        setCategory(c.id);
-                        setKind(KIND_PRESETS[c.id]?.[0] || '');
-                      }}
-                      activeOpacity={0.8}
-                    >
-                      <Text style={[styles.chipText, active && styles.chipTextActive]}>
-                        {c.label}
-                      </Text>
-                    </TouchableOpacity>
-                  );
-                })}
-              </ScrollView>
-            </>
-          )}
+        {/* Category selector (locked during edit per API rule) */}
+        {!isEditing && (
+          <>
+            <Text style={styles.sectionLabel}>CATEGORY</Text>
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.chipsRow}
+            >
+              {CATEGORY_OPTIONS.map((c) => {
+                const active = category === c.id;
+                return (
+                  <TouchableOpacity
+                    key={c.id}
+                    style={[styles.chip, active && styles.chipActive]}
+                    onPress={() => {
+                      setCategory(c.id);
+                      if (c.id === 'CONTACTS') {
+                        setHasExpiry(false);
+                      } else {
+                        setHasExpiry(true);
+                      }
+                    }}
+                    activeOpacity={0.8}
+                  >
+                    <Text style={[styles.chipText, active && styles.chipTextActive]}>
+                      {c.label}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </ScrollView>
+          </>
+        )}
 
-          {/* Sub-type Kind chips */}
-          {kindChoices.length > 0 && (
-            <>
-              <Text style={styles.sectionLabel}>TYPE</Text>
-              <ScrollView
-                horizontal
-                showsHorizontalScrollIndicator={false}
-                contentContainerStyle={styles.chipsRow}
-              >
-                {kindChoices.map((k) => {
-                  const active = kind === k;
-                  return (
-                    <TouchableOpacity
-                      key={k}
-                      style={[styles.chip, active && styles.chipActive]}
-                      onPress={() => setKind(k)}
-                      activeOpacity={0.8}
-                    >
-                      <Text style={[styles.chipText, active && styles.chipTextActive]}>
-                        {k.replace(/_/g, ' ')}
-                      </Text>
-                    </TouchableOpacity>
-                  );
-                })}
-              </ScrollView>
-            </>
-          )}
+        {/* CONTACTS FORM */}
+        {category === 'CONTACTS' ? (
+          <>
+            <Text style={styles.fieldLabel}>Contact Name *</Text>
+            <TextInput
+              style={styles.input}
+              value={title}
+              onChangeText={setTitle}
+              placeholder="e.g. Dr. Mehta"
+              placeholderTextColor="#6E8096"
+              maxLength={120}
+            />
 
-          <Text style={styles.fieldLabel}>Title</Text>
-          <TextInput
-            style={styles.input}
-            value={title}
-            onChangeText={setTitle}
-            placeholder="e.g. Car insurance, Hyundai Creta, BSES"
-            placeholderTextColor="#6E8096"
-            maxLength={120}
-          />
+            <Text style={styles.sectionLabel}>CONTACT TYPE</Text>
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.chipsRow}
+            >
+              {CONTACT_KINDS.map((k) => {
+                const active = contactKind === k.id;
+                return (
+                  <TouchableOpacity
+                    key={k.id}
+                    style={[styles.chip, active && styles.chipActive]}
+                    onPress={() => setContactKind(k.id)}
+                    activeOpacity={0.8}
+                  >
+                    <Text style={[styles.chipText, active && styles.chipTextActive]}>
+                      {k.label}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </ScrollView>
 
-          <Text style={styles.fieldLabel}>
-            {category === 'CONTACTS' ? 'Organization / Hospital' : 'Provider / Brand'}
-          </Text>
-          <TextInput
-            style={styles.input}
-            value={provider}
-            onChangeText={setProvider}
-            placeholder="e.g. HDFC ERGO, Hyundai, Apollo Cradle"
-            placeholderTextColor="#6E8096"
-          />
+            <Text style={styles.fieldLabel}>Role / Specialty</Text>
+            <TextInput
+              style={styles.input}
+              value={contactRole}
+              onChangeText={setContactRole}
+              placeholder="e.g. Paediatrician, Plumber, Electrician"
+              placeholderTextColor="#6E8096"
+              maxLength={120}
+            />
 
-          {category === 'CONTACTS' ? (
-            <>
-              <Text style={styles.fieldLabel}>Role / Specialty</Text>
-              <TextInput
-                style={styles.input}
-                value={role}
-                onChangeText={setRole}
-                placeholder="e.g. Paediatrician, Plumber, Gate Security"
-                placeholderTextColor="#6E8096"
-              />
-              <Text style={styles.fieldLabel}>Phone number</Text>
-              <TextInput
-                style={styles.input}
-                value={phone}
-                onChangeText={setPhone}
-                placeholder="e.g. +91 98100 00000"
-                placeholderTextColor="#6E8096"
-                keyboardType="phone-pad"
-              />
-              <Text style={styles.fieldLabel}>Hours / Availability</Text>
-              <TextInput
-                style={styles.input}
-                value={hours}
-                onChangeText={setHours}
-                placeholder="e.g. Mon to Fri, 8 AM to 3 PM"
-                placeholderTextColor="#6E8096"
-              />
-            </>
-          ) : (
-            <>
-              <Text style={styles.fieldLabel}>Policy / Account / Reg. Number</Text>
-              <TextInput
-                style={styles.input}
-                value={number}
-                onChangeText={setNumber}
-                placeholder="e.g. POL-2025-99887732 or DL3CAB1234"
-                placeholderTextColor="#6E8096"
-              />
+            <Text style={styles.fieldLabel}>Organization / Hospital</Text>
+            <TextInput
+              style={styles.input}
+              value={contactProvider}
+              onChangeText={setContactProvider}
+              placeholder="e.g. Apollo Cradle, Max Healthcare"
+              placeholderTextColor="#6E8096"
+              maxLength={120}
+            />
 
-              <View style={styles.rowTwoCol}>
-                <View style={{ flex: 1 }}>
-                  <Text style={styles.fieldLabel}>Amount / Premium (₹)</Text>
-                  <TextInput
-                    style={styles.input}
-                    value={amount}
-                    onChangeText={setAmount}
-                    placeholder="e.g. 14250"
-                    placeholderTextColor="#6E8096"
-                    keyboardType="numeric"
-                  />
-                </View>
-                {category === 'INSURANCE' && (
-                  <View style={{ flex: 1 }}>
-                    <Text style={styles.fieldLabel}>Sum Insured (₹)</Text>
-                    <TextInput
-                      style={styles.input}
-                      value={sumInsured}
-                      onChangeText={setSumInsured}
-                      placeholder="e.g. 650000"
-                      placeholderTextColor="#6E8096"
-                      keyboardType="numeric"
-                    />
-                  </View>
-                )}
-              </View>
+            <Text style={styles.fieldLabel}>Phone number</Text>
+            <TextInput
+              style={styles.input}
+              value={contactPhone}
+              onChangeText={setContactPhone}
+              placeholder="e.g. +91 98765 43210"
+              placeholderTextColor="#6E8096"
+              keyboardType="phone-pad"
+              maxLength={40}
+            />
 
-              {/* Dates */}
-              <View style={styles.rowTwoCol}>
-                <TouchableOpacity
-                  style={styles.dateBox}
-                  onPress={() => setDateTarget('issuedOn')}
-                  activeOpacity={0.75}
+            <Text style={styles.fieldLabel}>Hours / Availability</Text>
+            <TextInput
+              style={styles.input}
+              value={contactHours}
+              onChangeText={setContactHours}
+              placeholder="e.g. Mon to Sat, 10 AM to 6 PM"
+              placeholderTextColor="#6E8096"
+              maxLength={120}
+            />
+          </>
+        ) : (
+          /* STANDARD DOCUMENT FORM (DOCUMENTS, INSURANCE, WARRANTIES_BILLS, HOME_ASSETS) */
+          <>
+            <Text style={styles.fieldLabel}>Title *</Text>
+            <TextInput
+              style={styles.input}
+              value={title}
+              onChangeText={setTitle}
+              placeholder={
+                category === 'INSURANCE'
+                  ? 'e.g. Car Insurance, Health Policy'
+                  : category === 'WARRANTIES_BILLS'
+                  ? 'e.g. Microwave Warranty, Electricity Bill'
+                  : category === 'HOME_ASSETS'
+                  ? 'e.g. Living Room TV, Hyundai Creta'
+                  : 'e.g. Passport, Aadhaar Card, Hospital Report'
+              }
+              placeholderTextColor="#6E8096"
+              maxLength={120}
+            />
+
+            {/* Whose document is this? */}
+            {members.length > 0 && (
+              <>
+                <Text style={styles.sectionLabel}>WHOSE DOCUMENT IS THIS?</Text>
+                <ScrollView
+                  horizontal
+                  showsHorizontalScrollIndicator={false}
+                  contentContainerStyle={styles.chipsRow}
                 >
-                  <Text style={styles.dateSub}>Issued on</Text>
-                  <Text style={styles.dateVal}>
-                    {issuedOn ? formatVaultDate(issuedOn) : 'Optional'}
-                  </Text>
-                </TouchableOpacity>
+                  {members.map((m) => {
+                    const active = memberId === m.id;
+                    return (
+                      <TouchableOpacity
+                        key={m.id}
+                        style={[styles.chip, active && styles.chipActive]}
+                        onPress={() => {
+                          setMemberId(m.id);
+                          if (
+                            remindMemberIds.length === 0 ||
+                            (remindMemberIds.length === 1 && remindMemberIds[0] === memberId)
+                          ) {
+                            setRemindMemberIds([m.id]);
+                          }
+                        }}
+                        activeOpacity={0.8}
+                      >
+                        <Text style={[styles.chipText, active && styles.chipTextActive]}>
+                          {m.firstName} {m.isYou ? '(You)' : ''}
+                        </Text>
+                      </TouchableOpacity>
+                    );
+                  })}
+                </ScrollView>
+              </>
+            )}
 
+            {/* Expiry date switch */}
+            <View style={styles.toggleCard}>
+              <View style={styles.toggleCardLeft}>
+                <Feather name="calendar" size={18} color="#F0923A" />
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.toggleCardTitle}>Document has an expiry date</Text>
+                  <Text style={styles.toggleCardSubtitle}>
+                    {hasExpiry
+                      ? 'Set expiry date and renewal reminders'
+                      : 'No expiry date or renewal needed'}
+                  </Text>
+                </View>
+              </View>
+              <Switch
+                value={hasExpiry}
+                onValueChange={(val) => {
+                  setHasExpiry(val);
+                  if (!val) {
+                    setDueOn('');
+                  }
+                }}
+                trackColor={{ false: '#253957', true: '#F0923A' }}
+                thumbColor="#FFFFFF"
+              />
+            </View>
+
+            {/* Expiry Date, Reminders & Remind Members (only if hasExpiry) */}
+            {hasExpiry && (
+              <>
                 <TouchableOpacity
-                  style={styles.dateBox}
+                  style={styles.dateBoxFull}
                   onPress={() => setDateTarget('dueOn')}
                   activeOpacity={0.75}
                 >
-                  <Text style={styles.dateSub}>{dueLabel || 'Due / Expiry'}</Text>
+                  <Text style={styles.dateSub}>Expiry / Due date *</Text>
                   <Text style={styles.dateVal}>
-                    {dueOn ? formatVaultDate(dueOn) : 'Pick date'}
+                    {dueOn ? formatVaultDate(dueOn) : 'Select date'}
                   </Text>
                 </TouchableOpacity>
-              </View>
 
-              {category === 'ASSET' && (
-                <TouchableOpacity
-                  style={styles.dateBoxFull}
-                  onPress={() => setDateTarget('serviceDueOn')}
-                  activeOpacity={0.75}
+                <Text style={styles.sectionLabel}>REMINDER NOTIFICATIONS</Text>
+                <ScrollView
+                  horizontal
+                  showsHorizontalScrollIndicator={false}
+                  contentContainerStyle={styles.chipsRow}
                 >
-                  <Text style={styles.dateSub}>Next service due date</Text>
-                  <Text style={styles.dateVal}>
-                    {serviceDueOn ? formatVaultDate(serviceDueOn) : 'Optional'}
-                  </Text>
-                </TouchableOpacity>
-              )}
+                  {REMINDER_PRESETS.map((preset) => {
+                    const active =
+                      JSON.stringify(reminderLeadDays) === JSON.stringify(preset.days);
+                    return (
+                      <TouchableOpacity
+                        key={preset.label}
+                        style={[styles.chip, active && styles.chipActive]}
+                        onPress={() => setReminderLeadDays(preset.days)}
+                        activeOpacity={0.8}
+                      >
+                        <Text style={[styles.chipText, active && styles.chipTextActive]}>
+                          {preset.label}
+                        </Text>
+                      </TouchableOpacity>
+                    );
+                  })}
+                </ScrollView>
 
-              {/* Linked Asset (#9) */}
-              {(category === 'INSURANCE' || category === 'WARRANTY') &&
-                assetOptions.length > 0 && (
+                {members.length > 0 && (
                   <>
-                    <Text style={styles.sectionLabel}>LINKED ASSET (OPTIONAL)</Text>
+                    <Text style={styles.sectionLabel}>REMIND MEMBERS</Text>
                     <ScrollView
                       horizontal
                       showsHorizontalScrollIndicator={false}
                       contentContainerStyle={styles.chipsRow}
                     >
-                      <TouchableOpacity
-                        style={[styles.chip, !assetId && styles.chipActive]}
-                        onPress={() => setAssetId('')}
-                      >
-                        <Text style={[styles.chipText, !assetId && styles.chipTextActive]}>
-                          None
-                        </Text>
-                      </TouchableOpacity>
-                      {assetOptions.map((a) => {
-                        const active = assetId === a.id;
+                      {members.map((m) => {
+                        const active = remindMemberIds.includes(m.id);
                         return (
                           <TouchableOpacity
-                            key={a.id}
+                            key={m.id}
                             style={[styles.chip, active && styles.chipActive]}
-                            onPress={() => setAssetId(a.id)}
+                            onPress={() => toggleRemindMember(m.id)}
+                            activeOpacity={0.8}
                           >
                             <Text style={[styles.chipText, active && styles.chipTextActive]}>
-                              {a.title}
+                              {m.firstName} {active ? '✓' : ''}
                             </Text>
                           </TouchableOpacity>
                         );
@@ -987,198 +1024,119 @@ export const AddEditVaultItemModal: React.FC<AddEditVaultItemModalProps> = ({
                     </ScrollView>
                   </>
                 )}
-
-              {/* Reminders */}
-              <Text style={styles.sectionLabel}>REMINDERS</Text>
-              <ScrollView
-                horizontal
-                showsHorizontalScrollIndicator={false}
-                contentContainerStyle={styles.chipsRow}
-              >
-                {REMINDER_PRESETS.map((preset) => {
-                  const active =
-                    JSON.stringify(reminderLeadDays) === JSON.stringify(preset.days);
-                  return (
-                    <TouchableOpacity
-                      key={preset.label}
-                      style={[styles.chip, active && styles.chipActive]}
-                      onPress={() => setReminderLeadDays(preset.days)}
-                    >
-                      <Text style={[styles.chipText, active && styles.chipTextActive]}>
-                        {preset.label}
-                      </Text>
-                    </TouchableOpacity>
-                  );
-                })}
-              </ScrollView>
-            </>
-          )}
-
-          {/* Member Owner & Covered */}
-          {members.length > 0 && (
-            <>
-              <Text style={styles.sectionLabel}>OWNER / PRIMARY MEMBER</Text>
-              <ScrollView
-                horizontal
-                showsHorizontalScrollIndicator={false}
-                contentContainerStyle={styles.chipsRow}
-              >
-                {members.map((m) => {
-                  const active = memberId === m.id;
-                  return (
-                    <TouchableOpacity
-                      key={m.id}
-                      style={[styles.chip, active && styles.chipActive]}
-                      onPress={() => setMemberId(m.id)}
-                    >
-                      <Text style={[styles.chipText, active && styles.chipTextActive]}>
-                        {m.firstName}
-                      </Text>
-                    </TouchableOpacity>
-                  );
-                })}
-              </ScrollView>
-
-              {category === 'INSURANCE' && (
-                <>
-                  <Text style={styles.sectionLabel}>COVERED MEMBERS</Text>
-                  <ScrollView
-                    horizontal
-                    showsHorizontalScrollIndicator={false}
-                    contentContainerStyle={styles.chipsRow}
-                  >
-                    {members.map((m) => {
-                      const active = coveredMemberIds.includes(m.id);
-                      return (
-                        <TouchableOpacity
-                          key={m.id}
-                          style={[styles.chip, active && styles.chipActive]}
-                          onPress={() => toggleCoveredMember(m.id)}
-                        >
-                          <Text style={[styles.chipText, active && styles.chipTextActive]}>
-                            {m.firstName}
-                          </Text>
-                        </TouchableOpacity>
-                      );
-                    })}
-                  </ScrollView>
-                </>
-              )}
-            </>
-          )}
-
-          {/* Visibility */}
-          <Text style={styles.sectionLabel}>WHO CAN SEE THIS</Text>
-          <View style={styles.visRow}>
-            {VISIBILITY_OPTIONS.map((v) => {
-              const active = visibility === v.id;
-              return (
-                <TouchableOpacity
-                  key={v.id}
-                  style={[styles.visBtn, active && styles.visBtnActive]}
-                  onPress={() => setVisibility(v.id)}
-                >
-                  <Text style={[styles.visBtnText, active && styles.visBtnTextActive]}>
-                    {v.label}
-                  </Text>
-                </TouchableOpacity>
-              );
-            })}
-          </View>
-
-          <Text style={styles.fieldLabel}>Notes</Text>
-          <TextInput
-            style={[styles.input, styles.notesInput]}
-            value={notes}
-            onChangeText={setNotes}
-            placeholder="Additional details or renewal instructions"
-            placeholderTextColor="#6E8096"
-            multiline
-            maxLength={1000}
-          />
-        </ScrollView>
-
-        <View style={[styles.bottomBar, { paddingBottom: Math.max(insets.bottom, 16) + 6 }]}>
-          <TouchableOpacity
-            style={styles.saveBtn}
-            onPress={handleSubmit}
-            disabled={vaultState.submitting || vaultState.scanningDocument}
-            activeOpacity={0.85}
-            accessibilityRole="button"
-            accessibilityLabel="Save Vault item"
-          >
-            {vaultState.submitting ? (
-              <ActivityIndicator color="#FFFFFF" />
-            ) : (
-              <Text style={styles.saveBtnText}>
-                {renewMode ? 'Confirm renewal' : isEditing ? 'Save changes' : 'Save to Vault'}
-              </Text>
+              </>
             )}
-          </TouchableOpacity>
-        </View>
-
-        <DueDateTimeModal
-          asModal={false}
-          visible={Boolean(dateTarget)}
-          initialDate={
-            (dateTarget === 'issuedOn'
-              ? issuedOn
-              : dateTarget === 'serviceDueOn'
-              ? serviceDueOn
-              : dueOn) || undefined
-          }
-          onClose={() => setDateTarget(null)}
-          onSave={(_dateLabel, _formatted, _time, isoDate) => {
-            if (isoDate && dateTarget === 'issuedOn') setIssuedOn(isoDate);
-            else if (isoDate && dateTarget === 'serviceDueOn') setServiceDueOn(isoDate);
-            else if (isoDate && dateTarget === 'dueOn') setDueOn(isoDate);
-            setDateTarget(null);
-          }}
-        />
-
-        {/* Scan Picker Action Sheet (non-modal overlay to avoid nested Modal issues on iOS) */}
-        {showScanSheet && (
-          <View style={[StyleSheet.absoluteFill, { zIndex: 1100, elevation: 22 }]}>
-            <Pressable
-              style={styles.sheetOverlay}
-              onPress={() => setShowScanSheet(false)}
-            >
-              <Pressable style={styles.sheetContent} onPress={(e) => e.stopPropagation()}>
-                <View style={styles.sheetHandle} />
-                <Text style={styles.sheetTitle}>
-                  {scanSideTarget === 'back' ? 'Add Back File' : 'Add Front File'}
-                </Text>
-                <Text style={styles.sheetSubtitle}>
-                  {scanSideTarget === 'back'
-                    ? 'Select the back side of your card or document'
-                    : 'Choose an image to attach & optionally scan fields'}
-                </Text>
-                <View style={styles.sheetActionsRow}>
-                  <TouchableOpacity
-                    style={styles.sheetActionBtn}
-                    onPress={handleCameraScan}
-                  >
-                    <Feather name="camera" size={20} color="#F0923A" />
-                    <Text style={styles.sheetActionText}>Camera</Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity
-                    style={styles.sheetActionBtn}
-                    onPress={handleGalleryScan}
-                  >
-                    <Feather name="image" size={20} color="#F0923A" />
-                    <Text style={styles.sheetActionText}>Library</Text>
-                  </TouchableOpacity>
-                </View>
-              </Pressable>
-            </Pressable>
-          </View>
+          </>
         )}
 
-        <VaultDialog
-          dialog={dialog}
-          onClose={() => setDialog(INITIAL_VAULT_DIALOG_STATE)}
+        {/* Visibility */}
+        <Text style={styles.sectionLabel}>WHO CAN SEE THIS</Text>
+        <View style={styles.visRow}>
+          {VISIBILITY_OPTIONS.map((v) => {
+            const active = visibility === v.id;
+            return (
+              <TouchableOpacity
+                key={v.id}
+                style={[styles.visBtn, active && styles.visBtnActive]}
+                onPress={() => setVisibility(v.id)}
+                activeOpacity={0.8}
+              >
+                <Text style={[styles.visBtnText, active && styles.visBtnTextActive]}>
+                  {v.label}
+                </Text>
+              </TouchableOpacity>
+            );
+          })}
+        </View>
+
+        {/* Notes */}
+        <Text style={styles.fieldLabel}>Notes</Text>
+        <TextInput
+          style={[styles.input, styles.notesInput]}
+          value={notes}
+          onChangeText={setNotes}
+          placeholder="Additional details or instructions"
+          placeholderTextColor="#6E8096"
+          multiline
+          maxLength={1000}
         />
+      </ScrollView>
+
+      {/* Save Button */}
+      <View style={[styles.bottomBar, { paddingBottom: Math.max(insets.bottom, 16) + 6 }]}>
+        <TouchableOpacity
+          style={styles.saveBtn}
+          onPress={handleSubmit}
+          disabled={vaultState.submitting || vaultState.scanningDocument}
+          activeOpacity={0.85}
+          accessibilityRole="button"
+          accessibilityLabel="Save Vault item"
+        >
+          {vaultState.submitting ? (
+            <ActivityIndicator color="#FFFFFF" />
+          ) : (
+            <Text style={styles.saveBtnText}>
+              {renewMode ? 'Confirm renewal' : isEditing ? 'Save changes' : 'Save to Vault'}
+            </Text>
+          )}
+        </TouchableOpacity>
       </View>
+
+      {/* Date Picker Modal */}
+      <DueDateTimeModal
+        asModal={false}
+        visible={Boolean(dateTarget)}
+        initialDate={dueOn || undefined}
+        onClose={() => setDateTarget(null)}
+        onSave={(_dateLabel, _formatted, _time, isoDate) => {
+          if (isoDate) setDueOn(isoDate);
+          setDateTarget(null);
+        }}
+      />
+
+      {/* Scan Picker Action Sheet */}
+      {showScanSheet && (
+        <View style={[StyleSheet.absoluteFill, { zIndex: 1100, elevation: 22 }]}>
+          <Pressable
+            style={styles.sheetOverlay}
+            onPress={() => setShowScanSheet(false)}
+          >
+            <Pressable style={styles.sheetContent} onPress={(e) => e.stopPropagation()}>
+              <View style={styles.sheetHandle} />
+              <Text style={styles.sheetTitle}>
+                {scanSideTarget === 'back' ? 'Add Back File' : 'Add Front File'}
+              </Text>
+              <Text style={styles.sheetSubtitle}>
+                {scanSideTarget === 'back'
+                  ? 'Select the back side of your card or document'
+                  : 'Choose an image to attach & optionally scan fields'}
+              </Text>
+              <View style={styles.sheetActionsRow}>
+                <TouchableOpacity
+                  style={styles.sheetActionBtn}
+                  onPress={handleCameraScan}
+                >
+                  <Feather name="camera" size={20} color="#F0923A" />
+                  <Text style={styles.sheetActionText}>Camera</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={styles.sheetActionBtn}
+                  onPress={handleGalleryScan}
+                >
+                  <Feather name="image" size={20} color="#F0923A" />
+                  <Text style={styles.sheetActionText}>Library</Text>
+                </TouchableOpacity>
+              </View>
+            </Pressable>
+          </Pressable>
+        </View>
+      )}
+
+      <VaultDialog
+        dialog={dialog}
+        onClose={() => setDialog(INITIAL_VAULT_DIALOG_STATE)}
+      />
+    </View>
   );
 
   if (!asModal) {
@@ -1391,19 +1349,33 @@ const styles = StyleSheet.create({
     paddingTop: 12,
     textAlignVertical: 'top',
   },
-  rowTwoCol: {
+  toggleCard: {
     flexDirection: 'row',
-    gap: 10,
-    marginBottom: 14,
-  },
-  dateBox: {
-    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'space-between',
     backgroundColor: '#122440',
     borderWidth: 1,
     borderColor: '#1F3352',
     borderRadius: 14,
-    paddingHorizontal: 14,
-    paddingVertical: 10,
+    padding: 14,
+    marginBottom: 16,
+  },
+  toggleCardLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    flex: 1,
+    marginRight: 12,
+  },
+  toggleCardTitle: {
+    fontSize: 14,
+    fontFamily: 'Roboto-SemiBold',
+    color: '#FFFFFF',
+    marginBottom: 2,
+  },
+  toggleCardSubtitle: {
+    fontSize: 12,
+    color: '#8A97AB',
   },
   dateBoxFull: {
     backgroundColor: '#122440',
