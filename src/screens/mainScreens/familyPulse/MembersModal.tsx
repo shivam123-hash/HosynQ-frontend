@@ -183,6 +183,14 @@ export const MembersModal: React.FC<MembersModalProps> = ({
   };
 
   const handleOpenDeleteFamily = () => {
+    const isOwner = currentFamily?.myRole === 'FAMILY_OWNER';
+    if (!isOwner) {
+      Alert.alert(
+        'Owner Only Action',
+        'Only the family Owner can delete this family group.'
+      );
+      return;
+    }
     if (onOpenDeleteFamily) {
       onOpenDeleteFamily();
     } else {
@@ -398,9 +406,12 @@ export const MembersModal: React.FC<MembersModalProps> = ({
 
           {/* Section Title */}
           <View style={styles.sectionHeader}>
-            <Text style={styles.sectionHeaderText}>
-              {`MEMBERS · ${members.length}`}
-            </Text>
+            <View style={styles.sectionHeaderLeft}>
+              <Text style={styles.sectionHeaderText}>Family Members</Text>
+              <View style={styles.countBadge}>
+                <Text style={styles.countBadgeText}>{members.length}</Text>
+              </View>
+            </View>
           </View>
 
           {/* Members List Card */}
@@ -501,30 +512,28 @@ export const MembersModal: React.FC<MembersModalProps> = ({
             <Feather name="chevron-right" size={18} color="#3F5068" />
           </TouchableOpacity>
 
-          {/* Footer Actions: Leave family & Delete family */}
-          <View style={styles.footerActionsRow}>
+          {/* Footer Action Buttons: Leave family & Delete family */}
+          <View style={styles.dangerButtonsRow}>
             <TouchableOpacity
-              style={styles.footerActionButton}
+              style={styles.leaveFamilyBtn}
               onPress={handlePromptLeaveFamily}
-              activeOpacity={0.7}
+              activeOpacity={0.75}
               accessibilityRole="button"
               accessibilityLabel="Leave family"
             >
-              <Text style={styles.footerActionText}>Leave family</Text>
+              <Feather name="log-out" size={15} color="#CAD4DF" />
+              <Text style={styles.leaveFamilyBtnText}>Leave family</Text>
             </TouchableOpacity>
 
-            <Text style={styles.footerActionDot}>·</Text>
-
             <TouchableOpacity
-              style={styles.footerActionButton}
+              style={styles.deleteFamilyBtn}
               onPress={handleOpenDeleteFamily}
-              activeOpacity={0.7}
+              activeOpacity={0.75}
               accessibilityRole="button"
               accessibilityLabel="Delete family"
             >
-              <Text style={[styles.footerActionText, styles.footerActionDanger]}>
-                Delete family
-              </Text>
+              <Feather name="trash-2" size={15} color="#F06A6D" />
+              <Text style={styles.deleteFamilyBtnText}>Delete family</Text>
             </TouchableOpacity>
           </View>
         </ScrollView>
@@ -781,15 +790,35 @@ const styles = StyleSheet.create({
   },
   sectionHeader: {
     marginTop: 22,
-    marginBottom: 10,
+    marginBottom: 12,
     paddingHorizontal: 4,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  sectionHeaderLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
   },
   sectionHeaderText: {
+    fontSize: 15,
+    fontFamily: 'Roboto-Bold',
+    color: '#CAD4DF',
+    letterSpacing: 0.3,
+  },
+  countBadge: {
+    backgroundColor: 'rgba(240, 145, 58, 0.15)',
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: 'rgba(240, 145, 58, 0.3)',
+  },
+  countBadgeText: {
     fontSize: 12,
     fontFamily: 'Roboto-Bold',
-    color: '#8997AB',
-    letterSpacing: 1.2,
-    textTransform: 'uppercase',
+    color: '#F0913A',
   },
   membersCard: {
     backgroundColor: '#122440',
@@ -957,29 +986,48 @@ const styles = StyleSheet.create({
     color: '#8A9BAE',
     marginTop: 2,
   },
-  footerActionsRow: {
+  dangerButtonsRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     gap: 12,
-    marginTop: 24,
+    marginTop: 22,
     marginBottom: 16,
+    paddingHorizontal: 2,
   },
-  footerActionButton: {
-    paddingVertical: 6,
-    paddingHorizontal: 8,
+  leaveFamilyBtn: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#122440',
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: '#1F3556',
+    paddingVertical: 13,
+    gap: 8,
   },
-  footerActionText: {
+  leaveFamilyBtnText: {
     fontSize: 13.5,
     fontFamily: 'Roboto-Medium',
-    color: '#8A9BAE',
+    color: '#CAD4DF',
   },
-  footerActionDanger: {
+  deleteFamilyBtn: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(240, 106, 109, 0.08)',
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: 'rgba(240, 106, 109, 0.3)',
+    paddingVertical: 13,
+    gap: 8,
+  },
+  deleteFamilyBtnText: {
+    fontSize: 13.5,
+    fontFamily: 'Roboto-Medium',
     color: '#F06A6D',
-  },
-  footerActionDot: {
-    color: '#4A5870',
-    fontSize: 14,
   },
 });
 

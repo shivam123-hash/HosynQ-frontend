@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
   View,
   Text,
@@ -13,7 +13,11 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Feather from '@react-native-vector-icons/feather';
 import { useAppDispatch, useAppSelector, RootState } from '../../../redux/store';
-import { updateMemberRoleThunk } from '../../../redux/features/family/familySlice';
+import {
+  updateMemberRoleThunk,
+  transferOwnershipThunk,
+  getMyFamilyThunk,
+} from '../../../redux/features/family/familySlice';
 import type { FamilyMemberItem, MemberRole } from './MembersModal';
 
 export interface ChangeRoleModalProps {
@@ -33,33 +37,6 @@ interface RoleOption {
   disabled?: boolean;
 }
 
-const ROLE_OPTIONS: RoleOption[] = [
-  {
-    role: 'Owner',
-    title: 'Owner',
-    description: 'Full control and billing. Use Transfer ownership instead.',
-    disabled: true,
-  },
-  {
-    role: 'Admin',
-    title: 'Admin',
-    description: 'Manage members and approve join requests',
-    disabled: false,
-  },
-  {
-    role: 'Adult',
-    title: 'Adult',
-    description: 'Use everything, but can’t manage members',
-    disabled: false,
-  },
-  {
-    role: 'Child',
-    title: 'Child',
-    description: 'Only for children. Parents manage their profile.',
-    disabled: true,
-  },
-];
-
 export const ChangeRoleModal: React.FC<ChangeRoleModalProps> = ({
   visible,
   member,
@@ -71,7 +48,13 @@ export const ChangeRoleModal: React.FC<ChangeRoleModalProps> = ({
 }) => {
   const insets = useSafeAreaInsets();
   const dispatch = useAppDispatch();
-  const { actionLoading } = useAppSelector((state) => state.family);
+  const { actionLoading, family, myFamilyData } = useAppSelector(
+    (state) => state.family
+  );
+
+  const currentFamily = myFamilyData?.family || family;
+  const isCurrentOwner = currentFamily?.myRole === 'FAMILY_OWNER';
+  const familyName = currentFamily?.name || 'the family';
 
   const memberName = member?.name?.replace(/\s*\(you\)/i, '') || 'Member';
   const initialRole: MemberRole = member?.role || 'Admin';
@@ -84,18 +67,126 @@ export const ChangeRoleModal: React.FC<ChangeRoleModalProps> = ({
     }
   }, [member?.role]);
 
+  const isTargetChild = member?.role === 'Child';
+
+  // Dynamic role options based on member type and user permissions
+  const roleOptions: RoleOption[] = useMemo(() => {
+    if (isTargetChild) {
+      return [
+        {
+          role: 'Adult',
+          title: 'Adult',
+          description: `Promote ${memberName} to an independent adult profile`,
+          disabled: false,
+        },
+        {
+          role: 'Admin',
+          title: 'Admin',
+          description: 'Must be an adult member before becoming Admin',
+          disabled: true,
+        },
+        {
+          role: 'Owner',
+          title: 'Owner',
+          description: 'Children cannot be family Owner',
+          disabled: true,
+        },
+        {
+          role: 'Child',
+          title: 'Child',
+          description: 'Current child profile. Parents manage their profile.',
+          disabled: false,
+        },
+      ];
+    }
+
+    // Member is Adult / Admin
+    return [
+      {
+        role: 'Owner',
+        title: 'Owner (Transfer Ownership)',
+        description: isCurrentOwner
+          ? `Transfer full ownership of ${familyName} to ${memberName}`
+          : 'Only the current family Owner can transfer ownership',
+        disabled: !isCurrentOwner,
+      },
+      {
+        role: 'Admin',
+        title: 'Admin',
+        description: 'Manage members, settings and approve join requests',
+        disabled: false,
+      },
+      {
+        role: 'Adult',
+        title: 'Adult',
+        description: 'Full access to family chats, calendar, tasks and vault',
+        disabled: false,
+      },
+      {
+        role: 'Child',
+        title: 'Child',
+        description: 'Adults cannot be changed to child profiles',
+        disabled: true,
+      },
+    ];
+  }, [isTargetChild, isCurrentOwner, familyName, memberName]);
+
   const handleSave = async () => {
     if (!member) {
       onClose();
       return;
     }
 
-    if (onSaveRole) {
+    if (onSaveRole && selectedRole !== 'Owner') {
       onSaveRole(member.id, selectedRole);
       onClose();
       return;
     }
 
+    // 1. Transfer Ownership flow
+    if (selectedRole === 'Owner') {
+      if (!isCurrentOwner) {
+        Alert.alert(
+          'Owner Only Action',
+          'Only the current family Owner can transfer ownership.'
+        );
+        return;
+      }
+
+      Alert.alert(
+        'Transfer Family Ownership',
+        `Are you sure you want to make ${memberName} the new Owner of ${familyName}?\n\nYou will step down to Admin and lose Owner billing controls.`,
+        [
+          { text: 'Cancel', style: 'cancel' },
+          {
+            text: 'Transfer Ownership',
+            style: 'destructive',
+            onPress: async () => {
+              setIsSaving(true);
+              try {
+                await dispatch(transferOwnershipThunk(member.id)).unwrap();
+                await dispatch(getMyFamilyThunk());
+                setIsSaving(false);
+                Alert.alert(
+                  'Ownership Transferred',
+                  `${memberName} is now the Owner of ${familyName}.`
+                );
+                onClose();
+              } catch (err: any) {
+                setIsSaving(false);
+                Alert.alert(
+                  'Transfer Failed',
+                  err || 'Could not transfer ownership.'
+                );
+              }
+            },
+          },
+        ]
+      );
+      return;
+    }
+
+    // 2. Regular Role Update flow (Admin / Adult)
     if (selectedRole !== 'Admin' && selectedRole !== 'Adult') {
       onClose();
       return;
@@ -107,6 +198,7 @@ export const ChangeRoleModal: React.FC<ChangeRoleModalProps> = ({
       await dispatch(
         updateMemberRoleThunk({ memberId: member.id, role: backendRole })
       ).unwrap();
+      await dispatch(getMyFamilyThunk());
       setIsSaving(false);
       Alert.alert(
         'Role Updated',
@@ -149,8 +241,8 @@ export const ChangeRoleModal: React.FC<ChangeRoleModalProps> = ({
 
         {/* Roles List Card */}
         <View style={styles.rolesCard}>
-          {ROLE_OPTIONS.map((option, index) => {
-            const isLast = index === ROLE_OPTIONS.length - 1;
+          {roleOptions.map((option, index) => {
+            const isLast = index === roleOptions.length - 1;
             const isSelected = selectedRole === option.role;
             const isDisabled = option.disabled;
 
@@ -175,21 +267,16 @@ export const ChangeRoleModal: React.FC<ChangeRoleModalProps> = ({
             return (
               <React.Fragment key={option.role}>
                 <TouchableOpacity
-                  style={styles.roleRow}
+                  style={[
+                    styles.roleRow,
+                    isDisabled && styles.roleRowDisabled,
+                  ]}
                   onPress={() => {
-                    if (option.role === 'Owner' && onTransferOwnershipPress) {
-                      onClose();
-                      onTransferOwnershipPress();
-                      return;
-                    }
                     if (!isDisabled) {
                       setSelectedRole(option.role);
                     }
                   }}
-                  disabled={
-                    isDisabled &&
-                    (option.role !== 'Owner' || !onTransferOwnershipPress)
-                  }
+                  disabled={isDisabled}
                   activeOpacity={0.7}
                   accessibilityRole="radio"
                   accessibilityState={{ selected: isSelected, disabled: isDisabled }}
@@ -239,19 +326,30 @@ export const ChangeRoleModal: React.FC<ChangeRoleModalProps> = ({
           </TouchableOpacity>
         )}
 
-        {/* Save Role Button */}
+        {/* Save / Transfer Action Button */}
         <TouchableOpacity
-          style={[styles.saveButton, isBusy && styles.buttonDisabled]}
+          style={[
+            selectedRole === 'Owner' ? styles.transferButton : styles.saveButton,
+            isBusy && styles.buttonDisabled,
+          ]}
           onPress={handleSave}
           disabled={isBusy}
           activeOpacity={0.85}
           accessibilityRole="button"
-          accessibilityLabel="Save role"
+          accessibilityLabel={
+            selectedRole === 'Owner'
+              ? `Transfer ownership to ${memberName}`
+              : 'Save role'
+          }
         >
           {isSaving ? (
             <ActivityIndicator size="small" color="#FFFFFF" />
           ) : (
-            <Text style={styles.saveButtonText}>Save role</Text>
+            <Text style={styles.saveButtonText}>
+              {selectedRole === 'Owner'
+                ? `Transfer Ownership to ${memberName}`
+                : 'Save role'}
+            </Text>
           )}
         </TouchableOpacity>
       </View>
@@ -367,10 +465,21 @@ const styles = StyleSheet.create({
     color: '#F06A6D',
     fontWeight: '600',
   },
+  roleRowDisabled: {
+    opacity: 0.5,
+  },
   saveButton: {
     height: 52,
     borderRadius: 26,
     backgroundColor: '#F0913A',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 4,
+  },
+  transferButton: {
+    height: 52,
+    borderRadius: 26,
+    backgroundColor: '#E05638',
     alignItems: 'center',
     justifyContent: 'center',
     marginTop: 4,
