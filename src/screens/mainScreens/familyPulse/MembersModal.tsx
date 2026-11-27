@@ -32,7 +32,6 @@ import {
 import { AddChildModal } from './AddChildModal';
 import { DeleteFamilyModal } from './DeleteFamilyModal';
 import { TransferOwnershipModal } from './TransferOwnershipModal';
-import { StaffModal } from './StaffModal';
 import { PulseModalContainer } from './PulseModalContainer';
 
 export type MemberRole = 'Owner' | 'Admin' | 'Adult' | 'Child';
@@ -96,7 +95,6 @@ export const MembersModal: React.FC<MembersModalProps> = ({
   const [showAddChildModal, setShowAddChildModal] = useState(false);
   const [showDeleteFamilyModal, setShowDeleteFamilyModal] = useState(false);
   const [showTransferOwnershipModal, setShowTransferOwnershipModal] = useState(false);
-  const [showStaffModal, setShowStaffModal] = useState(false);
   const [actionModal, setActionModal] = useState<{
     visible: boolean;
     type: FamilyActionModalType;
@@ -206,14 +204,6 @@ export const MembersModal: React.FC<MembersModalProps> = ({
       onOpenTransferOwnership();
     } else {
       setShowTransferOwnershipModal(true);
-    }
-  };
-
-  const handleOpenStaff = () => {
-    if (onOpenStaff) {
-      onOpenStaff();
-    } else {
-      setShowStaffModal(true);
     }
   };
 
@@ -332,16 +322,6 @@ export const MembersModal: React.FC<MembersModalProps> = ({
         </TouchableOpacity>
 
         <Text style={styles.headerTitle}>Members</Text>
-
-        <TouchableOpacity
-          style={styles.headerButtonRight}
-          onPress={handleOpenInvite}
-          activeOpacity={0.7}
-          accessibilityRole="button"
-          accessibilityLabel="Add member"
-        >
-          <Ionicons name="person-add-outline" size={20} color="#FFFFFF" />
-        </TouchableOpacity>
       </View>
 
       {/* Loading Skeleton */}
@@ -493,28 +473,6 @@ export const MembersModal: React.FC<MembersModalProps> = ({
             )}
           </View>
 
-          {/* Staff Entry Card */}
-          <TouchableOpacity
-            style={styles.staffEntryCard}
-            onPress={handleOpenStaff}
-            activeOpacity={0.75}
-            accessibilityRole="button"
-            accessibilityLabel="Staff, Drivers and house help"
-          >
-            <View style={styles.staffEntryLeft}>
-              <View style={styles.staffIconCircle}>
-                <Feather name="users" size={17} color="#8EB7F5" />
-              </View>
-              <View>
-                <Text style={styles.staffEntryTitle}>Staff</Text>
-                <Text style={styles.staffEntrySubtitle}>
-                  Drivers and house help
-                </Text>
-              </View>
-            </View>
-            <Feather name="chevron-right" size={18} color="#3F5068" />
-          </TouchableOpacity>
-
           {/* Footer Action Buttons: Leave family & Delete family */}
           <View style={styles.dangerButtonsRow}>
             <TouchableOpacity
@@ -620,11 +578,6 @@ export const MembersModal: React.FC<MembersModalProps> = ({
         }}
       />
 
-      <StaffModal
-        visible={showStaffModal}
-        onClose={() => setShowStaffModal(false)}
-      />
-
       <FamilyActionConfirmationModal
         visible={actionModal.visible}
         type={actionModal.type}
@@ -670,18 +623,6 @@ const styles = StyleSheet.create({
   headerButtonLeft: {
     position: 'absolute',
     left: 20,
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    borderWidth: 1,
-    borderColor: '#3A4556',
-    backgroundColor: 'transparent',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  headerButtonRight: {
-    position: 'absolute',
-    right: 20,
     width: 44,
     height: 44,
     borderRadius: 22,
@@ -953,41 +894,6 @@ const styles = StyleSheet.create({
     fontFamily: 'Roboto-SemiBold',
     color: '#F0913A',
     marginLeft: 8,
-  },
-  staffEntryCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    backgroundColor: '#122440',
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: '#1F3352',
-    paddingHorizontal: 16,
-    paddingVertical: 14,
-    marginTop: 14,
-  },
-  staffEntryLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-  },
-  staffIconCircle: {
-    width: 38,
-    height: 38,
-    borderRadius: 19,
-    backgroundColor: '#1A3358',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  staffEntryTitle: {
-    fontSize: 15,
-    fontFamily: 'Roboto-SemiBold',
-    color: '#FFFFFF',
-  },
-  staffEntrySubtitle: {
-    fontSize: 12.5,
-    color: '#8A9BAE',
-    marginTop: 2,
   },
   dangerButtonsRow: {
     flexDirection: 'row',
