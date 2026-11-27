@@ -147,92 +147,102 @@ const PendingTasksSection: React.FC<PendingTasksSectionProps> = ({
 
       {/* Main Task Card */}
       <View style={styles.taskCard}>
-        {/* Household Group */}
-        {householdTasks.length > 0 && (
-          <View style={styles.categoryGroup}>
-            <View style={styles.categoryHeaderRow}>
-              <View style={[styles.groupDot, styles.dotHousehold]} />
-              <Text style={styles.categoryHeaderText}>
-                HOUSEHOLD · {householdTasks.length}
-              </Text>
-            </View>
-            {householdTasks.map((task, i) =>
-              renderTaskItem(task, i === householdTasks.length - 1)
+        {filteredTasks.length === 0 ? (
+          <View style={styles.emptyContainer}>
+            <Feather name="check-circle" size={26} color="#6FD9A6" />
+            <Text style={styles.emptyTitle}>All caught up!</Text>
+            <Text style={styles.emptySubtitle}>No pending tasks for today.</Text>
+          </View>
+        ) : (
+          <>
+            {/* Household Group */}
+            {householdTasks.length > 0 && (
+              <View style={styles.categoryGroup}>
+                <View style={styles.categoryHeaderRow}>
+                  <View style={[styles.groupDot, styles.dotHousehold]} />
+                  <Text style={styles.categoryHeaderText}>
+                    HOUSEHOLD · {householdTasks.length}
+                  </Text>
+                </View>
+                {householdTasks.map((task, i) =>
+                  renderTaskItem(task, i === householdTasks.length - 1)
+                )}
+              </View>
             )}
-          </View>
-        )}
 
-        {/* Finance Group */}
-        {financeTasks.length > 0 && (
-          <View style={[styles.categoryGroup, styles.groupDivider]}>
-            <View style={styles.categoryHeaderRow}>
-              <View style={[styles.groupDot, styles.dotFinance]} />
-              <Text style={styles.categoryHeaderText}>
-                FINANCE · {financeTasks.length}
-              </Text>
-            </View>
-            {financeTasks.map((task, i) =>
-              renderTaskItem(task, i === financeTasks.length - 1)
+            {/* Finance Group */}
+            {financeTasks.length > 0 && (
+              <View style={[styles.categoryGroup, styles.groupDivider]}>
+                <View style={styles.categoryHeaderRow}>
+                  <View style={[styles.groupDot, styles.dotFinance]} />
+                  <Text style={styles.categoryHeaderText}>
+                    FINANCE · {financeTasks.length}
+                  </Text>
+                </View>
+                {financeTasks.map((task, i) =>
+                  renderTaskItem(task, i === financeTasks.length - 1)
+                )}
+              </View>
             )}
-          </View>
-        )}
 
-        {/* Collapsible Health Group */}
-        {healthTasks.length > 0 && (
-          <View style={styles.collapsibleWrapper}>
-            <TouchableOpacity
-              onPress={() => toggleCategoryExpand('health')}
-              activeOpacity={0.7}
-              style={styles.collapsibleHeaderRow}
-            >
-              <View style={styles.collapsibleLeft}>
-                <View style={[styles.groupDot, styles.dotHealth]} />
-                <Text style={styles.collapsibleTitle}>Health</Text>
-              </View>
-              <View style={styles.collapsibleRight}>
-                <Text style={styles.collapsibleCount}>{healthTasks.length}</Text>
-                <Feather
-                  name={expandedCategories.health ? 'chevron-up' : 'chevron-down'}
-                  size={16}
-                  color="#7E8F9F"
-                />
-              </View>
-            </TouchableOpacity>
+            {/* Collapsible Health Group */}
+            {healthTasks.length > 0 && (
+              <View style={styles.collapsibleWrapper}>
+                <TouchableOpacity
+                  onPress={() => toggleCategoryExpand('health')}
+                  activeOpacity={0.7}
+                  style={styles.collapsibleHeaderRow}
+                >
+                  <View style={styles.collapsibleLeft}>
+                    <View style={[styles.groupDot, styles.dotHealth]} />
+                    <Text style={styles.collapsibleTitle}>Health</Text>
+                  </View>
+                  <View style={styles.collapsibleRight}>
+                    <Text style={styles.collapsibleCount}>{healthTasks.length}</Text>
+                    <Feather
+                      name={expandedCategories.health ? 'chevron-up' : 'chevron-down'}
+                      size={16}
+                      color="#7E8F9F"
+                    />
+                  </View>
+                </TouchableOpacity>
 
-            {expandedCategories.health &&
-              healthTasks.map((task, i) =>
-                renderTaskItem(task, i === healthTasks.length - 1)
-              )}
-          </View>
-        )}
-
-        {/* Collapsible Travel Group */}
-        {travelTasks.length > 0 && (
-          <View style={styles.collapsibleWrapper}>
-            <TouchableOpacity
-              onPress={() => toggleCategoryExpand('travel')}
-              activeOpacity={0.7}
-              style={styles.collapsibleHeaderRow}
-            >
-              <View style={styles.collapsibleLeft}>
-                <View style={[styles.groupDot, styles.dotTravel]} />
-                <Text style={styles.collapsibleTitle}>Travel</Text>
+                {expandedCategories.health &&
+                  healthTasks.map((task, i) =>
+                    renderTaskItem(task, i === healthTasks.length - 1)
+                  )}
               </View>
-              <View style={styles.collapsibleRight}>
-                <Text style={styles.collapsibleCount}>{travelTasks.length}</Text>
-                <Feather
-                  name={expandedCategories.travel ? 'chevron-up' : 'chevron-down'}
-                  size={16}
-                  color="#7E8F9F"
-                />
-              </View>
-            </TouchableOpacity>
+            )}
 
-            {expandedCategories.travel &&
-              travelTasks.map((task, i) =>
-                renderTaskItem(task, i === travelTasks.length - 1)
-              )}
-          </View>
+            {/* Collapsible Travel Group */}
+            {travelTasks.length > 0 && (
+              <View style={styles.collapsibleWrapper}>
+                <TouchableOpacity
+                  onPress={() => toggleCategoryExpand('travel')}
+                  activeOpacity={0.7}
+                  style={styles.collapsibleHeaderRow}
+                >
+                  <View style={styles.collapsibleLeft}>
+                    <View style={[styles.groupDot, styles.dotTravel]} />
+                    <Text style={styles.collapsibleTitle}>Travel</Text>
+                  </View>
+                  <View style={styles.collapsibleRight}>
+                    <Text style={styles.collapsibleCount}>{travelTasks.length}</Text>
+                    <Feather
+                      name={expandedCategories.travel ? 'chevron-up' : 'chevron-down'}
+                      size={16}
+                      color="#7E8F9F"
+                    />
+                  </View>
+                </TouchableOpacity>
+
+                {expandedCategories.travel &&
+                  travelTasks.map((task, i) =>
+                    renderTaskItem(task, i === travelTasks.length - 1)
+                  )}
+              </View>
+            )}
+          </>
         )}
       </View>
     </View>
@@ -332,6 +342,23 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#1F3352',
     overflow: 'hidden',
+  },
+  emptyContainer: {
+    paddingVertical: 32,
+    paddingHorizontal: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+  },
+  emptyTitle: {
+    fontSize: 15,
+    fontFamily: 'Roboto-SemiBold',
+    color: '#CAD4DF',
+  },
+  emptySubtitle: {
+    fontSize: 13,
+    fontFamily: 'Roboto-Regular',
+    color: '#8A97AB',
   },
   categoryGroup: {
     paddingTop: 2,

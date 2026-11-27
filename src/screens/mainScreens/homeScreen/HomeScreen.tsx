@@ -249,27 +249,35 @@ const HomeScreen: React.FC<HomeScreenProps> = ({
     homeSections.HEADER?.unreadNotifications ??
     (notificationsState?.unreadCount ?? 0);
 
-  const [attentionItems, setAttentionItems] = useState<AttentionItem[]>(INITIAL_ATTENTION_ITEMS);
+  const [attentionItems, setAttentionItems] = useState<AttentionItem[]>(
+    isTestEnv ? INITIAL_ATTENTION_ITEMS : []
+  );
   const [upcomingEvents, setUpcomingEvents] = useState<EventItem[]>(
     isTestEnv ? INITIAL_UPCOMING_EVENTS : []
   );
-  const [tasks, setTasks] = useState<TaskItem[]>(INITIAL_PENDING_TASKS);
-  const [recentlyDone, setRecentlyDone] = useState(INITIAL_RECENTLY_DONE);
-  const [familyMembers, setFamilyMembers] = useState<FamilyMemberStatus[]>(INITIAL_FAMILY_MEMBERS);
+  const [tasks, setTasks] = useState<TaskItem[]>(
+    isTestEnv ? INITIAL_PENDING_TASKS : []
+  );
+  const [recentlyDone, setRecentlyDone] = useState(
+    isTestEnv ? INITIAL_RECENTLY_DONE : []
+  );
+  const [familyMembers, setFamilyMembers] = useState<FamilyMemberStatus[]>(
+    isTestEnv ? INITIAL_FAMILY_MEMBERS : []
+  );
   const [suggestion, setSuggestion] = useState(INITIAL_SMART_SUGGESTION);
 
   // Sync tasks, calendar feed, home feed, and unread count on mount
   useEffect(() => {
     if (isTestEnv) return;
     const todayStr = new Date().toISOString().slice(0, 10);
-    // 1. Initial Home Feed load (limit=7, previewSize=5, withinDays=7)
+    // 1. Initial Home Feed load (limit=15, previewSize=5, withinDays=7)
     dispatch(
       fetchHomePageThunk({
         query: {
           today: todayStr,
           withinDays: 7,
           previewSize: 5,
-          limit: 7,
+          limit: 15,
         },
       })
     );
@@ -295,12 +303,9 @@ const HomeScreen: React.FC<HomeScreenProps> = ({
   // Sync Needs Attention from Home API
   useEffect(() => {
     const needsAttentionData = homeSections.NEEDS_ATTENTION;
-    if (
-      needsAttentionData?.items &&
-      Array.isArray(needsAttentionData.items) &&
-      needsAttentionData.items.length > 0
-    ) {
-      const mapped: AttentionItem[] = needsAttentionData.items.map((item: any) => ({
+    if (needsAttentionData) {
+      const itemsList = Array.isArray(needsAttentionData.items) ? needsAttentionData.items : [];
+      const mapped: AttentionItem[] = itemsList.map((item: any) => ({
         id: item.id || `att-${item.title}`,
         title: item.title,
         subtitle:
@@ -329,13 +334,14 @@ const HomeScreen: React.FC<HomeScreenProps> = ({
   const apiTasks = tasksState?.tasks || [];
   useEffect(() => {
     const pendingData = homeSections.PENDING_TASKS;
+    const hasPendingSection = Boolean(pendingData);
     const sourceTasks =
-      pendingData?.tasks && Array.isArray(pendingData.tasks) && pendingData.tasks.length > 0
+      pendingData?.tasks && Array.isArray(pendingData.tasks)
         ? pendingData.tasks
         : apiTasks;
 
-    if (sourceTasks && sourceTasks.length > 0) {
-      const mapped: TaskItem[] = sourceTasks.map((t: any) => {
+    if (hasPendingSection || (tasksState?.tasks && !tasksState?.loading)) {
+      const mapped: TaskItem[] = (sourceTasks || []).map((t: any) => {
         const uiTask = mapApiTaskToUiTask(t);
         const cat = (uiTask.category?.toLowerCase() || 'household') as TaskItem['category'];
         const validCat = ['household', 'finance', 'health', 'travel'].includes(cat) ? cat : 'household';
@@ -355,7 +361,7 @@ const HomeScreen: React.FC<HomeScreenProps> = ({
       });
       setTasks(mapped);
     }
-  }, [apiTasks, homeSections.PENDING_TASKS]);
+  }, [apiTasks, homeSections.PENDING_TASKS, tasksState?.tasks, tasksState?.loading]);
 
   // Sync calendar events from Redux feed or Home API UPCOMING_TODAY
   const apiCalendarEvents = calendarState?.feed?.events;
@@ -405,8 +411,9 @@ const HomeScreen: React.FC<HomeScreenProps> = ({
   // Sync recently done from Home API
   useEffect(() => {
     const doneData = homeSections.RECENTLY_DONE;
-    if (doneData?.tasks && Array.isArray(doneData.tasks) && doneData.tasks.length > 0) {
-      const mapped = doneData.tasks.map((t: any, idx: number) => ({
+    if (doneData) {
+      const doneList = Array.isArray(doneData.tasks) ? doneData.tasks : [];
+      const mapped = doneList.map((t: any, idx: number) => ({
         id: t.id || `done-${idx}`,
         title: t.title || 'Completed Task',
         completedBy: t.completedBy?.fullName || t.completedBy?.firstName || 'Family member',
@@ -473,6 +480,55 @@ const HomeScreen: React.FC<HomeScreenProps> = ({
     return extractFamilyMembersFromState(familyState);
   }, [familyState]);
 
+  // Dynamic Family Pulse metrics from Home API sections
+  const todaySection = homeSections.TODAY;
+  const weatherSection = homeSections.WEATHER;
+  const pulseSection = homeSections.FAMILY_PULSE;
+  const importantDateSection = homeSections.IMPORTANT_DATE;
+
+  const todayMetricsText = useMemo(() => {
+    if (todaySection) {
+      return `${todaySection.events ?? 0} events, ${todaySection.tasksPending ?? 0} tasks`;
+    }
+    return `${upcomingEvents.length} events, ${tasks.length} tasks`;
+  }, [todaySection, upcomingEvents.length, tasks.length]);
+
+  const weatherText = useMemo(() => {
+    if (weatherSection?.available && weatherSection.temperatureC !== null && weatherSection.temperatureC !== undefined) {
+      const temp = Math.round(weatherSection.temperatureC);
+      const cond = weatherSection.condition || 'Clear';
+      return `${temp}°C, ${cond.toLowerCase()}`;
+    }
+    return 'Weather unavailable';
+  }, [weatherSection]);
+
+  const safeText = useMemo(() => {
+    const counts = pulseSection?.counts;
+    if (!counts) return 'Everyone is safe';
+    if (counts.alert && counts.alert > 0) {
+      return `${counts.alert} need attention`;
+    }
+    if (counts.moving && counts.moving > 0) {
+      return `${(counts.safe ?? 0) + counts.moving} safe & moving`;
+    }
+    return 'Everyone is safe';
+  }, [pulseSection]);
+
+  const importantDateText = useMemo(() => {
+    const next = importantDateSection?.next;
+    if (!next) return null;
+    if (next.daysLeft === 0) {
+      return `${next.title} is today`;
+    }
+    if (next.daysLeft === 1) {
+      return `${next.title} is tomorrow`;
+    }
+    if (next.daysLeft < 0) {
+      return `${next.title} was ${Math.abs(next.daysLeft)}d ago`;
+    }
+    return `${next.title} is in ${next.daysLeft} days`;
+  }, [importantDateSection]);
+
   useEffect(() => {
     if (calendarFamilyMembers.length === 0 && !isTestEnv) {
       dispatch(getMyFamilyBasicThunk());
@@ -493,7 +549,7 @@ const HomeScreen: React.FC<HomeScreenProps> = ({
               today: todayStr,
               withinDays: 7,
               previewSize: 5,
-              limit: 7,
+              limit: 15,
               lat: coords?.lat,
               lng: coords?.lng,
             },
@@ -913,6 +969,10 @@ const HomeScreen: React.FC<HomeScreenProps> = ({
           familyName={familyName}
           memberCount={currentFamily?.members?.length || familyMembers.length || 2}
           suggestion={suggestion}
+          todayMetricsText={todayMetricsText}
+          weatherText={weatherText}
+          importantDateText={importantDateText}
+          safeText={safeText}
           onOpenPulse={onOpenPulse || (() => setInternalPulseVisible(true))}
           onFamilyPress={() => {
             if (onOpenFamilyHub) {

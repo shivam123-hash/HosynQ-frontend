@@ -9,6 +9,10 @@ export interface FamilyPulseSectionProps {
   familyName?: string;
   memberCount?: number;
   suggestion: SmartSuggestion;
+  todayMetricsText?: string;
+  weatherText?: string;
+  importantDateText?: string | null;
+  safeText?: string;
   onOpenPulse?: () => void;
   onFamilyPress?: () => void;
   onMemberPress?: (member?: FamilyMemberStatus) => void;
@@ -22,6 +26,10 @@ const FamilyPulseSection: React.FC<FamilyPulseSectionProps> = ({
   familyName,
   memberCount,
   suggestion,
+  todayMetricsText,
+  weatherText,
+  importantDateText,
+  safeText,
   onOpenPulse,
   onFamilyPress,
   onMemberPress,
@@ -78,7 +86,7 @@ const FamilyPulseSection: React.FC<FamilyPulseSectionProps> = ({
         {/* Everyone is Safe Banner */}
         <View style={styles.safeBanner}>
           <Feather name="shield" size={16} color="#6FD9A6" />
-          <Text style={styles.safeBannerText}>Everyone is safe</Text>
+          <Text style={styles.safeBannerText}>{safeText || 'Everyone is safe'}</Text>
         </View>
 
         {/* Family Name Card / Box */}
@@ -109,19 +117,27 @@ const FamilyPulseSection: React.FC<FamilyPulseSectionProps> = ({
         <View style={styles.metricsRow}>
           <View style={styles.metricCard}>
             <Text style={styles.metricLabel}>TODAY</Text>
-            <Text style={styles.metricValue} numberOfLines={1}>3 events, 7 tasks</Text>
+            <Text style={styles.metricValue} numberOfLines={1}>
+              {todayMetricsText || '0 events, 0 tasks'}
+            </Text>
           </View>
           <View style={styles.metricCard}>
             <Text style={styles.metricLabel}>WEATHER</Text>
-            <Text style={styles.metricValue} numberOfLines={1}>27°C, clear</Text>
+            <Text style={styles.metricValue} numberOfLines={1}>
+              {weatherText || 'Weather unavailable'}
+            </Text>
           </View>
         </View>
 
-        {/* Birthday Alert Banner */}
-        <View style={styles.birthdayBanner}>
-          <Feather name="gift" size={16} color="#F6C08E" />
-          <Text style={styles.birthdayText} numberOfLines={1}>Nani’s birthday is on Wednesday</Text>
-        </View>
+        {/* Birthday / Important Date Alert Banner */}
+        {importantDateText ? (
+          <View style={styles.birthdayBanner}>
+            <Feather name="gift" size={16} color="#F6C08E" />
+            <Text style={styles.birthdayText} numberOfLines={1}>
+              {importantDateText}
+            </Text>
+          </View>
+        ) : null}
 
         {/* AI Smart Suggestion Card */}
         <View style={styles.suggestionCard}>

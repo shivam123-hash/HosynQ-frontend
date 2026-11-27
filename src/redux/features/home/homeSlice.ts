@@ -35,7 +35,7 @@ const initialState: HomeState = {
   sectionOrder: [],
   sections: {},
   pagination: {
-    limit: 7,
+    limit: 15,
     hasMore: false,
     nextCursor: null,
   },
