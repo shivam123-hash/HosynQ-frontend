@@ -7,6 +7,9 @@ import {
   Alert,
   NativeScrollEvent,
   NativeSyntheticEvent,
+  View,
+  Text,
+  ActivityIndicator,
 } from 'react-native';
 import { isJestTestEnv } from '../familyPulse/pulseApiHelpers';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -270,17 +273,34 @@ const HomeScreen: React.FC<HomeScreenProps> = ({
   useEffect(() => {
     if (isTestEnv) return;
     const todayStr = new Date().toISOString().slice(0, 10);
-    // 1. Initial Home Feed load (limit=15, previewSize=5, withinDays=7)
-    dispatch(
-      fetchHomePageThunk({
-        query: {
-          today: todayStr,
-          withinDays: 7,
-          previewSize: 5,
-          limit: 15,
-        },
+    // 1. Initial Home Feed load (Batch 1: limit=7, previewSize=5, withinDays=7)
+    getCurrentCoordinates(1500)
+      .then((coords) => {
+        dispatch(
+          fetchHomePageThunk({
+            query: {
+              today: todayStr,
+              withinDays: 7,
+              previewSize: 5,
+              limit: 7,
+              lat: coords?.lat,
+              lng: coords?.lng,
+            },
+          })
+        );
       })
-    );
+      .catch(() => {
+        dispatch(
+          fetchHomePageThunk({
+            query: {
+              today: todayStr,
+              withinDays: 7,
+              previewSize: 5,
+              limit: 7,
+            },
+          })
+        );
+      });
 
     // 2. Background sync tasks, unread count & calendar
     dispatch(
@@ -549,7 +569,7 @@ const HomeScreen: React.FC<HomeScreenProps> = ({
               today: todayStr,
               withinDays: 7,
               previewSize: 5,
-              limit: 15,
+              limit: 7,
               lat: coords?.lat,
               lng: coords?.lng,
             },
@@ -582,12 +602,13 @@ const HomeScreen: React.FC<HomeScreenProps> = ({
     (event: NativeSyntheticEvent<NativeScrollEvent>) => {
       const { layoutMeasurement, contentOffset, contentSize } = event.nativeEvent;
       const isCloseToBottom =
-        layoutMeasurement.height + contentOffset.y >= contentSize.height - 120;
+        layoutMeasurement.height + contentOffset.y >= contentSize.height - 350;
 
       if (
         isCloseToBottom &&
         homeState.pagination.hasMore &&
         !homeState.loadingMore &&
+        !homeState.loading &&
         homeState.pagination.nextCursor
       ) {
         const todayStr = new Date().toISOString().slice(0, 10);
@@ -597,7 +618,7 @@ const HomeScreen: React.FC<HomeScreenProps> = ({
               today: todayStr,
               withinDays: 7,
               previewSize: 5,
-              limit: 8,
+              limit: 7,
               before: homeState.pagination.nextCursor,
             },
             isLoadMore: true,
@@ -605,7 +626,7 @@ const HomeScreen: React.FC<HomeScreenProps> = ({
         );
       }
     },
-    [dispatch, homeState.pagination, homeState.loadingMore]
+    [dispatch, homeState.pagination, homeState.loadingMore, homeState.loading]
   );
 
   // Timeframe change on brief card (only updates BRIEF section data)
@@ -1005,6 +1026,13 @@ const HomeScreen: React.FC<HomeScreenProps> = ({
             }))
           }
         />
+
+        {homeState.loadingMore && (
+          <View style={styles.loadingMoreContainer}>
+            <ActivityIndicator size="small" color={Colors.primary} />
+            <Text style={styles.loadingMoreText}>Loading more...</Text>
+          </View>
+        )}
           </>
         )}
       </ScrollView>
@@ -1291,5 +1319,16 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     paddingBottom: 160, // Generous padding so content isn't obscured by floating BottomNavBar
+  },
+  loadingMoreContainer: {
+    paddingVertical: 18,
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+  },
+  loadingMoreText: {
+    fontSize: 12,
+    fontFamily: 'Roboto-Regular',
+    color: '#8A97AB',
   },
 });
