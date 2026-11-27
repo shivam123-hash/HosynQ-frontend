@@ -33,6 +33,7 @@ import { AddChildModal } from './AddChildModal';
 import { DeleteFamilyModal } from './DeleteFamilyModal';
 import { TransferOwnershipModal } from './TransferOwnershipModal';
 import { StaffModal } from './StaffModal';
+import { PulseModalContainer } from './PulseModalContainer';
 
 export type MemberRole = 'Owner' | 'Admin' | 'Adult' | 'Child';
 
@@ -50,6 +51,7 @@ export interface FamilyMemberItem {
 export interface MembersModalProps {
   visible?: boolean;
   isScreen?: boolean;
+  asModal?: boolean;
   onClose: () => void;
   onInviteSomeone?: () => void;
   onAddChildProfile?: () => void;
@@ -64,6 +66,7 @@ export interface MembersModalProps {
 export const MembersModal: React.FC<MembersModalProps> = ({
   visible = true,
   isScreen = false,
+  asModal = false,
   onClose,
   onInviteSomeone,
   onAddChildProfile,
@@ -640,14 +643,14 @@ export const MembersModal: React.FC<MembersModalProps> = ({
   }
 
   return (
-    <Modal
+    <PulseModalContainer
       visible={visible}
-      animationType="slide"
-      transparent={false}
+      asModal={asModal}
+      variant="push"
       onRequestClose={onClose}
     >
       {mainContent}
-    </Modal>
+    </PulseModalContainer>
   );
 };
 

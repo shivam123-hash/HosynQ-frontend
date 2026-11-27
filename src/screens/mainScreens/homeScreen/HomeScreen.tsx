@@ -946,12 +946,6 @@ const HomeScreen: React.FC<HomeScreenProps> = ({
           setCompassInitialScreen('compass');
           setInternalCompassVisible(true);
         }}
-        onOpenMembers={() => {
-          setInternalFamilyHubVisible(false);
-          if (navigation && typeof navigation.navigate === 'function') {
-            navigation.navigate('Members');
-          }
-        }}
         onInviteMember={() => {
           setInternalFamilyHubVisible(false);
           if (navigation && typeof navigation.navigate === 'function') {

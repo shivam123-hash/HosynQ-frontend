@@ -8,6 +8,7 @@ import {
   ScrollView,
   Alert,
   StatusBar,
+  Platform,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Feather from '@react-native-vector-icons/feather';
@@ -227,8 +228,8 @@ export const FamilyHubModal: React.FC<FamilyHubModalProps> = ({
   const ownerLabel = isOwner
     ? 'you'
     : ownerMember?.fullName
-    ? ownerMember.fullName.trim().split(/\s+/)[0]
-    : 'you';
+      ? ownerMember.fullName.trim().split(/\s+/)[0]
+      : 'you';
   const familyMetaText = `${memberCount} members · Owner: ${ownerLabel}`;
 
   // Map API members to UI member items
@@ -263,8 +264,8 @@ export const FamilyHubModal: React.FC<FamilyHubModalProps> = ({
     (pendingRequests && pendingRequests.length > 0
       ? pendingRequests.length
       : myFamilyData?.pendingRequest
-      ? 1
-      : 0);
+        ? 1
+        : 0);
 
   const pendingLabel = `${pendingRequestCount} join request${pendingRequestCount === 1 ? '' : 's'} to review`;
 
@@ -741,6 +742,7 @@ export const FamilyHubModal: React.FC<FamilyHubModalProps> = ({
 
         <MembersModal
           visible={showMembersModal}
+          asModal={false}
           onClose={() => setShowMembersModal(false)}
         />
       </View>
@@ -756,14 +758,15 @@ const styles = StyleSheet.create({
   header: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 20,
+    paddingHorizontal: 15,
     paddingVertical: 12,
+    gap: Platform.OS === 'ios' ? 35 : 25
   },
   headerLeftGroup: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 16,
+    width: '60%',
+    justifyContent: 'space-between'
   },
   circleButton: {
     width: 44,
@@ -823,14 +826,14 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   familyName: {
-    fontSize: 17,
+    fontSize: Platform.OS === 'ios' ? 17 : 12,
     fontFamily: 'Roboto-Bold',
     color: Colors.white,
     letterSpacing: -0.2,
     marginBottom: 3,
   },
   familyMeta: {
-    fontSize: 13,
+    fontSize: Platform.OS === 'ios' ? 13 : 10,
     fontFamily: 'Roboto-Regular',
     color: Colors.textSubtle,
   },
@@ -846,7 +849,7 @@ const styles = StyleSheet.create({
   },
   familyIdText: {
     color: Colors.white,
-    fontSize: 13,
+    fontSize: Platform.OS === 'ios' ? 13 : 10,
     fontFamily: 'Roboto-Bold',
     letterSpacing: 0.2,
     marginRight: 6,
@@ -939,7 +942,7 @@ const styles = StyleSheet.create({
     marginBottom: 14,
   },
   gridCard: {
-    width: '48.2%',
+    width: '47%',
     backgroundColor: Colors.cardBackground,
     borderRadius: 20,
     borderWidth: 1,
