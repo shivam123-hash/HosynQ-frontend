@@ -330,6 +330,14 @@ const HomeScreen: React.FC<HomeScreenProps> = ({
 
   // Sync with Redux family members when available
   const currentFamily = familyState?.myFamilyData?.family || familyState?.family;
+  const familyName = useMemo(() => {
+    return (
+      currentFamily?.name ||
+      (familyState?.basicFamilyData as any)?.name ||
+      (familyState?.basicFamilyData as any)?.familyName ||
+      'The Sharma Family'
+    );
+  }, [currentFamily, familyState?.basicFamilyData]);
   useEffect(() => {
     if (currentFamily?.members && currentFamily.members.length > 0) {
       const mappedMembers: FamilyMemberStatus[] = currentFamily.members.map(
@@ -688,8 +696,17 @@ const HomeScreen: React.FC<HomeScreenProps> = ({
         {/* Family Pulse Status & AI Suggestion */}
         <FamilyPulseSection
           members={familyMembers}
+          familyName={familyName}
+          memberCount={currentFamily?.members?.length || familyMembers.length || 2}
           suggestion={suggestion}
           onOpenPulse={onOpenPulse || (() => setInternalPulseVisible(true))}
+          onFamilyPress={() => {
+            if (onOpenFamilyHub) {
+              onOpenFamilyHub();
+            } else {
+              setInternalFamilyHubVisible(true);
+            }
+          }}
           onMemberPress={(_m) => {
             if (onOpenFamilyHub) {
               onOpenFamilyHub();

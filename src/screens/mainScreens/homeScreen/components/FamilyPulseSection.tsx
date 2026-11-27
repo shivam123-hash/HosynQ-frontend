@@ -1,22 +1,29 @@
 import React, { memo, useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import Feather from '@react-native-vector-icons/feather';
+import Colors from '../../../../units/Colors';
 import { FamilyMemberStatus, SmartSuggestion } from '../types';
 
 export interface FamilyPulseSectionProps {
-  members: FamilyMemberStatus[];
+  members?: FamilyMemberStatus[];
+  familyName?: string;
+  memberCount?: number;
   suggestion: SmartSuggestion;
   onOpenPulse?: () => void;
-  onMemberPress?: (member: FamilyMemberStatus) => void;
+  onFamilyPress?: () => void;
+  onMemberPress?: (member?: FamilyMemberStatus) => void;
   onConfirmSuggestion?: () => void;
   onEditSuggestion?: () => void;
   onIgnoreSuggestion?: () => void;
 }
 
 const FamilyPulseSection: React.FC<FamilyPulseSectionProps> = ({
-  members,
+  members = [],
+  familyName,
+  memberCount,
   suggestion,
   onOpenPulse,
+  onFamilyPress,
   onMemberPress,
   onConfirmSuggestion,
   onEditSuggestion,
@@ -40,34 +47,16 @@ const FamilyPulseSection: React.FC<FamilyPulseSectionProps> = ({
     setSuggestionState('pending');
   };
 
-  // Color mapping per member from Figma CSS
-  const getMemberInitialsColor = (initials: string) => {
-    switch (initials) {
-      case 'R':
-        return '#8DB8F5';
-      case 'A':
-        return '#F2A3CC';
-      case 'Aa':
-        return '#F2C14E';
-      case 'D':
-        return '#9BD3A8';
-      default:
-        return '#FFFFFF';
-    }
-  };
+  const displayFamilyName = familyName?.trim() || 'The Sharma Family';
+  const familyInitial = displayFamilyName.charAt(0).toUpperCase() || 'S';
+  const count = memberCount ?? (members.length > 0 ? members.length : 2);
+  const countText = `${count} ${count === 1 ? 'member' : 'members'}`;
 
-  const getMemberBgColor = (initials: string) => {
-    switch (initials) {
-      case 'R':
-        return '#1E3A66';
-      case 'A':
-        return '#4A1F3A';
-      case 'Aa':
-        return '#4A3A12';
-      case 'D':
-        return '#253F2C';
-      default:
-        return '#1E3A66';
+  const handlePressFamily = () => {
+    if (onFamilyPress) {
+      onFamilyPress();
+    } else if (onMemberPress) {
+      onMemberPress(members[0]);
     }
   };
 
@@ -92,40 +81,29 @@ const FamilyPulseSection: React.FC<FamilyPulseSectionProps> = ({
           <Text style={styles.safeBannerText}>Everyone is safe</Text>
         </View>
 
-        {/* Family Members Row */}
-        <View style={styles.membersRow}>
-          {members.map((member) => (
-            <TouchableOpacity
-              key={member.id}
-              onPress={() => onMemberPress?.(member)}
-              activeOpacity={0.7}
-              style={styles.memberItem}
-            >
-              <View
-                style={[
-                  styles.avatarCircle,
-                  { backgroundColor: getMemberBgColor(member.initials) },
-                ]}
-              >
-                <Text
-                  style={[
-                    styles.initialsText,
-                    { color: getMemberInitialsColor(member.initials) },
-                  ]}
-                >
-                  {member.initials}
-                </Text>
-                {member.isSafe && <View style={styles.statusDot} />}
-              </View>
-              <Text style={styles.memberName} numberOfLines={1}>
-                {member.name}
+        {/* Family Name Card / Box */}
+        <TouchableOpacity
+          onPress={handlePressFamily}
+          activeOpacity={0.75}
+          style={styles.familyBox}
+          accessibilityRole="button"
+          accessibilityLabel={`${displayFamilyName}, ${countText}`}
+        >
+          <View style={styles.familyBoxLeft}>
+            <View style={styles.familyAvatarCircle}>
+              <Text style={styles.familyAvatarText}>{familyInitial}</Text>
+            </View>
+            <View style={styles.familyInfo}>
+              <Text style={styles.familyBoxName} numberOfLines={1}>
+                {displayFamilyName}
               </Text>
-              <Text style={styles.memberStatus} numberOfLines={1}>
-                {member.status}
-              </Text>
-            </TouchableOpacity>
-          ))}
-        </View>
+              <Text style={styles.familyBoxMeta}>{countText} · Tap to view hub</Text>
+            </View>
+          </View>
+          <View style={styles.familyBoxRight}>
+            <Feather name="chevron-right" size={18} color="#8A97AB" />
+          </View>
+        </TouchableOpacity>
 
         {/* Metrics Row (Today & Weather) */}
         <View style={styles.metricsRow}>
@@ -271,51 +249,57 @@ const styles = StyleSheet.create({
     fontFamily: 'Roboto-Medium',
     color: '#6FD9A6',
   },
-  membersRow: {
+  familyBox: {
     flexDirection: 'row',
+    alignItems: 'center',
     justifyContent: 'space-between',
-    gap: 6,
+    backgroundColor: '#0F1D33',
+    borderRadius: 16,
+    borderWidth: 1.5,
+    borderColor: '#1F3352',
+    paddingVertical: 12,
+    paddingHorizontal: 14,
   },
-  memberItem: {
+  familyBoxLeft: {
+    flexDirection: 'row',
     alignItems: 'center',
     flex: 1,
-    gap: 5,
+    gap: 12,
   },
-  avatarCircle: {
-    width: 46,
-    height: 46,
-    borderRadius: 23,
+  familyAvatarCircle: {
+    width: 42,
+    height: 42,
+    borderRadius: 21,
+    backgroundColor: 'rgba(240, 145, 58, 0.15)',
     justifyContent: 'center',
     alignItems: 'center',
-    position: 'relative',
+    borderWidth: 1,
+    borderColor: 'rgba(240, 145, 58, 0.3)',
   },
-  initialsText: {
-    fontSize: 15,
-    lineHeight: 20,
+  familyAvatarText: {
+    fontSize: 18,
     fontFamily: 'Roboto-Bold',
+    color: '#F0913A',
   },
-  statusDot: {
-    position: 'absolute',
-    bottom: 0,
-    right: 0,
-    width: 12,
-    height: 12,
-    borderRadius: 6,
-    backgroundColor: '#4CC38A',
-    borderWidth: 2,
-    borderColor: '#122440',
+  familyInfo: {
+    flex: 1,
+    justifyContent: 'center',
   },
-  memberName: {
+  familyBoxName: {
+    fontSize: 15,
+    fontFamily: 'Roboto-Bold',
+    color: '#FFFFFF',
+    marginBottom: 2,
+  },
+  familyBoxMeta: {
     fontSize: 12,
-    lineHeight: 16,
-    fontFamily: 'Roboto-Medium',
-    color: '#CAD4DF',
-  },
-  memberStatus: {
-    fontSize: 11,
-    lineHeight: 15,
     fontFamily: 'Roboto-Regular',
     color: '#8A97AB',
+  },
+  familyBoxRight: {
+    marginLeft: 8,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   metricsRow: {
     flexDirection: 'row',
